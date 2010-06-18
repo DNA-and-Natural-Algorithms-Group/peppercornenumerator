@@ -108,7 +108,11 @@ def bind11(reactant):
 		product = Complex(reactant.name + "(" + str(d1) + "+" + str(d2) + ")",
 						  reactant.strands, new_structure)
 		products.append(product)
-	return products
+		
+	output = []
+	for product in products:
+		output.append(ReactionPathway('bind11', [reactant], [product]))
+	return output
 	
 def bind21(reactant1, reactant2):
 	"""
@@ -139,6 +143,11 @@ def bind21(reactant1, reactant2):
 									 reactant1, (strand_num1, dom_num1), 
 								     reactant2, (strand_num2, dom_num2)))
 									 
+	output = []
+	for complex in new_complexes:
+		output.append(ReactionPathway('bind21', [reactant1, reactant2], 
+								      [complex]))
+	
 	return new_complexes
 				
 	
@@ -408,6 +417,10 @@ def open(reactant):
 					release_reactant.structure[bound_loc[0]][bound_loc[1]] = None
 		
 				product_sets.append(find_releases(release_reactant))
+		
+	output = []
+	for product_set in product_sets:
+		output.append(ReactionPathway('open', [reactant], product_set))
 	
 	return product_sets
 	
@@ -639,6 +652,11 @@ def branch_3way(self, reactant):
 				# If not, follow the structure
 				else:
 					bound_loc = structure[bound_loc[0]][bound_loc[1]]
+	output = []
+	for output_set in output_sets:
+		output.append(ReactionPathway('branch_3way', [reactant], output_set))
+		
+	return output
 
 
 def do_3way_migration(reactant, displacing_loc, new_bound_loc):
