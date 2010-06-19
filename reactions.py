@@ -7,6 +7,7 @@
 #
 
 import copy
+import utils
 
 # TODO: fix naming!
 auto_name = 0
@@ -684,6 +685,7 @@ def branch_4way(self, reactant):
 	'''
 	
 	structure = reactant.structure
+	output_sets = []
 	
 	# We loop through all domains
 	for (strand_index, strand) in enumerate(reactant.strands):
@@ -697,6 +699,68 @@ def branch_4way(self, reactant):
 				continue
 			
 			
+			# Check the 4 locations for a 4 way reaction
+			
+			# Displacing domain
 			loc1 = (strand_index, domain_index + 1)
+			dom1 = reactant.strands[loc1[0]].domains[loc1[1]]
+
+			# Displaced domain
+			loc2 = structure[strand_index][domain_index + 1]
+			if (loc2 == None):
+				continue
+			dom2 = reactant.strands[loc2[0]][loc2[1]]
 			
+			# Template domain (replaces displaced domain, binds loc1)
+			loc3 = structure[strand_index][domain_index]
+			if (loc3 == None):
+				continue
 			
+			loc3 = (loc3[0], loc3[1] - 1)
+			if (loc3[1] < 0):
+				continue
+			dom3 = reactant.strands[loc3[0]][loc3[1]]
+			
+			# Displaced from template domain (replaces displacing domain, binds
+			#								  loc2)
+			loc4 = structure[loc3[0]][loc3[1]]
+			if (loc4 == None):
+				continue
+			dom4 = reactant.strands[loc4[0]][loc4[1]]
+			
+			# Confirm that the domains can in fact pair
+			if not (dom1.can_pair(dom3) and dom2.can_pair(dom4)):
+				continue
+				
+			# Confirm that this is a four way migration
+			if loc2 == loc3:
+				continue
+				
+			# If we are here, then we have found a candidate reaction
+			output_sets.append(do_4way_migration(reactant, 
+												 loc1, loc2, loc3, loc4))
+	
+	output = []
+	for output_set in output_sets:
+		output.append(ReactionPathway('branch_4way', [reactant], output_set))
+	
+	return output
+	
+def do_4way_migration(reactant, loc1, loc2, loc3, loc4):
+	"""
+	Performs a 4 way branch migration on a copy of reactant, with loc1 as the
+	displacing domain, loc2 as the domain displaced from loc1, loc3 as the
+	template domain, and loc4 as the domain displaced from loc3. Returns the
+	set of complexes produced by this reaction (may be one or more complexes).
+	"""
+	
+	new_struct = copy.deepcopy(reactant.structure)
+	new_struct[loc1[0]][loc1[1]] = loc3
+	new_struct[loc3[0]][loc3[1]] = loc1
+	new_struct[loc2[0]][loc2[1]] = loc4
+	new_struct[loc4[0]][loc4[1]] = loc2
+	
+	out = Complex(str(auto_name), reactant.strands[:], new_struct)
+	auto_name += 1
+	
+	return find_releases(out)

@@ -227,6 +227,12 @@ class Complex(object):
 		return ((self._strands == other._strands) and 
 			   (self._structure == other._structure))
 	
+	def clone(self):
+		"""
+		Returns a deep copy of this complex.
+		"""
+		return copy.deepcopy(self)
+	
 	@property
 	def name(self):
 		return self._name
