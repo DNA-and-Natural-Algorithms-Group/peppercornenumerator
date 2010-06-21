@@ -239,11 +239,11 @@ class Complex(object):
 	
 	@property
 	def strands(self):
-		return self._strands
+		return self._strands[:]
 	
 	@property
 	def structure(self):
-		return self._structure
+		return self._structure[:]
 	
 	@property
 	def available_domains(self):
@@ -438,3 +438,24 @@ class Complex(object):
 		if len(list) == 0:
 			return True
 		return False
+		
+class RestingState(object):
+	"""
+	Represents a resting state, which is a collection of complexes.
+	"""
+	
+	def __init__(self, name, complexes):
+		"""
+		Constructor for RestingState objects. Takes a (unique) name and list of
+		complexes.
+		"""
+		self._complexes = complexes
+		self._name = name
+		
+	@property
+	def name(self):
+		return _name
+		
+	@property
+	def complexes(self):
+		return _complexes[:]

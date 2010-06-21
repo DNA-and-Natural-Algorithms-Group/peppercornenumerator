@@ -3,7 +3,6 @@
 #  EnumeratorProject
 #
 #  Created by Karthik Sarma on 5/19/10.
-#  Copyright (c) 2010 __MyCompanyName__. All rights reserved.
 #
 
 from utils import *
