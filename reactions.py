@@ -47,6 +47,19 @@ class ReactionPathway(object):
 		return (self.name == other.name) and \
 			   (self.reactants == other.reactants) and \
 			   (self.products == other.products)
+			   
+	def normalize(self):
+		"""
+		Ensures that complexes appear on only one side of the reaction by
+		removing them evenly from both sides until only one side has any.
+		"""
+		for reactant in self.reactants:
+			while (reactant in self.reactants and \
+				   reactant in self.products):
+				self.reactants.remove(reactant)
+				self.products.remove(reactant)
+				
+				
 
 
 def bind11(reactant):

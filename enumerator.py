@@ -45,20 +45,55 @@ class Enumerator(object):
 		self._domains = domains
 		self._strands = strands
 		self._initial_complexes = initial_complexes
+		self._reactions = None
+		self._resting_states = None
+		self._complexes = None
+		self._transient_complexes = None
+		self._resting_complexes = None
 		
 	@property
 	def domains(self):
-		return _domains[:]
+		return self._domains[:]
 		
 	@property
 	def strands(self):
-		return _strands[:]
+		return self._strands[:]
 	
 	@property
 	def initial_complexes(self):
-		return _initial_complexes[:]
+		return self._initial_complexes[:]
 		
+	@property
+	def reactions(self):
+		if self._reactions == None:
+			raise Exception("enumerate not yet called!")
+		return self._reactions[:]
 		
+	@property
+	def resting_states(self):
+		if self._resting_states == None:
+			raise Exception("enumerate not yet called!")
+		return self._resting_states[:]
+		
+	@property
+	def complexes(self):
+		if self._complexes == None:
+			raise Exception("enumerate not yet called!")
+		return self._complexes[:]
+			
+	@property
+	def resting_complexes(self):
+		if self._resting_complexes == None:
+			raise Exception("enumerate not yet called!")
+		return self._resting_complexes[:]
+		
+	@property
+	def transient_complexes(self):
+		if self._transient_complexes == None:
+			raise Exception("enumerate not yet called!")
+		return self._transient_complexes[:]
+		
+			
 	def enumerate(self):
 		"""
 		Generates the reaction graph consisting of all complexes reachable from
@@ -98,7 +133,7 @@ class Enumerator(object):
 		self._B = self.initial_complexes
 		
 		self._reactions = []
-		self._complexes = self.initial_complexes
+		self._complexes = []
 		self._resting_states = []
 		
 		# We first generate the states reachable by fast reactions from the
@@ -132,6 +167,11 @@ class Enumerator(object):
 				source = self._B.pop()
 				process_neighborhood(source)
 				
+		self._complexes.extend(self._E)
+		self._complexes.extend(self._T)
+		self._transient_complexes = self._T
+		self._resting_complexes = self._E
+				
 	def process_neighborhood(self, source):
 		"""
 		Takes a single complex, generates the 'neighborhood' of complexes
@@ -143,7 +183,7 @@ class Enumerator(object):
 		# N_reactions holds reactions which are part of the current
 		# neighborhood
 		N_reactions = []
-				
+		
 		self._F = [source]
 		
 		# First we find all of the complexes accessible through fast
@@ -173,7 +213,7 @@ class Enumerator(object):
 		self._reactions.extend(N_reactions)
 		
 		# Reset neighborhood
-		self._N = []	
+		self._N = []
 					
 	def get_slow_reactions(self, complex):
 		"""
@@ -183,7 +223,7 @@ class Enumerator(object):
 		This only supports unimolecular and bimolecular reactions. Could be
 		extended to support arbitrary reactions.
 		"""
-		
+
 		reactions = []
 		
 		# Do unimolecular reactions
@@ -196,8 +236,7 @@ class Enumerator(object):
 			for complex2 in self._E:
 				reactions.extend(function(complex, complex2))
 				
-		return reactions
-			
+		return reactions			
 
 	def get_fast_reactions(self, complex):
 		"""
@@ -340,7 +379,7 @@ class Enumerator(object):
 		return {
 				'resting_states': resting_states, 
 			    'resting_state_complexes': resting_state_complexes,
-				'transient_state': transient_state_complexes
+				'transient_states': transient_state_complexes
 				}
 		
 	def tarjans(self, node):
