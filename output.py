@@ -9,6 +9,7 @@ import copy
 import utils
 import reactions
 import json
+import subprocess
 
 
 text_output_functions = {
@@ -16,7 +17,7 @@ text_output_functions = {
 						'json': output_json
    					    }
 graph_output_functions = {
-
+						 'graph': output_graph
 						 }
 
 def condense_resting_states(enumerator):
@@ -25,6 +26,18 @@ def condense_resting_states(enumerator):
 	which represent a version of the reaction graph in which transient
 	complexes have been removed and resting states are represented by a single
 	node.
+	
+	More specifically, for every complex C, if C is a transient complex,
+	for every reaction R1 containing C, we first ensure that C only appears on 
+	one side of the reaction by normalizing the reaction. Then, if C is on
+	the left hand side of the reaction, for every reaction R2 producing C,
+	we create a new reaction with reagent set equal to the union of the reagents
+	of R1 and R2 with C removed, and a new reaction with product set equal to 
+	the union of the products of R1 and R2 (Note that if more than one C is
+	required, then we multiply reaction R2 by the number of Cs required).
+	
+	We perform a similar operation for reactions R1 with C on the right hand
+	side.
 	"""
 	complexes = enumerator.complexes
 	reactions = enumerator.reactions
@@ -336,5 +349,152 @@ def output_json(enumerator, filename, output_condensed = False):
 	fout = open(filename, 'w')
 	json.dump(object_out, fout, indent=4)
 	fout.close()
-
+ 
 output_json.supports_condensed = True
+
+def output_graph(enumerator, filename, output_condensed=False):
+	if not output_condensed:
+		output_full_graph(enumerator, filename)
+	else:
+		output_condensed_graph(enumerator, filename)
+	
+output_graph.supports_condensed = True
+
+def output_full_graph(enumerator, filename):
+	"""
+	Products graphical output representing the full reaction graph, with all
+	reactions and complexes. Transient and resting states are differentiated
+	by color.
+	"""
+	fout = open(filename + ".dot", "w")
+	fout.write("digraph G {\n")
+	fout.write('size="7,10"\n')
+	fout.write('page="8.5,11"\n')
+	fout.write('node[width=0.25,height=0.375,fontsize=9]\n')
+	
+	# We need to determine the complex clusters for the graph. Complexes with
+	# the same cyclic permutation of strands are placed in the same cluster.
+	
+	strand_cyclic_permutations = []
+	clusters = []
+	
+	# We loop through all complexes
+	for complex in enumerator.transient_complexes:
+		complex._resting = False
+		flag = False
+		
+		# Check to see if we've already seen this strand ordering
+		for (i, perm) in strand_cyclic_permutations:
+			if perm == complex.strands:
+				clusters[i].add(complex)
+				flag = True
+				break
+				
+		# If not, we add it
+		if not flag:
+			strand_cyclic_permutations.append(complex.strands)
+			clusters.append([complex])
+			
+	for complex in enumerator.resting_complexes:
+		complex._resting = True
+		flag = False
+		
+		# Check to see if we've already seen this strand ordering
+		for (i, perm) in strand_cyclic_permutations:
+			if perm == complex.strands:
+				clusters[i].add(complex)
+				flag = True
+				break
+				
+		# If not, we add it
+		if not flag:
+			strand_cyclic_permutations.append(complex.strands)
+			clusters.append([complex])
+	
+	# We now draw the clusters on the graph
+	for (i, cluster) in enumerate(clusters):
+		fout.write("subgraph cluster%d {\n" % i)
+		strands = [cluster[0].strands[0].name]
+		for strand in cluster[0].strands[1:]:
+			strands.append(" + ")
+			strands.append(strand.name)
+		strands_string = ''.join(strands)
+		fout.write('label="%s"\n' % strands_string)
+		fout.write('fontsize=6\n')
+		for complex in cluster:
+			extra_params = ""
+			if complex._resting:
+				extra_params = ",style=filled,color=gold1"
+			fout.write('%s [label="%s:%s"%s];\n' % (complex.name, 
+													complex.name, 
+													complex.dot_paren_string(), 
+													extra_params
+													))
+		fout.write("{\n")
+		
+	# We now draw the reactions. If there is one product and one reagent, then
+	# we just draw an edge between the two. Otherwise we create a reaction node.
+	for (i, reaction) in enumerate(enumerator.reactions):
+		if (len(reaction.products) == 1) and (len(reaction.reagents) == 1):
+			fout.write("%s -> %s\n" % (reaction.reagents[0].name,
+									   reaction.products[0].name)
+		else:
+			reaction_label = "R_%d" + i
+			# We label unimolecular reactions blue, and other reactions red
+			reaction_color = "red"
+			if len(reaction.reagents) == 1:
+				reaction_color = "blue"
+			fout.write('%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=%s];\n' %
+							reaction_label, reaction_color)
+			
+			# We now make all the edges needed
+			for reagent in reaction.reagents:
+				fout.write("%s -> %s\n" % (reagent.name, reaction_label))
+				
+			for product in reaction.products:
+				fout.write("%s -> %s\n" % (reaction_label, product.name))
+				
+				
+	fout.write("}\n")
+	fout.close()
+	
+	# Create the output file.
+	# TODO: make 'pdf' configurable
+	subprocess.call(["dot", "-O", "-Tpdf", "%s.dot" % filename])
+	
+def output_condensed_graph(enumerator, filename):
+	"""
+	Products graphical output representing the condensed reaction graph, with
+	condensed reactions and resting states aggregated into single nodes.
+	"""
+	fout = open(filename + ".dot", "w")
+	fout.write("digraph G {\n")
+	fout.write('size="7,10"\n')
+	fout.write('page="8.5,11"\n')
+	fout.write('node[width=0.25,height=0.375,fontsize=9]\n')
+	
+	condensed_graph = condense_resting_states(enumerator)
+	
+	# We loop through all resting states, drawing them on the graph
+	for state in condensed_graph['resting_states']:
+		fout.write('%s [label="%s"]\n' % (state.name, state.name))
+	
+	# We now add reactions. We always create a reaction node.
+	for (i, reaction) in enumerate(condensed_graph['reactions']):
+		reaction_label = "R_%d" % i
+		fout.write('%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];\n' % reaction_label)
+		
+		for reagent in reaction.reagents:
+			fout.write("%s -> %s\n" % (reagent.name, reaction_label)
+			
+		for product in reaction.products:
+			fout.write("%s -> %s\n" % (reaction_label, product.name)
+			
+	fout.write("}\n")
+	fout.close()
+	
+	# Create the output file.
+	# TODO: make 'pdf' configurable
+	subprocess.call(["dot", "-O", "-Tpdf", "%s.dot" % filename])
+	
+	
