@@ -132,6 +132,13 @@ class StrandTests(unittest.TestCase):
 		def assnDoms(self):
 			self.strands['PS'].domains = []
 		assert_raises(AttributeError, assnDoms, self)
+		
+	def testLength(self):
+		assert self.strands['PS'].length == 5
+		assert self.strands['Cat'].length == 2
+		def assnLength(self):
+			self.strands['PS'].length = []
+		assert_raises(AttributeError, assnLength, self)
 
 class ComplexTests(unittest.TestCase):
 	def setUp(self):
@@ -172,10 +179,11 @@ class ComplexTests(unittest.TestCase):
 
 	def testAvailableDomains(self):
 		C1doms = [(self.domains['4'], 0, 3), (self.domains['5'], 1, 3), (self.domains['6'], 1, 4)]
-		C1doms.sort()
+		C1doms.sort(key=lambda dom: dom[0].name)
 		assert self.complexes['C1'].available_domains == C1doms
 		I1doms = [(self.domains['1'], 0, 3), (self.domains['2'], 0, 4), (self.domains['3'], 0, 5), (self.domains['6'], 2, 0)]
-		I1doms.sort()
+		
+		I1doms.sort(key=lambda dom: dom[0].name)		
 		assert self.complexes['I1'].available_domains == I1doms
 		I4doms = [(self.domains['1'], 0, 3), (self.domains['2'], 0, 4), (self.domains['3'], 0, 5), (self.domains['6'], 2, 4)]
 		
@@ -204,6 +212,33 @@ class ComplexTests(unittest.TestCase):
 		str = self.complexes['I4'].dot_paren_string()
 		assert str == "(((...+(((.+)))).+))"
 		
-	def testIsPseudoknotted(self):
-		assert self.complexes['I1'].is_unpseudoknotted()
-		assert self.complexes['I4'].is_unpseudoknotted()
+class RestingStateTests(unittest.TestCase):
+	def setUp(self):
+		setUpSLC(self)
+		self.rs = RestingState('RS1', [self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']])
+	
+	def testConstructor(self):
+		assert self.rs._name == 'RS1'
+				
+		comp = [self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']]
+		
+		assert self.rs._complexes == comp
+		
+		
+	def testName(self):
+		def assnName(self):
+			self.rs.name = 'RS2'
+			
+		assert_raises(AttributeError, assnName, self)
+		
+	def testComplexes(self):	
+		self.rs.complexes[0] = None
+		
+		comp = [self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']]
+		
+		assert self.rs.complexes == comp
+		
+		def assnComplex(self):
+			self.rs.complexes = []
+		
+		assert_raises(AttributeError, assnComplex, self)

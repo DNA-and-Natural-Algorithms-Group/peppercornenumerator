@@ -5,18 +5,10 @@
 #  Created by Karthik Sarma on 6/26/10.
 #
 
-import utils
-import enumerator 
 import logging
 import json
-
-new_input_functions = {
-						'standard': input_standard
-					  }
-					  
-load_input_functions = {
-						 'json': load_json
-					   }
+from utils import *
+from enumerator import Enumerator
 					   
 def input_standard(filename):
 	"""
@@ -32,15 +24,17 @@ def input_standard(filename):
 	line = fin.readline()
 	
 	# We loop over all the lines in the file
-	while line != "":
+	while (line != ""):
 		line = line.strip()
 		
 		# This was an empty line
 		if line == "":
+			line = fin.readline()
 			continue
 			
 		# This was a comment
 		elif line.startswith("#"):
+			line = fin.readline()
 			continue
 			
 		# This is the beginning of a domain
@@ -127,17 +121,17 @@ def input_standard(filename):
 			complex_strands = []
 			
 			strands_line = fin.readline()
-			strands_line = strands_line.trim()
+			strands_line = strands_line.strip()
 			strands_line_parts = strands_line.split()
-			for strand_name in strands_line:
+			for strand_name in strands_line_parts:
 				if not strand_name in strands:
 					logging.error("Invalid strand name %s encountered in input line %d"
 									% (strand_name, line_counter))
-				else complex_strands.append(strands[strand_name])
+				else:
+					complex_strands.append(strands[strand_name])
 				
 			structure_line = fin.readline()
-			structure_line = structure_line.trim()
-			structure_line_parts = structure_line.split()
+			structure_line = structure_line.strip()
 			
 			complex_structure = []
 			
@@ -147,7 +141,7 @@ def input_standard(filename):
 			domain_index = 0
 			curr_strand = []
 			complex_structure.append(curr_strand)
-			for part in structure_line_parts:
+			for part in structure_line:
 				if (part == "+"):
 					strand_index += 1
 					domain_index = 0
@@ -156,14 +150,18 @@ def input_standard(filename):
 					continue
 				if (part == "."):
 					curr_strand.append(None)
+					domain_index += 1
 				elif (part == "("):
 					curr_strand.append(None)
-					dot_paren_stack.append((stand_index, domain_index))
+					dot_paren_stack.append((strand_index, domain_index))
+					domain_index += 1
 				elif (part == ")"):
 					loc = dot_paren_stack.pop()
 					curr_strand.append(loc)
 					complex_structure[loc[0]][loc[1]] = (strand_index, domain_index)
 					domain_index += 1
+			
+			
 			
 			complex = Complex(complex_name, complex_strands, complex_structure)
 			complexes[complex_name] = complex			
@@ -174,6 +172,7 @@ def input_standard(filename):
 			raise Exception()
 		line = fin.readline()
 		line_counter += 1
+		
 	domains = domains.values()
 	strands = strands.values()
 	complexes = complexes.values()
@@ -214,7 +213,7 @@ def load_json(filename):
 	saved_resting_complexes = saved['resting_complexes']
 	for saved_complex in saved_resting_complexes:
 		c_strands = []
-		for strand in saved_complex['strands']
+		for strand in saved_complex['strands']:
 			c_strands.append(strands[strand])
 		new_complex = Complex(saved_complex['name'], c_strands, saved_complex['structure'])
 		resting_complexes[saved_complex['name']] = new_complex
@@ -225,7 +224,7 @@ def load_json(filename):
 	saved_transient_complexes = saved['transient_complexes']
 	for saved_complex in saved_transient_complexes:
 		c_strands = []
-		for strand in saved_complex['strands']
+		for strand in saved_complex['strands']:
 			c_strands.append(strands[strand])
 		new_complex = Complex(saved_complex['name'], c_strands, saved_complex['structure'])
 		transient_complexes[saved_complex['name']] = new_complex
@@ -261,3 +260,13 @@ def load_json(filename):
 	enumerator._reactions = reactions
 	
 	return enumerator
+
+
+
+new_input_functions = {
+						'standard': input_standard
+					  }
+					  
+load_input_functions = {
+						 'json': load_json
+					   }

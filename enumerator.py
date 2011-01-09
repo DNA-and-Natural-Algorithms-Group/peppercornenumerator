@@ -9,6 +9,7 @@ import utils
 import reactions
 import logging
 import itertools
+from reactions import *
 
 # These are sanity checks to prevent infinite looping
 MAX_COMPLEX_SIZE = 6
@@ -18,15 +19,15 @@ MAX_COMPLEX_COUNT = 200
 
 # Fast reactions cannot be bimolecular!
 fast_reactions = {
-	1 = [bind11, open, branch_3way, branch_4way]
+	1: [bind11, open, branch_3way, branch_4way]
 }
 
 # Slow reactions can only be unimolecular or bimolecular, though
 # make_slow_reactions below could be changed in order to lift this
 # restriction
 slow_reactions = {
-	1 = [],
-	2 = [bind21]
+	1: [],
+	2: [bind21]
 }
 
 class Enumerator(object):
@@ -334,8 +335,7 @@ class Enumerator(object):
 					# We know all these reactions are unimolecular
 					reaction.reactants[0]._outward_edges.append(product)
 					
-				reaction.reactants[0]._full_outward_edges
-									 .extend(reaction.products)
+				reaction.reactants[0]._full_outward_edges.extend(reaction.products)
 									 
 		# We now perform Tarjan's algorithm, marking nodes as appropriate
 		for node in complexes:

@@ -121,7 +121,7 @@ def bind11(reactant):
 		product = Complex(reactant.name + "(" + str(d1) + "+" + str(d2) + ")",
 						  reactant.strands, new_structure)
 		products.append(product)
-		
+	
 	output = []
 	for product in products:
 		output.append(ReactionPathway('bind11', [reactant], [product]))
@@ -162,7 +162,7 @@ def bind21(reactant1, reactant2):
 								      [complex]))
 	
 	return new_complexes
-				
+	
 	
 	
 	
@@ -275,19 +275,19 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 		d4 = []
 		s1 = copy.deepcopy(complex1.structure)
 		s4 = []
-		
+	
 	# If this condition is true, we will need to cut up complex2	
 	if insertion_index_2 >= 0:
 		d2 = complex2.strands[(insertion_index_2+1):]
 		d3 = complex2.strands[0:(insertion_index_2+1)]
-		s2 = copy.deepcopy(complex2.strands[(insertion_index_2+1):]
+		s2 = copy.deepcopy(complex2.strands[(insertion_index_2+1):])
 		s3 = copy.deepcopy(complex2.strands[0:(insertion_index_2+1)])
 	else:
 		d2 = []
 		d3 = complex2.strands[:]
 		s2 = []
 		s3 = copy.deepcopy(complex2.structure)
-		
+	
 	# We now need to update the structures based on the way things were shifted
 	# We calculate the offsets for strand locations in each chunk
 	s1_strand_offset = 0
@@ -406,7 +406,7 @@ def open(reactant):
 				
 				# If these domains aren't bound to each other, the helix
 				# has ended
-				if (tuple(helix_endA) != structure[helix_endB[0]][helix_endB[1]):
+				if (tuple(helix_endA) != structure[helix_endB[0]][helix_endB[1]]):
 					break
 				
 				# If one of the strands has broken, the helix has ended
@@ -563,7 +563,7 @@ def split_complex(reactant, split_start, split_end):
 	out2 = Complex(str(auto_name), out2_strands, out2_structure)
 	auto_name += 1
 	
-	return [out1 out2]
+	return [out1, out2]
 	
 def branch_3way(self, reactant):
 	'''
@@ -618,7 +618,7 @@ def branch_3way(self, reactant):
 					output_sets.append(do_3way_migration(reactant,
 														 (strand_index, 
 														 domain_index),
-														 bound_loc)
+														 bound_loc))
 					
 					
 				# If not, follow the structure
@@ -659,7 +659,7 @@ def branch_3way(self, reactant):
 					output_sets.append(do_3way_migration(reactant,
 														 (strand_index, 
 														 domain_index),
-														 bound_loc)
+														 bound_loc))
 					
 					
 				# If not, follow the structure

@@ -25,11 +25,17 @@ class BindTests(unittest.TestCase):
 		D = Strand('D', [self.domains['5'], self.domains['3*']])
 		E = Strand('E', [self.domains['5*']])
 		
+		
 		C1 = Complex('C1', [A, B, C], [[None, (2, 1)], [None, (2, 0)], [(1, 1), (0, 1)]])
 		C2 = Complex('C2', [D, E], [[(1, 0), None], [(0, 0)]])
 		
+		
 		b1 = find_external_strand_break(C1, (1, 0))
+		
+		
 		b2 = find_external_strand_break(C2, (0, 1))
 		
+				
 		print (b1, b2)
-		assert False
+		
+#		assert False

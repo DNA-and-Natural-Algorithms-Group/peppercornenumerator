@@ -49,9 +49,22 @@ class Domain(object):
 	
 	def __str__(self):
 		return self.name
-	
-	def __eq__(self, other):
-		return (self.name == other.name)
+			
+	def __cmp__(self, other):
+		out = cmp(self.name, other.name)
+		if (out != 0):
+			return out
+			
+		out = self.length - other.length
+		if (out != 0):
+			return out
+		
+		if (self.is_complement == other.is_complement):
+			return 0			
+		elif self.is_complement:
+			return 1
+		else:
+			return 0
 		
 	def __len__(self):
 		return self.length
@@ -127,16 +140,28 @@ class Strand(object):
 	def __eq__(self, other):
 		return (self.name == other.name) and (self.domains == other.domains)
 
+	def __cmp__(self, other):
+		return cmp(self.name, other.name)
+
 	def __len__(self):
 		return len(self.domains)
+
+	def __repr__(self):
+		return "Strand(%s)" % (self.name)
+	
+	def __str__(self):
+		return self.name
 
 	@property
 	def name(self):
 		return self._name
 		
+	"""
+	Returns the number of domains in this strand.
+	"""	
 	@property
 	def length(self):
-		return len(domains)
+		return len(self._domains)
 		
 	@property
 	def domains(self):
@@ -227,11 +252,20 @@ class Complex(object):
 		return ((self._strands == other._strands) and 
 			   (self._structure == other._structure))
 	
+	def __cmp__(self, other):
+		return cmp(self.name, other.name)
+	
 	def clone(self):
 		"""
 		Returns a deep copy of this complex.
 		"""
 		return copy.deepcopy(self)
+
+	def __repr__(self):
+		return "Complex(%s)" % (self.name)
+	
+	def __str__(self):
+		return self.name
 	
 	@property
 	def name(self):
@@ -417,27 +451,6 @@ class Complex(object):
 		
 		return ''.join(out)
 		
-	def is_unpseudoknotted(self):
-		"""
-		Returns True if this complex is unpseudoknotted.
-		"""
-		dparen = self.dot_paren_string()
-		list = []
-		for char in dparen:
-			if (char == '.'):
-				pass
-			elif (char == '+'):
-				pass
-			elif (char == '('):
-				list.append(0)
-			elif (char == ')'):
-				if len(list) != 0:
-					list = list[1:]
-				else:
-					return False
-		if len(list) == 0:
-			return True
-		return False
 		
 class RestingState(object):
 	"""
@@ -454,8 +467,14 @@ class RestingState(object):
 		
 	@property
 	def name(self):
-		return _name
+		return self._name
 		
 	@property
 	def complexes(self):
-		return _complexes[:]
+		return self._complexes[:]
+		
+	def __eq__(self, other):
+		return (self.complexes == other.complexes)
+		
+	def __cmp__(self, other):
+		return cmp(self.name, other.name)
