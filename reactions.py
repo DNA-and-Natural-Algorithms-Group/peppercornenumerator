@@ -475,7 +475,7 @@ def open(reactant):
 			
 			# Move start location to the first domain in the helix
 			helix_startA[1] += 1
-			helix_startB[1] += 1
+			helix_startB[1] -= 1
 			
 			# If the helix is short enough, we have a reaction	
 			if (helix_length <= RELEASE_CUTOFF):
