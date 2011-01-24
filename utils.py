@@ -253,6 +253,14 @@ class Complex(object):
 			   (self._structure == other._structure))
 	
 	def __cmp__(self, other):
+		out = cmp(self.strands, other.strands)
+		if (out != 0):
+			return out
+			
+		out = cmp(self.structure, other.structure)
+		if (out != 0):
+			return out
+	
 		return cmp(self.name, other.name)
 	
 	def clone(self):
@@ -262,10 +270,14 @@ class Complex(object):
 		return copy.deepcopy(self)
 
 	def __repr__(self):
+#		return self.full_string()
 		return "Complex(%s)" % (self.name)
 	
 	def __str__(self):
 		return self.name
+		
+	def full_string(self):
+		return "Complex(%s): %s %s" % (self.name, str(self.strands), str(self.structure))
 	
 	@property
 	def name(self):
@@ -284,6 +296,17 @@ class Complex(object):
 		if not (self._valid_available_domains):
 			self.update_available_domains()			
 		return self._available_domains
+	
+	def strand_index(self, strand_name):
+		"""
+		Returns the index of the strand with the specified name in this
+		complex, or -1 if there is no such strand.
+		"""
+		for (i, strand) in enumerate(self.strands):
+			if strand.name == strand_name:
+				return i
+		
+		return -1
 	
 	def update_available_domains(self):
 		"""

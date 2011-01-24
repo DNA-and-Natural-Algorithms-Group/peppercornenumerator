@@ -17,7 +17,7 @@ MAX_REACTION_COUNT = 1000
 MAX_COMPLEX_COUNT = 200
 
 
-# Fast reactions cannot be bimolecular!
+# Fast reactions cannot b,e bimolecular!
 fast_reactions = {
 	1: [bind11, open, branch_3way, branch_4way]
 }
