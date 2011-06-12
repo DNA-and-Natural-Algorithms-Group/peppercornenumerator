@@ -17,7 +17,7 @@ MAX_REACTION_COUNT = 1000
 MAX_COMPLEX_COUNT = 200
 
 
-# Fast reactions cannot b,e bimolecular!
+# Fast reactions cannot be bimolecular!
 fast_reactions = {
 	1: [bind11, open, branch_3way, branch_4way]
 }
@@ -52,6 +52,7 @@ class Enumerator(object):
 		self._transient_complexes = None
 		self._resting_complexes = None
 		
+    
 	@property
 	def domains(self):
 		return self._domains[:]
@@ -142,7 +143,7 @@ class Enumerator(object):
 		while (len(self._B) > 0):
 			# source is the complex from which we will generate a neighborhood
 			source = self._B.pop()			
-			process_neighborhood(source)
+			self.process_neighborhood(source)
 		
 		# We now consider slow reactions
 		while len(self._S) > 0:
@@ -166,7 +167,7 @@ class Enumerator(object):
 					raise Exception("Too many reactions generated, aborting...")
 			
 				source = self._B.pop()
-				process_neighborhood(source)
+				self.process_neighborhood(source)
 				
 		self._complexes.extend(self._E)
 		self._complexes.extend(self._T)
@@ -191,7 +192,7 @@ class Enumerator(object):
 		# reactions starting with the source
 		while (len(self._F) > 0):
 			curr_element = self._F.pop()
-			curr_reactions = self.get_fast_reactions(fast_element)								
+			curr_reactions = self.get_fast_reactions(curr_element)								
 			new_products = self.get_new_products(curr_reactions)
 			self._F.extend(new_products)
 			N_reactions.extend(curr_reactions)
@@ -246,7 +247,7 @@ class Enumerator(object):
 	
 		reactions = []
 		for reaction in fast_reactions[1]:
-			reactions.extend(reaction(fast_element))
+			reactions.extend(reaction(complex))
 		return reactions
 				
 	def get_new_products(self, reactions):
@@ -290,7 +291,7 @@ class Enumerator(object):
 					# If the product has already been seen in this loop, update
 					# the pointer appropriately
 					for complex in new_products:
-						if (products == complex):
+						if (product == complex):
 							enumerated = True
 							reaction.products[i] = complex
 							break
@@ -308,35 +309,49 @@ class Enumerator(object):
 		states, and the set of resting states, all in a dictionary.
 		"""
 		
+		global auto_name
+		
+		print "begin segment neighborhood" 
 		# First we initialize the graph variables that will be used for
 		# Tarjan's algorithm
 		
 		self._tarjan_index = 0
 		self._tarjan_stack = []
 		self._SCC_stack = []
-		
+
+		# Set up for Tarjan's algorithm
 		for node in complexes:
 			node._outward_edges = []
 			node._full_outward_edges = []
 			node._index = -1
-			node._lowlink = -1
-			
+		
 		# Detect which products are actually in the neighborhood	
 		for reaction in reactions:
 			for product in reaction.products:
+				print product
 				product_in_N = False
+				
 				for complex in complexes:
+					print complex
 					if (complex == product):
+						print "confirmed!"
 						product_in_N = True
 						break
 				
+				print "--"
 				# If this product is in the neighborhood, we have an edge
 				if product_in_N:
+					print "piN:", product
 					# We know all these reactions are unimolecular
+					print "adding to: ", reaction.reactants[0]
 					reaction.reactants[0]._outward_edges.append(product)
-					
+				print "--"
 				reaction.reactants[0]._full_outward_edges.extend(reaction.products)
-									 
+
+					
+			node._lowlink = -1			
+			
+		print "cps: ", complexes
 		# We now perform Tarjan's algorithm, marking nodes as appropriate
 		for node in complexes:
 			if node._index == -1:
@@ -375,11 +390,11 @@ class Enumerator(object):
 				
 			else:
 				transient_state_complexes.extend(scc)
-		
+		print "end segment neighborhood"
 		return {
 				'resting_states': resting_states, 
 			    'resting_state_complexes': resting_state_complexes,
-				'transient_states': transient_state_complexes
+				'transient_state_complexes': transient_state_complexes
 				}
 		
 	def tarjans(self, node):
@@ -387,7 +402,9 @@ class Enumerator(object):
 		Executes an iteration of Tarjan's algorithm (a modified DFS) starting
 		at the given node.
 		"""
-		
+		print "tn: ",node
+		print "tni: ",node._index
+		print "tnoe: ",node._outward_edges
 		# Set this node's tarjan numbers
 		node._index = self._tarjan_index
 		node._lowlink = self._tarjan_index
@@ -397,6 +414,7 @@ class Enumerator(object):
 		
 		# Process all connected nodes, setting lowlink as needed
 		for next in node._outward_edges:
+			print "tnext: ", next
 			if next._index == -1:
 				self.tarjans(next)
 				node._lowlink = min(node._lowlink, next._lowlink)

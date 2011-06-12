@@ -497,4 +497,5 @@ def output_condensed_graph(enumerator, filename):
 	# TODO: make 'pdf' configurable
 	subprocess.call(["dot", "-O", "-Tpdf", "%s.dot" % filename])
 	
+
 	

@@ -83,6 +83,7 @@ class ReactionPathway(object):
 				self.reactants.remove(reactant)
 				self.products.remove(reactant)
 				
+	__hash__ = None
 				
 
 
@@ -99,7 +100,7 @@ def bind11(reactant):
 	struct = reactant.structure
 	strands = reactant.strands
 	reactions = []
-	
+		
 	# We will loop over all unpaired domains
 	# TODO: we can just use the available_domains field of complexes to
 	# simplify this!
@@ -116,7 +117,12 @@ def bind11(reactant):
 			inner_domain = domain_num + 1
 			
 			while (inner_strand != len(strands)):
-			
+				# If we're back where we started, then we've traversed 
+				# a whole loop
+				if (inner_strand == strand_num) and \
+				   (inner_domain == domain_num):
+				   break
+				
 				# If we're at the end of a strand, move to the next
 				if (inner_domain == len(strands[inner_strand].domains)):
 					inner_domain = 0
@@ -124,8 +130,9 @@ def bind11(reactant):
 				elif (struct[inner_strand][inner_domain] != None):
 					# This is not an unpaired domain; skip around the loop
 					# to return to an external loop by following the structure
-					inner_strand = struct[inner_strand][inner_domain][0]
-					inner_domain = struct[inner_strand][inner_domain][1] + 1
+					struct_element = struct[inner_strand][inner_domain]
+					inner_strand = struct_element[0]
+					inner_domain = struct_element[1] + 1
 				elif not outer_domain.can_pair(strands[inner_strand].
 											   domains[inner_domain]):
 					# These domains aren't complementary
@@ -139,16 +146,29 @@ def bind11(reactant):
 	
 	products = []
 	for (d1, d2) in reactions:
-		new_structure = reactant.structure[:]	
+		new_structure = copy.deepcopy(reactant.structure)
 		new_structure[d1[0]][d1[1]] = d2
 		new_structure[d2[0]][d2[1]] = d1
 		product = Complex(reactant.name + "(" + str(d1) + "+" + str(d2) + ")",
-						  reactant.strands, new_structure)
+						  reactant.strands, new_structure)		
 		products.append(product)
 	
 	output = []
 	for product in products:
 		output.append(ReactionPathway('bind11', [reactant], [product]))
+
+	# remove any duplicate reactions	
+	if (len(output) == 0):
+		return output
+		
+	output.sort()
+	last = output[-1]
+	for i in range(len(output) - 2, -1, -1):
+		if last == output[i]:
+			del output[i]
+		else:
+			last = output[i]
+
 	return output
 	
 def bind21(reactant1, reactant2):
@@ -243,6 +263,7 @@ def find_external_strand_break(complex, location):
 	while insertion_strand_index == None:
 		# First check to see if we've run off the end of a strand, in which
 		# case the external break is between the previous strand and this one
+		print (search_strand_index, search_dom_index)
 		if (search_dom_index == -1):
 			insertion_strand_index = search_strand_index - 1
 		else:
@@ -280,10 +301,10 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 	
 	# First we need to find the external strand breaks where we will be
 	# splitting the complexes
+	
 	insertion_index_1 = find_external_strand_break(complex1, location1)
 	insertion_index_2 = find_external_strand_break(complex2, location2)
-	
-	
+		
 	# We then find the four parts, 1-4, which we will stick together
 	# in order to create our final complex
 	
@@ -351,12 +372,10 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 			if (pair):
 				# Check if paired to s2
 				if ((insertion_index_2 >= 0) and (pair[0] > insertion_index_2)):
-					print "flag1"
 					new_pair = (pair[0] + s2_strand_offset, pair[1])
 					s3[strand_index][dom_index] = new_pair
 				# Otherwise paired to s3
 				else:
-					print "flag2"
 					new_pair = (pair[0] + s3_strand_offset, pair[1])
 					s3[strand_index][dom_index] = new_pair
 	
@@ -404,8 +423,6 @@ def open(reactant):
 	structure = reactant.structure
 	strands = reactant.strands
 	
-	for strand in strands:
-		print strand
 	
 	# We loop through all
 	for (strand_index, strand) in enumerate(strands):
@@ -481,8 +498,6 @@ def open(reactant):
 			if (helix_length <= RELEASE_CUTOFF):
 				release_reactant = copy.deepcopy(reactant)
 				
-				print "found: ", helix_startA, helix_endA
-				print helix_startB, helix_endB
 				
 				# Delete all the pairs in the released helix
 				for dom in range(helix_startA[1], helix_endA[1]):
@@ -490,12 +505,9 @@ def open(reactant):
 					release_reactant.structure[helix_startA[0]][dom] = None
 					release_reactant.structure[bound_loc[0]][bound_loc[1]] = None
 		
-				print release_reactant.full_string()
 		
 				product_set = find_releases(release_reactant)
 				
-#				for complex in product_set:
-#					print complex.full_string()
 				
 				product_sets.append(product_set)
 		
@@ -704,13 +716,13 @@ def split_complex(reactant, split_start, split_end):
 	auto_name += 1
 	
 	return [out1, out2]
-	
-def branch_3way(self, reactant):
+
+def branch_3way(reactant):
 	'''
-	Returns a list of complex sets that can be created through one iteration of
-	a 3 way branch migration reaction (each set consists of the molecules that
-	result from the iteration; more than one molecule may result because branch
-	migration can liberate strands and complexes).
+	Returns a list of reaction pathways that can be created through one 
+	iteration of a 3 way branch migration reaction (more than one molecule may 
+	be produced by a reaction because branch migration can liberate strands and 
+	complexes).
 	'''
 	
 	output_sets = []
@@ -735,6 +747,8 @@ def branch_3way(self, reactant):
 			if (structure[strand_index][domain_index + 1] != None):
 				continue
 			
+			displacing_domain = strand.domains[domain_index + 1]
+			
 			# We now follow the external loop from the starting pair
 			# searching for a strand to displace
 			bound_loc = structure[strand_index][domain_index]
@@ -742,6 +756,7 @@ def branch_3way(self, reactant):
 			# Follow the external loop to the end
 			while True:
 				bound_loc = (bound_loc[0], bound_loc[1] - 1)
+
 				# Check if we've reached the end of the external loop
 				if (bound_loc[1] == -1):
 					# Reached the end
@@ -753,28 +768,37 @@ def branch_3way(self, reactant):
 					
 				# Check to see if this domain is complementary
 				elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]]\
-							.can_pair(domain)):
+							.can_pair(displacing_domain)):
 					# We have found a displacement reaction
 					output_sets.append(do_3way_migration(reactant,
 														 (strand_index, 
-														 domain_index),
+														 domain_index + 1),
 														 bound_loc))
 					
 					
-				# If not, follow the structure
-				else:
-					bound_loc = structure[bound_loc[0]][bound_loc[1]]
+				# follow the structure
+				
+				bound_loc = structure[bound_loc[0]][bound_loc[1]]
 			
+
+	for (strand_index, strand) in enumerate(reactant.strands):
+		for (domain_index, domain) in enumerate(strand.domains):			
 			# Second direction:
+
+			# The starting domain must be anchored
+			if (structure[strand_index][domain_index] == None):
+				continue
 						
 			# The starting domain must have another (displacing) domain 
 			# next to it
-			if ((domain_index - 1) == reactant.strands[strand_index].length):
+			if ((domain_index - 1) == -1):
 				continue
 				
 			# The displacing domain must be free			
 			if (structure[strand_index][domain_index - 1] != None):
 				continue
+				
+			displacing_domain = strand.domains[domain_index - 1]
 			
 			# We now follow the external loop from the starting pair
 			# searching for a strand to displace
@@ -794,21 +818,33 @@ def branch_3way(self, reactant):
 					
 				# Check to see if this domain is complementary
 				elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]]\
-							.can_pair(domain)):
+							.can_pair(displacing_domain)):
 					# We have found a displacement reaction
 					output_sets.append(do_3way_migration(reactant,
 														 (strand_index, 
-														 domain_index),
+														 domain_index - 1),
 														 bound_loc))
 					
 					
-				# If not, follow the structure
-				else:
-					bound_loc = structure[bound_loc[0]][bound_loc[1]]
+				
+				bound_loc = structure[bound_loc[0]][bound_loc[1]]
+				
 	output = []
 	for output_set in output_sets:
 		output.append(ReactionPathway('branch_3way', [reactant], output_set))
+	
+	# Remove any duplicate reactions
+	if (len(output) == 0):
+		return output
 		
+	output.sort()
+	last = output[-1]
+	for i in range(len(output) - 2, -1, -1):
+		if last == output[i]:
+			del output[i]
+		else:
+			last = output[i]
+	
 	return output
 
 
@@ -816,7 +852,7 @@ def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	'''
 	Returns the product set which is the result of a 3-way branch migration
 	reaction where the domain at displacing_loc displaces the domain bound to
-	the domain at displaced_loc.
+	the domain at new_bound_loc.
 	'''
 
 	out_reactant = copy.deepcopy(reactant)
@@ -828,7 +864,7 @@ def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	return find_releases(out_reactant)
 
 
-def branch_4way(self, reactant):
+def branch_4way(reactant):
 	'''
 	Returns a list of complex sets that can be created through one iteration of
 	a 4 way branch migration reaction (each set consists of the molecules that
@@ -841,7 +877,7 @@ def branch_4way(self, reactant):
 	
 	# We loop through all domains
 	for (strand_index, strand) in enumerate(reactant.strands):
-		for (domain_index, domain) in enumerate(reactant.domains):
+		for (domain_index, domain) in enumerate(strand.domains):
 			# Unbound domains can't participate in branch migration
 			if (structure[strand_index][domain_index] == None):
 				continue
@@ -861,7 +897,7 @@ def branch_4way(self, reactant):
 			loc2 = structure[strand_index][domain_index + 1]
 			if (loc2 == None):
 				continue
-			dom2 = reactant.strands[loc2[0]][loc2[1]]
+			dom2 = reactant.strands[loc2[0]].domains[loc2[1]]
 			
 			# Template domain (replaces displaced domain, binds loc1)
 			loc3 = structure[strand_index][domain_index]
@@ -871,14 +907,14 @@ def branch_4way(self, reactant):
 			loc3 = (loc3[0], loc3[1] - 1)
 			if (loc3[1] < 0):
 				continue
-			dom3 = reactant.strands[loc3[0]][loc3[1]]
+			dom3 = reactant.strands[loc3[0]].domains[loc3[1]]
 			
 			# Displaced from template domain (replaces displacing domain, binds
 			#								  loc2)
 			loc4 = structure[loc3[0]][loc3[1]]
 			if (loc4 == None):
 				continue
-			dom4 = reactant.strands[loc4[0]][loc4[1]]
+			dom4 = reactant.strands[loc4[0]].domains[loc4[1]]
 			
 			# Confirm that the domains can in fact pair
 			if not (dom1.can_pair(dom3) and dom2.can_pair(dom4)):
@@ -895,6 +931,18 @@ def branch_4way(self, reactant):
 	output = []
 	for output_set in output_sets:
 		output.append(ReactionPathway('branch_4way', [reactant], output_set))
+	
+	# remove any duplicate reactions	
+	if (len(output) == 0):
+		return output
+		
+	output.sort()
+	last = output[-1]
+	for i in range(len(output) - 2, -1, -1):
+		if last == output[i]:
+			del output[i]
+		else:
+			last = output[i]
 	
 	return output
 	
