@@ -102,6 +102,8 @@ class Enumerator(object):
 		the initial set of complexes. Produces a full list of complexes, resting
 		states, and reactions.
 		"""
+		global MAX_COMPLEX_COUNT
+		global MAX_REACTION_COUNT
 		
 		# List E contains enumerated resting states. Only cross-reactions with
 		# other end states need to be considered for these complexes. These
@@ -146,23 +148,25 @@ class Enumerator(object):
 			self.process_neighborhood(source)
 		
 		# We now consider slow reactions
+		print "considering slow reactions"
 		while len(self._S) > 0:
 			# element is the complex for which we will consider slow reactions
 			element = self._S.pop()
 			slow_reactions = self.get_slow_reactions(element)
+			print "found reactions: ", slow_reactions
 			self._E.append(element)
 			
 			# Find the new complexes which were generated
 			self._B = self.get_new_products(slow_reactions)
-			
+			print "found new products: ", self._B
 			self._reactions.extend(slow_reactions)
 			
 			while len(self._B) > 0:
-				if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
+				if (len(self._E) + len(self._T) + len(self._S) > MAX_COMPLEX_COUNT):
 					logging.error("Too many complexes enumerated!")
 					raise Exception("Too many complexes generated, aborting...")
 				
-				if (len(reactions) > self.MAX_REACTION_COUNT):
+				if (len(self._reactions) > MAX_REACTION_COUNT):
 					logging.error("Too many reactions enumerated!")
 					raise Exception("Too many reactions generated, aborting...")
 			
@@ -198,10 +202,12 @@ class Enumerator(object):
 			N_reactions.extend(curr_reactions)
 			self._N.append(curr_element)
 		
+		print "processing neighborhood, _N= ", self._N
 		# Now we segment the neighborhood into transient and resting states
 		# by finding the strongly connected components
 		segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions)
 		
+		print "processing neighborhood, segmented=", segmented_neighborhood
 		# Resting state complexes are added to S
 		self._S.extend(segmented_neighborhood['resting_state_complexes'])
 		
@@ -311,7 +317,6 @@ class Enumerator(object):
 		
 		global auto_name
 		
-		print "begin segment neighborhood" 
 		# First we initialize the graph variables that will be used for
 		# Tarjan's algorithm
 		
@@ -328,30 +333,22 @@ class Enumerator(object):
 		# Detect which products are actually in the neighborhood	
 		for reaction in reactions:
 			for product in reaction.products:
-				print product
 				product_in_N = False
 				
 				for complex in complexes:
-					print complex
 					if (complex == product):
-						print "confirmed!"
 						product_in_N = True
 						break
 				
-				print "--"
 				# If this product is in the neighborhood, we have an edge
 				if product_in_N:
-					print "piN:", product
 					# We know all these reactions are unimolecular
-					print "adding to: ", reaction.reactants[0]
 					reaction.reactants[0]._outward_edges.append(product)
-				print "--"
 				reaction.reactants[0]._full_outward_edges.extend(reaction.products)
 
 					
 			node._lowlink = -1			
 			
-		print "cps: ", complexes
 		# We now perform Tarjan's algorithm, marking nodes as appropriate
 		for node in complexes:
 			if node._index == -1:
@@ -390,7 +387,6 @@ class Enumerator(object):
 				
 			else:
 				transient_state_complexes.extend(scc)
-		print "end segment neighborhood"
 		return {
 				'resting_states': resting_states, 
 			    'resting_state_complexes': resting_state_complexes,
@@ -402,9 +398,6 @@ class Enumerator(object):
 		Executes an iteration of Tarjan's algorithm (a modified DFS) starting
 		at the given node.
 		"""
-		print "tn: ",node
-		print "tni: ",node._index
-		print "tnoe: ",node._outward_edges
 		# Set this node's tarjan numbers
 		node._index = self._tarjan_index
 		node._lowlink = self._tarjan_index
@@ -414,7 +407,6 @@ class Enumerator(object):
 		
 		# Process all connected nodes, setting lowlink as needed
 		for next in node._outward_edges:
-			print "tnext: ", next
 			if next._index == -1:
 				self.tarjans(next)
 				node._lowlink = min(node._lowlink, next._lowlink)
