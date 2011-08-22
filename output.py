@@ -7,18 +7,13 @@
 
 import copy
 import utils
+from reactions import ReactionPathway, auto_name
 import reactions
 import json
 import subprocess
+import sets
 
 
-text_output_functions = {
-						'legacy': output_legacy,
-						'json': output_json
-   					    }
-graph_output_functions = {
-						 'graph': output_graph
-						 }
 
 def condense_resting_states(enumerator):
 	"""
@@ -40,12 +35,13 @@ def condense_resting_states(enumerator):
 	side.
 	"""
 	complexes = enumerator.complexes
-	reactions = enumerator.reactions
+	reactions = enumerator.reactions[:]
 	resting_states = enumerator.resting_states
 	
 	new_complexes = []
-	new_reactions = reactions[:]
+	new_reactions = []
 	
+	print "Reactions: ", len(reactions)
 	
 	# First we need to mark resting state complexes
 	for complex in complexes:
@@ -68,44 +64,53 @@ def condense_resting_states(enumerator):
 		reagent_reactions = []
 		product_reactions = []
 		
+		reactions_copy = reactions[:]
 		# We loop through the reactions and segment them into those that have
 		# the complex as either a reagent or a product (can only be at most
 		# one because the reactions are normalized)
 		for reaction in reactions:
 			reaction.normalize()
-			if complex in reaction.reagents:
+			if complex in reaction.reactants:
 				reagent_reactions.append(reaction)
-			else if complex in reaction.products:
+				reactions_copy.remove(reaction)
+			elif complex in reaction.products:
 				product_reactions.append(reaction)
+				reactions_copy.remove(reaction)
+
+		reactions = reactions_copy
 		
+
+	
 		
 		# We now loop over the reactions with complex as a reagent
 		for reaction in reagent_reactions:
 			# Count how many times complex appears
 			counter = 0
-			for reagent in reaction.reagents:
+			for reagent in reaction.reactants:
 				if reagent == complex:
 					counter += 1
 			
 			# We need to make a new reaction for every reaction producing complex
 			for reaction2 in product_reactions:
 				new_react_reagents = []
-				new_react_reagents.extend(reaction.reagents)
+				new_react_reagents.extend(reaction.reactants)
 				new_react_products = []
 				new_react_products.extend(reaction.products)
 				
 				for i in range(counter):
-					new_react_reagents.remove(complex)
-					new_react_reagents.extend(reaction2.reagents)
+					new_react_reagents.extend(reaction2.reactants)
 					new_react_products.extend(reaction2.products)
-		
-			new_react = ReactionPathway(str(auto_name), new_react_reagents,
+					new_react_products.remove(complex)
+					new_react_reagents.remove(complex)
+				
+				new_react = ReactionPathway(str(reactions.auto_name), new_react_reagents,
 										new_react_products)
-			new_reactions.append(new_react)
+				new_reactions.append(new_react)
 			# Now that this reaction has been replaced, we remove it from the
 			# reaction list
-			new_reactions.remove(reaction)
-		
+			#new_reactions.remove(reaction)
+			
+
 		# Now we do the same for the reactions with complex as a product
 		for reaction in product_reactions:
 			# Count how many times complex appears
@@ -114,53 +119,64 @@ def condense_resting_states(enumerator):
 				if reagent == complex:
 					counter += 1
 			
-		# We now loop over the reactions with complex as a reagent
-		for reaction in reagent_reactions:
-			# Count how many times complex appears
-			counter = 0
-			for reagent in reaction.reagents:
-				if reagent == complex:
-					counter += 1
-			
-			# We need to make a new reaction for every reaction producing complex
-			for reaction2 in product_reactions:
+			# We need to make a new reaction for every reaction taking complex
+			for reaction2 in reagent_reactions:
 				new_react_reagents = []
-				new_react_reagents.extend(reaction.reagents)
+				new_react_reagents.extend(reaction.reactants)
 				new_react_products = []
-				new_react_products.extend(reaction.products)
-				
+				new_react_products.extend(reaction.products)				
 				for i in range(counter):
-					new_react_reagents.remove(complex)
-					new_react_reagents.extend(reaction2.reagents)
+					new_react_reagents.extend(reaction2.reactants)
 					new_react_products.extend(reaction2.products)
-		
-			new_react = ReactionPathway(str(auto_name), new_react_reagents,
+					new_react_products.remove(complex)
+					new_react_reagents.remove(complex)
+				
+				new_react = ReactionPathway(str(reactions.auto_name), new_react_reagents,
 										new_react_products)
-			new_reactions.append(new_react)
+				new_reactions.append(new_react)
 			# Now that this reaction has been replaced, we remove it from the
 			# reaction list
-			new_reactions.remove(reaction)
-			
-		reactions = new_reactions[:]
+			#new_reactions.remove(reaction)
+
+		#reactions = new_reactions[:]
+		reactions.extend(new_reactions)
 		new_reactions = []
-	
-	new_reactions = []
+		
+		for reaction in reactions:
+			if reaction in reagent_reactions:
+				print "error2"
+			if reaction in product_reactions:
+				print "error3"
+			if complex in reaction.reactants:
+				print 'error!'
+			if complex in reaction.products:
+				print 'error!'
+					
+					
+	new_reactions = sets.Set()
 	for reaction in reactions:
+		if (len(reaction.reactants) == 0) and (len(reaction.products) == 0):
+			continue
 		new_reagents = []
-		for reagent in reaction.reagents:
+		for reagent in reaction.reactants:
 			new_reagents.append(reagent._resting_state)
 			
 		new_products = []
-		for product in reaction.products:
+		for product in reaction.products:			
 			new_products.append(product._resting_state)
 			
-		new_reactions.append(ReactionPathway(str(auto_name), new_reagents, new_products)
-		
+		new_reactions.add(ReactionPathway('condensed', new_reagents, new_products))
+
+
+	print "New reactions: ", len(new_reactions)
+
+	for reaction in new_reactions:
+		print reaction, reaction.reactants, reaction.products
 	output = {
 				'resting_states': resting_states[:],
-				'reactions': new_reactions
+				'reactions': list(new_reactions)
 			 }
-	
+	assert False
 	return output
 
 
@@ -180,27 +196,41 @@ def output_legacy(enumerator, filename, output_condensed = False):
 	output_file = open(filename, 'w')
 	output_file.write("###### Enumerated Output ######\n")
 	output_file.write("\n\n# Domains \n")
-	for domain in enumerator.domains:
+	for domain in sorted(enumerator.domains):
 		output_file.write("sequence " + domain.name + " = : " + str(domain.length) + "\n")
 	output_file.write("###############################\n")
 	output_file.write("\n\n# Resting-state Complexes \n")
-	for complex in resting_complexes:
+	for complex in sorted(resting_complexes):
 		output_file.write(str(complex) + "\n")
+		names = []
+		for strand in complex.strands:
+			names.append(strand.name)
+		strands_string = " + ".join(names)
+		output_file.write(strands_string + "\n")
+		output_file.write(str(complex.dot_paren_string()) + "\n")
+		output_file.write("\n")
 	output_file.write("###############################\n")
 	output_file.write("\n\n# Resting-state sets \n")
-	for resting_state in resting_states:
+	for resting_state in sorted(resting_states):
 		output_file.write("state " + resting_state.name + " = : ")
-		output_file.write(resting_state.complexes[0])
+		output_file.write(str(resting_state.complexes[0]))
 		for complex in resting_state.complexes[1:]:
 			output_file.write(" + complex")
 		output_file.write("\n")
 	output_file.write("###############################\n")
 	output_file.write("\n\n# Fast (Transition) Complexes \n")
-	for complex in transient_complexes:
-		output_file.write(str(comp) + "\n")
+	for complex in sorted(transient_complexes):
+		output_file.write(str(complex) + "\n")
+		names = []
+		for strand in complex.strands:
+			names.append(strand.name)
+		strands_string = " + ".join(names)
+		output_file.write(strands_string + "\n")
+		output_file.write(str(complex.dot_paren_string()) + "\n")
+		output_file.write("\n")
 	output_file.write("###############################\n")
 	output_file.write("\n\n# Reactions \n")
-	for reaction in reactions:
+	for reaction in sorted(reactions):
 		reactants = reaction.reactants
 		products = reaction.products
 		reac_string_list = [reactants[0].name]
@@ -208,7 +238,7 @@ def output_legacy(enumerator, filename, output_condensed = False):
 			reac_string_list.append(" + " + reactant.name)
 		reac_string_list.append(" -> ")
 		reac_string_list.append(products[0].name)
-		for product in products:
+		for product in products[1:]:
 			reac_string_list.append(" + " + product.name)
 		reac_string_list.append("\n")
 		reac_string = ''.join(reac_string_list)
@@ -218,7 +248,7 @@ def output_legacy(enumerator, filename, output_condensed = False):
 		output_file.write("\n\n# Condensed Reactions \n")
 		condensed = condense_resting_states(enumerator)
 		new_reactions = condensed['reactions']
-		for reaction in new_reactions:
+		for reaction in sorted(new_reactions):
 			reactants = reaction.reactants
 			products = reaction.products
 			reac_string_list = [reactants[0].name]
@@ -282,7 +312,7 @@ def output_json(enumerator, filename, output_condensed = False):
 		temp_complex['structure'] = complex.structure
 		resting_complexes_out.append(temp_complex)
 		
-	object_out['resting_complexes'] = resting_complexes
+	object_out['resting_complexes'] = resting_complexes_out
 		
 	transient_complexes = enumerator.transient_complexes
 	transient_complexes_out = []
@@ -306,11 +336,25 @@ def output_json(enumerator, filename, output_condensed = False):
 		for complex in resting_state.complexes:
 			temp_complexes.append(complex.name)
 		temp_resting_state['name'] = resting_state.name
-		temp_resting_state['complexes'] = resting_state.complexes
+		temp_resting_state['complexes'] = temp_complexes
 		resting_states_out.append(temp_resting_state)
 		
 	object_out['resting_states'] = resting_states_out
-		
+
+	initial_complexes = enumerator.initial_complexes
+	initial_complexes_out = []
+	for complex in initial_complexes:
+		temp_complex = {}
+		temp_complex['name'] = complex.name
+		temp_strands = []
+		for strand in complex.strands:
+			temp_strands.append(strand.name)
+		temp_complex['strands'] = temp_strands
+		temp_complex['structure'] = complex.structure
+		initial_complexes_out.append(temp_complex)
+
+	object_out['initial_complexes'] = initial_complexes_out
+
 	reactions = enumerator.reactions
 	reactions_out = []
 	for reaction in reactions:
@@ -321,7 +365,7 @@ def output_json(enumerator, filename, output_condensed = False):
 			temp_reactants.append(reactant.name)
 		temp_reaction['reactants'] = temp_reactants
 		temp_products = []
-		for product in temp_products:
+		for product in reaction.products:
 			temp_products.append(product.name)
 		temp_reaction['products'] = temp_products
 		reactions_out.append(temp_reaction)
@@ -384,9 +428,9 @@ def output_full_graph(enumerator, filename):
 		flag = False
 		
 		# Check to see if we've already seen this strand ordering
-		for (i, perm) in strand_cyclic_permutations:
+		for (i, perm) in enumerate(strand_cyclic_permutations):
 			if perm == complex.strands:
-				clusters[i].add(complex)
+				clusters[i].append(complex)
 				flag = True
 				break
 				
@@ -400,9 +444,9 @@ def output_full_graph(enumerator, filename):
 		flag = False
 		
 		# Check to see if we've already seen this strand ordering
-		for (i, perm) in strand_cyclic_permutations:
+		for (i, perm) in enumerate(strand_cyclic_permutations):
 			if perm == complex.strands:
-				clusters[i].add(complex)
+				clusters[i].append(complex)
 				flag = True
 				break
 				
@@ -430,25 +474,25 @@ def output_full_graph(enumerator, filename):
 													complex.dot_paren_string(), 
 													extra_params
 													))
-		fout.write("{\n")
+		fout.write("}\n")
 		
 	# We now draw the reactions. If there is one product and one reagent, then
 	# we just draw an edge between the two. Otherwise we create a reaction node.
 	for (i, reaction) in enumerate(enumerator.reactions):
-		if (len(reaction.products) == 1) and (len(reaction.reagents) == 1):
-			fout.write("%s -> %s\n" % (reaction.reagents[0].name,
-									   reaction.products[0].name)
+		if (len(reaction.products) == 1) and (len(reaction.reactants) == 1):
+			fout.write("%s -> %s\n" % (reaction.reactants[0].name,
+									   reaction.products[0].name))
 		else:
-			reaction_label = "R_%d" + i
+			reaction_label = "R_%d" % i
 			# We label unimolecular reactions blue, and other reactions red
 			reaction_color = "red"
-			if len(reaction.reagents) == 1:
+			if len(reaction.reactants) == 1:
 				reaction_color = "blue"
 			fout.write('%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=%s];\n' %
-							reaction_label, reaction_color)
+							(reaction_label, reaction_color))
 			
 			# We now make all the edges needed
-			for reagent in reaction.reagents:
+			for reagent in reaction.reactants:
 				fout.write("%s -> %s\n" % (reagent.name, reaction_label))
 				
 			for product in reaction.products:
@@ -460,7 +504,7 @@ def output_full_graph(enumerator, filename):
 	
 	# Create the output file.
 	# TODO: make 'pdf' configurable
-	subprocess.call(["dot", "-O", "-Tpdf", "%s.dot" % filename])
+	subprocess.call(["dot", "-O", "-Teps", "%s.dot" % filename])
 	
 def output_condensed_graph(enumerator, filename):
 	"""
@@ -485,10 +529,10 @@ def output_condensed_graph(enumerator, filename):
 		fout.write('%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];\n' % reaction_label)
 		
 		for reagent in reaction.reagents:
-			fout.write("%s -> %s\n" % (reagent.name, reaction_label)
+			fout.write("%s -> %s\n" % (reagent.name, reaction_label))
 			
 		for product in reaction.products:
-			fout.write("%s -> %s\n" % (reaction_label, product.name)
+			fout.write("%s -> %s\n" % (reaction_label, product.name))
 			
 	fout.write("}\n")
 	fout.close()
@@ -499,3 +543,11 @@ def output_condensed_graph(enumerator, filename):
 	
 
 	
+text_output_functions = {
+	'legacy': output_legacy,
+	'json': output_json
+}
+
+graph_output_functions = {
+	'graph': output_graph
+}

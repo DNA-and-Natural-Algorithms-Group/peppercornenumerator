@@ -465,7 +465,7 @@ class Complex(object):
 				else:
 					(b_strand, b_domain) = el
 					if ((b_strand > strand_num) or
-						((b_strand == strand_num) and (b_dom > dom_num))):
+						((b_strand == strand_num) and (b_domain > dom_num))):
 						out.append('(')
 					else:
 						out.append(')')
@@ -485,6 +485,7 @@ class RestingState(object):
 		Constructor for RestingState objects. Takes a (unique) name and list of
 		complexes.
 		"""
+		complexes.sort()
 		self._complexes = complexes
 		self._name = name
 		
@@ -500,4 +501,10 @@ class RestingState(object):
 		return (self.complexes == other.complexes)
 		
 	def __cmp__(self, other):
-		return cmp(self.name, other.name)
+		return cmp(self.complexes, other.complexes)
+
+	def __str__(self):
+		return self.name
+
+	def __repr__(self):
+		return "RestingState(%s: %s)" % (self.name, str(self.complexes))

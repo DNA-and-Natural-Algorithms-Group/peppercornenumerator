@@ -1,0 +1,644 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>output &mdash; Enumerator v2 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Enumerator v2 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for output</h1><div class="highlight"><pre>
+<span class="c">#</span>
+<span class="c">#  output.py</span>
+<span class="c">#  EnumeratorProject</span>
+<span class="c">#</span>
+<span class="c">#  Created by Karthik Sarma on 6/21/10.</span>
+<span class="c">#</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+<span class="kn">from</span> <span class="nn">reactions</span> <span class="kn">import</span> <span class="n">ReactionPathway</span><span class="p">,</span> <span class="n">auto_name</span>
+<span class="kn">import</span> <span class="nn">reactions</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">sets</span>
+
+
+
+<div class="viewcode-block" id="condense_resting_states"><a class="viewcode-back" href="../index.html#output.condense_resting_states">[docs]</a><span class="k">def</span> <span class="nf">condense_resting_states</span><span class="p">(</span><span class="n">enumerator</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Outputs a set of &#39;resting state complexes&#39; and reactions between them</span>
+<span class="sd">	which represent a version of the reaction graph in which transient</span>
+<span class="sd">	complexes have been removed and resting states are represented by a single</span>
+<span class="sd">	node.</span>
+<span class="sd">	</span>
+<span class="sd">	More specifically, for every complex C, if C is a transient complex,</span>
+<span class="sd">	for every reaction R1 containing C, we first ensure that C only appears on </span>
+<span class="sd">	one side of the reaction by normalizing the reaction. Then, if C is on</span>
+<span class="sd">	the left hand side of the reaction, for every reaction R2 producing C,</span>
+<span class="sd">	we create a new reaction with reagent set equal to the union of the reagents</span>
+<span class="sd">	of R1 and R2 with C removed, and a new reaction with product set equal to </span>
+<span class="sd">	the union of the products of R1 and R2 (Note that if more than one C is</span>
+<span class="sd">	required, then we multiply reaction R2 by the number of Cs required).</span>
+<span class="sd">	</span>
+<span class="sd">	We perform a similar operation for reactions R1 with C on the right hand</span>
+<span class="sd">	side.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">complexes</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">complexes</span>
+	<span class="n">reactions</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">reactions</span><span class="p">[:]</span>
+	<span class="n">resting_states</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">resting_states</span>
+	
+	<span class="n">new_complexes</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">new_reactions</span> <span class="o">=</span> <span class="p">[]</span>
+	
+	<span class="k">print</span> <span class="s">&quot;Reactions: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">reactions</span><span class="p">)</span>
+	
+	<span class="c"># First we need to mark resting state complexes</span>
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">complexes</span><span class="p">:</span>
+		<span class="nb">complex</span><span class="o">.</span><span class="n">_is_resting_state</span> <span class="o">=</span> <span class="bp">False</span>
+	
+	<span class="k">for</span> <span class="n">resting_state</span> <span class="ow">in</span> <span class="n">resting_states</span><span class="p">:</span>
+		<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">resting_state</span><span class="o">.</span><span class="n">complexes</span><span class="p">:</span>
+			<span class="nb">complex</span><span class="o">.</span><span class="n">_is_resting_state</span> <span class="o">=</span> <span class="bp">True</span>
+			<span class="nb">complex</span><span class="o">.</span><span class="n">_resting_state</span> <span class="o">=</span> <span class="n">resting_state</span>
+			<span class="n">new_complexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span>
+			
+	
+	<span class="c"># Now we iterate through the complexes and remove the transient states</span>
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">complexes</span><span class="p">:</span>
+	
+		<span class="c"># We only want to eliminate transient states</span>
+		<span class="k">if</span> <span class="p">(</span><span class="nb">complex</span><span class="o">.</span><span class="n">_is_resting_state</span><span class="p">):</span>
+			<span class="k">continue</span>
+			
+		<span class="n">reagent_reactions</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="n">product_reactions</span> <span class="o">=</span> <span class="p">[]</span>
+		
+		<span class="n">reactions_copy</span> <span class="o">=</span> <span class="n">reactions</span><span class="p">[:]</span>
+		<span class="c"># We loop through the reactions and segment them into those that have</span>
+		<span class="c"># the complex as either a reagent or a product (can only be at most</span>
+		<span class="c"># one because the reactions are normalized)</span>
+		<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">reactions</span><span class="p">:</span>
+			<span class="n">reaction</span><span class="o">.</span><span class="n">normalize</span><span class="p">()</span>
+			<span class="k">if</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+				<span class="n">reagent_reactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reaction</span><span class="p">)</span>
+				<span class="n">reactions_copy</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">reaction</span><span class="p">)</span>
+			<span class="k">elif</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+				<span class="n">product_reactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reaction</span><span class="p">)</span>
+				<span class="n">reactions_copy</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">reaction</span><span class="p">)</span>
+
+		<span class="n">reactions</span> <span class="o">=</span> <span class="n">reactions_copy</span>
+		
+
+	
+		
+		<span class="c"># We now loop over the reactions with complex as a reagent</span>
+		<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">reagent_reactions</span><span class="p">:</span>
+			<span class="c"># Count how many times complex appears</span>
+			<span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+			<span class="k">for</span> <span class="n">reagent</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">reagent</span> <span class="o">==</span> <span class="nb">complex</span><span class="p">:</span>
+					<span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+			
+			<span class="c"># We need to make a new reaction for every reaction producing complex</span>
+			<span class="k">for</span> <span class="n">reaction2</span> <span class="ow">in</span> <span class="n">product_reactions</span><span class="p">:</span>
+				<span class="n">new_react_reagents</span> <span class="o">=</span> <span class="p">[]</span>
+				<span class="n">new_react_reagents</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span>
+				<span class="n">new_react_products</span> <span class="o">=</span> <span class="p">[]</span>
+				<span class="n">new_react_products</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">)</span>
+				
+				<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">counter</span><span class="p">):</span>
+					<span class="n">new_react_reagents</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction2</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span>
+					<span class="n">new_react_products</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction2</span><span class="o">.</span><span class="n">products</span><span class="p">)</span>
+					<span class="n">new_react_products</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span>
+					<span class="n">new_react_reagents</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span>
+				
+				<span class="n">new_react</span> <span class="o">=</span> <span class="n">ReactionPathway</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">reactions</span><span class="o">.</span><span class="n">auto_name</span><span class="p">),</span> <span class="n">new_react_reagents</span><span class="p">,</span>
+										<span class="n">new_react_products</span><span class="p">)</span>
+				<span class="n">new_reactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_react</span><span class="p">)</span>
+			<span class="c"># Now that this reaction has been replaced, we remove it from the</span>
+			<span class="c"># reaction list</span>
+			<span class="c">#new_reactions.remove(reaction)</span>
+			
+
+		<span class="c"># Now we do the same for the reactions with complex as a product</span>
+		<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">product_reactions</span><span class="p">:</span>
+			<span class="c"># Count how many times complex appears</span>
+			<span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+			<span class="k">for</span> <span class="n">reagent</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">reagent</span> <span class="o">==</span> <span class="nb">complex</span><span class="p">:</span>
+					<span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+			
+			<span class="c"># We need to make a new reaction for every reaction taking complex</span>
+			<span class="k">for</span> <span class="n">reaction2</span> <span class="ow">in</span> <span class="n">reagent_reactions</span><span class="p">:</span>
+				<span class="n">new_react_reagents</span> <span class="o">=</span> <span class="p">[]</span>
+				<span class="n">new_react_reagents</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span>
+				<span class="n">new_react_products</span> <span class="o">=</span> <span class="p">[]</span>
+				<span class="n">new_react_products</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">)</span>				
+				<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">counter</span><span class="p">):</span>
+					<span class="n">new_react_reagents</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction2</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span>
+					<span class="n">new_react_products</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction2</span><span class="o">.</span><span class="n">products</span><span class="p">)</span>
+					<span class="n">new_react_products</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span>
+					<span class="n">new_react_reagents</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span>
+				
+				<span class="n">new_react</span> <span class="o">=</span> <span class="n">ReactionPathway</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">reactions</span><span class="o">.</span><span class="n">auto_name</span><span class="p">),</span> <span class="n">new_react_reagents</span><span class="p">,</span>
+										<span class="n">new_react_products</span><span class="p">)</span>
+				<span class="n">new_reactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_react</span><span class="p">)</span>
+			<span class="c"># Now that this reaction has been replaced, we remove it from the</span>
+			<span class="c"># reaction list</span>
+			<span class="c">#new_reactions.remove(reaction)</span>
+
+		<span class="c">#reactions = new_reactions[:]</span>
+		<span class="n">reactions</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">new_reactions</span><span class="p">)</span>
+		<span class="n">new_reactions</span> <span class="o">=</span> <span class="p">[]</span>
+		
+		<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">reactions</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">reagent_reactions</span><span class="p">:</span>
+				<span class="k">print</span> <span class="s">&quot;error2&quot;</span>
+			<span class="k">if</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">product_reactions</span><span class="p">:</span>
+				<span class="k">print</span> <span class="s">&quot;error3&quot;</span>
+			<span class="k">if</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+				<span class="k">print</span> <span class="s">&#39;error!&#39;</span>
+			<span class="k">if</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+				<span class="k">print</span> <span class="s">&#39;error!&#39;</span>
+					
+					
+	<span class="n">new_reactions</span> <span class="o">=</span> <span class="n">sets</span><span class="o">.</span><span class="n">Set</span><span class="p">()</span>
+	<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">reactions</span><span class="p">:</span>
+		<span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+			<span class="k">continue</span>
+		<span class="n">new_reagents</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">reagent</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+			<span class="n">new_reagents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reagent</span><span class="o">.</span><span class="n">_resting_state</span><span class="p">)</span>
+			
+		<span class="n">new_products</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>			
+			<span class="n">new_products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">_resting_state</span><span class="p">)</span>
+			
+		<span class="n">new_reactions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ReactionPathway</span><span class="p">(</span><span class="s">&#39;condensed&#39;</span><span class="p">,</span> <span class="n">new_reagents</span><span class="p">,</span> <span class="n">new_products</span><span class="p">))</span>
+
+
+	<span class="k">print</span> <span class="s">&quot;New reactions: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_reactions</span><span class="p">)</span>
+
+	<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">new_reactions</span><span class="p">:</span>
+		<span class="k">print</span> <span class="n">reaction</span><span class="p">,</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">,</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span>
+	<span class="n">output</span> <span class="o">=</span> <span class="p">{</span>
+				<span class="s">&#39;resting_states&#39;</span><span class="p">:</span> <span class="n">resting_states</span><span class="p">[:],</span>
+				<span class="s">&#39;reactions&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">new_reactions</span><span class="p">)</span>
+			 <span class="p">}</span>
+	<span class="k">assert</span> <span class="bp">False</span>
+	<span class="k">return</span> <span class="n">output</span>
+
+</div>
+<div class="viewcode-block" id="output_legacy"><a class="viewcode-back" href="../index.html#output.output_legacy">[docs]</a><span class="k">def</span> <span class="nf">output_legacy</span><span class="p">(</span><span class="n">enumerator</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">output_condensed</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Legacy text-based output scheme similar to that used in the original </span>
+<span class="sd">	enumerator. Designed to be simultaneously parsable and human-readable.</span>
+<span class="sd">	Supports output of condensed graph in addition to the full graph. Does</span>
+<span class="sd">	not support strands.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">complexes</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">complexes</span>
+	<span class="n">transient_complexes</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">transient_complexes</span>
+	<span class="n">resting_complexes</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">resting_complexes</span>
+	<span class="n">reactions</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">reactions</span>
+	<span class="n">resting_states</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">resting_states</span>
+	
+	<span class="n">output_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;###### Enumerated Output ######</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s"># Domains </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">enumerator</span><span class="o">.</span><span class="n">domains</span><span class="p">):</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;sequence &quot;</span> <span class="o">+</span> <span class="n">domain</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s">&quot; = : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">length</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;###############################</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s"># Resting-state Complexes </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">resting_complexes</span><span class="p">):</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		<span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">strand</span> <span class="ow">in</span> <span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">:</span>
+			<span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strand</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">strands_string</span> <span class="o">=</span> <span class="s">&quot; + &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">strands_string</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">complex</span><span class="o">.</span><span class="n">dot_paren_string</span><span class="p">())</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;###############################</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s"># Resting-state sets </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">resting_state</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">resting_states</span><span class="p">):</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;state &quot;</span> <span class="o">+</span> <span class="n">resting_state</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s">&quot; = : &quot;</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">resting_state</span><span class="o">.</span><span class="n">complexes</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+		<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">resting_state</span><span class="o">.</span><span class="n">complexes</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+			<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot; + complex&quot;</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;###############################</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s"># Fast (Transition) Complexes </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">transient_complexes</span><span class="p">):</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		<span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">strand</span> <span class="ow">in</span> <span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">:</span>
+			<span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strand</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">strands_string</span> <span class="o">=</span> <span class="s">&quot; + &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">strands_string</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">complex</span><span class="o">.</span><span class="n">dot_paren_string</span><span class="p">())</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;###############################</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s"># Reactions </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">reactions</span><span class="p">):</span>
+		<span class="n">reactants</span> <span class="o">=</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span>
+		<span class="n">products</span> <span class="o">=</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span>
+		<span class="n">reac_string_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">reactants</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+		<span class="k">for</span> <span class="n">reactant</span> <span class="ow">in</span> <span class="n">reactants</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+			<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot; + &quot;</span> <span class="o">+</span> <span class="n">reactant</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot; -&gt; &quot;</span><span class="p">)</span>
+		<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">products</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">products</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+			<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot; + &quot;</span> <span class="o">+</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		<span class="n">reac_string</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">reac_string_list</span><span class="p">)</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">reac_string</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;###############################</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">output_condensed</span><span class="p">):</span>
+		<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s"># Condensed Reactions </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		<span class="n">condensed</span> <span class="o">=</span> <span class="n">condense_resting_states</span><span class="p">(</span><span class="n">enumerator</span><span class="p">)</span>
+		<span class="n">new_reactions</span> <span class="o">=</span> <span class="n">condensed</span><span class="p">[</span><span class="s">&#39;reactions&#39;</span><span class="p">]</span>
+		<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">new_reactions</span><span class="p">):</span>
+			<span class="n">reactants</span> <span class="o">=</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span>
+			<span class="n">products</span> <span class="o">=</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span>
+			<span class="n">reac_string_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">reactants</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+			<span class="k">for</span> <span class="n">reactant</span> <span class="ow">in</span> <span class="n">reactants</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+				<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot; + &quot;</span> <span class="o">+</span> <span class="n">reactant</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+			<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot; -&gt; &quot;</span><span class="p">)</span>
+			<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">products</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+			<span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">products</span><span class="p">:</span>
+				<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot; + &quot;</span> <span class="o">+</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+			<span class="n">reac_string_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+			<span class="n">reac_string</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">reac_string_list</span><span class="p">)</span>
+			<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">reac_string</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;###############################</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">output_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</div>
+<span class="n">output_legacy</span><span class="o">.</span><span class="n">supports_condensed</span> <span class="o">=</span> <span class="bp">True</span>		
+
+<div class="viewcode-block" id="output_json"><a class="viewcode-back" href="../index.html#output.output_json">[docs]</a><span class="k">def</span> <span class="nf">output_json</span><span class="p">(</span><span class="n">enumerator</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">output_condensed</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	JSON-based output schema intended to be easily machine parsable. Uses</span>
+<span class="sd">	python&#39;s JSON serialization libraries.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	
+	<span class="n">object_out</span> <span class="o">=</span> <span class="p">{}</span>
+	
+	<span class="n">domains</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">domains</span>
+	<span class="n">domains_out</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
+		<span class="n">temp_domain</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">temp_domain</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">name</span>
+		<span class="n">temp_domain</span><span class="p">[</span><span class="s">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">length</span>
+		<span class="n">temp_domain</span><span class="p">[</span><span class="s">&#39;is_complement&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">is_complement</span>
+		<span class="k">if</span> <span class="n">domain</span><span class="o">.</span><span class="n">sequence</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="n">temp_domain</span><span class="p">[</span><span class="s">&#39;sequence&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">sequence</span>
+		<span class="n">domains_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_domain</span><span class="p">)</span>
+		
+	<span class="n">object_out</span><span class="p">[</span><span class="s">&#39;domains&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">domains_out</span>
+		
+	<span class="n">strands</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">strands</span>
+	<span class="n">strands_out</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">strand</span> <span class="ow">in</span> <span class="n">strands</span><span class="p">:</span>
+		<span class="n">temp_strand</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">temp_strand</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">strand</span><span class="o">.</span><span class="n">name</span>
+		<span class="n">temp_domains</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">strand</span><span class="o">.</span><span class="n">domains</span><span class="p">:</span>
+			<span class="n">temp_domains</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">temp_strand</span><span class="p">[</span><span class="s">&#39;domains&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_domains</span>
+		<span class="n">strands_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_strand</span><span class="p">)</span>
+		
+	<span class="n">object_out</span><span class="p">[</span><span class="s">&#39;strands&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">strands_out</span>
+		
+	<span class="n">resting_complexes</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">resting_complexes</span>
+	<span class="n">resting_complexes_out</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">resting_complexes</span><span class="p">:</span>
+		<span class="n">temp_complex</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span><span class="o">.</span><span class="n">name</span>
+		<span class="n">temp_strands</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">strand</span> <span class="ow">in</span> <span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">:</span>
+			<span class="n">temp_strands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strand</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;strands&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_strands</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;structure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span><span class="o">.</span><span class="n">structure</span>
+		<span class="n">resting_complexes_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_complex</span><span class="p">)</span>
+		
+	<span class="n">object_out</span><span class="p">[</span><span class="s">&#39;resting_complexes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resting_complexes_out</span>
+		
+	<span class="n">transient_complexes</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">transient_complexes</span>
+	<span class="n">transient_complexes_out</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">transient_complexes</span><span class="p">:</span>
+		<span class="n">temp_complex</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span><span class="o">.</span><span class="n">name</span>
+		<span class="n">temp_strands</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">strand</span> <span class="ow">in</span> <span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">:</span>
+			<span class="n">temp_strands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strand</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;strands&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_strands</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;structure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span><span class="o">.</span><span class="n">structure</span>
+		<span class="n">transient_complexes_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_complex</span><span class="p">)</span>
+	
+	<span class="n">object_out</span><span class="p">[</span><span class="s">&#39;transient_complexes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">transient_complexes_out</span>
+	
+	<span class="n">resting_states</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">resting_states</span>
+	<span class="n">resting_states_out</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">resting_state</span> <span class="ow">in</span> <span class="n">resting_states</span><span class="p">:</span>
+		<span class="n">temp_resting_state</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">temp_complexes</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">resting_state</span><span class="o">.</span><span class="n">complexes</span><span class="p">:</span>
+			<span class="n">temp_complexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">temp_resting_state</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resting_state</span><span class="o">.</span><span class="n">name</span>
+		<span class="n">temp_resting_state</span><span class="p">[</span><span class="s">&#39;complexes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_complexes</span>
+		<span class="n">resting_states_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_resting_state</span><span class="p">)</span>
+		
+	<span class="n">object_out</span><span class="p">[</span><span class="s">&#39;resting_states&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resting_states_out</span>
+
+	<span class="n">initial_complexes</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">initial_complexes</span>
+	<span class="n">initial_complexes_out</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">initial_complexes</span><span class="p">:</span>
+		<span class="n">temp_complex</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span><span class="o">.</span><span class="n">name</span>
+		<span class="n">temp_strands</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">strand</span> <span class="ow">in</span> <span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">:</span>
+			<span class="n">temp_strands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strand</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;strands&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_strands</span>
+		<span class="n">temp_complex</span><span class="p">[</span><span class="s">&#39;structure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span><span class="o">.</span><span class="n">structure</span>
+		<span class="n">initial_complexes_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_complex</span><span class="p">)</span>
+
+	<span class="n">object_out</span><span class="p">[</span><span class="s">&#39;initial_complexes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">initial_complexes_out</span>
+
+	<span class="n">reactions</span> <span class="o">=</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">reactions</span>
+	<span class="n">reactions_out</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">reactions</span><span class="p">:</span>
+		<span class="n">temp_reaction</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">temp_reaction</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reaction</span><span class="o">.</span><span class="n">name</span>
+		<span class="n">temp_reactants</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">reactant</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+			<span class="n">temp_reactants</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reactant</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">temp_reaction</span><span class="p">[</span><span class="s">&#39;reactants&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_reactants</span>
+		<span class="n">temp_products</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+			<span class="n">temp_products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">temp_reaction</span><span class="p">[</span><span class="s">&#39;products&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_products</span>
+		<span class="n">reactions_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_reaction</span><span class="p">)</span>
+		
+	<span class="n">object_out</span><span class="p">[</span><span class="s">&#39;reactions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reactions_out</span>
+	
+	<span class="k">if</span> <span class="n">output_condensed</span><span class="p">:</span>
+		<span class="n">condensed</span> <span class="o">=</span> <span class="n">condense_resting_states</span><span class="p">(</span><span class="n">enumerator</span><span class="p">)</span>
+		<span class="n">reactions</span> <span class="o">=</span> <span class="n">condensed</span><span class="o">.</span><span class="n">reactions</span>
+		<span class="n">reactions_out</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">reactions</span><span class="p">:</span>
+			<span class="n">temp_reaction</span> <span class="o">=</span> <span class="p">{}</span>
+			<span class="n">temp_reaction</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reaction</span><span class="o">.</span><span class="n">name</span>
+			<span class="n">temp_reactants</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="k">for</span> <span class="n">reactant</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+				<span class="n">temp_reactants</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reactant</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+			<span class="n">temp_reaction</span><span class="p">[</span><span class="s">&#39;reactants&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_reactants</span>
+			<span class="n">temp_products</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">temp_products</span><span class="p">:</span>
+				<span class="n">temp_products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+			<span class="n">temp_reaction</span><span class="p">[</span><span class="s">&#39;products&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_products</span>
+			<span class="n">reactions_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_reaction</span><span class="p">)</span>
+		<span class="n">object_out</span><span class="p">[</span><span class="s">&#39;condensed_reactions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reactions_out</span>
+		
+	<span class="n">fout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+	<span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">object_out</span><span class="p">,</span> <span class="n">fout</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+ </div>
+<span class="n">output_json</span><span class="o">.</span><span class="n">supports_condensed</span> <span class="o">=</span> <span class="bp">True</span>
+
+<span class="k">def</span> <span class="nf">output_graph</span><span class="p">(</span><span class="n">enumerator</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">output_condensed</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">output_condensed</span><span class="p">:</span>
+		<span class="n">output_full_graph</span><span class="p">(</span><span class="n">enumerator</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">output_condensed_graph</span><span class="p">(</span><span class="n">enumerator</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+	
+<span class="n">output_graph</span><span class="o">.</span><span class="n">supports_condensed</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="output_full_graph"><a class="viewcode-back" href="../index.html#output.output_full_graph">[docs]</a><span class="k">def</span> <span class="nf">output_full_graph</span><span class="p">(</span><span class="n">enumerator</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Products graphical output representing the full reaction graph, with all</span>
+<span class="sd">	reactions and complexes. Transient and resting states are differentiated</span>
+<span class="sd">	by color.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">fout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span> <span class="o">+</span> <span class="s">&quot;.dot&quot;</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;digraph G {</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;size=&quot;7,10&quot;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;page=&quot;8.5,11&quot;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;node[width=0.25,height=0.375,fontsize=9]</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	
+	<span class="c"># We need to determine the complex clusters for the graph. Complexes with</span>
+	<span class="c"># the same cyclic permutation of strands are placed in the same cluster.</span>
+	
+	<span class="n">strand_cyclic_permutations</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">clusters</span> <span class="o">=</span> <span class="p">[]</span>
+	
+	<span class="c"># We loop through all complexes</span>
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">transient_complexes</span><span class="p">:</span>
+		<span class="nb">complex</span><span class="o">.</span><span class="n">_resting</span> <span class="o">=</span> <span class="bp">False</span>
+		<span class="n">flag</span> <span class="o">=</span> <span class="bp">False</span>
+		
+		<span class="c"># Check to see if we&#39;ve already seen this strand ordering</span>
+		<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">perm</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">strand_cyclic_permutations</span><span class="p">):</span>
+			<span class="k">if</span> <span class="n">perm</span> <span class="o">==</span> <span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">:</span>
+				<span class="n">clusters</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span>
+				<span class="n">flag</span> <span class="o">=</span> <span class="bp">True</span>
+				<span class="k">break</span>
+				
+		<span class="c"># If not, we add it</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">flag</span><span class="p">:</span>
+			<span class="n">strand_cyclic_permutations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">)</span>
+			<span class="n">clusters</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">complex</span><span class="p">])</span>
+			
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">enumerator</span><span class="o">.</span><span class="n">resting_complexes</span><span class="p">:</span>
+		<span class="nb">complex</span><span class="o">.</span><span class="n">_resting</span> <span class="o">=</span> <span class="bp">True</span>
+		<span class="n">flag</span> <span class="o">=</span> <span class="bp">False</span>
+		
+		<span class="c"># Check to see if we&#39;ve already seen this strand ordering</span>
+		<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">perm</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">strand_cyclic_permutations</span><span class="p">):</span>
+			<span class="k">if</span> <span class="n">perm</span> <span class="o">==</span> <span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">:</span>
+				<span class="n">clusters</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="p">)</span>
+				<span class="n">flag</span> <span class="o">=</span> <span class="bp">True</span>
+				<span class="k">break</span>
+				
+		<span class="c"># If not, we add it</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">flag</span><span class="p">:</span>
+			<span class="n">strand_cyclic_permutations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="o">.</span><span class="n">strands</span><span class="p">)</span>
+			<span class="n">clusters</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">complex</span><span class="p">])</span>
+	
+	<span class="c"># We now draw the clusters on the graph</span>
+	<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">cluster</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">clusters</span><span class="p">):</span>
+		<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;subgraph cluster</span><span class="si">%d</span><span class="s"> {</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+		<span class="n">strands</span> <span class="o">=</span> <span class="p">[</span><span class="n">cluster</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strands</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+		<span class="k">for</span> <span class="n">strand</span> <span class="ow">in</span> <span class="n">cluster</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strands</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+			<span class="n">strands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot; + &quot;</span><span class="p">)</span>
+			<span class="n">strands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strand</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+		<span class="n">strands_string</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strands</span><span class="p">)</span>
+		<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;label=&quot;</span><span class="si">%s</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">strands_string</span><span class="p">)</span>
+		<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;fontsize=6</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+		<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">cluster</span><span class="p">:</span>
+			<span class="n">extra_params</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+			<span class="k">if</span> <span class="nb">complex</span><span class="o">.</span><span class="n">_resting</span><span class="p">:</span>
+				<span class="n">extra_params</span> <span class="o">=</span> <span class="s">&quot;,style=filled,color=gold1&quot;</span>
+			<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> [label=&quot;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">];</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">complex</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> 
+													<span class="nb">complex</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> 
+													<span class="nb">complex</span><span class="o">.</span><span class="n">dot_paren_string</span><span class="p">(),</span> 
+													<span class="n">extra_params</span>
+													<span class="p">))</span>
+		<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;}</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+		
+	<span class="c"># We now draw the reactions. If there is one product and one reagent, then</span>
+	<span class="c"># we just draw an edge between the two. Otherwise we create a reaction node.</span>
+	<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">reaction</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">enumerator</span><span class="o">.</span><span class="n">reactions</span><span class="p">):</span>
+		<span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+			<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+									   <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">reaction_label</span> <span class="o">=</span> <span class="s">&quot;R_</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">i</span>
+			<span class="c"># We label unimolecular reactions blue, and other reactions red</span>
+			<span class="n">reaction_color</span> <span class="o">=</span> <span class="s">&quot;red&quot;</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="n">reaction_color</span> <span class="o">=</span> <span class="s">&quot;blue&quot;</span>
+			<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> [label=&quot;&quot;,shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=</span><span class="si">%s</span><span class="s">];</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span>
+							<span class="p">(</span><span class="n">reaction_label</span><span class="p">,</span> <span class="n">reaction_color</span><span class="p">))</span>
+			
+			<span class="c"># We now make all the edges needed</span>
+			<span class="k">for</span> <span class="n">reagent</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+				<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">reagent</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">reaction_label</span><span class="p">))</span>
+				
+			<span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+				<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">reaction_label</span><span class="p">,</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+				
+				
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;}</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+	
+	<span class="c"># Create the output file.</span>
+	<span class="c"># TODO: make &#39;pdf&#39; configurable</span>
+	<span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">&quot;dot&quot;</span><span class="p">,</span> <span class="s">&quot;-O&quot;</span><span class="p">,</span> <span class="s">&quot;-Teps&quot;</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">.dot&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">])</span>
+	</div>
+<div class="viewcode-block" id="output_condensed_graph"><a class="viewcode-back" href="../index.html#output.output_condensed_graph">[docs]</a><span class="k">def</span> <span class="nf">output_condensed_graph</span><span class="p">(</span><span class="n">enumerator</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Products graphical output representing the condensed reaction graph, with</span>
+<span class="sd">	condensed reactions and resting states aggregated into single nodes.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">fout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span> <span class="o">+</span> <span class="s">&quot;.dot&quot;</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;digraph G {</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;size=&quot;7,10&quot;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;page=&quot;8.5,11&quot;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;node[width=0.25,height=0.375,fontsize=9]</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	
+	<span class="n">condensed_graph</span> <span class="o">=</span> <span class="n">condense_resting_states</span><span class="p">(</span><span class="n">enumerator</span><span class="p">)</span>
+	
+	<span class="c"># We loop through all resting states, drawing them on the graph</span>
+	<span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">condensed_graph</span><span class="p">[</span><span class="s">&#39;resting_states&#39;</span><span class="p">]:</span>
+		<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> [label=&quot;</span><span class="si">%s</span><span class="s">&quot;]</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+	
+	<span class="c"># We now add reactions. We always create a reaction node.</span>
+	<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">reaction</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">condensed_graph</span><span class="p">[</span><span class="s">&#39;reactions&#39;</span><span class="p">]):</span>
+		<span class="n">reaction_label</span> <span class="o">=</span> <span class="s">&quot;R_</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">i</span>
+		<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> [label=&quot;&quot;,shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">reaction_label</span><span class="p">)</span>
+		
+		<span class="k">for</span> <span class="n">reagent</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">reagents</span><span class="p">:</span>
+			<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">reagent</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">reaction_label</span><span class="p">))</span>
+			
+		<span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+			<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">reaction_label</span><span class="p">,</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+			
+	<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;}</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+	<span class="n">fout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+	
+	<span class="c"># Create the output file.</span>
+	<span class="c"># TODO: make &#39;pdf&#39; configurable</span>
+	<span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">&quot;dot&quot;</span><span class="p">,</span> <span class="s">&quot;-O&quot;</span><span class="p">,</span> <span class="s">&quot;-Tpdf&quot;</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">.dot&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">])</span>
+	
+
+	</div>
+<span class="n">text_output_functions</span> <span class="o">=</span> <span class="p">{</span>
+	<span class="s">&#39;legacy&#39;</span><span class="p">:</span> <span class="n">output_legacy</span><span class="p">,</span>
+	<span class="s">&#39;json&#39;</span><span class="p">:</span> <span class="n">output_json</span>
+<span class="p">}</span>
+
+<span class="n">graph_output_functions</span> <span class="o">=</span> <span class="p">{</span>
+	<span class="s">&#39;graph&#39;</span><span class="p">:</span> <span class="n">output_graph</span>
+<span class="p">}</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Karthik Sarma, Brian Wolfe, Erik Winfree.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

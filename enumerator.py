@@ -34,7 +34,8 @@ class Enumerator(object):
 	"""
 	Represents a single enumerator instance, consisting of all the information
 	required for a reaction graph. This class is the coordinator for the state
-	enumerator. Enumerators have immutable starting conditions.
+	enumerator. Enumerators have immutable starting conditions. If unzip is true,
+	all 3-way branch migrations are greedy.
 	"""
 
 	def __init__(self, domains, strands, initial_complexes):
@@ -96,6 +97,9 @@ class Enumerator(object):
 		return self._transient_complexes[:]
 		
 			
+	def __eq__(self, object):
+		return (sorted(self.domains) == sorted(object.domains)) and (sorted(self.strands) == sorted(object.strands)) and (sorted(self.initial_complexes) == sorted(object.initial_complexes)) and (sorted(self.reactions) == sorted(object.reactions)) and (sorted(self.resting_states) == sorted(object.resting_states)) and (sorted(self.complexes) == sorted(object.complexes)) and (sorted(self.resting_complexes) == sorted(object.resting_complexes)) and (sorted(self.transient_complexes) == sorted(object.transient_complexes))
+	
 	def enumerate(self):
 		"""
 		Generates the reaction graph consisting of all complexes reachable from
@@ -134,7 +138,7 @@ class Enumerator(object):
 		# List B contains products of bimolecular reactions that have had no
 		# reactions enumerated yet. They will be moved to F when their
 		# 'neighborhood' is to be considered.
-		self._B = self.initial_complexes
+		self._B = self.initial_complexes[:]
 		
 		self._reactions = []
 		self._complexes = []
@@ -148,17 +152,14 @@ class Enumerator(object):
 			self.process_neighborhood(source)
 		
 		# We now consider slow reactions
-		print "considering slow reactions"
 		while len(self._S) > 0:
 			# element is the complex for which we will consider slow reactions
 			element = self._S.pop()
 			slow_reactions = self.get_slow_reactions(element)
-			print "found reactions: ", slow_reactions
 			self._E.append(element)
 			
 			# Find the new complexes which were generated
 			self._B = self.get_new_products(slow_reactions)
-			print "found new products: ", self._B
 			self._reactions.extend(slow_reactions)
 			
 			while len(self._B) > 0:
@@ -196,18 +197,17 @@ class Enumerator(object):
 		# reactions starting with the source
 		while (len(self._F) > 0):
 			curr_element = self._F.pop()
-			curr_reactions = self.get_fast_reactions(curr_element)								
+			curr_reactions = self.get_fast_reactions(curr_element)		
+			
 			new_products = self.get_new_products(curr_reactions)
 			self._F.extend(new_products)
-			N_reactions.extend(curr_reactions)
+			N_reactions.extend(curr_reactions)			
 			self._N.append(curr_element)
 		
-		print "processing neighborhood, _N= ", self._N
 		# Now we segment the neighborhood into transient and resting states
 		# by finding the strongly connected components
 		segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions)
 		
-		print "processing neighborhood, segmented=", segmented_neighborhood
 		# Resting state complexes are added to S
 		self._S.extend(segmented_neighborhood['resting_state_complexes'])
 		
@@ -292,6 +292,7 @@ class Enumerator(object):
 						if (product == complex):
 							reaction.products[i] = complex
 							self._B.remove(complex)
+							product = complex
 							break
 							
 					# If the product has already been seen in this loop, update
@@ -329,7 +330,12 @@ class Enumerator(object):
 			node._outward_edges = []
 			node._full_outward_edges = []
 			node._index = -1
-		
+		for reaction in reactions:
+			for product in reaction.products:
+				product._outward_edges = []
+				product._full_outward_edges = []
+				product._index = -1
+				
 		# Detect which products are actually in the neighborhood	
 		for reaction in reactions:
 			for product in reaction.products:
@@ -387,6 +393,9 @@ class Enumerator(object):
 				
 			else:
 				transient_state_complexes.extend(scc)
+		resting_states.sort()
+		resting_state_complexes.sort()
+		transient_state_complexes.sort()
 		return {
 				'resting_states': resting_states, 
 			    'resting_state_complexes': resting_state_complexes,
@@ -410,8 +419,9 @@ class Enumerator(object):
 			if next._index == -1:
 				self.tarjans(next)
 				node._lowlink = min(node._lowlink, next._lowlink)
-			elif next.onStack:
-				node._lowlink = min(node._lowlink, next._lowlink)
+			else:
+				if next._onStack:
+					node._lowlink = min(node._lowlink, next._lowlink)
 				
 		# This indicates that this node is a 'root' node, and children are
 		# part of an SCC

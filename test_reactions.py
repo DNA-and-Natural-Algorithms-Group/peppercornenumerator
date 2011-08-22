@@ -9,6 +9,7 @@ from utils import *
 import reactions
 from reactions import *
 from input import input_standard
+from enumerator import Enumerator
 
 import unittest
 from nose.tools import *
@@ -29,9 +30,15 @@ class BindTests(unittest.TestCase):
 		
 		for complex in self.SLC_enumerator.initial_complexes:
 			self.complexes[complex.name] = complex
-			
+	
+		self.three_arm_enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+	
 		
-		
+		for complex in self.three_arm_enumerator.initial_complexes:
+			self.complexes[complex.name] = complex
+	
+		self.three_arm_enumerator_reduced = Enumerator(self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
+							
 	def testFindExternalStrandBreak(self):		
 		I4 = self.complexes['I4']
 		
@@ -509,12 +516,15 @@ class BranchMigrationTests(unittest.TestCase):
 		exp_list = []
 		exp_list.append(ReactionPathway('branch_3way', [c], [o1]))
 		
-		o2 = c.clone()
-		o2.structure[BS_index][3] = (PS_index, 2)
-		o2.structure[PS_index][2] = (BS_index, 3)
-		o2.structure[OP_index][0] = None
+		# These results are expected with UNZIP=False
+		#o2 = c.clone()
+		#o2.structure[BS_index][3] = (PS_index, 2)
+		#o2.structure[PS_index][2] = (BS_index, 3)
+		#o2.structure[OP_index][0] = None
 		
-		exp_list.append(ReactionPathway('branch_3way', [c], [o2]))
+		#exp_list.append(ReactionPathway('branch_3way', [c], [o2]))
+		
+		exp_list.append(ReactionPathway('branch_3way', [c], [self.complexes['OP'], self.complexes['I5']]))
 		
 		res_list.sort()
 		exp_list.sort()
@@ -541,15 +551,48 @@ class BranchMigrationTests(unittest.TestCase):
 			
 		res_list = branch_3way(self.complexes['IABC'])
 		
-		out_complex = Complex('IABC-new', [self.strands['I'], self.strands['A'], self.strands['B'], self.strands['C']], [[None, (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (3, 4), (2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), (3, 3), (3, 2), (3, 1), (3, 0), None], [(2, 7), (2, 6), (2, 5), (2, 4), (1, 3), None, None, None, None]])
+		# These results are expected with UNZIP=False
+		#out_complex = Complex('IABC-new', [self.strands['I'], self.strands['A'], self.strands['B'], self.strands['C']], [[None, (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (3, 4), (2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), (3, 3), (3, 2), (3, 1), (3, 0), None], [(2, 7), (2, 6), (2, 5), (2, 4), (1, 3), None, None, None, None]])
 		
-		exp_list = [ReactionPathway('branch_3way', [self.complexes['IABC']], [out_complex])]
 		
+		#exp_list = [ReactionPathway('branch_3way', [self.complexes['IABC']], [out_complex])]
+		
+				
+		exp_list = [ReactionPathway('branch_3way', [self.complexes['IABC']], [self.complexes['I'], self.complexes['ABC']])]
 		res_list.sort()
 		exp_list.sort()
+				
+		print res_list
+		print exp_list
 		
 		assert res_list == exp_list
+
+	def testBranch3way5(self):
 		
+		enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+		
+		self.domains = {}
+		self.strands = {}
+		self.complexes = {}		
+		
+		for domain in enumerator.domains:
+			self.domains[domain.name] = domain
+		
+		for strand in enumerator.strands:
+			self.strands[strand.name] = strand
+		
+		for complex in enumerator.initial_complexes:
+			self.complexes[complex.name] = complex
+		
+		IAbind = Complex('IAbind', [self.strands['I'], self.strands['A']], [[None, None, None, (1, 0)], [(0, 3), (1, 8), (1, 7), (1, 6), None, None, (1, 3), (1, 2), (1, 1)]])
+		
+		res_list = branch_3way(IAbind)
+		exp_list = [ReactionPathway('branch_3way', [IAbind], [self.complexes['IA']])]
+		
+		print res_list
+		print exp_list
+		assert res_list == exp_list
+
 	def testDo4wayMigration1(self):	
 		s1 = Strand('s1', [self.domains['1*'], self.domains['2*'], self.domains['3']])
 		s2 = Strand('s2', [self.domains['3*'], self.domains['2'], self.domains['4']])

@@ -15,6 +15,9 @@ auto_name = 0
 # TODO: refactor this
 RELEASE_CUTOFF = 6
 
+# If true, 3 way branch migrations are always greedy
+UNZIP = True
+
 class ReactionPathway(object):
 	"""
 	Represents a reaction node on a reaction graph. Has a list of reactants
@@ -83,7 +86,6 @@ class ReactionPathway(object):
 				self.reactants.remove(reactant)
 				self.products.remove(reactant)
 				
-	__hash__ = None
 				
 
 
@@ -263,7 +265,6 @@ def find_external_strand_break(complex, location):
 	while insertion_strand_index == None:
 		# First check to see if we've run off the end of a strand, in which
 		# case the external break is between the previous strand and this one
-		print (search_strand_index, search_dom_index)
 		if (search_dom_index == -1):
 			insertion_strand_index = search_strand_index - 1
 		else:
@@ -752,16 +753,17 @@ def branch_3way(reactant):
 			# We now follow the external loop from the starting pair
 			# searching for a strand to displace
 			bound_loc = structure[strand_index][domain_index]
-			
+			bound_loc_orig = structure[strand_index][domain_index]
 			# Follow the external loop to the end
-			while True:
+			while True:				
 				bound_loc = (bound_loc[0], bound_loc[1] - 1)
-
 				# Check if we've reached the end of the external loop
 				if (bound_loc[1] == -1):
 					# Reached the end
 					break
-					
+				
+				
+				
 				# Check if this domain is unbound
 				elif (structure[bound_loc[0]][bound_loc[1]] == None):
 					continue
@@ -779,6 +781,9 @@ def branch_3way(reactant):
 				# follow the structure
 				
 				bound_loc = structure[bound_loc[0]][bound_loc[1]]
+				if bound_loc == bound_loc_orig:
+					# Caught in a loop
+					break
 			
 
 	for (strand_index, strand) in enumerate(reactant.strands):
@@ -803,10 +808,11 @@ def branch_3way(reactant):
 			# We now follow the external loop from the starting pair
 			# searching for a strand to displace
 			bound_loc = structure[strand_index][domain_index]
-			
+			bound_loc_orig = structure[strand_index][domain_index]
 			# Follow the external loop to the end
 			while True:
 				bound_loc = (bound_loc[0], bound_loc[1] + 1)
+				
 				# Check if we've reached the end of the external loop
 				if (bound_loc[1] == reactant.strands[bound_loc[0]].length):
 					# Reached the end
@@ -828,11 +834,13 @@ def branch_3way(reactant):
 					
 				
 				bound_loc = structure[bound_loc[0]][bound_loc[1]]
+				if bound_loc == bound_loc_orig:
+					break
 				
 	output = []
 	for output_set in output_sets:
-		output.append(ReactionPathway('branch_3way', [reactant], output_set))
-	
+		output.append(ReactionPathway('branch_3way', [reactant], output_set))		
+
 	# Remove any duplicate reactions
 	if (len(output) == 0):
 		return output
@@ -861,7 +869,27 @@ def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	out_reactant.structure[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
 	out_reactant.structure[displaced_loc[0]][displaced_loc[1]] = None
 	
-	return find_releases(out_reactant)
+	global auto_name
+	
+	out_reactant._name = str(auto_name)
+	auto_name += 1
+	
+	global UNZIP
+	
+	# Check to see if an adjacent displacement is possible
+	if (UNZIP):
+		dstrand = displacing_loc[0]
+		ddomain = displacing_loc[1]
+		bstrand = new_bound_loc[0]
+		bdomain = new_bound_loc[1]
+		if (ddomain+1 < len(out_reactant.strands[dstrand].domains)) and (out_reactant.structure[dstrand][ddomain+1] == None) and (bdomain-1 >= 0) and (out_reactant.structure[bstrand][bdomain-1] != None) and (out_reactant.strands[bstrand].domains[bdomain-1].can_pair(out_reactant.strands[dstrand].domains[ddomain+1])):
+			return do_3way_migration(out_reactant, (dstrand, ddomain+1), (bstrand, bdomain-1))
+		elif (ddomain-1 >= 0) and (out_reactant.structure[dstrand][ddomain-1] == None) and (bdomain+1 < len(out_reactant.strands[bstrand].domains)) and (out_reactant.structure[bstrand][bdomain+1] != None) and (out_reactant.strands[bstrand].domains[bdomain+1].can_pair(out_reactant.strands[dstrand].domains[ddomain-1])):
+			return do_3way_migration(out_reactant, (dstrand, ddomain-1), (bstrand, bdomain+1))
+		else:
+			return find_releases(out_reactant)
+	else:
+		return find_releases(out_reactant)
 
 
 def branch_4way(reactant):

@@ -220,7 +220,7 @@ class RestingStateTests(unittest.TestCase):
 	def testConstructor(self):
 		assert self.rs._name == 'RS1'
 				
-		comp = [self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']]
+		comp = sorted([self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']])
 		
 		assert self.rs._complexes == comp
 		
@@ -234,7 +234,7 @@ class RestingStateTests(unittest.TestCase):
 	def testComplexes(self):	
 		self.rs.complexes[0] = None
 		
-		comp = [self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']]
+		comp = sorted([self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']])
 		
 		assert self.rs.complexes == comp
 		

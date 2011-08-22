@@ -9,6 +9,8 @@ import logging
 import json
 from utils import *
 from enumerator import Enumerator
+from reactions import ReactionPathway
+import reactions
 					   
 def input_standard(filename):
 	"""
@@ -193,8 +195,10 @@ def load_json(filename):
 	for saved_domain in saved_domains:
 		if not 'sequence' in saved_domain:
 			saved_domain['sequence'] = None
+		if (saved_domain['is_complement']):
+			saved_domain['name'] = saved_domain['name'][:-1]
 		new_dom = Domain(saved_domain['name'], saved_domain['length'], is_complement=saved_domain['is_complement'], sequence=saved_domain['sequence'])
-		domains[saved_domain['name']] = new_dom
+		domains[new_dom.name] = new_dom
 	
 	saved_strands = saved['strands']
 	
@@ -215,7 +219,16 @@ def load_json(filename):
 		c_strands = []
 		for strand in saved_complex['strands']:
 			c_strands.append(strands[strand])
-		new_complex = Complex(saved_complex['name'], c_strands, saved_complex['structure'])
+		new_structure = []
+		for strand in saved_complex['structure']:
+			new_strand = []
+			for tup in strand:
+				if (tup == None):
+					new_strand.append(None)
+				else:
+					new_strand.append(tuple(tup))
+			new_structure.append(new_strand)
+		new_complex = Complex(saved_complex['name'], c_strands, new_structure)
 		resting_complexes[saved_complex['name']] = new_complex
 		complexes[saved_complex['name']] = new_complex
 	
@@ -226,7 +239,16 @@ def load_json(filename):
 		c_strands = []
 		for strand in saved_complex['strands']:
 			c_strands.append(strands[strand])
-		new_complex = Complex(saved_complex['name'], c_strands, saved_complex['structure'])
+		new_structure = []
+		for strand in saved_complex['structure']:
+			new_strand = []
+			for tup in strand:
+				if (tup == None):
+					new_strand.append(None)
+				else:
+					new_strand.append(tuple(tup))
+			new_structure.append(new_strand)
+		new_complex = Complex(saved_complex['name'], c_strands, new_structure)
 		transient_complexes[saved_complex['name']] = new_complex
 		complexes[saved_complex['name']] = new_complex
 	
@@ -242,7 +264,7 @@ def load_json(filename):
 		for product in saved_reaction['products']:
 			products.append(complexes[product])
 			
-		reaction = Reaction(saved_reaction['name'], reactants, products)
+		reaction = ReactionPathway(saved_reaction['name'], reactants, products)
 		reactions.append(reaction)
 	
 	resting_states = []
@@ -251,13 +273,33 @@ def load_json(filename):
 		comps = []
 		for complex in resting_state['complexes']:
 			comps.append(complexes[complex])
-		resting_states.append(RestingState(comps))
+		resting_states.append(RestingState(resting_state['name'], comps))
+
+	initial_complexes = {}
+	for saved_complex in saved['initial_complexes']:
+		c_strands = []
+		for strand in saved_complex['strands']:
+			c_strands.append(strands[strand])
+		new_structure = []
+		for strand in saved_complex['structure']:
+			new_strand = []
+			for tup in strand:
+				if (tup == None):
+					new_strand.append(None)
+				else:
+					new_strand.append(tuple(tup))
+			new_structure.append(new_strand)
+		new_complex = Complex(saved_complex['name'], c_strands, new_structure)
+		initial_complexes[saved_complex['name']] = new_complex
+		
 			
-	enumerator = Enumerator(domains.values(), strands.values(), complexes.values())
+	enumerator = Enumerator(domains.values(), strands.values(), initial_complexes.values())
+	enumerator._complexes = complexes.values()
 	enumerator._resting_states = resting_states
 	enumerator._transient_complexes = transient_complexes.values()
 	enumerator._resting_complexes = resting_complexes.values()
 	enumerator._reactions = reactions
+
 	
 	return enumerator
 

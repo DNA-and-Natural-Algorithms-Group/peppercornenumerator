@@ -27,6 +27,20 @@ class EnumeratorTests(unittest.TestCase):
 		
 		for complex in self.SLC_enumerator.initial_complexes:
 			self.complexes[complex.name] = complex
+	
+		self.three_arm_enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+		self.domains2 = {}
+		self.strands2 = {}
+		self.complexes2 = {}		
+		
+		for domain in self.three_arm_enumerator.domains:
+			self.domains2[domain.name] = domain
+		
+		for strand in self.three_arm_enumerator.strands:
+			self.strands2[strand.name] = strand
+		
+		for complex in self.three_arm_enumerator.initial_complexes:
+			self.complexes2[complex.name] = complex
 			
 	def testDomains(self):
 		exp_domains = [Domain('1', 'short'), Domain('1', 'short', True), Domain('2', 'short'), Domain('2', 'short', True), Domain('3', 'short'), Domain('3', 'short', True), Domain('4', 'long'), Domain('4', 'long', True), Domain('5', 'short'), Domain('5', 'short', True), Domain('6', 'long'), Domain('6', 'long', True), Domain('7', 'short'), Domain('7', 'short', True)]
@@ -101,7 +115,55 @@ class EnumeratorTests(unittest.TestCase):
 			
 		assert_raises(AttributeError, assnComplexes, self)
 		
-
+	def testSegmentNeighborhood1(self):
+		enum = Enumerator(self.SLC_enumerator._domains, self.SLC_enumerator._strands, [self.complexes['Cat']])
+		res = enum.segment_neighborhood(enum.initial_complexes, [])
+	
+		assert res == {'resting_states': [RestingState('0', enum.initial_complexes)], 'resting_state_complexes': enum.initial_complexes, 'transient_state_complexes': []}
+				
+	
+	def testSegmentNeighborhood2(self):
+		enum = self.SLC_enumerator
+		complex_set = [self.complexes['Cat'], self.complexes['C2'], self.complexes['I1'], self.complexes['I2'], self.complexes['I3'], self.complexes['SP']]
+		reaction_set = []
+		# multi-molecular reactions never appear in segment neighborhood arguments
+		#reaction_set.append(ReactionPathway('bind21', [self.complexes['Cat'], self.complexes['C2']], [self.complexes['I1']]))
+		#reaction_set.append(ReactionPathway('bind21', [self.complexes['I3'], self.complexes['SP']], [self.complexes['I2']]))
+		reaction_set.append(ReactionPathway('open', [self.complexes['I1']], [self.complexes['Cat'], self.complexes['C2']]))
+		reaction_set.append(ReactionPathway('open', [self.complexes['I2']], [self.complexes['I3'], self.complexes['SP']]))
+		reaction_set.append(ReactionPathway('branch_3way', [self.complexes['I1']], [self.complexes['I2']]))
+		reaction_set.append(ReactionPathway('branch_3way', [self.complexes['I2']], [self.complexes['I1']]))
+	
+		res = enum.segment_neighborhood(complex_set, reaction_set)
+		exp = {'resting_states': sorted([
+										 RestingState('0', [self.complexes['Cat']]),
+										 RestingState('1', [self.complexes['C2']]),
+										 RestingState('2', [self.complexes['SP']]),
+										 RestingState('3', [self.complexes['I3']])
+										 ]), 
+			'resting_state_complexes': sorted([self.complexes['Cat'], self.complexes['C2'], self.complexes['SP'], self.complexes['I3']]), 
+			'transient_state_complexes': sorted([self.complexes['I1'], self.complexes['I2']])}
+	
+		assert res == exp
+																									 
+									
+	def testSegmentNeighborhood3(self):
+		enum = self.three_arm_enumerator
+		complex_set = [self.complexes2['IABC'], self.complexes2['I'], self.complexes2['ABC']]
+		reaction_set = []
+		reaction_set.append(ReactionPathway('branch_3way', [self.complexes2['IABC']], [self.complexes2['I'], self.complexes2['IABC']]))
+		
+		res = enum.segment_neighborhood(complex_set, reaction_set)
+		exp = {
+			'resting_states': sorted([
+									 RestingState('0', [self.complexes2['I']]),
+									 RestingState('1', [self.complexes2['ABC']]) 
+									  ]),
+			'resting_state_complexes': sorted([self.complexes2['I'], self.complexes2['ABC']]),
+			'transient_state_complexes': sorted([self.complexes2['IABC']])
+			}
+		assert res == exp
+																									 
 	def testProcessNeighborhood1(self):
 		enum = Enumerator(self.SLC_enumerator._domains, self.SLC_enumerator._strands, [self.complexes['Cat']])
 		enum._N = []
@@ -112,6 +174,57 @@ class EnumeratorTests(unittest.TestCase):
 		enum._complexes = []
 		enum.process_neighborhood(self.complexes['Cat'])
 		assert enum._S == [self.complexes['Cat']]
+			
+	def testProcessNeighborhood2(self):
+		enum = Enumerator(self.SLC_enumerator._domains, self.SLC_enumerator._strands, [self.complexes['I1']])
+		enum._N = []
+		enum._S = []
+		enum._T = []
+		enum._E = []
+		enum._B = enum.initial_complexes
+		enum._resting_states = []
+		enum._reactions = []
+		enum._complexes = []
+		enum.process_neighborhood(self.complexes['I1'])
+		assert enum._S == sorted([self.complexes['Cat'], self.complexes['C2'], self.complexes['SP'], self.complexes['I3']])
+		assert enum._T == sorted([self.complexes['I1'], self.complexes['I2']])
+		assert enum._resting_states == sorted([
+											   RestingState('0', [self.complexes['Cat']]),
+											   RestingState('1', [self.complexes['C2']]),
+											   RestingState('2', [self.complexes['SP']]),
+											   RestingState('3', [self.complexes['I3']])
+											   ])
+		reaction_set = []
+		reaction_set.append(ReactionPathway('open', [self.complexes['I1']], [self.complexes['Cat'], self.complexes['C2']]))
+		reaction_set.append(ReactionPathway('open', [self.complexes['I2']], [self.complexes['I3'], self.complexes['SP']]))
+		reaction_set.append(ReactionPathway('branch_3way', [self.complexes['I1']], [self.complexes['I2']]))
+		reaction_set.append(ReactionPathway('branch_3way', [self.complexes['I2']], [self.complexes['I1']]))
+		reaction_set.sort()
+		
+		assert sorted(enum._reactions) == reaction_set
+		assert enum._N == []
+	
+	def testProcessNeighborhood3(self):
+		enum = Enumerator(self.three_arm_enumerator._domains, self.three_arm_enumerator._strands, [self.complexes2['IABC']])
+		enum._N = []
+		enum._S = []
+		enum._T = []
+		enum._E = []
+		enum._B = enum.initial_complexes
+		enum._resting_states = []
+		enum._reactions = []
+		enum._complexes = []
+		enum.process_neighborhood(self.complexes2['IABC'])
+		assert enum._S == sorted([self.complexes2['I'], self.complexes2['ABC']])
+		assert enum._T == sorted([self.complexes2['IABC']])
+		assert enum._resting_states	== sorted([
+											   RestingState('0', [self.complexes2['I']]),
+											   RestingState('1', [self.complexes2['ABC']]) 
+											   ])
+		reaction_set = []
+		reaction_set.append(ReactionPathway('branch_3way', [self.complexes2['IABC']], [self.complexes2['I'], self.complexes2['ABC']]))
+		assert sorted(enum._reactions) == sorted(reaction_set)
+
 
 	def testEnumeration1(self):
 		enum = input_standard('test_files/test_input_standard_simple.in')
@@ -123,12 +236,157 @@ class EnumeratorTests(unittest.TestCase):
 		for complex in enum.initial_complexes:
 			expected_complexes.append(complex)
 			
-		new_complex = Complex('C3', [strands['S1'], strands['S2']], [[(1, 0), None],[(0, 1)]])
+		new_complex = Complex('C3', [strands['S1'], strands['S2']], [[(1, 0), None],[(0, 0)]])
 		expected_complexes.append(new_complex)
 		enum.enumerate()
 		resting_complexes = enum.resting_complexes
 		
 		expected_complexes.sort()
 		resting_complexes.sort()
+
+
+
 		assert expected_complexes == resting_complexes
 		
+		
+	def testEnumeration2(self):
+		enum = Enumerator(self.SLC_enumerator._domains, self.SLC_enumerator._strands, [self.complexes['I1']])
+		enum.enumerate()
+		
+		exp_initial_complexes = [self.complexes['I1']]
+		assert exp_initial_complexes == enum.initial_complexes
+			
+		reaction_set = []
+		reaction_set.append(ReactionPathway('bind21', [self.complexes['Cat'], self.complexes['C2']], [self.complexes['I1']]))
+		reaction_set.append(ReactionPathway('bind21', [self.complexes['I3'], self.complexes['SP']], [self.complexes['I2']]))
+		reaction_set.append(ReactionPathway('open', [self.complexes['I1']], [self.complexes['Cat'], self.complexes['C2']]))
+		reaction_set.append(ReactionPathway('open', [self.complexes['I2']], [self.complexes['I3'], self.complexes['SP']]))
+		reaction_set.append(ReactionPathway('branch_3way', [self.complexes['I1']], [self.complexes['I2']]))
+		reaction_set.append(ReactionPathway('branch_3way', [self.complexes['I2']], [self.complexes['I1']]))
+		reaction_set.sort()	
+			
+		exp_reactions = reaction_set
+		res_reactions = sorted(enum.reactions)
+			
+		assert exp_reactions == res_reactions
+			
+		
+		exp_resting_states = sorted([
+									RestingState('0', [self.complexes['Cat']]),
+									RestingState('1', [self.complexes['C2']]),
+									RestingState('2', [self.complexes['SP']]),
+									RestingState('3', [self.complexes['I3']])
+									])
+			
+		assert exp_resting_states == enum.resting_states
+			
+		
+		exp_complexes = sorted([self.complexes['I1'], self.complexes['I2'], self.complexes['Cat'], self.complexes['C2'], self.complexes['SP'], self.complexes['I3']])
+		res_complexes = sorted(enum.complexes)
+		
+		assert res_complexes == exp_complexes
+			
+		exp_resting_complexes = sorted([self.complexes['Cat'], self.complexes['C2'], self.complexes['SP'], self.complexes['I3']])
+		res_resting_complexes = sorted(enum.resting_complexes)
+		assert res_resting_complexes == exp_resting_complexes
+			
+		exp_transient_complexes = sorted([self.complexes['I1'], self.complexes['I2']])
+		res_transient_complexes = sorted(enum.transient_complexes)
+		assert res_transient_complexes == exp_transient_complexes
+
+	def testEnumeration3(self):
+		enum = Enumerator(self.SLC_enumerator.domains, self.SLC_enumerator.strands, [self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']])
+		enum.enumerate()
+		
+		# shortcut because of large number of uses
+		c = self.complexes
+
+		exp_initial_complexes = sorted([self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']])
+		res_initial_complexes = sorted(enum.initial_complexes)
+		
+		assert exp_initial_complexes == res_initial_complexes
+
+		reaction_set = []
+		reaction_set.append(ReactionPathway('bind21', [c['Cat'], c['C2']], [c['I1']]))
+		reaction_set.append(ReactionPathway('open', [c['I1']], [c['Cat'], c['C2']]))
+		reaction_set.append(ReactionPathway('branch_3way', [c['I1']], [c['I2']]))
+		reaction_set.append(ReactionPathway('branch_3way', [c['I2']], [c['I1']]))
+		reaction_set.append(ReactionPathway('open', [c['I2']], [c['SP'], c['I3']]))
+		reaction_set.append(ReactionPathway('bind21', [c['SP'], c['I3']], [c['I2']]))
+		reaction_set.append(ReactionPathway('bind21', [c['I3'], c['C1']], [c['I4']]))
+		reaction_set.append(ReactionPathway('open', [c['I4']], [c['I3'], c['C1']]))
+		reaction_set.append(ReactionPathway('branch_3way', [c['I4']], [c['OP'], c['I5']]))
+
+		I6 = copy.deepcopy(c['I5'])
+		Cat_index = I6.strand_index('Cat')
+		BS_index = I6.strand_index('BS')
+		PS_index = I6.strand_index('PS')
+
+		I6.structure[Cat_index][0] = None
+		I6.structure[BS_index][1] = (PS_index, 4)
+		I6.structure[PS_index][4] = (BS_index, 1)
+		
+		self.complexes['I6'] = I6
+		I6._name = 'I6'
+				
+		reaction_set.append(ReactionPathway('branch_3way', [c['I5']], [c['I6']]))
+		reaction_set.append(ReactionPathway('branch_3way', [c['I6']], [c['I5']]))
+		reaction_set.append(ReactionPathway('open', [c['I6']], [c['W'], c['Cat']]))
+		reaction_set.append(ReactionPathway('bind21', [c['W'], c['Cat']], [c['I6']]))
+
+		I7 = copy.deepcopy(c['I4'])
+		Cat_index = I7.strand_index('Cat')
+		BS_index = I7.strand_index('BS')
+		PS_index = I7.strand_index('PS')
+	
+		I7.structure[Cat_index][0] = None
+		I7.structure[BS_index][1] = (PS_index, 4)
+		I7.structure[PS_index][4] = (BS_index, 1)
+	
+		self.complexes['I7'] = I7
+		I7._name = 'I7'
+		
+		reaction_set.append(ReactionPathway('branch_3way', [c['I4']], [c['I7']]))
+		reaction_set.append(ReactionPathway('branch_3way', [c['I7']], [c['I4']]))
+		reaction_set.append(ReactionPathway('branch_3way', [c['I7']], [c['OP'], c['I6']]))
+		
+		
+		I8 = Complex('I8', [self.strands['BS'], self.strands['OP'], self.strands['PS']], 
+							[[None, (2, 4), (2, 3), None, None, None], [(2, 2), (2, 1), (2, 0), None], 
+							 [(1, 2), (1, 1), (1, 0), (0, 2), (0, 1)]])
+		self.complexes['I8'] = I8
+		I8._name = 'I8'
+
+		reaction_set.append(ReactionPathway('open', [c['I7']], [c['I8'], c['Cat']]))
+		reaction_set.append(ReactionPathway('branch_3way', [c['I8']], [c['OP'], c['W']]))
+		
+		
+		exp_reactions = sorted(reaction_set)
+		res_reactions = sorted(enum.reactions)
+		
+		assert exp_reactions == res_reactions
+
+		exp_resting_states = sorted([RestingState('0', [self.complexes['Cat']]), 
+							  RestingState('1', [self.complexes['C2']]),
+							  RestingState('2', [self.complexes['SP']]),
+							  RestingState('3', [self.complexes['I3']]),
+							  RestingState('4', [self.complexes['C1']]),
+							  RestingState('5', [self.complexes['OP']]),
+							  RestingState('6', [self.complexes['W']])])
+		res_resting_states = sorted(enum.resting_states)
+
+		assert exp_resting_states == res_resting_states
+
+		exp_resting_complexes = sorted([self.complexes['Cat'], self.complexes['C2'], self.complexes['SP'], self.complexes['I3'], self.complexes['C1'], self.complexes['OP'], self.complexes['W']])
+
+		assert sorted(enum.resting_complexes) == exp_resting_complexes
+
+		exp_transient_complexes = sorted([self.complexes['I1'], self.complexes['I2'], 
+										  self.complexes['I4'], self.complexes['I5'], self.complexes['I6'],
+										  self.complexes['I7'], self.complexes['I8']])
+		res_transient_complexes	= sorted(enum.transient_complexes)
+
+			
+		assert res_transient_complexes == exp_transient_complexes
+
+		assert sorted(exp_transient_complexes + exp_resting_complexes) == sorted(enum.complexes)
