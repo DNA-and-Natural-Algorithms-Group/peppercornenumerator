@@ -7,9 +7,9 @@
 
 import unittest
 from utils import *
+from input import input_standard
 from enumerator import *
 from nose.tools import *
-from input import input_standard
 import copy
 
 class EnumeratorTests(unittest.TestCase):

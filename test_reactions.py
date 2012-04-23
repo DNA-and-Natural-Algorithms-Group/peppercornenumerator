@@ -424,6 +424,20 @@ class OpenTests(unittest.TestCase):
 		exp_list.sort()
 		
 		assert res_list == exp_list
+
+	def testOpen7(self):
+		S1 = Strand('S1', [self.domains['1'], self.domains['4']])
+		S2 = Strand('S2', [self.domains['4*']])
+		S3 = Strand('S3', [self.domains['1*'], self.domains['4*']])
+		complex = Complex('C', [S1, S2, S3], [[(2, 0), (1, 0)], [(0, 1)], [(0, 0), None]])
+		
+		res_list = open(complex)
+		exp_list = [ReactionPathway('open', [complex], sorted([Complex('C1', [S3], [[None, None]]), Complex('C2', [S1, S2], [[None, (1, 0)], [(0, 1)]])]))]
+
+			
+		print res_list
+		print exp_list
+		assert res_list == exp_list
 		
 class BranchMigrationTests(unittest.TestCase):
 	def setUp(self):

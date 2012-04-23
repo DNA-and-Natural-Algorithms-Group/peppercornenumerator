@@ -103,7 +103,7 @@ def condense_resting_states(enumerator):
 					new_react_products.remove(complex)
 					new_react_reagents.remove(complex)
 				
-				new_react = ReactionPathway(str(reactions.auto_name), new_react_reagents,
+				new_react = ReactionPathway(str(enumerator.auto_name), new_react_reagents,
 										new_react_products)
 				new_reactions.append(new_react)
 			# Now that this reaction has been replaced, we remove it from the
@@ -131,7 +131,7 @@ def condense_resting_states(enumerator):
 					new_react_products.remove(complex)
 					new_react_reagents.remove(complex)
 				
-				new_react = ReactionPathway(str(reactions.auto_name), new_react_reagents,
+				new_react = ReactionPathway(str(enumerator.auto_name), new_react_reagents,
 										new_react_products)
 				new_reactions.append(new_react)
 			# Now that this reaction has been replaced, we remove it from the
@@ -215,7 +215,7 @@ def output_legacy(enumerator, filename, output_condensed = False):
 		output_file.write("state " + resting_state.name + " = : ")
 		output_file.write(str(resting_state.complexes[0]))
 		for complex in resting_state.complexes[1:]:
-			output_file.write(" + complex")
+			output_file.write(" %s" % complex)
 		output_file.write("\n")
 	output_file.write("###############################\n")
 	output_file.write("\n\n# Fast (Transition) Complexes \n")

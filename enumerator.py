@@ -5,10 +5,13 @@
 #  Created by Karthik Sarma on 4/18/10.
 #
 
+import sys
 import utils
 import reactions
+import input, output
 import logging
 import itertools
+import argparse
 from reactions import *
 
 # These are sanity checks to prevent infinite looping
@@ -52,8 +55,13 @@ class Enumerator(object):
 		self._complexes = None
 		self._transient_complexes = None
 		self._resting_complexes = None
+	
 		
-    
+	@property 
+	def auto_name(self):
+		return reactions.auto_name
+
+	
 	@property
 	def domains(self):
 		return self._domains[:]
@@ -437,3 +445,31 @@ class Enumerator(object):
 			
 			# Add the SCC to the list of SCCs
 			self._SCC_stack.append(scc)
+
+def main(argv):
+	parser = argparse.ArgumentParser(description="Main CL argument parser")
+	parser.add_argument('--infile', action='store', dest='input_filename', default=None)
+	parser.add_argument('--outfile', action='store', dest='output_filename', default=None)
+	parser.add_argument('-o', action='store', dest='output_format', default='standard')
+	parser.add_argument('-i', action='store', dest='input_format', default='standard')
+	parser.add_argument('-c', action='store', dest='condensed', default='False')
+
+	cl_opts = parser.parse_args()
+
+	if (cl_opts.input_format == 'standard'):
+		enum = input.input_standard(cl_opts.input_filename)
+
+	else:
+		raise Exception('Error!')
+
+	enum.enumerate()
+	if (cl_opts.output_format == 'standard'):
+		output.output_legacy(enum, cl_opts.output_filename)
+
+	elif (cl_opts.output_format == 'graph'):
+		output.output_full_graph(enum, cl_opts.output_filename)
+	else:
+		raise Exception('Error!')
+
+if __name__ == '__main__':
+	sys.exit(main(sys.argv))

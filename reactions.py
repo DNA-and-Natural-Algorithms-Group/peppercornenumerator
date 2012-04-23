@@ -421,6 +421,10 @@ def open(reactant):
 	'''
 	product_sets = []
 	
+	print reactant
+	print reactant.structure
+	print reactant.strands
+	
 	structure = reactant.structure
 	strands = reactant.strands
 	
@@ -434,7 +438,7 @@ def open(reactant):
 			
 			helix_startA = [strand_index, domain_index]
 			helix_startB = list(structure[strand_index][domain_index])
-			
+		
 			# If the domain is bound to an earlier domain, then we have
 			# already considered it, so skip it
 			if (((helix_startB[0] < helix_startA[0]) or \
@@ -474,7 +478,12 @@ def open(reactant):
 			while True:
 				helix_startA[1] -= 1
 				helix_startB[1] += 1
-				
+								
+				#				print helix_startA[1]
+				#print helix_startB[1]
+				#print helix_startB[0]
+				#print strands
+				#print strands[helix_startB[0]]
 				# If one of the strands has broken, the helix has ended
 				if (helix_startA[1] < 0):
 					break
@@ -514,8 +523,9 @@ def open(reactant):
 		
 	output = []
 	for product_set in product_sets:
-		output.append(ReactionPathway('open', [reactant], product_set))
+		output.append(ReactionPathway('open', [reactant], sorted(product_set)))
 	
+	print output
 	return output
 	
 	
