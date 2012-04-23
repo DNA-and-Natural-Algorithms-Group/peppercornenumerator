@@ -1,0 +1,15 @@
+# this file describes a very simple 1-reaction system
+
+domain a : 12
+domain b : 12
+
+strand S1 : a b
+strand S2 : a*
+
+complex C1 :
+S1
+. .
+
+complex C2 :
+S2
+.

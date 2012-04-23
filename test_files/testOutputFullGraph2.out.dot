@@ -1,0 +1,127 @@
+digraph G {
+size="7,10"
+page="8.5,11"
+node[width=0.25,height=0.375,fontsize=9]
+subgraph cluster0 {
+label="A + I"
+fontsize=6
+126 [label="126:((((..)))+...)"];
+131 [label="131:((((.....+))))",style=filled,color=gold1];
+}
+subgraph cluster1 {
+label="A + B + I"
+fontsize=6
+133 [label="133:((((...(.+)(((..)))+))))"];
+138 [label="138:((((((((.+)))).....+))))",style=filled,color=gold1];
+}
+subgraph cluster2 {
+label="B + I"
+fontsize=6
+132 [label="132:((((..)))+.).."];
+141 [label="141:((((..)).+)).."];
+}
+subgraph cluster3 {
+label="A + B + A + I"
+fontsize=6
+143 [label="143:((((((((.+)))).(...+)(((..)))+))))"];
+146 [label="146:((((((((.+))))((...+))((..)).+))))"];
+}
+subgraph cluster4 {
+label="A + B + C + I"
+fontsize=6
+149 [label="149:((((((((.+))))...(.+)(((..)))+))))"];
+154 [label="154:((((((((.+))))((((.+)))).....+))))"];
+}
+subgraph cluster5 {
+label="A + C + I"
+fontsize=6
+148 [label="148:((((.(...+)(((..)))+))))"];
+163 [label="163:((((((...+))((..)).+))))"];
+}
+subgraph cluster6 {
+label="I"
+fontsize=6
+I [label="I:....",style=filled,color=gold1];
+}
+subgraph cluster7 {
+label="A"
+fontsize=6
+A [label="A:.(((..)))",style=filled,color=gold1];
+}
+subgraph cluster8 {
+label="B"
+fontsize=6
+B [label="B:.(((..)))",style=filled,color=gold1];
+}
+subgraph cluster9 {
+label="C"
+fontsize=6
+C [label="C:.(((..)))",style=filled,color=gold1];
+}
+subgraph cluster10 {
+label="A + B + C"
+fontsize=6
+160 [label="160:((((((((.+))))((((.+)))))))).",style=filled,color=gold1];
+}
+R_0 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+A -> R_0
+I -> R_0
+R_0 -> 126
+R_1 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+126 -> R_1
+R_1 -> A
+R_1 -> I
+126 -> 131
+R_3 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+B -> R_3
+I -> R_3
+R_3 -> 132
+R_4 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+131 -> R_4
+B -> R_4
+R_4 -> 133
+R_5 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+133 -> R_5
+R_5 -> 131
+R_5 -> B
+133 -> 138
+R_7 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+132 -> R_7
+R_7 -> B
+R_7 -> I
+132 -> 141
+141 -> 132
+R_10 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+A -> R_10
+138 -> R_10
+R_10 -> 143
+R_11 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+143 -> R_11
+R_11 -> A
+R_11 -> 138
+143 -> 146
+146 -> 143
+R_14 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+131 -> R_14
+C -> R_14
+R_14 -> 148
+R_15 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+138 -> R_15
+C -> R_15
+R_15 -> 149
+R_16 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+149 -> R_16
+R_16 -> 138
+R_16 -> C
+149 -> 154
+R_18 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+154 -> R_18
+R_18 -> 160
+R_18 -> I
+R_19 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+148 -> R_19
+R_19 -> 131
+R_19 -> C
+148 -> 163
+163 -> 148
+}
