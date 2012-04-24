@@ -193,7 +193,7 @@ class Complex(object):
 					complex with None indicating unpaired --
 					tuple: (strand, domain)
 					Ex:
-					[[(0, 2) None (0, 1)]] 
+					[[(0, 2) None (0, 0)]] 
 					indicates one strand with 3 domains with the first one bound 
 					to the last one, and the middle one free. 
 					

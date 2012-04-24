@@ -430,13 +430,30 @@ class OpenTests(unittest.TestCase):
 		S2 = Strand('S2', [self.domains['4*']])
 		S3 = Strand('S3', [self.domains['1*'], self.domains['4*']])
 		complex = Complex('C', [S1, S2, S3], [[(2, 0), (1, 0)], [(0, 1)], [(0, 0), None]])
+
+		print "Input Complex"
+		print complex.full_string()
+		print "Strand:", complex.strands[0], " ", complex.strands[0].domains
+		for domain in complex.strands[0].domains:
+			print "Domain:", domain, " ", domain.length
+		
+		print
+		
 		
 		res_list = open(complex)
 		exp_list = [ReactionPathway('open', [complex], sorted([Complex('C1', [S3], [[None, None]]), Complex('C2', [S1, S2], [[None, (1, 0)], [(0, 1)]])]))]
 
-			
+		print "Computed Result (res_list):"	
 		print res_list
+		print "Outputs:"
+		for complex in res_list[0].products:
+			print complex.full_string()
+		
+		print
+		print "Expected result (exp_list):"
 		print exp_list
+		for complex in exp_list[0].products:
+			print complex.full_string()
 		assert res_list == exp_list
 		
 class BranchMigrationTests(unittest.TestCase):

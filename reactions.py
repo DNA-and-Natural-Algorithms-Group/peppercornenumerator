@@ -418,12 +418,10 @@ def open(reactant):
 	reactant occurs exactly once in one of the complexes in the product set.
 	
 	A dissociation can happen to any helix under the threshold length
+				
 	'''
 	product_sets = []
 	
-	print reactant
-	print reactant.structure
-	print reactant.strands
 	
 	structure = reactant.structure
 	strands = reactant.strands
@@ -478,12 +476,7 @@ def open(reactant):
 			while True:
 				helix_startA[1] -= 1
 				helix_startB[1] += 1
-								
-				#				print helix_startA[1]
-				#print helix_startB[1]
-				#print helix_startB[0]
-				#print strands
-				#print strands[helix_startB[0]]
+
 				# If one of the strands has broken, the helix has ended
 				if (helix_startA[1] < 0):
 					break
@@ -525,7 +518,6 @@ def open(reactant):
 	for product_set in product_sets:
 		output.append(ReactionPathway('open', [reactant], sorted(product_set)))
 	
-	print output
 	return output
 	
 	
