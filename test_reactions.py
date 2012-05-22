@@ -352,7 +352,8 @@ class OpenTests(unittest.TestCase):
 	def testFindReleases6(self):
 		# Test another no releases case
 		
-		complex = Complex('T1', [self.strands['BS'], self.strands['OP'], self.strands['PS'], self.strands['Cat']], [[(3, 1), (3, 0), (2, 3), None, None, None], [(2, 2), (2, 1), None, None], [None, (1, 1), (1, 0), (0, 2), None], [(0, 1), (0, 0)]])
+		complex = Complex('T1', [self.strands['BS'], self.strands['OP'], self.strands['PS'], self.strands['Cat']], \
+						 [[(3, 1), (3, 0), (2, 3), None, None, None], [(2, 2), (2, 1), None, None], [None, (1, 1), (1, 0), (0, 2), None], [(0, 1), (0, 0)]])
 		
 		res_list = find_releases(complex)
 		

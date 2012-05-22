@@ -434,14 +434,17 @@ def open(reactant):
 			if (structure[strand_index][domain_index] == None):
 				continue
 			
+			# A: Strand/domain position on "top" strand - CG 5/21 
 			helix_startA = [strand_index, domain_index]
+			
+			# B: Strand/domain position on "bottom" strand - CG 5/21 
 			helix_startB = list(structure[strand_index][domain_index])
 		
 			# If the domain is bound to an earlier domain, then we have
 			# already considered it, so skip it
-			if (((helix_startB[0] < helix_startA[0]) or \
+			if ( (helix_startB[0] < helix_startA[0]) or \
 			     ((helix_startB[0] == helix_startA[0]) and \
-				  (helix_startB[1] < helix_startA[1])))):
+				  (helix_startB[1] < helix_startA[1])) ):
 				continue
 			
 			helix_endA = helix_startA[:]
@@ -453,6 +456,10 @@ def open(reactant):
 			# of this one
 			# (The helix ends at the first strand break from either direction)
 			while True:
+				
+				# Strands run in opposite directions, so A must be incremented 
+				# and B decremented in order that both pointers move "right" 
+				# along the helix- CG 5/21
 				helix_endA[1] += 1
 				helix_endB[1] -= 1
 				
@@ -471,9 +478,11 @@ def open(reactant):
 				# Add the current domain to the current helix
 				helix_length += strands[helix_endA[0]].domains[helix_endA[1]]\
 									   .length
-									   
+				
 			# We must also iterate in the other direction
 			while True:
+				
+				# Now we move 
 				helix_startA[1] -= 1
 				helix_startB[1] += 1
 
@@ -544,11 +553,14 @@ def find_releases(reactant):
 		inner_index = (strand_index, domain_index - 1)
 		
 		# We now iterate through lower domains and see if we can find
-		# a release point
+		# a release point (Iterate while:
+		#	0 > inner_index strand > index of last strand, and
+		# 		inner_index strand < strand_index, or
+		#		inner_index strand = strand_index and inner_index domain < domain_index)
 		while (inner_index[0] >= 0) and (inner_index[0] < (len(strands) - 1)) and \
-			  ((inner_index[0] < strand_index) or \
-			  ((inner_index[0] == strand_index) and \
-			  (inner_index[1] < domain_index))):
+			  ( (inner_index[0] < strand_index) or \
+			    ((inner_index[0] == strand_index) and \
+			     (inner_index[1] < domain_index)) ):
 
 			# If we have run off of the end of a strand,
 			# then we have found a release point  
@@ -576,7 +588,8 @@ def find_releases(reactant):
 
 				# If the structure points to a domain above the start, this section
 				# is connected to something higher, so abort this loop
-				if (curr_structure[0] > strand_index) and (curr_structure[1] > 0):
+				#if (curr_structure[0] > strand_index) and (curr_structure[1] > 0):
+				if (curr_structure[0] > strand_index) and (curr_structure[1] >= 0):
 					break
 				  				  
 				# Otherwise it points to a domain between this one and the start
@@ -587,7 +600,7 @@ def find_releases(reactant):
 			else:
 				inner_index = curr_structure
 
-##### TODO: FIND OUT IF THIS IS NEEDED...
+		##### TODO: FIND OUT IF THIS IS NEEDED...
 		inner_index = (strand_index, domain_index - 1)
 				
 		# If we didn't find a release point in the lower domains,

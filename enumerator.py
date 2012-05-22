@@ -106,7 +106,14 @@ class Enumerator(object):
 		
 			
 	def __eq__(self, object):
-		return (sorted(self.domains) == sorted(object.domains)) and (sorted(self.strands) == sorted(object.strands)) and (sorted(self.initial_complexes) == sorted(object.initial_complexes)) and (sorted(self.reactions) == sorted(object.reactions)) and (sorted(self.resting_states) == sorted(object.resting_states)) and (sorted(self.complexes) == sorted(object.complexes)) and (sorted(self.resting_complexes) == sorted(object.resting_complexes)) and (sorted(self.transient_complexes) == sorted(object.transient_complexes))
+		return (sorted(self.domains) == sorted(object.domains)) and \
+	 		(sorted(self.strands) == sorted(object.strands)) and \
+	 		(sorted(self.initial_complexes) == sorted(object.initial_complexes)) and \
+	 		(sorted(self.reactions) == sorted(object.reactions)) and \
+	 		(sorted(self.resting_states) == sorted(object.resting_states)) and \
+	 		(sorted(self.complexes) == sorted(object.complexes)) and \
+	 		(sorted(self.resting_complexes) == sorted(object.resting_complexes)) and \
+	 		(sorted(self.transient_complexes) == sorted(object.transient_complexes))
 	
 	def enumerate(self):
 		"""
