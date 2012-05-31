@@ -1,0 +1,10 @@
+domain $ : short
+domain 1 : 0
+
+strand 1 : $
+strand 2 :  
+strand % : $ 1
+
+complex ^ :
+1
+.

@@ -242,7 +242,8 @@ def find_external_strand_break(complex, location):
 			paired_dom = complex.structure[search_strand_index]\
 										  [search_dom_index]
 			if (paired_dom == None):			
-				# If the current domain is unpaired, move to the next one
+				# If the current domain is unpaired, move to the next domain
+				# to the right
 				search_dom_index += 1
 			elif ((paired_dom[0] > search_strand_index) or \
 					 ((paired_dom[0] == search_strand_index) and \
@@ -271,7 +272,8 @@ def find_external_strand_break(complex, location):
 			paired_dom = complex.structure[search_strand_index] \
 										  [search_dom_index]
 			if (paired_dom == None):			
-				# If the current domain is unpaired, move to the next one
+				# If the current domain is unpaired, move to the next domain
+				# to the left
 				search_dom_index -= 1
 			elif ((paired_dom[0] < search_strand_index) or 
 					 ((paired_dom[0] == search_strand_index) and
@@ -316,6 +318,8 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 		s1 = copy.deepcopy(complex1.structure[0:(insertion_index_1+1)])
 		s4 = copy.deepcopy(complex1.structure[(insertion_index_1+1):])	
 	else:
+		# It's not clear to me whether this  condition will ever be executed, 
+		# because find_external_strand_break should never return < 0 -CG 5/31
 		d1 = complex1.strands[:]
 		d4 = []
 		s1 = copy.deepcopy(complex1.structure)
@@ -328,6 +332,8 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 		s2 = copy.deepcopy(complex2.structure[(insertion_index_2+1):])
 		s3 = copy.deepcopy(complex2.structure[0:(insertion_index_2+1)])
 	else:
+		# Likewise with this one; find_external_strand_break should always
+		# produce an index >= 0
 		d2 = []
 		d3 = complex2.strands[:]
 		s2 = []
@@ -600,53 +606,62 @@ def find_releases(reactant):
 			else:
 				inner_index = curr_structure
 
-		##### TODO: FIND OUT IF THIS IS NEEDED...
-		inner_index = (strand_index, domain_index - 1)
-				
-		# If we didn't find a release point in the lower domains,
-		# we now try iterating through the higher domains
-		while (inner_index[0] < len(strands) - 1) and \
-			  ((inner_index[0] > strand_index) or \
-			  ((inner_index[0] == strand_index) and \
-			  (inner_index[1] > domain_index))):
-			# If we have run off of the end of a strand,
-			# then we have found a release point  
-			if (inner_index[1] == len(strands[inner_index[0]].domains)):
-				split_start = (strand_index, domain_index)
-				split_end = inner_index
-				split_list = split_complex(reactant, split_start, split_end)
-				# We check the two resulting complexes to see if they can
-				# be split further
-				for complex in split_list:
-					output_list.extend(find_releases(complex))
-				return output_list					
-							
-			# Otherwise decide where to go next
-			curr_structure = structure[inner_index[0]][inner_index[1]]	
-			
-			# If this domain is unpaired, move to the next
-			if (curr_structure == None):
-				inner_index = (inner_index[0], inner_index[1] + 1)
 
-			# Check if the structure points to a lower domain			
-			elif (curr_structure[0] < inner_index[0]) or \
-				 ((curr_structure[0] == inner_index[0]) and \
-				  (curr_structure[1] < inner_index[1])):
-				  
-				# If the structure points to a domain before the start,
-				# this section is connected to something lower, so abort this
-				# loop
-				if (curr_structure[0] < strand_index):
-					break
-				
-				# Otherwise it points to a domain between this one and the start
-				# -- we've already been there to move to the next
-				inner_index = (inner_index[0], inner_index[1] + 1)			
-			
-			
-			# Otherwise, follow the structure
-			else:
-				inner_index = curr_structure			
+		# Alright; the following statement precludes the while loop below from 
+		# ever running, since the second clause will always fail. 
+		# Then again, without ever running this while loop, all other tests pass.
+		# OK, I'm fairly convinced this isn't needed, since the above loop 
+		# effectively works by iterating (forwards) across each strand, then looking 
+		# backwards -CG 5/29
+		
+		
+		##### TODO: FIND OUT IF THIS IS NEEDED...
+#		inner_index = (strand_index, 0)
+#				
+#		# If we didn't find a release point in the lower domains,
+#		# we now try iterating through the higher domains
+#		while (inner_index[0] < len(strands) - 1) and \
+#			  ((inner_index[0] > strand_index) or \
+#			  ((inner_index[0] == strand_index) and \
+#			  (inner_index[1] > domain_index))):
+#			# If we have run off of the end of a strand,
+#			# then we have found a release point  
+#			if (inner_index[1] == len(strands[inner_index[0]].domains)):
+#				split_start = (strand_index, domain_index)
+#				split_end = inner_index
+#				split_list = split_complex(reactant, split_start, split_end)
+#				# We check the two resulting complexes to see if they can
+#				# be split further
+#				for complex in split_list:
+#					output_list.extend(find_releases(complex))
+#				return output_list					
+#							
+#			# Otherwise decide where to go next
+#			curr_structure = structure[inner_index[0]][inner_index[1]]	
+#			
+#			# If this domain is unpaired, move to the next
+#			if (curr_structure == None):
+#				inner_index = (inner_index[0], inner_index[1] + 1)
+#
+#			# Check if the structure points to a lower domain			
+#			elif (curr_structure[0] < inner_index[0]) or \
+#				 ((curr_structure[0] == inner_index[0]) and \
+#				  (curr_structure[1] < inner_index[1])):
+#				  
+#				# If the structure points to a domain before the start,
+#				# this section is connected to something lower, so abort this
+#				# loop
+#				if (curr_structure[0] < strand_index):
+#					break
+#				
+#				# Otherwise it points to a domain between this one and the start
+#				# -- we've already been there to move to the next
+#				inner_index = (inner_index[0], inner_index[1] + 1)			
+#			
+#			
+#			# Otherwise, follow the structure
+#			else:
+#				inner_index = curr_structure			
 				
 	# If we still haven't found any splits, then this complex cannot be split
 	

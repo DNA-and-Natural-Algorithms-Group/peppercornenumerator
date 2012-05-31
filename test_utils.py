@@ -17,7 +17,11 @@ class DomainTests(unittest.TestCase):
 		self.d3 = Domain('d3', 'short')
 		self.d4 = Domain('d4', 'long')
 		self.d5 = Domain('d5', 6, sequence='ATGCGA')
-		self.d6 = Domain('d6', 6, is_complement=True, sequence='ATGCGA')
+		self.d6  = Domain('d6', 6, is_complement=True, sequence='ATGCGA')
+		self.d6a = Domain('d6', 6, is_complement=False, sequence='ATGCGA')
+		self.d6b = Domain('d6',7, sequence='ATGCGA')
+		
+		
 		self.d7 = Domain('d1', 5, False)
 		self.d8 = Domain('d2', 4)
 		
@@ -50,12 +54,24 @@ class DomainTests(unittest.TestCase):
 		assert self.d1 == self.d7
 		assert not (self.d2 == self.d8)
 	
+	def testCmp(self):
+		assert self.d1 < self.d2 # different name
+		assert self.d5 < self.d6 # different name
+		assert self.d6 > self.d5 # different name
+		assert self.d6 > self.d6a # same name, different complement
+		assert self.d6a < self.d6 # same name, different complement
+		assert self.d6a < self.d6b # same name, different length
+		
 	def testStr(self):
 		assert self.d1.__str__() == self.d1.name
 	
 	def testLength(self):
 		assert self.d1.length == 5
+		assert len(self.d1) == 5
+		
 		assert self.d2.length == 4
+		assert len(self.d2) == 4
+		
 		assert self.d3.length == SHORT_DOMAIN_LENGTH
 		assert self.d4.length == LONG_DOMAIN_LENGTH
 		def assnLen(self):
@@ -170,7 +186,12 @@ class ComplexTests(unittest.TestCase):
 		def assnStrands(self):
 			self.complexes['C1'].strands = []
 		assert_raises(AttributeError, assnStrands, self)
-		
+	
+	def testStrandIndex(self):
+		assert self.complexes['C1'].strand_index('OP') == 0
+		assert self.complexes['C1'].strand_index('PS') == 1
+		assert self.complexes['C1'].strand_index('nonexistent') == -1	
+	
 	def testStructure(self):
 		assert self.complexes['C1'].structure == [[(1, 2), (1, 1), (1, 0), None], [(0, 2), (0, 1), (0, 0), None, None]]
 		def assnStructure(self):
@@ -226,10 +247,17 @@ class RestingStateTests(unittest.TestCase):
 		
 		
 	def testName(self):
+		assert self.rs.name == 'RS1'
 		def assnName(self):
 			self.rs.name = 'RS2'
 			
 		assert_raises(AttributeError, assnName, self)
+		
+	def testStr(self):
+		assert str(self.rs) == 'RS1'
+		
+	def testRepr(self):
+		assert repr(self.rs) == "RestingState(RS1: %s)" % str(self.rs.complexes)
 		
 	def testComplexes(self):	
 		self.rs.complexes[0] = None

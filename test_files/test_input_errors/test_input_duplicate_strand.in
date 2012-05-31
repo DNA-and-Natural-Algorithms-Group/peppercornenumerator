@@ -1,0 +1,5 @@
+domain 1 : short
+domain 2 : long
+
+strand S1 : 1 2
+strand S1 : 2 1

@@ -50,13 +50,13 @@ I
 
 
 # Resting-state sets 
-state 74 = : A
-state 78 = : 314
-state 77 = : 292
-state 76 = : 285
-state 73 = : B
-state 72 = : C
-state 75 = : I
+state 76 = : A
+state 80 = : 314
+state 79 = : 292
+state 78 = : 285
+state 75 = : B
+state 74 = : C
+state 77 = : I
 ###############################
 
 

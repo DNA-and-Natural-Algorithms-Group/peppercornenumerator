@@ -16,7 +16,7 @@ import copy
 class OutputTests(unittest.TestCase):
 	# Disable output tests until all other functionality is working!
 	
-	__test__ = False
+	# __test__ = False
 	
 	def setUp(self):
 		self.SLC_enumerator = input_standard('test_files/test_input_standard_SLC.in')
@@ -74,10 +74,14 @@ class OutputTests(unittest.TestCase):
 	def testOutputJSON(self):
 		self.SLC_enumerator_reduced.enumerate()
 		output_json(self.SLC_enumerator_reduced, 'test_files/testOutputJSON.out')
-			
+		enumerator = load_json('test_files/testOutputJSON.out')
+		assert enumerator == self.SLC_enumerator_reduced
+		
 	def testOutputJSON2(self):
 		self.three_arm_enumerator_reduced.enumerate()
 		output_json(self.three_arm_enumerator_reduced, 'test_files/testOutputJSON2.out')
+		enumerator = load_json('test_files/testOutputJSON2.out')
+		assert enumerator == self.three_arm_enumerator_reduced
 			
 	def testJSONInputOutputLoop(self):
 		self.SLC_enumerator_reduced.enumerate()

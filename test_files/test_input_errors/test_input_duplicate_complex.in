@@ -1,0 +1,13 @@
+domain 1 : short
+domain 2 : long
+
+strand S1 : 1 2
+strand S2 : 2 1
+
+complex C1 :
+S1
+..
+
+complex C1 : 
+S2
+..

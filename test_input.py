@@ -76,8 +76,7 @@ class InputStandardTests(unittest.TestCase):
 		complexes.sort()
 		
 		assert (enum_complexes == complexes)
-		
-    
+
 	def testStandard_3arm_junction(self):
 		enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
 		
@@ -134,4 +133,33 @@ class InputStandardTests(unittest.TestCase):
 		
 		
 		assert (enum_complexes == complexes)
+	
+	
+	
+	def testErrors(self):
 		
+		def testDuplicateDomain():
+			enum = input_standard('test_files/test_input_errors/test_input_duplicate_domain.in')
+		assert_raises(Exception, testDuplicateDomain)
+		
+		def testDuplicateStrand():
+			enum = input_standard('test_files/test_input_errors/test_input_duplicate_strand.in')	
+		assert_raises(Exception, testDuplicateStrand)
+		
+		def testDuplicateComplex():
+			enum = input_standard('test_files/test_input_errors/test_input_duplicate_complex.in')	
+		assert_raises(Exception, testDuplicateComplex)
+
+		def testMissingDomain():
+			enum = input_standard('test_files/test_input_errors/test_input_missing_domain.in')	
+		assert_raises(Exception, testMissingDomain)
+
+		def testMissingStrand():
+			enum = input_standard('test_files/test_input_errors/test_input_missing_strand.in')	
+		assert_raises(Exception, testMissingStrand)
+		
+		enum = input_standard('test_files/test_input_errors/test_input_warnings.in')	
+		assert (enum != None)
+			
+		
+			

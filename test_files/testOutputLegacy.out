@@ -52,13 +52,13 @@ SP
 
 
 # Resting-state sets 
-state 68 = : 249
-state 70 = : 264
-state 65 = : C2
-state 67 = : Cat
-state 71 = : 260
-state 66 = : C1
-state 69 = : 250
+state 70 = : 249
+state 72 = : 264
+state 67 = : C2
+state 69 = : Cat
+state 73 = : 260
+state 68 = : C1
+state 71 = : 250
 ###############################
 
 

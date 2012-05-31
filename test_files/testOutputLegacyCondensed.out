@@ -26,9 +26,9 @@ S2
 
 
 # Resting-state sets 
-state 81 = : C1
-state 83 = : 325
-state 82 = : C2
+state 85 = : C1
+state 87 = : 325
+state 86 = : C2
 ###############################
 
 

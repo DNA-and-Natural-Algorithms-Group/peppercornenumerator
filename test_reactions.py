@@ -306,24 +306,44 @@ class OpenTests(unittest.TestCase):
 		assert exp_list == res_list
 
 	def testFindReleases4(self):
-		complex = self.complexes['I3'].clone()
-		cat_index = complex.strand_index('Cat')
-		bs_index = complex.strand_index('BS')
+		# Test another multiple releases case
 		
-		complex.structure[cat_index][0] = None
-		complex.structure[cat_index][1] = None
-		complex.structure[bs_index][0] = None
-		complex.structure[bs_index][1] = None
+		complex = self.complexes['I4'].clone()
+		BS_index = complex.strand_index('BS')
+		PS_index = complex.strand_index('PS')
+		OP_index = complex.strand_index('OP')
+		cat_index = complex.strand_index('Cat')
+		
+		complex.structure[BS_index][2] = None
+		complex.structure[PS_index][3] = None
+		
+		complex.structure[OP_index][0] = None
+		complex.structure[OP_index][1] = None
+		complex.structure[OP_index][2] = None
+		complex.structure[PS_index][0] = None
+		complex.structure[PS_index][1] = None
+		complex.structure[PS_index][2] = None
 		
 		res_list = find_releases(complex)
-		bs_complex = Complex('BS', [self.strands['BS']], [[None, None, None, None, None, None]])
 		
-		exp_list = [bs_complex, self.complexes['Cat']]
-									
+		exp_list = [self.complexes['I3'], Complex('OP', [self.strands['OP']], [[None, None, None, None]]), \
+				Complex('PS', [self.strands['PS']], [[None, None, None, None, None]])]
+		
 		res_list.sort()
 		exp_list.sort()
-				
-		assert exp_list == res_list
+		
+		
+		print "Computed Result (res_list):"	
+		print res_list
+		for complex in res_list:
+			print complex.full_string()
+		
+		print "Expected result (exp_list):"
+		print exp_list
+		for complex in exp_list:
+			print complex.full_string()
+		
+		assert res_list == exp_list
 
 	def testFindReleases5(self):
 		# Test multiple releases case

@@ -11,7 +11,7 @@ from utils import *
 from enumerator import Enumerator
 from reactions import ReactionPathway
 import reactions
-					   
+
 def input_standard(filename):
 	"""
 	Initializes and returns an enumerator from a standard input file.
@@ -41,6 +41,10 @@ def input_standard(filename):
 			
 		# This is the beginning of a domain
 		elif line.startswith("domain"):
+			# e.g.: 
+			#       "domain a : 6"
+			# parts: 0      1 2 3
+			
 			parts = line.split()
 						
 			domain_name = parts[1]
@@ -59,8 +63,8 @@ def input_standard(filename):
 			if not ((domain_length == 'short') or (domain_length == 'long')):
 				domain_length = int(domain_length)
 				if domain_length <= 0:
-					logging.warn("Domain of length %d found in input line %d"
-									(domain_length, line_counter))
+					logging.warn("Domain of length %d found in input line %d" 
+									% (domain_length, line_counter))
 				
 			# Check to see if a sequence is specified
 			if len(parts) > 4:
@@ -80,6 +84,10 @@ def input_standard(filename):
 		
 		# This is the beginning of a strand	
 		elif line.startswith("strand"):
+			# e.g.: 
+			#       "strand A : a x b y z* c* y* b* x*"
+			# parts: 0      1 2 3 4 5 6 ...
+			
 			parts = line.split()
 			
 			strand_name = parts[1]
@@ -106,8 +114,15 @@ def input_standard(filename):
 				
 			new_strand = Strand(strand_name, strand_doms)
 			strands[strand_name] = new_strand
+			
 		# This is the beginning of a complex	
 		elif line.startswith("complex"):
+			# e.g.:
+			# complex A :\n
+			# A\n				<- strands_line
+			# .(((..)))\n		<- structure_line
+			
+			
 			parts = line.split()
 			
 			complex_name = parts[1]
@@ -129,39 +144,14 @@ def input_standard(filename):
 				if not strand_name in strands:
 					logging.error("Invalid strand name %s encountered in input line %d"
 									% (strand_name, line_counter))
+					raise Exception()
 				else:
 					complex_strands.append(strands[strand_name])
 				
 			structure_line = fin.readline()
 			structure_line = structure_line.strip()
 			
-			complex_structure = []
-			
-			dot_paren_stack = []
-			
-			strand_index = 0
-			domain_index = 0
-			curr_strand = []
-			complex_structure.append(curr_strand)
-			for part in structure_line:
-				if (part == "+"):
-					strand_index += 1
-					domain_index = 0
-					curr_strand = []
-					complex_structure.append(curr_strand)
-					continue
-				if (part == "."):
-					curr_strand.append(None)
-					domain_index += 1
-				elif (part == "("):
-					curr_strand.append(None)
-					dot_paren_stack.append((strand_index, domain_index))
-					domain_index += 1
-				elif (part == ")"):
-					loc = dot_paren_stack.pop()
-					curr_strand.append(loc)
-					complex_structure[loc[0]][loc[1]] = (strand_index, domain_index)
-					domain_index += 1
+			complex_structure = parse_dot_paren(structure_line)
 			
 			
 			
@@ -181,7 +171,37 @@ def input_standard(filename):
 	
 	enumerator = Enumerator(domains, strands, complexes)
 	return enumerator
+
 	
+def parse_dot_paren(structure_line):	
+	complex_structure = []
+	dot_paren_stack = []			
+	strand_index = 0
+	domain_index = 0
+	curr_strand = []
+	complex_structure.append(curr_strand)
+	for part in structure_line:
+		if (part == "+"):
+			strand_index += 1
+			domain_index = 0
+			curr_strand = []
+			complex_structure.append(curr_strand)
+			continue
+		if (part == "."):
+			curr_strand.append(None)
+			domain_index += 1
+		elif (part == "("):
+			curr_strand.append(None)
+			dot_paren_stack.append((strand_index, domain_index))
+			domain_index += 1
+		elif (part == ")"):
+			loc = dot_paren_stack.pop()
+			curr_strand.append(loc)
+			complex_structure[loc[0]][loc[1]] = (strand_index, domain_index)
+			domain_index += 1
+	return complex_structure
+
+			
 def load_json(filename):
 	"""
 	Loads a saved enumerator from a JSON output file at filename.
