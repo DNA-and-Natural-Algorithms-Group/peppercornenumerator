@@ -11,8 +11,6 @@ from reactions import ReactionPathway, auto_name
 import reactions
 import json
 import subprocess
-import sets
-
 
 
 def condense_resting_states(enumerator):
@@ -153,7 +151,7 @@ def condense_resting_states(enumerator):
 				print 'error!'
 					
 					
-	new_reactions = sets.Set()
+	new_reactions = set()
 	for reaction in reactions:
 		if (len(reaction.reactants) == 0) and (len(reaction.products) == 0):
 			continue
@@ -168,15 +166,11 @@ def condense_resting_states(enumerator):
 		new_reactions.add(ReactionPathway('condensed', new_reagents, new_products))
 
 
-	print "New reactions: ", len(new_reactions)
-
-	for reaction in new_reactions:
-		print reaction, reaction.reactants, reaction.products
 	output = {
 				'resting_states': resting_states[:],
 				'reactions': list(new_reactions)
 			 }
-	assert False
+	#assert False
 	return output
 
 
@@ -187,50 +181,18 @@ def output_legacy(enumerator, filename, output_condensed = False):
 	Supports output of condensed graph in addition to the full graph. Does
 	not support strands.
 	"""
-	complexes = enumerator.complexes
-	transient_complexes = enumerator.transient_complexes
-	resting_complexes = enumerator.resting_complexes
-	reactions = enumerator.reactions
-	resting_states = enumerator.resting_states
 	
-	output_file = open(filename, 'w')
-	output_file.write("###### Enumerated Output ######\n")
-	output_file.write("\n\n# Domains \n")
-	for domain in sorted(enumerator.domains):
-		output_file.write("sequence " + domain.name + " = : " + str(domain.length) + "\n")
-	output_file.write("###############################\n")
-	output_file.write("\n\n# Resting-state Complexes \n")
-	for complex in sorted(resting_complexes):
+	def write_complex(output_file,complex):
 		output_file.write(str(complex) + "\n")
 		names = []
 		for strand in complex.strands:
-			names.append(strand.name)
+			names.append(" ".join(map(str,strand.domains)))
 		strands_string = " + ".join(names)
 		output_file.write(strands_string + "\n")
 		output_file.write(str(complex.dot_paren_string()) + "\n")
 		output_file.write("\n")
-	output_file.write("###############################\n")
-	output_file.write("\n\n# Resting-state sets \n")
-	for resting_state in sorted(resting_states):
-		output_file.write("state " + resting_state.name + " = : ")
-		output_file.write(str(resting_state.complexes[0]))
-		for complex in resting_state.complexes[1:]:
-			output_file.write(" %s" % complex)
-		output_file.write("\n")
-	output_file.write("###############################\n")
-	output_file.write("\n\n# Fast (Transition) Complexes \n")
-	for complex in sorted(transient_complexes):
-		output_file.write(str(complex) + "\n")
-		names = []
-		for strand in complex.strands:
-			names.append(strand.name)
-		strands_string = " + ".join(names)
-		output_file.write(strands_string + "\n")
-		output_file.write(str(complex.dot_paren_string()) + "\n")
-		output_file.write("\n")
-	output_file.write("###############################\n")
-	output_file.write("\n\n# Reactions \n")
-	for reaction in sorted(reactions):
+	
+	def write_reaction(output_file,reaction):
 		reactants = reaction.reactants
 		products = reaction.products
 		reac_string_list = [reactants[0].name]
@@ -243,28 +205,124 @@ def output_legacy(enumerator, filename, output_condensed = False):
 		reac_string_list.append("\n")
 		reac_string = ''.join(reac_string_list)
 		output_file.write(reac_string)
+		
+	complexes = enumerator.complexes
+	transient_complexes = enumerator.transient_complexes
+	resting_complexes = enumerator.resting_complexes
+	reactions = enumerator.reactions
+	resting_states = enumerator.resting_states
+	
+	output_file = open(filename, 'w')
+	output_file.write("###### Enumerated Output ######\n")
+	output_file.write("\n\n# Domains \n")
+	for domain in sorted(enumerator.domains):
+		if(not domain.is_complement):
+			output_file.write("sequence " + domain.name + " = : " + str(domain.length) + "\n")
+	
+	output_file.write("\n\n# End-state Complexes \n")
+	for complex in sorted(resting_complexes):
+		write_complex(output_file,complex)
+		
+	# Not part of the original output; omitting
+#	output_file.write("###############################\n")
+#	output_file.write("\n\n# Resting-state sets \n")
+#	for resting_state in sorted(resting_states):
+#		output_file.write("state " + resting_state.name + " = : ")
+#		output_file.write(str(resting_state.complexes[0]))
+#		for complex in resting_state.complexes[1:]:
+#			output_file.write(" %s" % complex)
+#		output_file.write("\n")
 	output_file.write("###############################\n")
+	output_file.write("\n\n# Fast (Transition) Complexes \n")
+	for complex in sorted(transient_complexes):
+		write_complex(output_file,complex)
+	output_file.write("###############################\n")
+	output_file.write("\n\n# Reactions \n")
+	for reaction in sorted(reactions):
+		write_reaction(output_file,reaction)
+		
 	if (output_condensed):
+		output_file.write("###############################\n")
 		output_file.write("\n\n# Condensed Reactions \n")
 		condensed = condense_resting_states(enumerator)
 		new_reactions = condensed['reactions']
 		for reaction in sorted(new_reactions):
-			reactants = reaction.reactants
-			products = reaction.products
-			reac_string_list = [reactants[0].name]
-			for reactant in reactants[1:]:
-				reac_string_list.append(" + " + reactant.name)
-			reac_string_list.append(" -> ")
-			reac_string_list.append(products[0].name)
-			for product in products:
-				reac_string_list.append(" + " + product.name)
-			reac_string_list.append("\n")
-			reac_string = ''.join(reac_string_list)
-			output_file.write(reac_string)
-	output_file.write("###############################\n")
+			write_reaction(output_file,reaction)
+		
+		output_file.write("###############################\n")
+		
 	output_file.close()
 
 output_legacy.supports_condensed = True		
+
+def output_pil(enumerator, filename, output_condensed = False):
+	"""
+	Text-based output using the Pepper Intermediate Language (PIL)
+	"""
+	
+	def write_complex(output_file,complex):
+		output_file.write("structure " + str(complex) + " = ")
+		names = map(lambda strand: strand.name, complex.strands)
+		strands_string = " + ".join(names)
+		output_file.write(strands_string + " : ")
+		output_file.write(str(complex.dot_paren_string()) + "\n")
+	
+	def write_reaction(output_file,reaction):
+		reactants = map(str,reaction.reactants)
+		products = map(str,reaction.products)
+		reac_string_list = ["kinetic"," + ".join(reactants),"->"," + ".join(products),"\n"]
+		reac_string = ' '.join(reac_string_list)
+		output_file.write(reac_string)
+		
+	complexes = enumerator.complexes
+	transient_complexes = enumerator.transient_complexes
+	resting_complexes = enumerator.resting_complexes
+	reactions = enumerator.reactions
+	resting_states = enumerator.resting_states
+	
+	output_file = open(filename, 'w')
+	output_file.write("###### Enumerated Output ######\n")
+	output_file.write("\n# Domains \n")
+	for domain in utils.natural_sort(enumerator.domains):
+		if(not domain.is_complement):
+			output_file.write("sequence " + domain.name + " = : " + str(domain.length) + "\n")
+	
+	output_file.write("\n# Strands \n")
+	for strand in utils.natural_sort(enumerator.strands):
+		output_file.write("strand " + strand.name + " = " + \
+						" ".join(map(lambda dom: dom.name, strand.domains)) + "\n")
+	
+	output_file.write("\n# End-state Complexes \n")
+	for complex in utils.natural_sort(resting_complexes):
+		write_complex(output_file,complex)
+		
+	# Not part of the original output; omitting
+#	output_file.write("\n\n# Resting-state sets \n")
+#	for resting_state in utils.natural_sort(resting_states):
+#		output_file.write("state " + resting_state.name + " = : ")
+#		output_file.write(str(resting_state.complexes[0]))
+#		for complex in resting_state.complexes[1:]:
+#			output_file.write(" %s" % complex)
+#		output_file.write("\n")
+
+	
+	if (output_condensed):
+		output_file.write("\n# Condensed Reactions \n")
+		condensed = condense_resting_states(enumerator)
+		new_reactions = condensed['reactions']
+		for reaction in sorted(new_reactions):
+			write_reaction(output_file,reaction)
+	else:	
+		output_file.write("\n# Fast (Transition) Complexes \n")
+		for complex in utils.natural_sort(transient_complexes):
+			write_complex(output_file,complex)
+		output_file.write("\n# Reactions \n")
+		for reaction in sorted(reactions):#utils.natural_sort(reactions):
+			write_reaction(output_file,reaction)
+		
+			
+	output_file.close()
+
 
 def output_json(enumerator, filename, output_condensed = False):
 	"""
@@ -272,123 +330,71 @@ def output_json(enumerator, filename, output_condensed = False):
 	python's JSON serialization libraries.
 	"""
 	
-	object_out = {}
+	def serializeComplex(complex):
+		temp_strands = []
+		for strand in complex.strands:
+			temp_strands.append(strand.name)
+		return { 
+			'name':complex.name,
+			'strands': temp_strands,
+			'structure': complex.structure,
+			'dot-paren': complex.dot_paren_string()
+		}
 	
-	domains = enumerator.domains
-	domains_out = []
-	for domain in domains:
+	def serializeReaction(reaction):
+		temp_reactants = []
+		for reactant in reaction.reactants:
+			temp_reactants.append(reactant.name)
+		temp_products = []
+		for product in reaction.products:
+			temp_products.append(product.name)
+		return {
+			"name":reaction.name,
+			"reactants":temp_reactants,
+			"products":temp_products
+		}
+	
+	def serializeDomain(domain):
 		temp_domain = {}
 		temp_domain['name'] = domain.name
 		temp_domain['length'] = domain.length
 		temp_domain['is_complement'] = domain.is_complement
 		if domain.sequence != None:
 			temp_domain['sequence'] = domain.sequence
-		domains_out.append(temp_domain)
+		return temp_domain
 		
-	object_out['domains'] = domains_out
-		
-	strands = enumerator.strands
-	strands_out = []
-	for strand in strands:
+	def serializeStrand(strand):
 		temp_strand = {}
 		temp_strand['name'] = strand.name
 		temp_domains = []
 		for domain in strand.domains:
 			temp_domains.append(domain.name)
 		temp_strand['domains'] = temp_domains
-		strands_out.append(temp_strand)
+		return temp_strand
 		
-	object_out['strands'] = strands_out
-		
-	resting_complexes = enumerator.resting_complexes
-	resting_complexes_out = []
-	for complex in resting_complexes:
-		temp_complex = {}
-		temp_complex['name'] = complex.name
-		temp_strands = []
-		for strand in complex.strands:
-			temp_strands.append(strand.name)
-		temp_complex['strands'] = temp_strands
-		temp_complex['structure'] = complex.structure
-		resting_complexes_out.append(temp_complex)
-		
-	object_out['resting_complexes'] = resting_complexes_out
-		
-	transient_complexes = enumerator.transient_complexes
-	transient_complexes_out = []
-	for complex in transient_complexes:
-		temp_complex = {}
-		temp_complex['name'] = complex.name
-		temp_strands = []
-		for strand in complex.strands:
-			temp_strands.append(strand.name)
-		temp_complex['strands'] = temp_strands
-		temp_complex['structure'] = complex.structure
-		transient_complexes_out.append(temp_complex)
-	
-	object_out['transient_complexes'] = transient_complexes_out
-	
-	resting_states = enumerator.resting_states
-	resting_states_out = []
-	for resting_state in resting_states:
+	def serializeRestingState(resting_state):
 		temp_resting_state = {}
 		temp_complexes = []
 		for complex in resting_state.complexes:
 			temp_complexes.append(complex.name)
 		temp_resting_state['name'] = resting_state.name
 		temp_resting_state['complexes'] = temp_complexes
-		resting_states_out.append(temp_resting_state)
+		return temp_resting_state
 		
-	object_out['resting_states'] = resting_states_out
-
-	initial_complexes = enumerator.initial_complexes
-	initial_complexes_out = []
-	for complex in initial_complexes:
-		temp_complex = {}
-		temp_complex['name'] = complex.name
-		temp_strands = []
-		for strand in complex.strands:
-			temp_strands.append(strand.name)
-		temp_complex['strands'] = temp_strands
-		temp_complex['structure'] = complex.structure
-		initial_complexes_out.append(temp_complex)
-
-	object_out['initial_complexes'] = initial_complexes_out
-
-	reactions = enumerator.reactions
-	reactions_out = []
-	for reaction in reactions:
-		temp_reaction = {}
-		temp_reaction['name'] = reaction.name
-		temp_reactants = []
-		for reactant in reaction.reactants:
-			temp_reactants.append(reactant.name)
-		temp_reaction['reactants'] = temp_reactants
-		temp_products = []
-		for product in reaction.products:
-			temp_products.append(product.name)
-		temp_reaction['products'] = temp_products
-		reactions_out.append(temp_reaction)
-		
-	object_out['reactions'] = reactions_out
+	object_out = {}
+	
+	
+	object_out['domains'] = map(serializeDomain,enumerator.domains)
+	object_out['strands'] = map(serializeStrand,enumerator.strands)
+	object_out['resting_complexes'] = map(serializeComplex,enumerator.resting_complexes)
+	object_out['transient_complexes'] = map(serializeComplex,enumerator.transient_complexes)
+	object_out['resting_states'] = map(serializeRestingState,enumerator.resting_states)
+	object_out['initial_complexes'] = map(serializeComplex,enumerator.initial_complexes)
+	object_out['reactions'] = map(serializeReaction,enumerator.reactions)
 	
 	if output_condensed:
 		condensed = condense_resting_states(enumerator)
-		reactions = condensed.reactions
-		reactions_out = []
-		for reaction in reactions:
-			temp_reaction = {}
-			temp_reaction['name'] = reaction.name
-			temp_reactants = []
-			for reactant in reaction.reactants:
-				temp_reactants.append(reactant.name)
-			temp_reaction['reactants'] = temp_reactants
-			temp_products = []
-			for product in temp_products:
-				temp_products.append(product.name)
-			temp_reaction['products'] = temp_products
-			reactions_out.append(temp_reaction)
-		object_out['condensed_reactions'] = reactions_out
+		object_out['condensed_reactions'] = map(serializeReaction,condensed['reactions'])
 		
 	fout = open(filename, 'w')
 	json.dump(object_out, fout, indent=4)
@@ -528,7 +534,7 @@ def output_condensed_graph(enumerator, filename):
 		reaction_label = "R_%d" % i
 		fout.write('%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];\n' % reaction_label)
 		
-		for reagent in reaction.reagents:
+		for reagent in reaction.reactants:
 			fout.write("%s -> %s\n" % (reagent.name, reaction_label))
 			
 		for product in reaction.products:
@@ -539,13 +545,53 @@ def output_condensed_graph(enumerator, filename):
 	
 	# Create the output file.
 	# TODO: make 'pdf' configurable
-	subprocess.call(["dot", "-O", "-Tpdf", "%s.dot" % filename])
+	subprocess.call(["dot", "-O", "-Teps", "%s.dot" % filename])
 	
 
+def output_sbml(enumerator,filename, output_condensed = False):
+	out = ['<?xml version="1.0" encoding="UTF-8"?>',
+		'<sbml level="2" version="3" xmlns="http://www.sbml.org/sbml/level2/version3">',
+		'<model name="%s">' % filename,
+		'<listOfCompartments>',
+		'<compartment id="reaction" />',
+		'</listOfCompartments>',
+		'<listOfSpecies>']
+	
+	if(output_condensed):
+		condensed = condense_resting_states(enumerator)
+		complexes = condensed['resting_states']
+		reactions = condensed['reactions']
+	else:
+		complexes = enumerator.complexes
+		reactions = enumerator.reactions
+	
+	for complex in complexes:
+		out.append('<species compartment="reaction" id="%(name)s" name="%(name)s"/>' % {"name": complex.name})
+	out.extend(['</listOfSpecies>','<listOfReactions>']);
+	for reaction in reactions:
+		out.extend(['<reaction id="%s">' % reaction.name,
+                '<listOfReactants>'])
+		for species in reaction.reactants:
+			out.append('<speciesReference species="%s"/>' % species.name)
+		out.extend(['</listOfReactants>',
+                '<listOfProducts>'])
+		for species in reaction.products:
+			out.append('<speciesReference species="%s"/>' % species.name)	
+		out.extend(['</listOfProducts>','</reaction>'])
+
+	out.extend(['</listOfReactions>','</model>','</sbml>']);
+
+
+	fout = open(filename + ".sbml", "w")
+	fout.write("".join(out))
+	fout.close()
 	
 text_output_functions = {
+	'standard': output_legacy,
 	'legacy': output_legacy,
-	'json': output_json
+	'pil': output_pil,
+	'json': output_json,
+	'sbml': output_sbml
 }
 
 graph_output_functions = {

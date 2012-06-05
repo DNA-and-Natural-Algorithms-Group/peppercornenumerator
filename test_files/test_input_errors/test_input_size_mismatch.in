@@ -1,0 +1,10 @@
+domain 1 : 6
+domain 2 : 6
+domain 3 : 6
+
+strand S1 : 1 2 
+strand S2 : 3
+
+complex C1 :
+S1 S2
+..+..

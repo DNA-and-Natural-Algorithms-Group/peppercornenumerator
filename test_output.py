@@ -71,6 +71,24 @@ class OutputTests(unittest.TestCase):
 		self.simple2_enumerator.enumerate()
 		output_full_graph(self.simple2_enumerator, 'test_files/testOutputFullGraph3.out')
 		
+	def testOutputCondensedGraph(self):
+		self.SLC_enumerator_reduced.enumerate()
+		output_condensed_graph(self.SLC_enumerator_reduced, 'test_files/testOutputCondensedGraph.out')
+	
+	def testOutputCondensedGraph2(self):
+		self.three_arm_enumerator_reduced.enumerate()
+		output_condensed_graph(self.three_arm_enumerator_reduced, 'test_files/testOutputCondensedGraph2.out')
+	
+	def testOutputCondensedGraph3(self):
+		self.simple2_enumerator.enumerate()
+		output_condensed_graph(self.simple2_enumerator, 'test_files/testOutputCondensedGraph3.out')
+		
+	def testOutputGraph(self):
+		self.simple2_enumerator.enumerate()
+		output_graph(self.simple2_enumerator,'test_files/testOutputGraph.out',output_condensed=True)
+		output_graph(self.simple2_enumerator,'test_files/testOutputGraphCondensed.out',output_condensed=False)
+		
+		
 	def testOutputJSON(self):
 		self.SLC_enumerator_reduced.enumerate()
 		output_json(self.SLC_enumerator_reduced, 'test_files/testOutputJSON.out')
@@ -82,13 +100,78 @@ class OutputTests(unittest.TestCase):
 		output_json(self.three_arm_enumerator_reduced, 'test_files/testOutputJSON2.out')
 		enumerator = load_json('test_files/testOutputJSON2.out')
 		assert enumerator == self.three_arm_enumerator_reduced
+		
+	def testOutputJSONCondensed(self):
+		self.SLC_enumerator_reduced.enumerate()
+		output_json(self.SLC_enumerator_reduced, \
+				'test_files/testOutputJSONCondensed.out',output_condensed=True)
+		enumerator = load_json('test_files/testOutputJSON.out')
+		assert enumerator == self.SLC_enumerator_reduced
+		
+	def testOutputJSONCondensed2(self):
+		self.three_arm_enumerator_reduced.enumerate()
+		output_json(self.three_arm_enumerator_reduced, \
+				'test_files/testOutputJSONCondensed2.out',output_condensed=True)
+		enumerator = load_json('test_files/testOutputJSON2.out')
+		assert enumerator == self.three_arm_enumerator_reduced
 			
 	def testJSONInputOutputLoop(self):
 		self.SLC_enumerator_reduced.enumerate()
 		output_json(self.SLC_enumerator_reduced, 'test_files/testJSONInputOutputLoop.out')
 		enumerator = load_json('test_files/testJSONInputOutputLoop.out')
 		assert enumerator == self.SLC_enumerator_reduced
+
+	def testOutputSBML(self):
+		self.SLC_enumerator_reduced.enumerate()
+		output_sbml(self.SLC_enumerator_reduced, 'test_files/testOutputSBML')
+		
+	def testOutputSBML2(self):
+		self.three_arm_enumerator_reduced.enumerate()
+		output_sbml(self.three_arm_enumerator_reduced, 'test_files/testOutputSBML2')
+		
+	def testOutputSBMLCondensed(self):
+		self.SLC_enumerator_reduced.enumerate()
+		output_sbml(self.SLC_enumerator_reduced, 'test_files/testOutputSBMLCondensed',output_condensed=True)
+		
+	def testOutputSBML2Condensed(self):
+		self.three_arm_enumerator_reduced.enumerate()
+		output_sbml(self.three_arm_enumerator_reduced, 'test_files/testOutputSBML2Condensed',output_condensed=True)
 			
 	def testOutputLegacyCondensed(self):
 		self.simple_enumerator.enumerate()
 		output_legacy(self.simple_enumerator, 'test_files/testOutputLegacyCondensed.out', output_condensed=True)
+		
+		
+	def testCondenseRestingStates(self):
+		for enum in [self.SLC_enumerator, self.three_arm_enumerator]:
+			enum.enumerate()
+			condensed = condense_resting_states(enum)
+				
+			assert (sorted(condensed['resting_states']) == \
+					sorted(enum.resting_states))
+			
+			# Test that transient complexes have been eliminated from complexes
+			resting_complexes = set([complex for state in condensed['resting_states'] for complex in state.complexes])
+			predicted_resting_complexes = set(enum.complexes) - set(enum.transient_complexes)
+			
+			print resting_complexes
+			print predicted_resting_complexes
+			
+			assert (resting_complexes == predicted_resting_complexes)
+			
+			# Test transient complexes have been removed from reactions
+			transients = set(enum.transient_complexes)
+			for reaction in condensed['reactions']:
+				for reactant in reaction.reactants:
+					assert reactant not in transients
+					
+				for product in reaction.products:
+					assert product not in transients
+					
+			# Test that no reactions are duplicated
+			assert (sorted(condensed['reactions']) == sorted(list(set(condensed['reactions']))))
+					
+			
+				
+				
+		

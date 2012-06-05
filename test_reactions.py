@@ -39,9 +39,14 @@ class BindTests(unittest.TestCase):
 	
 		self.three_arm_enumerator_reduced = Enumerator(self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
 							
-	def testFindExternalStrandBreak(self):		
+	def testFindExternalStrandBreak(self):
+
+		#	complex I4 :
+		#	BS OP PS Cat
+		#	(((... + (((. + )))). + ))	
 		I4 = self.complexes['I4']
 		
+		# find index of these strands
 		for (i, strand) in enumerate(I4.strands):
 			if (strand.name == 'BS'):
 				BS_index = i
@@ -52,9 +57,13 @@ class BindTests(unittest.TestCase):
 		
 		assert BS_index == find_external_strand_break(I4, (BS_index, 3))
 		
+		
+		#	complex I1 :
+		#	SP Cat BS
+		#	(( + .( + )))...
 		I1 = self.complexes['I1']
 		
-		
+		# find index of these strands
 		for (i, strand) in enumerate(I1.strands):
 			if (strand.name == 'SP'):
 				SP_index = i
@@ -68,6 +77,10 @@ class BindTests(unittest.TestCase):
 		assert BS_index == find_external_strand_break(I1, (BS_index, 4))
 		
 		
+		# complex C :
+		# s1 s2
+		# .( + ).
+		
 		s1 = Strand('s1', [self.domains['1'], self.domains['2']])
 		s2 = Strand('s2', [self.domains['2*'], self.domains['3']])
 		
@@ -75,6 +88,10 @@ class BindTests(unittest.TestCase):
 		
 		assert find_external_strand_break(c, (c.strand_index('s1'), 0)) == 1
 		
+		
+		# complex C : 
+		# s1 s2 s3
+		# (. + ( + ).)
 		
 		s1 = Strand('s1', [self.domains['4'], self.domains['2']])
 		s2 = Strand('s2', [self.domains['1']])
@@ -84,6 +101,10 @@ class BindTests(unittest.TestCase):
 		
 		assert find_external_strand_break(c, (c.strand_index('s1'), 1)) == 0
 		
+		
+		# complex C :
+		# s1 s2 s3
+		# ( + .(. + )..(.))
 		
 		s1 = Strand('s1', [self.domains['1']])
 		s2 = Strand('s2', [self.domains['5'], self.domains['2'], self.domains['6'], self.domains['3'], self.domains['4'], self.domains['3*'], self.domains['1*']])
@@ -154,18 +175,17 @@ class BindTests(unittest.TestCase):
 		
 		out_complex = combine_complexes_21(self.complexes['C1'], (PS_index, 3),
 										   self.complexes['I3'], (BS_index, 2))
-										   
 		
 		exp_complex = Complex('I4', [self.strands['PS'], self.strands['Cat'], self.strands['BS'], self.strands['OP']], [[(3, 2), (3, 1), (3, 0), (2, 2), None], [(2, 1), (2, 0)], [(1, 1), (1, 0), (0, 3), None, None, None], [(0, 2), (0, 1), (0, 0), None]])
-
-
+		
+		
 		assert exp_complex == out_complex
 		
 		BS_index = self.complexes['W'].strand_index('BS')
 		
 		out_complex = combine_complexes_21(self.complexes['W'], (BS_index, 0),
 										   self.complexes['Cat'], (0, 1))
-										   
+										
 		exp_complex = Complex('C', [self.strands['BS'], self.strands['PS'], self.strands['Cat']], [[(2, 1), (1, 4), (1, 3), (1, 2), (1, 1), (1, 0)], [(0, 5), (0, 4), (0, 3), (0, 2), (0, 1)], [None, (0, 0)]])
 		
 		assert exp_complex == out_complex
@@ -768,7 +788,11 @@ class ReactionPathwayTests(unittest.TestCase):
 		
 		for complex in self.SLC_enumerator.initial_complexes:
 			self.complexes[complex.name] = complex
-			
+	
+	def testHash(self):
+		assert hash(ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2']])) == hash(ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2']]))
+		assert hash(ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2']])) != hash(ReactionPathway('branch_4way', [self.complexes['C2']], [self.complexes['Cat']]))
+	
 	def testName(self):
 		self.rp = ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2']])
 		

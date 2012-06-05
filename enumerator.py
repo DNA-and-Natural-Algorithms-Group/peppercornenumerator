@@ -459,23 +459,40 @@ def main(argv):
 	parser.add_argument('--outfile', action='store', dest='output_filename', default=None)
 	parser.add_argument('-o', action='store', dest='output_format', default='standard')
 	parser.add_argument('-i', action='store', dest='input_format', default='standard')
-	parser.add_argument('-c', action='store', dest='condensed', default='False')
+	parser.add_argument('-c', action='store_true', dest='condensed', default=False)
 
 	cl_opts = parser.parse_args()
-
-	if (cl_opts.input_format == 'standard'):
-		enum = input.input_standard(cl_opts.input_filename)
-
+	
+	print "Domain-level Reaction Enumerator (v0.2.0)"
+	print "========================================="
+	
+	
+	condensed = cl_opts.condensed
+	
+	if (cl_opts.input_format in input.new_input_functions):
+		print "Reading Input file : %s" % cl_opts.input_filename
+		enum = input.new_input_functions[cl_opts.input_format](cl_opts.input_filename)
 	else:
+		print "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
 		raise Exception('Error!')
 
-	enum.enumerate()
-	if (cl_opts.output_format == 'standard'):
-		output.output_legacy(enum, cl_opts.output_filename)
+	print "Enumerating reactions..."
 
-	elif (cl_opts.output_format == 'graph'):
-		output.output_full_graph(enum, cl_opts.output_filename)
+	enum.enumerate()
+	
+	print "Done."
+	
+	if(condensed):
+		print "Condensing output to remove transient complexes."
+		
+	if (cl_opts.output_format in output.text_output_functions):
+		print "Writing text output to file %s" % cl_opts.output_filename
+		output.text_output_functions[cl_opts.output_format](enum, cl_opts.output_filename,output_condensed=condensed)
+	elif (cl_opts.output_format in output.graph_output_functions):
+		print "Writing graph output to file %s" % cl_opts.output_filename
+		output.graph_output_functions[cl_opts.output_format](enum, cl_opts.output_filename,output_condensed=condensed)
 	else:
+		print "Unrecognized output format '%s'. Exiting." % cl_opts.output_format
 		raise Exception('Error!')
 
 if __name__ == '__main__':

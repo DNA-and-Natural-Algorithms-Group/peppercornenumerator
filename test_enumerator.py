@@ -390,3 +390,12 @@ class EnumeratorTests(unittest.TestCase):
 		assert res_transient_complexes == exp_transient_complexes
 
 		assert sorted(exp_transient_complexes + exp_resting_complexes) == sorted(enum.complexes)
+		
+#	def testEnumeration4(self):
+#		self.tet_enumerator = input_standard('test_files/examples/sadowski-tetrahedron.enum')
+#		self.tet_enumerator.enumerate()
+		
+	def testEnumeration5(self):
+		self.seesaw_enumerator = input_standard('test_files/examples/seesaw/seesaw.enum')
+		self.seesaw_enumerator.enumerate()
+				

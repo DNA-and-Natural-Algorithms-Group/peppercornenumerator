@@ -134,7 +134,7 @@ def input_standard(filename):
 			if not complex_name.isalnum():
 				logging.warn("Non-alphanumeric complex name %s encountered in input line %d"
 								% (complex_name, line_counter))
-				
+			
 			complex_strands = []
 			
 			strands_line = fin.readline()
@@ -154,6 +154,12 @@ def input_standard(filename):
 			complex_structure = parse_dot_paren(structure_line)
 			
 			
+			struct_length = sum(map(len,complex_structure))
+			domains_length = sum(map(len,complex_strands))
+			if(struct_length != domains_length):
+				logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct)d."
+								% {"name":complex_name,"doms":domains_length,"struct":struct_length})
+				raise Exception()
 			
 			complex = Complex(complex_name, complex_strands, complex_structure)
 			complexes[complex_name] = complex			

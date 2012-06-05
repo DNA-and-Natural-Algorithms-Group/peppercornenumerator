@@ -1,0 +1,21 @@
+domain S1 : 15
+domain S2 : 15
+domain S3 : 15
+domain S4 : 15
+domain T : 5
+
+strand S2_T_S3_T = S2 T S3 T*
+strand T_S3 = T* S3*
+strand S2_T_S3 = S2 T S3 
+
+complex C1 :
+S2_T_S3_T T_S3
+.((. + ))
+
+complex C2 :
+S2_T_S3
+...
+
+complex C3 :
+S2_T_S3_T S2_T_S3 T_S3
+.((( + .). + ))

@@ -3,32 +3,22 @@
 
 # Domains 
 sequence a = : 12
-sequence a* = : 12
 sequence b = : 12
-sequence b* = : 12
-###############################
 
 
-# Resting-state Complexes 
+# End-state Complexes 
 C1
-S1
+a b
 ..
 
-325
-S1 + S2
+622
+a b + a*
 (.+)
 
 C2
-S2
+a*
 .
 
-###############################
-
-
-# Resting-state sets 
-state 85 = : C1
-state 87 = : 325
-state 86 = : C2
 ###############################
 
 
@@ -37,8 +27,10 @@ state 86 = : C2
 
 
 # Reactions 
-C1 + C2 -> 325
+C1 + C2 -> 622
 ###############################
 
 
 # Condensed Reactions 
+144 + 145 -> 146
+###############################

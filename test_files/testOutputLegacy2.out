@@ -3,129 +3,109 @@
 
 # Domains 
 sequence a = : 6
-sequence a* = : 6
 sequence b = : 6
-sequence b* = : 6
 sequence c = : 6
-sequence c* = : 6
 sequence x = : 6
-sequence x* = : 6
 sequence y = : 6
-sequence y* = : 6
 sequence z = : 6
-sequence z* = : 6
-###############################
 
 
-# Resting-state Complexes 
+# End-state Complexes 
 A
-A
+a x b y z* c* y* b* x*
 .(((..)))
 
-314
-A + B + C
+611
+a x b y z* c* y* b* x* + b y c z x* a* z* c* y* + c z a x y* b* x* a* z*
 ((((((((.+))))((((.+)))))))).
 
-292
-A + B + I
+589
+a x b y z* c* y* b* x* + b y c z x* a* z* c* y* + y* b* x* a*
 ((((((((.+)))).....+))))
 
-285
-A + I
+582
+a x b y z* c* y* b* x* + y* b* x* a*
 ((((.....+))))
 
 B
-B
+b y c z x* a* z* c* y*
 .(((..)))
 
 C
-C
+c z a x y* b* x* a* z*
 .(((..)))
 
 I
-I
+y* b* x* a*
 ....
 
 ###############################
 
 
-# Resting-state sets 
-state 76 = : A
-state 80 = : 314
-state 79 = : 292
-state 78 = : 285
-state 75 = : B
-state 74 = : C
-state 77 = : I
-###############################
-
-
 # Fast (Transition) Complexes 
-297
-A + B + A + I
+594
+a x b y z* c* y* b* x* + b y c z x* a* z* c* y* + a x b y z* c* y* b* x* + y* b* x* a*
 ((((((((.+)))).(...+)(((..)))+))))
 
-300
-A + B + A + I
+597
+a x b y z* c* y* b* x* + b y c z x* a* z* c* y* + a x b y z* c* y* b* x* + y* b* x* a*
 ((((((((.+))))((...+))((..)).+))))
 
-303
-A + B + C + I
+600
+a x b y z* c* y* b* x* + b y c z x* a* z* c* y* + c z a x y* b* x* a* z* + y* b* x* a*
 ((((((((.+))))...(.+)(((..)))+))))
 
-308
-A + B + C + I
+605
+a x b y z* c* y* b* x* + b y c z x* a* z* c* y* + c z a x y* b* x* a* z* + y* b* x* a*
 ((((((((.+))))((((.+)))).....+))))
 
-287
-A + B + I
+584
+a x b y z* c* y* b* x* + b y c z x* a* z* c* y* + y* b* x* a*
 ((((...(.+)(((..)))+))))
 
-302
-A + C + I
+599
+a x b y z* c* y* b* x* + c z a x y* b* x* a* z* + y* b* x* a*
 ((((.(...+)(((..)))+))))
 
-317
-A + C + I
+614
+a x b y z* c* y* b* x* + c z a x y* b* x* a* z* + y* b* x* a*
 ((((((...+))((..)).+))))
 
-280
-A + I
+577
+a x b y z* c* y* b* x* + y* b* x* a*
 ((((..)))+...)
 
-286
-B + I
+583
+b y c z x* a* z* c* y* + y* b* x* a*
 ((((..)))+.)..
 
-295
-B + I
+592
+b y c z x* a* z* c* y* + y* b* x* a*
 ((((..)).+))..
 
 ###############################
 
 
 # Reactions 
-A + 292 -> 297
-A + I -> 280
-292 + C -> 303
-285 + B -> 287
-285 + C -> 302
-B + I -> 286
-297 -> 300
-300 -> 297
-303 -> 308
-308 -> 314 + I
-287 -> 292
-302 -> 317
-317 -> 302
-280 -> 285
-286 -> 295
-295 -> 286
-297 -> A + 292
-303 -> 292 + C
-287 -> 285 + B
-302 -> 285 + C
-280 -> A + I
-286 -> B + I
-###############################
-###############################
+A + 589 -> 594
+A + I -> 577
+589 + C -> 600
+582 + B -> 584
+582 + C -> 599
+B + I -> 583
+594 -> 597
+597 -> 594
+600 -> 605
+605 -> 611 + I
+584 -> 589
+599 -> 614
+614 -> 599
+577 -> 582
+583 -> 592
+592 -> 583
+594 -> A + 589
+600 -> 589 + C
+584 -> 582 + B
+599 -> 582 + C
+577 -> A + I
+583 -> B + I

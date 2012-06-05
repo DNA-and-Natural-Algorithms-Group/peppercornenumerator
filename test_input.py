@@ -158,6 +158,10 @@ class InputStandardTests(unittest.TestCase):
 			enum = input_standard('test_files/test_input_errors/test_input_missing_strand.in')	
 		assert_raises(Exception, testMissingStrand)
 		
+		def testComplexError():
+			enum = input_standard('test_files/test_input_errors/test_input_size_mismatch.in')
+		assert_raises(Exception, testComplexError)
+		
 		enum = input_standard('test_files/test_input_errors/test_input_warnings.in')	
 		assert (enum != None)
 			

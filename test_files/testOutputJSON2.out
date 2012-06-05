@@ -6,13 +6,13 @@
                 "I"
             ], 
             "products": [
-                "206"
+                "429"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "206"
+                "429"
             ], 
             "products": [
                 "A", 
@@ -22,10 +22,10 @@
         }, 
         {
             "reactants": [
-                "206"
+                "429"
             ], 
             "products": [
-                "211"
+                "434"
             ], 
             "name": "branch_3way"
         }, 
@@ -35,42 +35,42 @@
                 "I"
             ], 
             "products": [
-                "212"
+                "435"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "211", 
+                "434", 
                 "B"
             ], 
             "products": [
-                "213"
+                "436"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "213"
+                "436"
             ], 
             "products": [
-                "211", 
+                "434", 
                 "B"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "213"
+                "436"
             ], 
             "products": [
-                "218"
+                "441"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "212"
+                "435"
             ], 
             "products": [
                 "B", 
@@ -80,134 +80,134 @@
         }, 
         {
             "reactants": [
-                "212"
+                "435"
             ], 
             "products": [
-                "221"
+                "444"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "221"
+                "444"
             ], 
             "products": [
-                "212"
+                "435"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
                 "A", 
-                "218"
+                "441"
             ], 
             "products": [
-                "223"
+                "446"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "223"
+                "446"
             ], 
             "products": [
                 "A", 
-                "218"
+                "441"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "223"
+                "446"
             ], 
             "products": [
-                "226"
+                "449"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "226"
+                "449"
             ], 
             "products": [
-                "223"
+                "446"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "211", 
+                "434", 
                 "C"
             ], 
             "products": [
-                "228"
+                "451"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "218", 
+                "441", 
                 "C"
             ], 
             "products": [
-                "229"
+                "452"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "229"
+                "452"
             ], 
             "products": [
-                "218", 
+                "441", 
                 "C"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "229"
+                "452"
             ], 
             "products": [
-                "234"
+                "457"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "234"
+                "457"
             ], 
             "products": [
-                "240", 
+                "463", 
                 "I"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "228"
+                "451"
             ], 
             "products": [
-                "211", 
+                "434", 
                 "C"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "228"
+                "451"
             ], 
             "products": [
-                "243"
+                "466"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "243"
+                "466"
             ], 
             "products": [
-                "228"
+                "451"
             ], 
             "name": "branch_3way"
         }
@@ -267,6 +267,7 @@
     ], 
     "resting_complexes": [
         {
+            "dot-paren": "....", 
             "strands": [
                 "I"
             ], 
@@ -281,6 +282,7 @@
             ]
         }, 
         {
+            "dot-paren": ".(((..)))", 
             "strands": [
                 "A"
             ], 
@@ -318,11 +320,12 @@
             ]
         }, 
         {
+            "dot-paren": "((((.....+))))", 
             "strands": [
                 "A", 
                 "I"
             ], 
-            "name": "211", 
+            "name": "434", 
             "structure": [
                 [
                     [
@@ -368,6 +371,7 @@
             ]
         }, 
         {
+            "dot-paren": ".(((..)))", 
             "strands": [
                 "B"
             ], 
@@ -405,12 +409,13 @@
             ]
         }, 
         {
+            "dot-paren": "((((((((.+)))).....+))))", 
             "strands": [
                 "A", 
                 "B", 
                 "I"
             ], 
-            "name": "218", 
+            "name": "441", 
             "structure": [
                 [
                     [
@@ -491,6 +496,7 @@
             ]
         }, 
         {
+            "dot-paren": ".(((..)))", 
             "strands": [
                 "C"
             ], 
@@ -528,12 +534,13 @@
             ]
         }, 
         {
+            "dot-paren": "((((((((.+))))((((.+)))))))).", 
             "strands": [
                 "A", 
                 "B", 
                 "C"
             ], 
-            "name": "240", 
+            "name": "463", 
             "structure": [
                 [
                     [
@@ -645,6 +652,7 @@
     ], 
     "initial_complexes": [
         {
+            "dot-paren": "....", 
             "strands": [
                 "I"
             ], 
@@ -659,6 +667,7 @@
             ]
         }, 
         {
+            "dot-paren": ".(((..)))", 
             "strands": [
                 "A"
             ], 
@@ -696,6 +705,7 @@
             ]
         }, 
         {
+            "dot-paren": ".(((..)))", 
             "strands": [
                 "B"
             ], 
@@ -733,6 +743,7 @@
             ]
         }, 
         {
+            "dot-paren": ".(((..)))", 
             "strands": [
                 "C"
             ], 
@@ -775,43 +786,43 @@
             "complexes": [
                 "C"
             ], 
-            "name": "60"
+            "name": "105"
         }, 
         {
             "complexes": [
                 "B"
             ], 
-            "name": "61"
+            "name": "106"
         }, 
         {
             "complexes": [
                 "A"
             ], 
-            "name": "62"
+            "name": "107"
         }, 
         {
             "complexes": [
                 "I"
             ], 
-            "name": "63"
+            "name": "108"
         }, 
         {
             "complexes": [
-                "211"
+                "434"
             ], 
-            "name": "64"
+            "name": "109"
         }, 
         {
             "complexes": [
-                "218"
+                "441"
             ], 
-            "name": "65"
+            "name": "110"
         }, 
         {
             "complexes": [
-                "240"
+                "463"
             ], 
-            "name": "66"
+            "name": "111"
         }
     ], 
     "domains": [
@@ -878,11 +889,12 @@
     ], 
     "transient_complexes": [
         {
+            "dot-paren": "((((..)))+...)", 
             "strands": [
                 "A", 
                 "I"
             ], 
-            "name": "206", 
+            "name": "429", 
             "structure": [
                 [
                     [
@@ -928,12 +940,13 @@
             ]
         }, 
         {
+            "dot-paren": "((((...(.+)(((..)))+))))", 
             "strands": [
                 "A", 
                 "B", 
                 "I"
             ], 
-            "name": "213", 
+            "name": "436", 
             "structure": [
                 [
                     [
@@ -1014,11 +1027,12 @@
             ]
         }, 
         {
+            "dot-paren": "((((..)))+.)..", 
             "strands": [
                 "B", 
                 "I"
             ], 
-            "name": "212", 
+            "name": "435", 
             "structure": [
                 [
                     [
@@ -1064,11 +1078,12 @@
             ]
         }, 
         {
+            "dot-paren": "((((..)).+))..", 
             "strands": [
                 "B", 
                 "I"
             ], 
-            "name": "221", 
+            "name": "444", 
             "structure": [
                 [
                     [
@@ -1114,13 +1129,14 @@
             ]
         }, 
         {
+            "dot-paren": "((((((((.+)))).(...+)(((..)))+))))", 
             "strands": [
                 "A", 
                 "B", 
                 "A", 
                 "I"
             ], 
-            "name": "223", 
+            "name": "446", 
             "structure": [
                 [
                     [
@@ -1236,13 +1252,14 @@
             ]
         }, 
         {
+            "dot-paren": "((((((((.+))))((...+))((..)).+))))", 
             "strands": [
                 "A", 
                 "B", 
                 "A", 
                 "I"
             ], 
-            "name": "226", 
+            "name": "449", 
             "structure": [
                 [
                     [
@@ -1358,13 +1375,14 @@
             ]
         }, 
         {
+            "dot-paren": "((((((((.+))))...(.+)(((..)))+))))", 
             "strands": [
                 "A", 
                 "B", 
                 "C", 
                 "I"
             ], 
-            "name": "229", 
+            "name": "452", 
             "structure": [
                 [
                     [
@@ -1480,13 +1498,14 @@
             ]
         }, 
         {
+            "dot-paren": "((((((((.+))))((((.+)))).....+))))", 
             "strands": [
                 "A", 
                 "B", 
                 "C", 
                 "I"
             ], 
-            "name": "234", 
+            "name": "457", 
             "structure": [
                 [
                     [
@@ -1602,12 +1621,13 @@
             ]
         }, 
         {
+            "dot-paren": "((((.(...+)(((..)))+))))", 
             "strands": [
                 "A", 
                 "C", 
                 "I"
             ], 
-            "name": "228", 
+            "name": "451", 
             "structure": [
                 [
                     [
@@ -1688,12 +1708,13 @@
             ]
         }, 
         {
+            "dot-paren": "((((((...+))((..)).+))))", 
             "strands": [
                 "A", 
                 "C", 
                 "I"
             ], 
-            "name": "243", 
+            "name": "466", 
             "structure": [
                 [
                     [

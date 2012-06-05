@@ -6,9 +6,21 @@
 #
 
 import copy
+import re
 
 SHORT_DOMAIN_LENGTH = 6
 LONG_DOMAIN_LENGTH = 12
+
+import re
+
+def natural_sort(l): 
+	"""
+	Sorts a collection in the order humans would expect. Implementation from
+	http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort
+	"""
+	convert = lambda text: int(text) if text.isdigit() else text.lower() 
+	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', str(key)) ] 
+	return sorted(l, key = alphanum_key)
 
 class Domain(object):
 	"""
@@ -42,7 +54,6 @@ class Domain(object):
 				elif (l == 'G'):
 					self._complement_sequence[i] = 'C'
 			self._complement_sequence = ''.join(self._complement_sequence)
-	
 	
 	def __repr__(self):
 		return "Domain(%s)" % (self.name)

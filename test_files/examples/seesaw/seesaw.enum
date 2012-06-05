@@ -1,0 +1,34 @@
+domain S1 : 15
+domain S2 : 15
+domain S3 : 15
+domain S4 : 15
+domain T : 5
+
+strand S1_T_S3 = S1 T S3
+strand T_S3_T = T* S3* T*
+strand S3_T_S4 = S3 T S4
+strand S2_T_S3 = S2 T S3 
+
+complex Gate:
+S1_T_S3 T_S3_T
+.(( + .))
+
+complex Input:
+S3_T_S4
+...
+
+complex Fuel:
+S2_T_S3 
+...
+
+complex Waste:
+S2_T_S3 T_S3_T
+.(( + .))
+
+complex Output:
+S1_T_S3
+...
+
+complex Intermediate:
+S3_T_S4 T_S3_T
+((. + )).

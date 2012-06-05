@@ -63,7 +63,10 @@ class ReactionPathway(object):
 		return (self.name == other.name) and \
 			   (self.reactants == other.reactants) and \
 			   (self.products == other.products)
-			   
+
+	def __hash__(self):
+		return hash(frozenset(self.reactants)) + hash(frozenset(self.products))
+
 	def __cmp__(self, other):
 		out = cmp(self.name, other.name)
 		if (out != 0):
@@ -135,8 +138,7 @@ def bind11(reactant):
 					struct_element = struct[inner_strand][inner_domain]
 					inner_strand = struct_element[0]
 					inner_domain = struct_element[1] + 1
-				elif not outer_domain.can_pair(strands[inner_strand].
-											   domains[inner_domain]):
+				elif not outer_domain.can_pair(strands[inner_strand].domains[inner_domain]):
 					# These domains aren't complementary
 					inner_domain = inner_domain + 1
 				else:
@@ -401,13 +403,26 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 	if ((insertion_index_1 > 0) and (location1[0] > insertion_index_1)):
 		location1 = (location1[0] + s4_strand_offset, location1[1])
 	
-	if ((insertion_index_2 > 0) and (location2[0] > insertion_index_2)):
+	
+	# NOTE: This case is unexercised by all tests written by Karthik, regardless
+	# whether the first clause is included. Since this tests whether the 
+	# location2 is within d2 or d3, I think the first clause is unnecessary.
+
+	# if ((insertion_index_2 > 0) and (location2[0] > insertion_index_2)):
+	if (location2[0] > insertion_index_2):
 		location2 = (location2[0] + s2_strand_offset, location2[1])
 	else:
 		location2 = (location2[0] + s3_strand_offset, location2[1])
 	
+	
 	new_structure[location1[0]][location1[1]] = location2
 	new_structure[location2[0]][location2[1]] = location1
+#	try:
+#		new_structure[location1[0]][location1[1]] = location2
+#		new_structure[location2[0]][location2[1]] = location1
+#	except IndexError:
+#		print "Agh!"
+#		raise Exception()
 	
 	global auto_name
 	

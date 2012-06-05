@@ -1,0 +1,69 @@
+domain 1 : 6
+domain 2 : 6
+domain 3 : 6
+domain 4 : 6
+domain 5 : 6
+domain 6 : 6
+domain 7 : 6
+domain 8 : 6
+domain 9 : 6
+domain 10 : 6
+domain 11 : 6
+domain 12 : 6
+domain 13 : 6
+domain 14 : 6
+domain 15 : 6
+domain 16 : 6
+domain 17 : 6
+domain 18 : 6
+
+strand n1 = 1* 2* 3* 4* 5* 3 2 6* 7*
+strand n2 = 3* 5 4 1 8* 4* 5* 9* 10*
+strand n3 = 4 8 1* 3 2 1 8* 11* 12*
+strand n4 = 7 6 2* 7* 13* 10 14* 6*
+strand n5 = 6 14 10* 15* 10 14*
+strand n6 = 10 9 5 10* 15 12 16* 9*
+strand n7 = 9 16 12* 17* 12 16*
+strand n8 = 12 11 8 12* 17 7 18* 11*
+strand n9 = 11 18 7* 13 7 18*
+strand n10 = 3 2 1
+
+complex n1 :
+n1
+.((..))..
+
+complex n2 :
+n2
+.((..))..
+
+complex n3 :
+n3
+.((..))..
+
+complex n4 :
+n4
+..((.)).
+
+complex n5 :
+n5
+.((.))
+
+complex n6 :
+n6
+..((.)).
+
+complex n7 :
+n7
+.((.))
+
+complex n8 :
+n8
+..((.)).
+
+complex n9 :
+n9
+.((.))
+
+complex n10 :
+n10
+...
