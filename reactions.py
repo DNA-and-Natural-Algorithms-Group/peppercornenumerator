@@ -400,7 +400,8 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 	
 	# Finally, we need to update given reaction indices to new indices
 	# and then add the new pairing to the structure
-	if ((insertion_index_1 > 0) and (location1[0] > insertion_index_1)):
+	# if ((insertion_index_1 > 0) and (location1[0] > insertion_index_1)):
+	if (location1[0] > insertion_index_1):
 		location1 = (location1[0] + s4_strand_offset, location1[1])
 	
 	

@@ -10,6 +10,10 @@ from utils import *
 from nose.tools import *
 import copy
 
+class MiscTests(unittest.TestCase):
+	def testNaturalSort(self):
+		assert natural_sort(['c10','b','c2','c1','a']) == ['a','b','c1','c2','c10']
+
 class DomainTests(unittest.TestCase):
 	def setUp(self):
 		self.d1 = Domain('d1', 5)

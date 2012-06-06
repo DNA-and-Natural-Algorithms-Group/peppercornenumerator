@@ -285,7 +285,7 @@ class Enumerator(object):
 			for (i, product) in enumerate(reaction.products):
 			
 				if (len(product.strands) > MAX_COMPLEX_SIZE):
-					logging.warning("Complex %s too large, ignoring!" % len(product.strands))
+					logging.warning("Complex %(name)s (%(strands)d strands) too large, ignoring!" % {"name":product.name,"strands":len(product.strands)})
 					continue
 			
 				# This will be set to True if we've already seen this complex

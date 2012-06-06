@@ -38,7 +38,26 @@ class BindTests(unittest.TestCase):
 			self.complexes[complex.name] = complex
 	
 		self.three_arm_enumerator_reduced = Enumerator(self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
-							
+		
+		
+		def index_parts(enum):
+			domains = {}
+			strands = {}
+			complexes = {}
+			
+			for domain in enum.domains:
+				domains[domain.name] = domain
+			
+			for strand in enum.strands:
+				strands[strand.name] = strand
+			
+			for complex in enum.initial_complexes:
+				complexes[complex.name] = complex
+			
+			return (domains,strands,complexes)
+		
+		self.index_parts = index_parts
+		
 	def testFindExternalStrandBreak(self):
 
 		#	complex I4 :
@@ -200,14 +219,66 @@ class BindTests(unittest.TestCase):
 		
 		exp_complex = Complex('AB', [s1, s2], [[None, (1, 0)], [(0, 1), None]])
 		
+		print "Output: "
 		print out_complex
 		print out_complex.strands
 		print out_complex.structure
+		print "Expected: "
 		print exp_complex
 		print exp_complex.strands
 		print exp_complex.structure		
 		
 		assert out_complex == exp_complex
+		
+	def test_combine_complexes_21_seesaw(self):
+		self.seesaw_enum = input_standard('test_files/examples/seesaw/seesaw.enum')
+		(domains,strands,complexes) = self.index_parts(self.seesaw_enum)
+		
+		exp_complex = Complex('complex',[strands['S2_T_S3'],strands['S2_T_S3'],strands['T_S3_T']],[[None,(2,2),(2,1)],[None,(2,0),None],[(1,1),(0,2),(0,1)]])
+		out_complex = combine_complexes_21(complexes['Waste'], (1,0), complexes['Fuel'], (0,1))
+		
+		print "Waste: "
+		print
+		print complexes['Waste']
+		print complexes['Waste'].strands
+		print complexes['Waste'].structure
+		print
+		print "Fuel: "
+		print complexes['Fuel']
+		print complexes['Fuel'].strands
+		print complexes['Fuel'].structure
+		print
+		
+		print "Output: "
+		print out_complex
+		print out_complex.strands
+		print out_complex.structure
+		print
+		print "Expected: "
+		print exp_complex
+		print exp_complex.strands
+		print exp_complex.structure		
+		
+		assert out_complex == exp_complex
+		
+	def test_combine_complexes_21_seesaw_2(self):
+		self.seesaw_enum = input_standard('test_files/examples/seesaw/seesaw2.enum')
+		(domains,strands,complexes) = self.index_parts(self.seesaw_enum)
+		out_complex = reactions.combine_complexes_21(complexes["C1"], (0,3), complexes["C2"], (0,1))
+		exp_complex = complexes['C3']
+		
+		print "Output: "
+		print out_complex
+		print out_complex.strands
+		print out_complex.structure
+		print
+		print "Expected: "
+		print exp_complex
+		print exp_complex.strands
+		print exp_complex.structure	
+		
+		assert out_complex == exp_complex
+		
 		
 		
 	def testBind21(self):

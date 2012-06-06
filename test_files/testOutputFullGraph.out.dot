@@ -5,25 +5,25 @@ node[width=0.25,height=0.375,fontsize=9]
 subgraph cluster0 {
 label="BS + SP + Cat"
 fontsize=6
-308 [label="308:(((...+))+.)"];
-311 [label="311:(((...+).+))"];
+488 [label="488:(((...+))+.)"];
+491 [label="491:(((...+).+))"];
 }
 subgraph cluster1 {
 label="BS + OP + PS"
 fontsize=6
-330 [label="330:.((...+(((.+)))))"];
+510 [label="510:.((...+(((.+)))))"];
 }
 subgraph cluster2 {
 label="BS + OP + PS + Cat"
 fontsize=6
-324 [label="324:(((...+(((.+)))))+.)"];
-315 [label="315:(((...+(((.+)))).+))"];
+504 [label="504:(((...+(((.+)))))+.)"];
+495 [label="495:(((...+(((.+)))).+))"];
 }
 subgraph cluster3 {
 label="BS + PS + Cat"
 fontsize=6
-325 [label="325:((((((+)))))+.)"];
-322 [label="322:((((((+)))).+))"];
+505 [label="505:((((((+)))))+.)"];
+502 [label="502:((((((+)))).+))"];
 }
 subgraph cluster4 {
 label="Cat"
@@ -43,75 +43,75 @@ C2 [label="C2:.((...+))",style=filled,color=gold1];
 subgraph cluster7 {
 label="SP"
 fontsize=6
-313 [label="313:..",style=filled,color=gold1];
+493 [label="493:..",style=filled,color=gold1];
 }
 subgraph cluster8 {
 label="BS + Cat"
 fontsize=6
-312 [label="312:((....+))",style=filled,color=gold1];
+492 [label="492:((....+))",style=filled,color=gold1];
 }
 subgraph cluster9 {
 label="OP"
 fontsize=6
-323 [label="323:....",style=filled,color=gold1];
+503 [label="503:....",style=filled,color=gold1];
 }
 subgraph cluster10 {
 label="BS + PS"
 fontsize=6
-327 [label="327:.(((((+)))))",style=filled,color=gold1];
+507 [label="507:.(((((+)))))",style=filled,color=gold1];
 }
 R_0 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
 C2 -> R_0
 Cat -> R_0
-R_0 -> 308
+R_0 -> 488
 R_1 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
-308 -> R_1
+488 -> R_1
 R_1 -> C2
 R_1 -> Cat
-308 -> 311
+488 -> 491
 R_3 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
-311 -> R_3
-R_3 -> 312
-R_3 -> 313
-311 -> 308
+491 -> R_3
+R_3 -> 492
+R_3 -> 493
+491 -> 488
 R_5 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
-312 -> R_5
+492 -> R_5
 C1 -> R_5
-R_5 -> 315
+R_5 -> 495
 R_6 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
-312 -> R_6
-313 -> R_6
-R_6 -> 311
+492 -> R_6
+493 -> R_6
+R_6 -> 491
 R_7 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
-315 -> R_7
-R_7 -> 312
+495 -> R_7
+R_7 -> 492
 R_7 -> C1
-315 -> 324
+495 -> 504
 R_9 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
-315 -> R_9
-R_9 -> 322
-R_9 -> 323
-322 -> 325
+495 -> R_9
+R_9 -> 502
+R_9 -> 503
+502 -> 505
 R_11 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
-325 -> R_11
-R_11 -> 327
+505 -> R_11
+R_11 -> 507
 R_11 -> Cat
-325 -> 322
+505 -> 502
 R_13 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
-324 -> R_13
-R_13 -> 330
+504 -> R_13
+R_13 -> 510
 R_13 -> Cat
-324 -> 315
+504 -> 495
 R_15 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
-324 -> R_15
-R_15 -> 325
-R_15 -> 323
+504 -> R_15
+R_15 -> 505
+R_15 -> 503
 R_16 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
-330 -> R_16
-R_16 -> 327
-R_16 -> 323
+510 -> R_16
+R_16 -> 507
+R_16 -> 503
 R_17 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
-327 -> R_17
+507 -> R_17
 Cat -> R_17
-R_17 -> 325
+R_17 -> 505
 }

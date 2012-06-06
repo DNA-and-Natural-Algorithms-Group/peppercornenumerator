@@ -398,4 +398,18 @@ class EnumeratorTests(unittest.TestCase):
 	def testEnumeration5(self):
 		self.seesaw_enumerator = input_standard('test_files/examples/seesaw/seesaw.enum')
 		self.seesaw_enumerator.enumerate()
+		
+	def testEnumeration6(self):
+		# Test polymer detection
+		polymer_enum = self.polymer_enum = input_standard('test_files/test_input_standard_polymer.in')
 				
+		def testPolymer():
+			import output
+			polymer_enum.enumerate()
+			print polymer_enum.complexes
+			print polymer_enum.resting_complexes
+			print polymer_enum.resting_states
+			print polymer_enum.reactions
+			output.output_pil(polymer_enum, 'test_files/test_output_polymer.pil')
+			
+		assert_raises(Exception, testPolymer)

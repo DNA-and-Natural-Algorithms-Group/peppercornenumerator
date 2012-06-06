@@ -6,13 +6,13 @@
                 "I"
             ], 
             "products": [
-                "429"
+                "609"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "429"
+                "609"
             ], 
             "products": [
                 "A", 
@@ -22,10 +22,10 @@
         }, 
         {
             "reactants": [
-                "429"
+                "609"
             ], 
             "products": [
-                "434"
+                "614"
             ], 
             "name": "branch_3way"
         }, 
@@ -35,42 +35,42 @@
                 "I"
             ], 
             "products": [
-                "435"
+                "615"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "434", 
+                "614", 
                 "B"
             ], 
             "products": [
-                "436"
+                "616"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "436"
+                "616"
             ], 
             "products": [
-                "434", 
+                "614", 
                 "B"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "436"
+                "616"
             ], 
             "products": [
-                "441"
+                "621"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "435"
+                "615"
             ], 
             "products": [
                 "B", 
@@ -80,134 +80,134 @@
         }, 
         {
             "reactants": [
-                "435"
+                "615"
             ], 
             "products": [
-                "444"
+                "624"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "444"
+                "624"
             ], 
             "products": [
-                "435"
+                "615"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
                 "A", 
-                "441"
+                "621"
             ], 
             "products": [
-                "446"
+                "626"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "446"
+                "626"
             ], 
             "products": [
                 "A", 
-                "441"
+                "621"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "446"
+                "626"
             ], 
             "products": [
-                "449"
+                "629"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "449"
+                "629"
             ], 
             "products": [
-                "446"
+                "626"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "434", 
+                "614", 
                 "C"
             ], 
             "products": [
-                "451"
+                "631"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "441", 
+                "621", 
                 "C"
             ], 
             "products": [
-                "452"
+                "632"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "452"
+                "632"
             ], 
             "products": [
-                "441", 
+                "621", 
                 "C"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "452"
+                "632"
             ], 
             "products": [
-                "457"
+                "637"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "457"
+                "637"
             ], 
             "products": [
-                "463", 
+                "643", 
                 "I"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "451"
+                "631"
             ], 
             "products": [
-                "434", 
+                "614", 
                 "C"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "451"
+                "631"
             ], 
             "products": [
-                "466"
+                "646"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "466"
+                "646"
             ], 
             "products": [
-                "451"
+                "631"
             ], 
             "name": "branch_3way"
         }
@@ -325,7 +325,7 @@
                 "A", 
                 "I"
             ], 
-            "name": "434", 
+            "name": "614", 
             "structure": [
                 [
                     [
@@ -415,7 +415,7 @@
                 "B", 
                 "I"
             ], 
-            "name": "441", 
+            "name": "621", 
             "structure": [
                 [
                     [
@@ -540,7 +540,7 @@
                 "B", 
                 "C"
             ], 
-            "name": "463", 
+            "name": "643", 
             "structure": [
                 [
                     [
@@ -786,43 +786,43 @@
             "complexes": [
                 "C"
             ], 
-            "name": "105"
+            "name": "122"
         }, 
         {
             "complexes": [
                 "B"
             ], 
-            "name": "106"
+            "name": "123"
         }, 
         {
             "complexes": [
                 "A"
             ], 
-            "name": "107"
+            "name": "124"
         }, 
         {
             "complexes": [
                 "I"
             ], 
-            "name": "108"
+            "name": "125"
         }, 
         {
             "complexes": [
-                "434"
+                "614"
             ], 
-            "name": "109"
+            "name": "126"
         }, 
         {
             "complexes": [
-                "441"
+                "621"
             ], 
-            "name": "110"
+            "name": "127"
         }, 
         {
             "complexes": [
-                "463"
+                "643"
             ], 
-            "name": "111"
+            "name": "128"
         }
     ], 
     "domains": [
@@ -894,7 +894,7 @@
                 "A", 
                 "I"
             ], 
-            "name": "429", 
+            "name": "609", 
             "structure": [
                 [
                     [
@@ -946,7 +946,7 @@
                 "B", 
                 "I"
             ], 
-            "name": "436", 
+            "name": "616", 
             "structure": [
                 [
                     [
@@ -1032,7 +1032,7 @@
                 "B", 
                 "I"
             ], 
-            "name": "435", 
+            "name": "615", 
             "structure": [
                 [
                     [
@@ -1083,7 +1083,7 @@
                 "B", 
                 "I"
             ], 
-            "name": "444", 
+            "name": "624", 
             "structure": [
                 [
                     [
@@ -1136,7 +1136,7 @@
                 "A", 
                 "I"
             ], 
-            "name": "446", 
+            "name": "626", 
             "structure": [
                 [
                     [
@@ -1259,7 +1259,7 @@
                 "A", 
                 "I"
             ], 
-            "name": "449", 
+            "name": "629", 
             "structure": [
                 [
                     [
@@ -1382,7 +1382,7 @@
                 "C", 
                 "I"
             ], 
-            "name": "452", 
+            "name": "632", 
             "structure": [
                 [
                     [
@@ -1505,7 +1505,7 @@
                 "C", 
                 "I"
             ], 
-            "name": "457", 
+            "name": "637", 
             "structure": [
                 [
                     [
@@ -1627,7 +1627,7 @@
                 "C", 
                 "I"
             ], 
-            "name": "451", 
+            "name": "631", 
             "structure": [
                 [
                     [
@@ -1714,7 +1714,7 @@
                 "C", 
                 "I"
             ], 
-            "name": "466", 
+            "name": "646", 
             "structure": [
                 [
                     [

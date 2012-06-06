@@ -9,26 +9,26 @@ strand T_S3_T = T* S3* T*
 strand S3_T_S4 = S3 T S4
 strand S2_T_S3 = S2 T S3 
 
-complex Gate:
+complex Gate :
 S1_T_S3 T_S3_T
 .(( + .))
 
-complex Input:
+complex Input :
 S3_T_S4
 ...
 
-complex Fuel:
+complex Fuel :
 S2_T_S3 
 ...
 
-complex Waste:
+complex Waste :
 S2_T_S3 T_S3_T
 .(( + .))
 
-complex Output:
+complex Output :
 S1_T_S3
 ...
 
-complex Intermediate:
+complex Intermediate :
 S3_T_S4 T_S3_T
 ((. + )).
