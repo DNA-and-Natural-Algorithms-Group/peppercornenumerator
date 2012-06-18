@@ -46,100 +46,125 @@ class OutputTests(unittest.TestCase):
 		self.simple_enumerator = input_standard('test_files/test_input_standard_simple.in')
 				
 		self.simple2_enumerator = input_standard('test_files/test_input_standard_simple2.in')
-
-	def testOutputLegacy(self):
+		
+		
+		self.SLC_enumerator.enumerate()
 		self.SLC_enumerator_reduced.enumerate()
-		output_legacy(self.SLC_enumerator_reduced, 'test_files/testOutputLegacy.out', output_condensed=False)
+		self.three_arm_enumerator.enumerate()
+		self.three_arm_enumerator_reduced.enumerate()
+		self.simple_enumerator.enumerate()
+		self.simple2_enumerator.enumerate()
+		
+	def testOutputLegacy(self):
+		output_legacy(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_Legacy.out', output_condensed=False)
 
 	def testOutputLegacy2(self):
-		self.three_arm_enumerator_reduced.enumerate()
-		output_legacy(self.three_arm_enumerator_reduced, 'test_files/testOutputLegacy2.out', output_condensed=False)
+		output_legacy(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_Legacy2.out', output_condensed=False)
 		
 	def testOutputLegacy3(self):
-		self.simple2_enumerator.enumerate()
-		output_legacy(self.simple2_enumerator, 'test_files/testOutputLegacy3.out', output_condensed=False)
+		output_legacy(self.simple2_enumerator, 'test_files/test_output/test_output_Legacy3.out', output_condensed=False)
 	
 	def testOutputFullGraph(self):
-		self.SLC_enumerator_reduced.enumerate()
-		output_full_graph(self.SLC_enumerator_reduced, 'test_files/testOutputFullGraph.out')
+		output_full_graph(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.out')
 	
 	def testOutputFullGraph2(self):
-		self.three_arm_enumerator_reduced.enumerate()
-		output_full_graph(self.three_arm_enumerator_reduced, 'test_files/testOutputFullGraph2.out')
+		output_full_graph(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.out')
 	
 	def testOutputFullGraph3(self):
-		self.simple2_enumerator.enumerate()
-		output_full_graph(self.simple2_enumerator, 'test_files/testOutputFullGraph3.out')
+		output_full_graph(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.out')
+
+	def testOutputFullGraph4(self):
+		output_full_graph(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.out')
 		
 	def testOutputCondensedGraph(self):
-		self.SLC_enumerator_reduced.enumerate()
-		output_condensed_graph(self.SLC_enumerator_reduced, 'test_files/testOutputCondensedGraph.out')
+		output_condensed_graph(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph.out')
 	
 	def testOutputCondensedGraph2(self):
-		self.three_arm_enumerator_reduced.enumerate()
-		output_condensed_graph(self.three_arm_enumerator_reduced, 'test_files/testOutputCondensedGraph2.out')
+		output_condensed_graph(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph2.out')
 	
 	def testOutputCondensedGraph3(self):
-		self.simple2_enumerator.enumerate()
-		output_condensed_graph(self.simple2_enumerator, 'test_files/testOutputCondensedGraph3.out')
+		output_condensed_graph(self.simple2_enumerator, 'test_files/test_output/test_output_CondensedGraph3.out')
+	
+	def testOutputCondensedGraph4(self):
+		output_condensed_graph(self.SLC_enumerator, 'test_files/test_output/test_output_CondensedGraph4.out')
 		
 	def testOutputGraph(self):
-		self.simple2_enumerator.enumerate()
-		output_graph(self.simple2_enumerator,'test_files/testOutputGraph.out',output_condensed=True)
-		output_graph(self.simple2_enumerator,'test_files/testOutputGraphCondensed.out',output_condensed=False)
+		output_graph(self.simple2_enumerator,'test_files/test_output/test_output_Graph.out',output_condensed=True)
+		output_graph(self.simple2_enumerator,'test_files/test_output/test_output_GraphCondensed.out',output_condensed=False)
+
+	# Condensed PIL output	
+	
+	def testOutputCondensedPIL(self):
+		output_pil(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph.pil',output_condensed=True)
+	
+	def testOutputCondensedPIL2(self):
+		output_pil(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph2.pil',output_condensed=True)
+	
+	def testOutputCondensedPIL3(self):
+		output_pil(self.simple2_enumerator, 'test_files/test_output/test_output_CondensedGraph3.pil',output_condensed=True)
+	
+	def testOutputCondensedPIL4(self):
+		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_CondensedGraph4.pil',output_condensed=True)
+	
+	# PIL output
 		
+	def testOutputPIL(self):
+		output_pil(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.pil',output_condensed=False)
+	
+	def testOutputPIL2(self):
+		output_pil(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.pil',output_condensed=False)
+	
+	def testOutputPIL3(self):
+		output_pil(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.pil',output_condensed=False)
+	
+	def testOutputPIL4(self):
+		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.pil',output_condensed=False)
+			
+	# JSON output
 		
 	def testOutputJSON(self):
-		self.SLC_enumerator_reduced.enumerate()
-		output_json(self.SLC_enumerator_reduced, 'test_files/testOutputJSON.out')
-		enumerator = load_json('test_files/testOutputJSON.out')
+		output_json(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_JSON.out')
+		enumerator = load_json('test_files/test_output/test_output_JSON.out')
 		assert enumerator == self.SLC_enumerator_reduced
 		
 	def testOutputJSON2(self):
-		self.three_arm_enumerator_reduced.enumerate()
-		output_json(self.three_arm_enumerator_reduced, 'test_files/testOutputJSON2.out')
-		enumerator = load_json('test_files/testOutputJSON2.out')
+		output_json(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_JSON2.out')
+		enumerator = load_json('test_files/test_output/test_output_JSON2.out')
 		assert enumerator == self.three_arm_enumerator_reduced
 		
 	def testOutputJSONCondensed(self):
-		self.SLC_enumerator_reduced.enumerate()
 		output_json(self.SLC_enumerator_reduced, \
-				'test_files/testOutputJSONCondensed.out',output_condensed=True)
-		enumerator = load_json('test_files/testOutputJSON.out')
+				'test_files/test_output/test_output_JSONCondensed.out',output_condensed=True)
+		enumerator = load_json('test_files/test_output/test_output_JSON.out')
 		assert enumerator == self.SLC_enumerator_reduced
 		
 	def testOutputJSONCondensed2(self):
-		self.three_arm_enumerator_reduced.enumerate()
 		output_json(self.three_arm_enumerator_reduced, \
-				'test_files/testOutputJSONCondensed2.out',output_condensed=True)
-		enumerator = load_json('test_files/testOutputJSON2.out')
+				'test_files/test_output/test_output_JSONCondensed2.out',output_condensed=True)
+		enumerator = load_json('test_files/test_output/test_output_JSON2.out')
 		assert enumerator == self.three_arm_enumerator_reduced
 			
 	def testJSONInputOutputLoop(self):
-		self.SLC_enumerator_reduced.enumerate()
+
 		output_json(self.SLC_enumerator_reduced, 'test_files/testJSONInputOutputLoop.out')
 		enumerator = load_json('test_files/testJSONInputOutputLoop.out')
 		assert enumerator == self.SLC_enumerator_reduced
 
 	def testOutputSBML(self):
-		self.SLC_enumerator_reduced.enumerate()
-		output_sbml(self.SLC_enumerator_reduced, 'test_files/testOutputSBML')
+
+		output_sbml(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_SBML')
 		
 	def testOutputSBML2(self):
-		self.three_arm_enumerator_reduced.enumerate()
-		output_sbml(self.three_arm_enumerator_reduced, 'test_files/testOutputSBML2')
+		output_sbml(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_SBML2')
 		
 	def testOutputSBMLCondensed(self):
-		self.SLC_enumerator_reduced.enumerate()
-		output_sbml(self.SLC_enumerator_reduced, 'test_files/testOutputSBMLCondensed',output_condensed=True)
+		output_sbml(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_SBMLCondensed',output_condensed=True)
 		
 	def testOutputSBML2Condensed(self):
-		self.three_arm_enumerator_reduced.enumerate()
-		output_sbml(self.three_arm_enumerator_reduced, 'test_files/testOutputSBML2Condensed',output_condensed=True)
+		output_sbml(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_SBML2Condensed',output_condensed=True)
 			
 	def testOutputLegacyCondensed(self):
-		self.simple_enumerator.enumerate()
-		output_legacy(self.simple_enumerator, 'test_files/testOutputLegacyCondensed.out', output_condensed=True)
+		output_legacy(self.simple_enumerator, 'test_files/test_output/test_output_LegacyCondensed.out', output_condensed=True)
 		
 		
 	def testCondenseRestingStates(self):
@@ -170,8 +195,105 @@ class OutputTests(unittest.TestCase):
 					
 			# Test that no reactions are duplicated
 			assert (sorted(condensed['reactions']) == sorted(list(set(condensed['reactions']))))
-					
-			
-				
-				
+	
+	def testCondenseRestingStates1(self):
+		condensed = condense_resting_states(self.simple2_enumerator)
 		
+		enum = self.simple2_enumerator
+		domains = {}
+		strands = {}
+		complexes = {}
+		
+		for domain in enum.domains:
+			domains[domain.name] = domain
+		
+		for strand in enum.strands:
+			strands[strand.name] = strand
+		
+		for complex in enum.initial_complexes:
+			complexes[complex.name] = complex
+		
+		
+#		# End-state Complexes 
+#		structure RC1 = S1 + S3 : ((+))
+#		structure RC2 = S2 : .
+#		structure C1 = S1 + S2 : .(+)
+#		structure C2 = S3 : ..
+#		
+#		# Resting-state sets 
+#		state RS_RC1 = RC1
+#		state RS_RC2 = RC2
+#		state RS_C1 = C1
+#		state RS_C2 = C2
+#		
+#		# Condensed Reactions 
+#		kinetic C1 + C2 -> RC1 + RC2 
+
+		RC1 = Complex('RC1',[strands['S1'], strands['S3']],parse_dot_paren('((+))'))
+		RC2 = Complex('RC2',[strands['S2']],parse_dot_paren('.'))
+		
+		RS_RC1 = RestingState('RS_RC1',[RC1])
+		RS_RC2 = RestingState('RS_RC2',[RC2])
+		RS_C1 = RestingState('RS_C1',[complexes['C1']])
+		RS_C2 = RestingState('RS_C2',[complexes['C2']])
+		
+		expected_reactions = [ReactionPathway('condensed',[RS_C1,RS_C2],[RS_RC1,RS_RC2])]
+		
+		print "Expected reactions"
+		print expected_reactions
+		print "Actual reactions"
+		print condensed['reactions']
+		
+		
+		assert condensed['reactions'] == expected_reactions
+		assert sorted([RS_RC1,RS_RC2,RS_C1,RS_C2]) == sorted(condensed['resting_states'])
+				
+				
+	def testCondenseRestingStates2(self):
+		enum = self.SLC_enumerator
+		condensed = condense_resting_states(enum)
+		
+		domains = {}
+		strands = {}
+		complexes = {}
+		
+		for domain in enum.domains:
+			domains[domain.name] = domain
+		
+		for strand in enum.strands:
+			strands[strand.name] = strand
+		
+		for complex in enum.initial_complexes:
+			complexes[complex.name] = complex
+	
+#		state RS_C1 = C1
+#		state RS_C2 = C2
+#		state RS_Cat = Cat
+#		state RS_I3 = I3
+#		state RS_OP = OP
+#		state RS_SP = SP
+#		state RS_W = W
+
+#		kinetic I3 + C1 -> W + OP + Cat 
+#		kinetic I3 + SP -> C2 + Cat 
+#		kinetic C2 + Cat -> I3 + SP
+
+		RS_C1 = RestingState('RS_C1',[complexes['C1']])
+		RS_C2 = RestingState('RS_C2',[complexes['C2']])
+		RS_Cat = RestingState('RS_Cat',[complexes['Cat']])
+		RS_I3 = RestingState('RS_I3',[complexes['I3']])
+		RS_OP = RestingState('RS_OP',[complexes['OP']])
+		RS_SP = RestingState('RS_SP',[complexes['SP']])
+		RS_W = RestingState('RS_W',[complexes['W']])
+		
+		expected_reactions = [ReactionPathway('condensed',[RS_I3, RS_C1],[RS_W,RS_OP,RS_Cat]), \
+								ReactionPathway('condensed',[RS_I3, RS_SP],[RS_C2,RS_Cat]),
+								ReactionPathway('condensed',[RS_C2, RS_Cat],[RS_I3,RS_SP])]
+		
+		print "Expected reactions"
+		print expected_reactions
+		print "Actual reactions"
+		print condensed['reactions']
+		
+		assert sorted(condensed['reactions']) == sorted(expected_reactions)
+		assert sorted([RS_C1,RS_C2,RS_Cat,RS_I3,RS_OP,RS_SP,RS_W]) == sorted(condensed['resting_states'])

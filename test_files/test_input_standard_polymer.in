@@ -1,0 +1,18 @@
+domain 1 : long
+domain 2 : long
+
+strand s1 : 1 2
+
+strand s2 : 1* 2*
+
+complex A :
+s1 s2
+.( + .)
+
+complex C1 :
+s1
+..
+
+complex C2 :
+s2
+..

@@ -22,6 +22,42 @@ def natural_sort(l):
 	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', str(key)) ] 
 	return sorted(l, key = alphanum_key)
 
+def find(f, seq, default=None):
+	"""Return first item in sequence where f(item) == True."""
+	for item in seq:
+		if f(item): 
+			return item
+	return default
+
+def parse_dot_paren(structure_line):	
+	complex_structure = []
+	dot_paren_stack = []			
+	strand_index = 0
+	domain_index = 0
+	curr_strand = []
+	complex_structure.append(curr_strand)
+	for part in structure_line:
+		if (part == "+"):
+			strand_index += 1
+			domain_index = 0
+			curr_strand = []
+			complex_structure.append(curr_strand)
+			continue
+		if (part == "."):
+			curr_strand.append(None)
+			domain_index += 1
+		elif (part == "("):
+			curr_strand.append(None)
+			dot_paren_stack.append((strand_index, domain_index))
+			domain_index += 1
+		elif (part == ")"):
+			loc = dot_paren_stack.pop()
+			curr_strand.append(loc)
+			complex_structure[loc[0]][loc[1]] = (strand_index, domain_index)
+			domain_index += 1
+	return complex_structure
+
+
 class Domain(object):
 	"""
 	Represents a single domain. We allow several options for specifying domain
@@ -466,7 +502,7 @@ class Complex(object):
 		
 	def dot_paren_string(self):
 		"""
-		Returns the dot paren representation of this complex.
+		Returns the segment-wise dot paren representation of this complex.
 		"""
 		out = []
 		for strand_num, strand in enumerate(self.structure):
@@ -480,6 +516,27 @@ class Complex(object):
 						out.append('(')
 					else:
 						out.append(')')
+			if strand_num != (len(self.structure) - 1):
+				out.append('+')
+		
+		return ''.join(out)
+	
+	def dot_paren_string_full(self):
+		"""
+		Returns the base-wise dot paren representation of this complex.
+		"""
+		out = []
+		for strand_num, strand in enumerate(self.structure):
+			for dom_num, el in enumerate(strand):
+				if el == None:
+					out.append('.') * len(self.strands[strand_num].domains[dom_num])
+				else:
+					(b_strand, b_domain) = el
+					if ((b_strand > strand_num) or
+						((b_strand == strand_num) and (b_domain > dom_num))):
+						out.append('(' * len(self.strands[strand_num].domains[dom_num]))
+					else:
+						out.append(')' * len(self.strands[strand_num].domains[dom_num]))
 			if strand_num != (len(self.structure) - 1):
 				out.append('+')
 		
@@ -499,6 +556,7 @@ class RestingState(object):
 		complexes.sort()
 		self._complexes = complexes
 		self._name = name
+		self._canonical = find(lambda s: not str(s).isdigit(),complexes,str(complexes[0]))
 		
 	@property
 	def name(self):
@@ -507,7 +565,15 @@ class RestingState(object):
 	@property
 	def complexes(self):
 		return self._complexes[:]
-		
+	
+	@property
+	def canonical_name(self):
+		return str(self._canonical)
+	
+	@property
+	def canonical(self):
+		return self._canonical
+	
 	def __eq__(self, other):
 		return (self.complexes == other.complexes)
 		
@@ -515,7 +581,7 @@ class RestingState(object):
 		return cmp(self.complexes, other.complexes)
 
 	def __str__(self):
-		return self.name
+		return self.canonical_name
 
 	def __repr__(self):
 		return "RestingState(%s: %s)" % (self.name, str(self.complexes))

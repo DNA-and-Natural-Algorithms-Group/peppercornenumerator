@@ -178,35 +178,6 @@ def input_standard(filename):
 	enumerator = Enumerator(domains, strands, complexes)
 	return enumerator
 
-	
-def parse_dot_paren(structure_line):	
-	complex_structure = []
-	dot_paren_stack = []			
-	strand_index = 0
-	domain_index = 0
-	curr_strand = []
-	complex_structure.append(curr_strand)
-	for part in structure_line:
-		if (part == "+"):
-			strand_index += 1
-			domain_index = 0
-			curr_strand = []
-			complex_structure.append(curr_strand)
-			continue
-		if (part == "."):
-			curr_strand.append(None)
-			domain_index += 1
-		elif (part == "("):
-			curr_strand.append(None)
-			dot_paren_stack.append((strand_index, domain_index))
-			domain_index += 1
-		elif (part == ")"):
-			loc = dot_paren_stack.pop()
-			curr_strand.append(loc)
-			complex_structure[loc[0]][loc[1]] = (strand_index, domain_index)
-			domain_index += 1
-	return complex_structure
-
 			
 def load_json(filename):
 	"""

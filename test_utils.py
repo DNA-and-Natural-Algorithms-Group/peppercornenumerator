@@ -241,6 +241,9 @@ class RestingStateTests(unittest.TestCase):
 	def setUp(self):
 		setUpSLC(self)
 		self.rs = RestingState('RS1', [self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']])
+		self.rs1 = RestingState('RS2', [self.complexes['C1'], \
+									Complex('123',self.complexes['Cat'].strands,self.complexes['Cat'].structure), \
+									Complex('456',self.complexes['I1'].strands,self.complexes['I1'].structure)])
 	
 	def testConstructor(self):
 		assert self.rs._name == 'RS1'
@@ -258,7 +261,11 @@ class RestingStateTests(unittest.TestCase):
 		assert_raises(AttributeError, assnName, self)
 		
 	def testStr(self):
-		assert str(self.rs) == 'RS1'
+		print str(self.rs)
+		print str(self.rs1)
+		
+		assert str(self.rs) == 'I1'
+		assert str(self.rs1) == 'C1'
 		
 	def testRepr(self):
 		assert repr(self.rs) == "RestingState(RS1: %s)" % str(self.rs.complexes)
