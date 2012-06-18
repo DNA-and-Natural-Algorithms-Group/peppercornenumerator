@@ -1,12 +1,20 @@
 domain 1 : long
 domain 2 : long
+domain 3 : long
+domain 4 : long
 
 strand s1 : 1 2
-
 strand s2 : 1* 2*
+strand s3 : 3 4
+strand s4 : 3* 4*
+
 
 complex A :
 s1 s2
+.( + .)
+
+complex B :
+s3 s4
 .( + .)
 
 complex C1 :
@@ -15,4 +23,12 @@ s1
 
 complex C2 :
 s2
+..
+
+complex C3 :
+s3
+..
+
+complex C4 :
+s4
 ..

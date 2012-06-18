@@ -736,6 +736,29 @@ class BranchMigrationTests(unittest.TestCase):
 		print exp_list
 		assert res_list == exp_list
 
+	def testBranch3way6(self):
+		enumerator = input_standard('test_files/test_input_standard_remote.in')
+		
+		self.domains = {}
+		self.strands = {}
+		self.complexes = {}		
+		
+		for domain in enumerator.domains:
+			self.domains[domain.name] = domain
+		
+		for strand in enumerator.strands:
+			self.strands[strand.name] = strand
+		
+		for complex in enumerator.initial_complexes:
+			self.complexes[complex.name] = complex
+		
+		res_list = branch_3way(self.complexes['C1'])
+		exp_list = [ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2'],self.complexes['C3']] )]
+		
+		print res_list
+		print exp_list
+		assert res_list == exp_list
+		
 	def testDo4wayMigration1(self):	
 		s1 = Strand('s1', [self.domains['1*'], self.domains['2*'], self.domains['3']])
 		s2 = Strand('s2', [self.domains['3*'], self.domains['2'], self.domains['4']])

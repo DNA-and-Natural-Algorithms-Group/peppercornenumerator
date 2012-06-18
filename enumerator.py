@@ -55,7 +55,13 @@ class Enumerator(object):
 		self._complexes = None
 		self._transient_complexes = None
 		self._resting_complexes = None
-	
+		
+		global MAX_COMPLEX_SIZE
+		global MAX_REACTION_COUNT
+		global MAX_COMPLEX_COUNT
+		self.MAX_COMPLEX_SIZE = MAX_COMPLEX_SIZE
+		self.MAX_REACTION_COUNT = MAX_REACTION_COUNT
+		self.MAX_COMPLEX_COUNT = MAX_COMPLEX_COUNT
 		
 	@property 
 	def auto_name(self):
@@ -121,8 +127,6 @@ class Enumerator(object):
 		the initial set of complexes. Produces a full list of complexes, resting
 		states, and reactions.
 		"""
-		global MAX_COMPLEX_COUNT
-		global MAX_REACTION_COUNT
 		
 		# List E contains enumerated resting states. Only cross-reactions with
 		# other end states need to be considered for these complexes. These
@@ -178,11 +182,11 @@ class Enumerator(object):
 			self._reactions.extend(slow_reactions)
 			
 			while len(self._B) > 0:
-				if (len(self._E) + len(self._T) + len(self._S) > MAX_COMPLEX_COUNT):
+				if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
 					logging.error("Too many complexes enumerated!")
 					raise Exception("Too many complexes generated, aborting...")
 				
-				if (len(self._reactions) > MAX_REACTION_COUNT):
+				if (len(self._reactions) > self.MAX_REACTION_COUNT):
 					logging.error("Too many reactions enumerated!")
 					raise Exception("Too many reactions generated, aborting...")
 			
@@ -284,7 +288,7 @@ class Enumerator(object):
 			# Check every product of the reaction to see if it is new
 			for (i, product) in enumerate(reaction.products):
 			
-				if (len(product.strands) > MAX_COMPLEX_SIZE):
+				if (len(product.strands) > self.MAX_COMPLEX_SIZE):
 					logging.warning("Complex %(name)s (%(strands)d strands) too large, ignoring!" % {"name":product.name,"strands":len(product.strands)})
 					continue
 			

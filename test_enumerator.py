@@ -403,13 +403,26 @@ class EnumeratorTests(unittest.TestCase):
 		# Test polymer detection
 		polymer_enum = self.polymer_enum = input_standard('test_files/test_input_standard_polymer.in')
 				
+		# We're going to shrink some of these constants to trigger the exception
 		def testPolymer():
 			import output
-			polymer_enum.enumerate()
-			print polymer_enum.complexes
-			print polymer_enum.resting_complexes
-			print polymer_enum.resting_states
-			print polymer_enum.reactions
-			output.output_pil(polymer_enum, 'test_files/test_output_polymer.pil')
 			
+			polymer_enum.enumerate()
+			print "%d Complexes" % len(polymer_enum.complexes)
+			print "%d Reactions" % len(polymer_enum.reactions)
+#			output.output_pil(polymer_enum, 'test_files/test_output_polymer.pil')
+		
+		# Test that too many reactions triggers exception
+		max_reaction_count = polymer_enum.MAX_REACTION_COUNT
+		polymer_enum.MAX_REACTION_COUNT = 10
 		assert_raises(Exception, testPolymer)
+		
+		# Now test that too many complexes also causes the error
+		polymer_enum.MAX_REACTION_COUNT = max_reaction_count
+		polymer_enum.MAX_COMPLEX_COUNT = 10
+		assert_raises(Exception, testPolymer)
+
+		
+		complexes = polymer_enum._E + polymer_enum._T + polymer_enum._S
+		assert max([len(c.strands) for c in complexes]) <= polymer_enum.MAX_COMPLEX_SIZE
+		

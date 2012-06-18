@@ -1,0 +1,23 @@
+domain a : long
+domain b : long
+domain c : long
+domain d : long
+domain e : long
+domain f : long
+domain g : long
+
+strand S1 : a b c d e d* f b* g
+strand S2 : g*
+strand S3 : g* a*
+
+complex C1 :
+S1 S2 S3
+((.(.).)(+)+.)
+
+complex C2 :
+S1 S3
+((.(.).)(+))
+
+complex C3 :
+S2
+.

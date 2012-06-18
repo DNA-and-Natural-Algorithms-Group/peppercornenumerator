@@ -6,13 +6,13 @@
                 "Cat"
             ], 
             "products": [
-                "873"
+                "735"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "873"
+                "735"
             ], 
             "products": [
                 "C2", 
@@ -22,155 +22,155 @@
         }, 
         {
             "reactants": [
-                "873"
+                "735"
             ], 
             "products": [
-                "876"
+                "738"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "876"
+                "738"
             ], 
             "products": [
-                "877", 
-                "878"
+                "739", 
+                "740"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "876"
+                "738"
             ], 
             "products": [
-                "873"
+                "735"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "877", 
+                "739", 
                 "C1"
             ], 
             "products": [
-                "880"
+                "742"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "877", 
-                "878"
+                "739", 
+                "740"
             ], 
             "products": [
-                "876"
+                "738"
             ], 
             "name": "bind21"
         }, 
         {
             "reactants": [
-                "880"
+                "742"
             ], 
             "products": [
-                "877", 
+                "739", 
                 "C1"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "880"
+                "742"
             ], 
             "products": [
-                "889"
+                "751"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "880"
+                "742"
             ], 
             "products": [
-                "887", 
-                "888"
+                "749", 
+                "750"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "887"
+                "749"
             ], 
             "products": [
-                "890"
+                "752"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "890"
+                "752"
             ], 
             "products": [
-                "892", 
+                "754", 
                 "Cat"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "890"
+                "752"
             ], 
             "products": [
-                "887"
+                "749"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "889"
+                "751"
             ], 
             "products": [
-                "895", 
+                "757", 
                 "Cat"
             ], 
             "name": "open"
         }, 
         {
             "reactants": [
-                "889"
+                "751"
             ], 
             "products": [
-                "880"
+                "742"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "889"
+                "751"
             ], 
             "products": [
-                "890", 
-                "888"
+                "752", 
+                "750"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "895"
+                "757"
             ], 
             "products": [
-                "892", 
-                "888"
+                "754", 
+                "750"
             ], 
             "name": "branch_3way"
         }, 
         {
             "reactants": [
-                "892", 
+                "754", 
                 "Cat"
             ], 
             "products": [
-                "890"
+                "752"
             ], 
             "name": "bind21"
         }
@@ -315,7 +315,7 @@
             "strands": [
                 "SP"
             ], 
-            "name": "878", 
+            "name": "740", 
             "structure": [
                 [
                     null, 
@@ -329,7 +329,7 @@
                 "BS", 
                 "Cat"
             ], 
-            "name": "877", 
+            "name": "739", 
             "structure": [
                 [
                     [
@@ -362,7 +362,7 @@
             "strands": [
                 "OP"
             ], 
-            "name": "888", 
+            "name": "750", 
             "structure": [
                 [
                     null, 
@@ -378,7 +378,7 @@
                 "BS", 
                 "PS"
             ], 
-            "name": "892", 
+            "name": "754", 
             "structure": [
                 [
                     null, 
@@ -523,43 +523,43 @@
             "complexes": [
                 "C2"
             ], 
-            "name": "180"
+            "name": "181"
         }, 
         {
             "complexes": [
                 "C1"
             ], 
-            "name": "181"
+            "name": "182"
         }, 
         {
             "complexes": [
                 "Cat"
             ], 
-            "name": "182"
-        }, 
-        {
-            "complexes": [
-                "877"
-            ], 
             "name": "183"
         }, 
         {
             "complexes": [
-                "878"
+                "739"
             ], 
             "name": "184"
         }, 
         {
             "complexes": [
-                "892"
+                "740"
             ], 
             "name": "185"
         }, 
         {
             "complexes": [
-                "888"
+                "754"
             ], 
             "name": "186"
+        }, 
+        {
+            "complexes": [
+                "750"
+            ], 
+            "name": "187"
         }
     ], 
     "domains": [
@@ -642,7 +642,7 @@
                 "SP", 
                 "Cat"
             ], 
-            "name": "873", 
+            "name": "735", 
             "structure": [
                 [
                     [
@@ -687,7 +687,7 @@
                 "SP", 
                 "Cat"
             ], 
-            "name": "876", 
+            "name": "738", 
             "structure": [
                 [
                     [
@@ -732,7 +732,7 @@
                 "OP", 
                 "PS"
             ], 
-            "name": "895", 
+            "name": "757", 
             "structure": [
                 [
                     null, 
@@ -795,7 +795,7 @@
                 "PS", 
                 "Cat"
             ], 
-            "name": "889", 
+            "name": "751", 
             "structure": [
                 [
                     [
@@ -868,7 +868,7 @@
                 "PS", 
                 "Cat"
             ], 
-            "name": "880", 
+            "name": "742", 
             "structure": [
                 [
                     [
@@ -940,7 +940,7 @@
                 "PS", 
                 "Cat"
             ], 
-            "name": "890", 
+            "name": "752", 
             "structure": [
                 [
                     [
@@ -1006,7 +1006,7 @@
                 "PS", 
                 "Cat"
             ], 
-            "name": "887", 
+            "name": "749", 
             "structure": [
                 [
                     [
