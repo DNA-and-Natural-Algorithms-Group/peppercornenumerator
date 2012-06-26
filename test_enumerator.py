@@ -411,27 +411,29 @@ class EnumeratorTests(unittest.TestCase):
 		
 	def testEnumeration6(self):
 		# Test polymer detection
-		polymer_enum = self.polymer_enum = input_standard('test_files/test_input_standard_polymer.in')
 				
-		# We're going to shrink some of these constants to trigger the exception
-		def testPolymer():
-			import output
-			
-			polymer_enum.enumerate()
-			print "%d Complexes" % len(polymer_enum.complexes)
-			print "%d Reactions" % len(polymer_enum.reactions)
-#			output.output_pil(polymer_enum, 'test_files/test_output_polymer.pil')
 		
+		# We're going to shrink some of these constants to trigger the exception
 		# Test that too many reactions triggers exception
-		max_reaction_count = polymer_enum.MAX_REACTION_COUNT
+		polymer_enum = self.polymer_enum = input_standard('test_files/test_input_standard_polymer.in')
 		polymer_enum.MAX_REACTION_COUNT = 10
-		assert_raises(Exception, testPolymer)
+		polymer_enum.enumerate()
+		print "%d Complexes" % len(polymer_enum.complexes)
+		print "%d Reactions" % len(polymer_enum.reactions)
+		
+		# The failure condition stops if .reactions > MAX_REACTION_COUNT, so we test for that (rather 
+		# than that .reactions < MAX_REACTION_COUNT, which is not guaranteed.
+		assert(len(polymer_enum.reactions) >= polymer_enum.MAX_REACTION_COUNT)
 		
 		# Now test that too many complexes also causes the error
-		polymer_enum.MAX_REACTION_COUNT = max_reaction_count
+		polymer_enum = self.polymer_enum = input_standard('test_files/test_input_standard_polymer.in')
 		polymer_enum.MAX_COMPLEX_COUNT = 10
-		assert_raises(Exception, testPolymer)
-
+		polymer_enum.enumerate()
+		print "%d Complexes" % len(polymer_enum.complexes)
+		print "%d Reactions" % len(polymer_enum.reactions)
+		# We're not examining len(polymer_enum.complexes) because that doesn't include ._S, which *is* 
+		# tested for in the failure mode.
+		assert((len(polymer_enum.complexes) + len(polymer_enum._S)) >= polymer_enum.MAX_COMPLEX_COUNT)
 		
 		complexes = polymer_enum._E + polymer_enum._T + polymer_enum._S
 		assert max([len(c.strands) for c in complexes]) <= polymer_enum.MAX_COMPLEX_SIZE
