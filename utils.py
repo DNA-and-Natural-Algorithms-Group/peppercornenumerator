@@ -450,7 +450,8 @@ class Complex(object):
 							checking_strand_num, checking_dom_num = \
 								self.structure[checking_strand_num]\
 								[checking_dom_num]
-							checking_dom_num -= 1
+#							checking_dom_num -= 1
+							checking_dom_num += 1
 				if available:
 					self._available_domains.append((self.strands[strand_num]\
 									                .domains[dom_num], \
@@ -529,7 +530,7 @@ class Complex(object):
 		for strand_num, strand in enumerate(self.structure):
 			for dom_num, el in enumerate(strand):
 				if el == None:
-					out.append('.') * len(self.strands[strand_num].domains[dom_num])
+					out.append('.' * len(self.strands[strand_num].domains[dom_num]))
 				else:
 					(b_strand, b_domain) = el
 					if ((b_strand > strand_num) or

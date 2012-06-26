@@ -206,11 +206,10 @@ class ComplexTests(unittest.TestCase):
 		C1doms = [(self.domains['4'], 0, 3), (self.domains['5'], 1, 3), (self.domains['6'], 1, 4)]
 		C1doms.sort(key=lambda dom: dom[0].name)
 		assert self.complexes['C1'].available_domains == C1doms
-		I1doms = [(self.domains['1'], 0, 3), (self.domains['2'], 0, 4), (self.domains['3'], 0, 5), (self.domains['6'], 2, 0)]
 		
+		I1doms = [(self.domains['1'], 0, 3), (self.domains['2'], 0, 4), (self.domains['3'], 0, 5), (self.domains['6'], 2, 0)]		
 		I1doms.sort(key=lambda dom: dom[0].name)		
 		assert self.complexes['I1'].available_domains == I1doms
-		I4doms = [(self.domains['1'], 0, 3), (self.domains['2'], 0, 4), (self.domains['3'], 0, 5), (self.domains['6'], 2, 4)]
 		
 		t1 = Strand('t1', [self.domains['1'], self.domains['2'], self.domains['1*']])
 		ct1 = Complex('ct1', [t1], [[(0, 2), None, (0, 0)]])
@@ -220,6 +219,40 @@ class ComplexTests(unittest.TestCase):
 		t3 = Strand('t3', [self.domains['3*'], self.domains['2'], self.domains['1*']])
 		ct2 = Complex('ct2', [t2, t3], [[(1, 2), None, (1, 0)], [(0, 2), None, (0, 0)]])
 		assert ct2.available_domains == []
+
+	
+	def testAvailableDomains2(self):
+		from input import input_standard
+
+		# Example from 3-arm junction
+
+		
+		three_arm_nodal_enum = input_standard('test_files/examples/3-arm-junction.enum')
+		enum = three_arm_nodal_enum
+		
+		domains = {}
+		strands = {}
+		complexes = {}
+		
+		for domain in enum.domains:
+			domains[domain.name] = domain
+		
+		for strand in enum.strands:
+			strands[strand.name] = strand
+		
+		for complex in enum.initial_complexes:
+			complexes[complex.name] = complex
+		
+		C24 = Complex('24',[strands['n2'], strands['n3']], [[None, None, (1, 1), (1, 0)], [(0, 3), (0, 2), None, None]])
+		assert sorted(C24.available_domains) == sorted([(domains['1'], 0, 0), (domains['1*'], 1, 2), (domains['2'], 0, 1), (domains['3*'], 1, 3)])
+
+		C24_ = Complex('C24_',[strands['n2'], strands['n3']],[[(1, 2), None, (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 0), None]])
+		assert C24_.available_domains == [(domains['3*'], 1, 3)]
+		
+		# Original test case
+		#rxns = bind11(C24)
+		#assert rxns[0].products[0] == C24_
+		#assert rxns[0].products[0].available_domains == [(domains['3*'], 1, 3)]
 														
 	def testRotateStrands(self):	
 		c2 = self.complexes['I1'].rotate_strands()

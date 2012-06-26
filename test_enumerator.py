@@ -394,7 +394,17 @@ class EnumeratorTests(unittest.TestCase):
 #	def testEnumeration4(self):
 #		self.tet_enumerator = input_standard('test_files/examples/sadowski-tetrahedron.enum')
 #		self.tet_enumerator.enumerate()
-		
+	
+	def testEnumeration4(self):
+		self.three_arm_nodal_enum = input_standard('test_files/examples/3-arm-junction.enum')
+		try:
+			self.three_arm_nodal_enum.enumerate()
+		except:
+			print self.three_arm_nodal_enum._S
+			print self.three_arm_nodal_enum._T
+			print self.three_arm_nodal_enum._B
+			raise Exception()
+	
 	def testEnumeration5(self):
 		self.seesaw_enumerator = input_standard('test_files/examples/seesaw/seesaw.enum')
 		self.seesaw_enumerator.enumerate()

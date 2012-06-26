@@ -128,6 +128,15 @@ class Enumerator(object):
 		states, and reactions.
 		"""
 		
+		# Will be called once enumeration halts, either because it's finished or
+		# because too many complexes/reactions have been enumerated
+		def finish():
+			self._complexes.extend(self._E)
+			self._complexes.extend(self._T)
+			self._transient_complexes = self._T
+			self._resting_complexes = self._E
+		
+		
 		# List E contains enumerated resting states. Only cross-reactions with
 		# other end states need to be considered for these complexes. These
 		# complexes will remain in this list throughout function execution.
@@ -174,6 +183,9 @@ class Enumerator(object):
 		while len(self._S) > 0:
 			# element is the complex for which we will consider slow reactions
 			element = self._S.pop()
+			if(element.name == '24((0, 0)+(1, 2)'):
+				print "arg"
+				
 			slow_reactions = self.get_slow_reactions(element)
 			self._E.append(element)
 			
@@ -184,19 +196,21 @@ class Enumerator(object):
 			while len(self._B) > 0:
 				if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
 					logging.error("Too many complexes enumerated!")
-					raise Exception("Too many complexes generated, aborting...")
-				
+					# raise Exception("Too many complexes generated, aborting...")
+					finish()
+					return
+					
 				if (len(self._reactions) > self.MAX_REACTION_COUNT):
 					logging.error("Too many reactions enumerated!")
-					raise Exception("Too many reactions generated, aborting...")
-			
+					#raise Exception("Too many reactions generated, aborting...")
+					finish()
+					return
+					
 				source = self._B.pop()
 				self.process_neighborhood(source)
-				
-		self._complexes.extend(self._E)
-		self._complexes.extend(self._T)
-		self._transient_complexes = self._T
-		self._resting_complexes = self._E
+		
+		finish()
+		
 				
 	def process_neighborhood(self, source):
 		"""

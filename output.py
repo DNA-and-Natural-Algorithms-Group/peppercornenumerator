@@ -339,7 +339,8 @@ def output_json(enumerator, filename, output_condensed = False):
 			'name':complex.name,
 			'strands': temp_strands,
 			'structure': complex.structure,
-			'dot-paren': complex.dot_paren_string()
+			'dot-paren': complex.dot_paren_string(),
+			'dot-paren-full': complex.dot_paren_string_full(),
 		}
 	
 	def serializeReaction(reaction):
