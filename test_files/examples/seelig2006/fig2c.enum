@@ -1,0 +1,56 @@
+# Thresholding demonstration circuit from Seelig et al, Science 2006, Figure 2c
+# Encoded for the enumerator by E. Winfree 6/26/2012
+
+# Using lowercase for toeholds and short domains; uppercase for longer domains.
+# Domain lengths agree with those in the paper; domain names are new since none were used in the paper.
+# Note that we assume the enumerator is case-sensitive.
+domain a : 6
+domain b : 6
+domain c : 3
+domain D : 27
+domain e : 3
+domain E : 12
+domain f : 6
+domain g : 6
+domain H : 15
+domain i : 6
+domain J : 24
+domain k : 6
+domain L : 15
+
+# Strand names are identical to those in the paper.  
+strand A_out = k i H e f g L
+strand Th2_in = i* J* g*
+strand Th1_short = g* f* e* H* i*
+strand Th2 = H e f g J i
+strand Th1 = g* f* e* H* i* J*
+strand Th_out = H a b c E e f g
+strand P_f = f* e* E* c* b* a*
+strand Q_out = a b c D E e
+
+# Only the initial complexes that were put in the test tube are defined.  (Shown in Figure 2c.)
+# The rest must be enumerated.  (Almost: for convenience, we add the intermediate and output signals.)
+complex Input :
+A_out
+.......
+
+complex AndGate3 :
+Th1 Th1_short Th2 Th_out
+(((((( + ((((. + )))))) + )....)))
+
+complex Helper :
+Th2_in
+...
+
+complex Reporter :
+P_f Q_out
+.((((( + ))).))
+
+complex Signal :
+Th_out
+........
+
+complex Output :
+Q_out
+......
+

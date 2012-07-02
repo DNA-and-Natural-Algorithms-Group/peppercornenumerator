@@ -1,0 +1,229 @@
+digraph G {
+size="7,10"
+page="8.5,11"
+node[width=0.25,height=0.375,fontsize=9]
+subgraph cluster0 {
+label="P_f + Q_out + Th_out"
+fontsize=6
+1 [label="1: ((((((+))).))+......)."];
+}
+subgraph cluster1 {
+label="Th2_in + Th_out"
+fontsize=6
+0 [label="0: ..(+.......)"];
+}
+subgraph cluster2 {
+label="P_f + Th_out + Th2_in"
+fontsize=6
+13 [label="13: ((((((+.))))))(+..)"];
+}
+subgraph cluster3 {
+label="A_out + Th2 + Th_out + Th1 + Th1_short"
+fontsize=6
+19 [label="19: .(.....+((((((+(....(((+))))))+)))))"];
+}
+subgraph cluster4 {
+label="A_out + P_f + Q_out"
+fontsize=6
+18 [label="18: ....(..+)(((((+))).))"];
+30 [label="30: ...((..+))((((+))).)."];
+}
+subgraph cluster5 {
+label="A_out + Th2_in"
+fontsize=6
+17 [label="17: .(.....+).."];
+16 [label="16: .....(.+..)"];
+}
+subgraph cluster6 {
+label="P_f + Q_out + Th2 + Th_out + Th1"
+fontsize=6
+37 [label="37: ((((((+))).))+..).((+(....(((+))))))"];
+40 [label="40: ((((((+))).).+.)).((+(....(((+))))))"];
+}
+subgraph cluster7 {
+label="Th1 + Th2_in + Th2 + Th_out"
+fontsize=6
+36 [label="36: ((((((+..(+...)))+)....)))"];
+}
+subgraph cluster8 {
+label="P_f + Q_out + Th2 + Th2_in"
+fontsize=6
+48 [label="48: ((((((+))).))+..)(((+)))"];
+51 [label="51: ((((((+))).).+.))(((+)))"];
+}
+subgraph cluster9 {
+label="A_out + Th_out + Th1"
+fontsize=6
+53 [label="53: .(.....+(....(((+)))))."];
+}
+subgraph cluster10 {
+label="Th2_in"
+fontsize=6
+Helper [label="Helper: ...",style=filled,color=gold1];
+}
+subgraph cluster11 {
+label="P_f + Q_out"
+fontsize=6
+Reporter [label="Reporter: .(((((+))).))",style=filled,color=gold1];
+}
+subgraph cluster12 {
+label="Th_out"
+fontsize=6
+Signal [label="Signal: ........",style=filled,color=gold1];
+}
+subgraph cluster13 {
+label="P_f + Th_out"
+fontsize=6
+9 [label="9: ((((((+.)))))).",style=filled,color=gold1];
+}
+subgraph cluster14 {
+label="Th1 + Th1_short + Th2 + Th_out"
+fontsize=6
+AndGate3 [label="AndGate3: ((((((+((((.+))))))+)....)))",style=filled,color=gold1];
+}
+subgraph cluster15 {
+label="A_out"
+fontsize=6
+Input [label="Input: .......",style=filled,color=gold1];
+}
+subgraph cluster16 {
+label="Th1 + Th2 + Th_out"
+fontsize=6
+27 [label="27: ((((((+....))+)....)))",style=filled,color=gold1];
+}
+subgraph cluster17 {
+label="Th2 + Th2_in"
+fontsize=6
+47 [label="47: ...(((+)))",style=filled,color=gold1];
+}
+subgraph cluster18 {
+label="Th1 + Th_out"
+fontsize=6
+46 [label="46: ((((..+)....)))",style=filled,color=gold1];
+}
+subgraph cluster19 {
+label="A_out + Th1"
+fontsize=6
+60 [label="60: .(((((.+))))).",style=filled,color=gold1];
+}
+subgraph cluster20 {
+label="A_out + Th1_short"
+fontsize=6
+26 [label="26: .(((((.+)))))",style=filled,color=gold1];
+}
+subgraph cluster21 {
+label="Q_out"
+fontsize=6
+Output [label="Output: ......",style=filled,color=gold1];
+}
+R_0 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Helper -> R_0
+Signal -> R_0
+R_0 -> 0
+R_1 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Reporter -> R_1
+Signal -> R_1
+R_1 -> 1
+R_2 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+1 -> R_2
+R_2 -> Reporter
+R_2 -> Signal
+R_3 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+1 -> R_3
+R_3 -> 9
+R_3 -> Output
+R_4 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+0 -> R_4
+R_4 -> Helper
+R_4 -> Signal
+R_5 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+9 -> R_5
+Helper -> R_5
+R_5 -> 13
+R_6 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+13 -> R_6
+R_6 -> 9
+R_6 -> Helper
+R_7 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Input -> R_7
+Helper -> R_7
+R_7 -> 16
+R_8 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Input -> R_8
+Helper -> R_8
+R_8 -> 17
+R_9 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Input -> R_9
+Reporter -> R_9
+R_9 -> 18
+R_10 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Input -> R_10
+AndGate3 -> R_10
+R_10 -> 19
+R_11 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+19 -> R_11
+R_11 -> Input
+R_11 -> AndGate3
+R_12 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+19 -> R_12
+R_12 -> 26
+R_12 -> 27
+R_13 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+18 -> R_13
+R_13 -> Input
+R_13 -> Reporter
+18 -> 30
+30 -> 18
+R_16 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+17 -> R_16
+R_16 -> Input
+R_16 -> Helper
+R_17 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+16 -> R_17
+R_17 -> Input
+R_17 -> Helper
+R_18 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+27 -> R_18
+Helper -> R_18
+R_18 -> 36
+R_19 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Reporter -> R_19
+27 -> R_19
+R_19 -> 37
+R_20 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+37 -> R_20
+R_20 -> Reporter
+R_20 -> 27
+37 -> 40
+40 -> 37
+R_23 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+36 -> R_23
+R_23 -> 27
+R_23 -> Helper
+R_24 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+36 -> R_24
+R_24 -> 46
+R_24 -> 47
+R_25 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Reporter -> R_25
+47 -> R_25
+R_25 -> 48
+R_26 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+48 -> R_26
+R_26 -> Reporter
+R_26 -> 47
+48 -> 51
+51 -> 48
+R_29 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+Input -> R_29
+46 -> R_29
+R_29 -> 53
+R_30 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+53 -> R_30
+R_30 -> Input
+R_30 -> 46
+R_31 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=blue];
+53 -> R_31
+R_31 -> 60
+R_31 -> Signal
+}
