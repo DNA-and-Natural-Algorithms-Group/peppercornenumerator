@@ -397,13 +397,7 @@ class EnumeratorTests(unittest.TestCase):
 	
 	def testEnumeration4(self):
 		self.three_arm_nodal_enum = input_standard('test_files/examples/3-arm-junction.enum')
-		try:
-			self.three_arm_nodal_enum.enumerate()
-		except:
-			print self.three_arm_nodal_enum._S
-			print self.three_arm_nodal_enum._T
-			print self.three_arm_nodal_enum._B
-			raise Exception()
+		self.three_arm_nodal_enum.enumerate()
 	
 	def testEnumeration5(self):
 		self.seesaw_enumerator = input_standard('test_files/examples/seesaw/seesaw.enum')
@@ -438,3 +432,19 @@ class EnumeratorTests(unittest.TestCase):
 		complexes = polymer_enum._E + polymer_enum._T + polymer_enum._S
 		assert max([len(c.strands) for c in complexes]) <= polymer_enum.MAX_COMPLEX_SIZE
 		
+		# Now we want to make sure that no reactions in the enumerator point to complexes that weren't in the list
+		undefined_complexes = []
+		
+		for reaction in polymer_enum.reactions:
+			for product in reaction.products:
+				if not (product in polymer_enum.complexes):
+					undefined_complexes.append(product)
+					print reaction
+					print product
+		
+		#undefined_complexes = [product for reaction in self.polymer_enum.reactions for product in reaction.products if not (product in complexes) ]
+		
+		print "Undefined complexes:"
+		print undefined_complexes
+		assert len(undefined_complexes) == 0
+	
