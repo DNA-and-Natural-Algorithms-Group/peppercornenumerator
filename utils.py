@@ -183,10 +183,17 @@ class Strand(object):
 		"""
 		self._name = name
 		self._domains = domains
+		self._hash = None # assigned lazily by __hash__
 
 	def __eq__(self, other):
 		return (self.name == other.name) and (self.domains == other.domains)
-
+	
+	def __hash__(self):
+		if(self._hash == None):
+			self._hash = hash((self.name,tuple(self.domains)))
+		
+		return self._hash
+	
 	def __cmp__(self, other):
 		return cmp(self.name, other.name)
 
@@ -288,6 +295,17 @@ class Complex(object):
 		while (strandNames[0] != self.strands[0].name):
 			self._rotate_strands()
 			
+		# Holds a unique hash identifying this complex (computed lazily by self.__hash__)
+		self._hash = None
+	
+	def __hash__(self):
+		if (self._hash == None):
+			strands = tuple(self._strands)
+			struct = tuple([tuple(s) for s in self._structure])
+			self._hash = hash( (strands, struct) )
+			
+		return self._hash
+	
 	def __eq__(self, other):
 		"""
 		Tests two complexes for equality. Complexes are equal if and only if

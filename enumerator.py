@@ -130,12 +130,28 @@ class Enumerator(object):
 		
 		# Will be called once enumeration halts, either because it's finished or
 		# because too many complexes/reactions have been enumerated
-		def finish():
+		def finish(premature=False):
 			self._complexes.extend(self._E)
 			self._complexes.extend(self._T)
 			self._transient_complexes = self._T
 			self._resting_complexes = self._E
-		
+			
+			# If we're bailing because of too many reactions or complexes, search 
+			# self._reactions to ensure there are no reactions which contain 
+			# products that never made it into self._complexes
+			# TODO: this is ugly and Om(n*m*p)... should we just go thru self._B
+			# and try to classify?
+			if premature:
+				new_reactions = []
+				for reaction in self.reactions:
+					reaction_ok = True
+					for product in reaction.products:
+						if (product in self._B) and not (product in self._complexes):
+							reaction_ok = False
+					if reaction_ok:
+						new_reactions.append(reaction)
+				
+				self._reactions[:] = new_reactions
 		
 		# List E contains enumerated resting states. Only cross-reactions with
 		# other end states need to be considered for these complexes. These
@@ -183,8 +199,6 @@ class Enumerator(object):
 		while len(self._S) > 0:
 			# element is the complex for which we will consider slow reactions
 			element = self._S.pop()
-			if(element.name == '24((0, 0)+(1, 2)'):
-				print "arg"
 				
 			slow_reactions = self.get_slow_reactions(element)
 			self._E.append(element)
@@ -197,13 +211,13 @@ class Enumerator(object):
 				if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
 					logging.error("Too many complexes enumerated!")
 					# raise Exception("Too many complexes generated, aborting...")
-					finish()
+					finish(premature=True)
 					return
 					
 				if (len(self._reactions) > self.MAX_REACTION_COUNT):
 					logging.error("Too many reactions enumerated!")
 					#raise Exception("Too many reactions generated, aborting...")
-					finish()
+					finish(premature=True)
 					return
 					
 				source = self._B.pop()
@@ -288,23 +302,32 @@ class Enumerator(object):
 		for reaction in fast_reactions[1]:
 			reactions.extend(reaction(complex))
 		return reactions
-				
+	
 	def get_new_products(self, reactions):
 		"""
 		Checks the products in the list of reactions. Updates the pointers in
 		those reactions to point to pre-existing complexes if necessary. Else,
 		returns the new complexes in a list.
+		
+		Additionally, prunes passed reactions to remove those with excessively
+		large complexes (len(complex) > self.MAX_COMPLEX_SIZE)
 		"""
 		new_products = []
+		new_reactions = []
 		
 		# Loop over every reaction
 		for reaction in reactions:
+			
+			# This will be set to False if we bail out of the inner loop upon finding a complex that's too large
+			complex_size_ok = True
+			
 			# Check every product of the reaction to see if it is new
 			for (i, product) in enumerate(reaction.products):
-			
+				
 				if (len(product.strands) > self.MAX_COMPLEX_SIZE):
 					logging.warning("Complex %(name)s (%(strands)d strands) too large, ignoring!" % {"name":product.name,"strands":len(product.strands)})
-					continue
+					complex_size_ok = False
+					break
 			
 				# This will be set to True if we've already seen this complex
 				enumerated = False
@@ -338,7 +361,14 @@ class Enumerator(object):
 				
 				if not enumerated:
 					new_products.append(product)
-					
+			
+			# If this reaction contained a complex that was too big, ignore the whole reaction.
+			if complex_size_ok:
+				new_reactions.append(reaction)
+		
+		# Clobber the old value of reactions with the filtered list
+		reactions[:] = new_reactions
+			
 		return new_products
 				
 	def segment_neighborhood(self, complexes, reactions):

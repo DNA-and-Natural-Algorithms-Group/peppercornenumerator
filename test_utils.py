@@ -141,6 +141,13 @@ class StrandTests(unittest.TestCase):
 		PS = Strand('PS', [self.domains['3*'], self.domains['2*'], self.domains['1*'], self.domains['5'], self.domains['6']])
 		assert self.strands['PS'] == PS
 	
+	def testHash(self):
+		assert not hash(self.strands['PS']) == hash(self.strands['OP'])
+		PSfake = Strand('PS', [self.domains['3*'], self.domains['2'], self.domains['1*'], self.domains['5'], self.domains['6']])
+		assert not hash(self.strands['PS']) == hash(PSfake)
+		PS = Strand('PS', [self.domains['3*'], self.domains['2*'], self.domains['1*'], self.domains['5'], self.domains['6']])
+		assert hash(self.strands['PS']) == hash(PS)
+		
 	def testName(self):
 		assert self.strands['PS'].name == 'PS'
 		def assnName(self):
@@ -163,10 +170,17 @@ class StrandTests(unittest.TestCase):
 class ComplexTests(unittest.TestCase):
 	def setUp(self):
 		setUpSLC(self)
+		
+		self.complexes['C2'] = Complex( 'C2', [self.strands['OP'], self.strands['PS']], [[None, (1, 1), (1, 0), None], [(0, 2), (0, 1), None, None, None]] )
+
+		# not a feasible structure; just for testing __hash__ing
+		self.complexes['C3'] = Complex( 'C3', [self.strands['OP'], self.strands['OP']], [[None, (1, 1), (1, 0), None], [(0, 2), (0, 1), None, None, None]] )
+		
 	
 	def testConstructor(self):
 		assert self.complexes['C1'].strands == [self.strands['OP'], self.strands['PS']]
 		assert self.complexes['C1'].structure == [[(1, 2), (1, 1), (1, 0), None], [(0, 2), (0, 1), (0, 0), None, None]]
+
 		assert self.complexes['I1'].strands == [self.strands['BS'], self.strands['SP'], self.strands['Cat']]
 		assert self.complexes['I1'].structure == [[(2, 1), (1, 1), (1, 0), None, None, None], [(0, 2), (0, 1)], [None, (0, 0)]]
 		assert self.complexes['Cat'].strands == [self.strands['Cat']]
@@ -178,7 +192,22 @@ class ComplexTests(unittest.TestCase):
 		assert self.complexes['C1'] == copy.deepcopy(self.complexes['C1'])
 		c = copy.deepcopy(self.complexes['C1']).rotate_strands()		
 		assert not self.complexes['C1'] == c
+	
+	def testHash(self):
+		# copy before hash is computed
+		c = copy.deepcopy(self.complexes['C1']) #.rotate_strands()	
+		assert not hash(self.complexes['C1']) == hash(c)
+
+		assert not hash(self.complexes['C1']) == hash(self.complexes['I1'])
+		assert hash(self.complexes['C1']) == hash(copy.deepcopy(self.complexes['C1']))
 		
+		# same strands, different structure
+		assert not hash(self.complexes['C1']) == hash(self.complexes['C2'])
+	
+		# different strands, same structure
+		assert not hash(self.complexes['C3']) == hash(self.complexes['C2'])
+		
+	
 	def testName(self):
 		assert self.complexes['C1'].name == 'C1'
 		def assnName(self):
