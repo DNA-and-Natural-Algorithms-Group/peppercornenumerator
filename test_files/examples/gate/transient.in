@@ -1,4 +1,6 @@
-# Figure 10 from the paper  (Which paper?!?)
+# Test to see if an input complex that is a transient will be handled correctly.  
+# Also test to see if a single-toehold-mediated 4-way branch migration is handled correctly.
+# Answer is yes to to both.
 domain 1 : long
 domain 2 : short
 domain 3 : short
@@ -15,34 +17,8 @@ strand a4 : 5 1 3
 strand b1 : 3* 4 1* 1*
 strand b2 : 4 1* 5* 4
 
-complex In :
-a1
-...
+complex Transient :
+a1 b1 a2 b2
+((( + )((. + )) + ))..
 
-complex G1 :
-a2 b1
-(( + .)).
 
-complex I1 :
-a2 a1 b1
-(. + .(( + ))).
-
-complex T :
-a2
-..
-
-complex G2 :
-a3 b2
-(( + .)).
-
-complex I2 :
-a3 a2 b2
-(. + (( + ))).
-
-complex Out :
-a4
-...
-
-complex P1 :
-a2 a3 a2 b2 a1 b1 
-(( + (. + (( + )))) + .(( + ))).

@@ -1,4 +1,5 @@
-# Figure 10 from the paper  (Which paper?!?)
+# finding the minimal subset of gate.in that produces the polymer bug (if it is a bug)
+# still not sure what's happening here
 domain 1 : long
 domain 2 : short
 domain 3 : short
@@ -23,26 +24,7 @@ complex G1 :
 a2 b1
 (( + .)).
 
-complex I1 :
-a2 a1 b1
-(. + .(( + ))).
-
-complex T :
-a2
-..
-
 complex G2 :
 a3 b2
 (( + .)).
 
-complex I2 :
-a3 a2 b2
-(. + (( + ))).
-
-complex Out :
-a4
-...
-
-complex P1 :
-a2 a3 a2 b2 a1 b1 
-(( + (. + (( + )))) + .(( + ))).

@@ -1,0 +1,54 @@
+###### Enumerated Output ######
+
+
+# Domains 
+sequence 1 = : 12
+sequence 2 = : 6
+sequence 3 = : 6
+sequence 4 = : 12
+sequence 5 = : 6
+
+
+# End-state Complexes 
+10
+1 4* 3 + 3* 4 1* 1*
+(((+))).
+
+0
+1 4* 3 + 4 1* 5* 4
+((.+))..
+
+1
+1 4* + 3* 4 1* 1*
+((+.)).
+
+9
+1 4* + 4 1* 5* 4
+((+))..
+
+###############################
+
+
+# Fast (Transition) Complexes 
+2
+1 4* 3 + 3* 4 1* 1* + 1 4* + 4 1* 5* 4
+(((+))(.+)(+))..
+
+Transient
+1 4* 3 + 3* 4 1* 1* + 1 4* + 4 1* 5* 4
+(((+)((.+))+))..
+
+###############################
+
+
+# Reactions 
+0 + 1 -> Transient 
+2 -> 10 + 9 
+2 -> Transient 
+Transient -> 2 
+Transient -> 0 + 1 
+###############################
+
+
+# Condensed Reactions 
+0 + 1 -> 10 + 9 

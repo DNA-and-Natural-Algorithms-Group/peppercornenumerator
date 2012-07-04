@@ -1,4 +1,5 @@
-# Figure 10 from the paper  (Which paper?!?)
+# gate.in enumerates to an error, suggesting polymer formation.  G1, G2, In is a minimal error input.
+# Here, the input G1, G2, Out produces a finite reaction graph, but complex 4 == complex 5.  They should be equated.
 domain 1 : long
 domain 2 : short
 domain 3 : short
@@ -15,34 +16,15 @@ strand a4 : 5 1 3
 strand b1 : 3* 4 1* 1*
 strand b2 : 4 1* 5* 4
 
-complex In :
-a1
+complex Out :
+a4
 ...
 
 complex G1 :
 a2 b1
 (( + .)).
 
-complex I1 :
-a2 a1 b1
-(. + .(( + ))).
-
-complex T :
-a2
-..
-
 complex G2 :
 a3 b2
 (( + .)).
 
-complex I2 :
-a3 a2 b2
-(. + (( + ))).
-
-complex Out :
-a4
-...
-
-complex P1 :
-a2 a3 a2 b2 a1 b1 
-(( + (. + (( + )))) + .(( + ))).
