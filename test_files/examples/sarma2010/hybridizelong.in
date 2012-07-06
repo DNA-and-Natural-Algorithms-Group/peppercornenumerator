@@ -1,0 +1,34 @@
+# This is a test of remote toeholds for 1-1 3-way branch migration.  A slight variant of hybridize.in
+# Behaves identical to hybridize.in, as it should.    (Except for the same naming problem.)
+# Of course with rates, the intramolecular reactions should be slower.
+
+domain 1 : long
+domain 2 : short
+domain 3 : short
+domain 4 : long
+domain 5 : short
+
+# a strands refer to blue "top" strands, labeled left to right
+strand a1 : 1 4* 3
+strand a2 : 1 4*
+strand a3 : 5 1
+strand a4 : 5 1 3
+strand a5 : 1 5 4*
+
+# b strands refer to bottom strands, labeled left to right
+strand b1 : 3* 4 1* 1*
+strand b2 : 4 1* 5* 4
+strand b3 : 3* 4 1* 3* 1*
+
+complex G1toplong :
+a5
+...
+
+complex G1botlong :
+b3
+.....
+
+complex G1long :
+a5 b3
+(.( + .))..
+
