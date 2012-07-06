@@ -38,3 +38,7 @@ open
 # Reactions 
 initial -> initial((2, 0)+(1, 2)) 
 open -> open((0, 0)+(0, 2)) 
+###############################
+
+
+# Condensed Reactions 

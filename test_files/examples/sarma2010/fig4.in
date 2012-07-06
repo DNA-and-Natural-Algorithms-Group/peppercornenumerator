@@ -1,0 +1,37 @@
+# Figure 4 from Sarma2010report.pdf
+# Correctly computes the steps shown, plus a bunch more subsequent steps and cross-interaction steps, in detailed mode.
+# But hangs when trying to compute the condensed reactions.
+
+domain 1 : long
+domain 2 : long
+domain 3 : short
+domain 4 : long
+domain 5 : short
+domain 6 : long
+domain 7 : short
+
+strand h1 : 1
+strand h2 : 1*
+strand a1 : 3* 2* 1* 5 6
+strand a2 : 1 2 3 4
+strand b1 : 6 7
+strand b2 : 7* 6*  5* 1 2 3
+
+complex top :
+h1
+.
+
+complex bot :
+h2
+.
+
+complex com1 :
+a1 a2
+(((.. + ))).
+
+complex com2 :
+b1 b2
+(( + ))....
+
+
+
