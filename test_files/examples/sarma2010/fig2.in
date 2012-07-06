@@ -1,0 +1,41 @@
+# Figure 2 from Sarma2010report.pdf, which is the entropy-driven catalyst from Zhang et al, Science, 2007
+# The intermediate complexes I1, I2, I3, I4, I5, I6 are not explicitly given; the enumerator labels them 0,3,4,7,12,17.
+# Also note that the detailed reactions enumerated are more complete than in Figure 2 (e.g. unproductive C + W binding
+# and an alternate pathway for 4+F->OP+C+W) but that the condensed reactions show less details than in Figure 2.
+
+domain 1 : long
+domain 2 : long
+domain 3 : short
+domain 4 : long
+domain 5 : short
+domain 6 : long
+
+strand c : 4 5
+strand sig : 6 3 4
+strand out : 1 2
+strand bot : 5* 4* 3* 2*
+strand fuel : 2 3 4
+
+complex C :
+c
+..
+
+complex S :
+out sig bot
+.( + .(( + .)))
+
+complex SB :
+sig
+...
+
+complex F :
+fuel
+...
+
+complex OP :
+out
+..
+
+complex W :
+fuel bot
+((( + .)))

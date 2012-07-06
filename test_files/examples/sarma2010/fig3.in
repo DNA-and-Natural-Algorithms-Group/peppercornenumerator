@@ -1,0 +1,26 @@
+# Figure 3 from Sarma2010report.pdf
+# Correctly computes the complexes, but gives them weird names.
+
+domain 1 : long
+domain 2 : long
+domain 3 : long
+domain 4 : long
+domain 5 : long
+domain 6 : long
+domain 7 : long
+
+strand h : 1* 2 1
+strand a : 1 2
+strand b : 3 4 5
+strand c : 5* 7
+strand d : 7* 6  3* 1*
+
+complex open :
+h
+...
+
+complex initial :
+a b c d
+(. + (.. + .( + ).))
+
+

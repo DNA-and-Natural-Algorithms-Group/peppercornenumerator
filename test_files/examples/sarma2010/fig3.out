@@ -1,0 +1,40 @@
+###### Enumerated Output ######
+
+
+# Domains 
+sequence 1 = : 12
+sequence 2 = : 12
+sequence 3 = : 12
+sequence 4 = : 12
+sequence 5 = : 12
+sequence 6 = : 12
+sequence 7 = : 12
+
+
+# End-state Complexes 
+initial((2, 0)+(1, 2))
+1 2 + 3 4 5 + 5* 7 + 7* 6 3* 1*
+(.+(.(+)(+).))
+
+open((0, 0)+(0, 2))
+1* 2 1
+(.)
+
+###############################
+
+
+# Fast (Transition) Complexes 
+initial
+1 2 + 3 4 5 + 5* 7 + 7* 6 3* 1*
+(.+(..+.(+).))
+
+open
+1* 2 1
+...
+
+###############################
+
+
+# Reactions 
+initial -> initial((2, 0)+(1, 2)) 
+open -> open((0, 0)+(0, 2)) 

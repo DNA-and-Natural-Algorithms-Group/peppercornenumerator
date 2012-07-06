@@ -1,0 +1,12 @@
+# Figure 1 from Sarma2010report.pdf
+
+domain 1 : long
+domain 2 : long
+
+strand a1 : 1 2
+strand a2 : 2
+strand b1 : 2* 1*
+
+complex initial :
+a1 a2 b1
+(. + ( + ))
