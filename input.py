@@ -11,6 +11,7 @@ from utils import *
 from enumerator import Enumerator
 from reactions import ReactionPathway
 import reactions
+import re
 
 def input_standard(filename):
 	"""
@@ -53,7 +54,7 @@ def input_standard(filename):
 								% line_counter)
 				raise Exception()
 			
-			if not domain_name.isalnum():
+			if not re.match(r'\w+$',domain_name):
 				logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
 								% (domain_name, line_counter))
 			
@@ -96,7 +97,7 @@ def input_standard(filename):
 								% line_counter)
 				raise Exception()
 			
-			if not strand_name.isalnum():
+			if not re.match(r'\w+$',strand_name):
 				logging.warn("Non-alphanumeric strand name %s encountered in input line %d"
 								% (strand_name, line_counter))
 			
@@ -131,7 +132,7 @@ def input_standard(filename):
 								% line_counter)
 				raise Exception()
 			
-			if not complex_name.isalnum():
+			if not re.match(r'\w+$',complex_name):
 				logging.warn("Non-alphanumeric complex name %s encountered in input line %d"
 								% (complex_name, line_counter))
 			
@@ -162,6 +163,189 @@ def input_standard(filename):
 				raise Exception()
 			
 			complex = Complex(complex_name, complex_strands, complex_structure)
+			complex.check_structure()
+			complexes[complex_name] = complex			
+			
+		else:
+			logging.error("Unexpected characters encountered in input line %d"
+							% line_counter)
+			raise Exception()
+		line = fin.readline()
+		line_counter += 1
+		
+	domains = domains.values()
+	strands = strands.values()
+	complexes = complexes.values()
+	
+	enumerator = Enumerator(domains, strands, complexes)
+	return enumerator
+
+
+def input_pil(filename):
+	"""
+	Initializes and returns an enumerator from an input file in the Pepper Intermediate Language (PIL)
+	"""
+	fin = open(filename, 'r')
+	
+	domains = {}
+	strands = {}
+	complexes = {}
+	
+	line_counter = 1
+	line = fin.readline()
+	
+	# We loop over all the lines in the file
+	while (line != ""):
+		line = line.strip()
+		
+		# This was an empty line
+		if line == "":
+			line = fin.readline()
+			continue
+			
+		# This was a comment
+		elif line.startswith("#"):
+			line = fin.readline()
+			continue
+			
+		# This is the beginning of a domain
+		elif line.startswith("sequence"):
+			# e.g.: 
+			#       "sequence a = 6"
+			# parts: 0        1 2 3
+			
+			parts = line.split()
+						
+			domain_name = parts[1]
+			if domain_name in domains:
+				logging.error("Duplicate domain name encountered in input line %d"
+								% line_counter)
+				raise Exception()
+			
+			if not re.match(r'\w+$',domain_name):
+				logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
+								% (domain_name, line_counter))
+			
+			# The domain length could be either short or long or it could be
+			# an exact number
+			domain_length = parts[3]
+			if not ((domain_length == 'short') or (domain_length == 'long')):
+				domain_length = int(domain_length)
+				if domain_length <= 0:
+					logging.warn("Domain of length %d found in input line %d" 
+									% (domain_length, line_counter))
+				
+			# Check to see if a sequence is specified
+			if len(parts) > 4:
+				domain_sequence = parts[4]
+			else:
+				domain_sequence = None
+			
+			# Create the new domains
+			new_dom = Domain(domain_name, domain_length, 
+							 sequence=domain_sequence)
+			new_dom_comp = Domain(domain_name, domain_length, 
+								  sequence=domain_sequence,
+								  is_complement=True)
+			
+			domains[domain_name] = new_dom
+			domains["%s*" % domain_name] = new_dom_comp
+		
+		# This is the beginning of a strand	
+		elif line.startswith("strand"):
+			# e.g.: 
+			#       "strand A = a x b y z* c* y* b* x*"
+			# parts: 0      1 2 3 4 5 6 ...
+			
+			parts = line.split()
+			
+			strand_name = parts[1]
+			if strand_name in strands:
+				logging.error("Duplicate strand name encountered in input line %d"
+								% line_counter)
+				raise Exception()
+			
+			if not re.match(r'\w+$',strand_name):
+				logging.warn("Non-alphanumeric strand name %s encountered in input line %d"
+								% (strand_name, line_counter))
+			
+			strand_doms = []
+			for domain_name in parts[3:]:
+				if not domain_name in domains:
+					logging.error("Invalid domain name %s encountered in input line %d"
+									% (domain_name, line_counter))
+					raise Exception()
+								
+				strand_doms.append(domains[domain_name])
+			
+			if len(strand_doms) == 0:
+				logging.warn("0-length strand encountered in input line %d")			
+				
+			new_strand = Strand(strand_name, strand_doms)
+			strands[strand_name] = new_strand
+			
+		# This is the beginning of a complex	
+		elif line.startswith("structure"):
+			# e.g.:
+			# structure A = S1 : .(((..)))
+			
+			parts = line.split('=')
+			
+			if(len(parts) != 2):
+				logging.error('Invalid structure statement on line %d' % line_counter)
+				raise Exception()
+				
+			complex_name = parts[0].split()
+			if(len(complex_name) != 2):
+				logging.error('Invalid structure statement on line %d' % line_counter)
+				raise Exception()
+			else:
+				complex_name = complex_name[1]
+			
+			
+			
+			
+			if complex_name in complexes:
+				logging.error("Duplicate complex name encountered in input line %d"
+								% line_counter)
+				raise Exception()
+			
+			if not re.match(r'\w+$',complex_name):
+				logging.warn("Non-alphanumeric complex name %s encountered in input line %d"
+								% (complex_name, line_counter))
+			
+			parts = parts[1].split(':')
+			if(len(parts) != 2):
+				logging.error('Invalid structure statement on line %d' % line_counter)
+				raise Exception()
+			else:
+				(strands_line,structure_line) = parts
+			
+			complex_strands = []
+			strands_line = strands_line.strip()
+			strands_line_parts = strands_line.split()
+			for strand_name in strands_line_parts:
+				if not strand_name in strands:
+					logging.error("Invalid strand name %s encountered in input line %d"
+									% (strand_name, line_counter))
+					raise Exception()
+				else:
+					complex_strands.append(strands[strand_name])
+				
+			structure_line = fin.readline()
+			structure_line = structure_line.strip()
+			
+			complex_structure = parse_dot_paren(structure_line)
+			struct_length = sum(map(len,complex_structure))
+			domains_length = sum(map(len,complex_strands))
+			
+			if(struct_length != domains_length):
+				logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct)d."
+								% {"name":complex_name,"doms":domains_length,"struct":struct_length})
+				raise Exception()
+			
+			complex = Complex(complex_name, complex_strands, complex_structure)
+			complex.check_structure()
 			complexes[complex_name] = complex			
 			
 		else:

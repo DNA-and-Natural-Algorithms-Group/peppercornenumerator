@@ -58,6 +58,23 @@ def parse_dot_paren(structure_line):
 	return complex_structure
 
 
+# More of a testing tool than anything
+def index_parts(enum):
+	domains = {}
+	strands = {}
+	complexes = {}
+	
+	for domain in enum.domains:
+		domains[domain.name] = domain
+	
+	for strand in enum.strands:
+		strands[strand.name] = strand
+	
+	for complex in enum.initial_complexes:
+		complexes[complex.name] = complex
+	
+	return (domains,strands,complexes)
+
 class Domain(object):
 	"""
 	Represents a single domain. We allow several options for specifying domain
@@ -290,11 +307,10 @@ class Complex(object):
 		self._valid_available_domains = False				
 		
 		# Rotate until we're in canonical form
-		# TODO: this could be optimized by writing a rotation method that
-		#		rotates N strands at a time
-		while (strandNames[0] != self.strands[0].name):
-			self._rotate_strands()
-			
+		perms = [tuple(strands[x:] + strands[:x]) for x in range(len(strands))] # calculate all circular permutations
+		min_perm = min(range(len(strands)),key=lambda(i): perms[i]) # select lexicographically minimum permutation
+		self._rotate_strands_n(min_perm) # rotate until we're in that form
+		
 		# Holds a unique hash identifying this complex (computed lazily by self.__hash__)
 		self._hash = None
 	
@@ -362,6 +378,14 @@ class Complex(object):
 			self.update_available_domains()			
 		return self._available_domains
 	
+	def get_domain(self,loc):
+		"""
+		Returns the domain at the given (strand,domain) index in this complex (loc is a (strand,domain) tuple)
+		"""
+		if(loc != None):
+			return self.strands[loc[0]].domains[loc[1]]
+		return None
+		
 	def strand_index(self, strand_name):
 		"""
 		Returns the index of the strand with the specified name in this
@@ -510,6 +534,38 @@ class Complex(object):
 		self._valid_available_domains = False
 		self._structure = new_struct
 		self._strands = new_strands	
+	
+	def _rotate_strands_n(self,n):
+		new_strands = self.strands[:]
+		new_struct = self.structure[:]
+		old_struct = self.structure[:]
+		
+		for x in range(n):
+			new_strands = new_strands[1:] + [new_strands[0]]
+		
+			new_struct = []
+			n_strands = len(new_strands)
+			
+			for list in old_struct:
+				new_list = []
+				for el in list:
+					if el == None:
+						new_list.append(None)
+					else:
+						(strand, domain) = el
+						if strand > 0:
+							new_list.append((strand-1, domain))
+						else:
+							new_list.append((n_strands-1, domain))
+				new_struct.append(new_list)
+			
+			new_struct = new_struct[1:] + [new_struct[0]]
+			old_struct = new_struct[:]
+			
+		self._avaliable_domains = []
+		self._valid_available_domains = False
+		self._structure = new_struct
+		self._strands = new_strands	
 		
 	def rotate_strands(self):
 		"""
@@ -518,7 +574,27 @@ class Complex(object):
 		out = copy.deepcopy(self)
 		out._rotate_strands()
 		return out
-		
+	
+	def check_structure(self):
+		"""
+		Determines whether the structure includes pairs only between complementary domains. 
+		Returns True if all paired domains are complementary, raises an Exception otherwise
+		"""
+		for (strand_index,strand_struct) in enumerate(self.structure):
+			for (domain_index,target) in enumerate(strand_struct):
+				
+				source_domain = self.get_domain((strand_index,domain_index))
+				target_domain = self.get_domain(target)
+				
+				if((source_domain is None) and (target_domain is None)):
+					if(not source_domain.can_pair(target_domain)):
+						raise Exception("In complex %s, domain %s is paired with domain %s, but the domains are not complementary." % self.name,
+									source_domain.name,target_domain.name)
+					
+					if(self.structure[target[0]][target[1]] != (strand_index,domain_index)):
+						raise Exception("In complex %s, incoherent structure at (%d, %d) and (%d, %d)" % self.name, strand_index, domain_index, target[0], target[1])
+		return True
+				
 	def dot_paren_string(self):
 		"""
 		Returns the segment-wise dot paren representation of this complex.

@@ -19,28 +19,34 @@ class EnumeratorTests(unittest.TestCase):
 		self.strands = {}
 		self.complexes = {}		
 		
-		for domain in self.SLC_enumerator.domains:
-			self.domains[domain.name] = domain
+#		for domain in self.SLC_enumerator.domains:
+#			self.domains[domain.name] = domain
+#		
+#		for strand in self.SLC_enumerator.strands:
+#			self.strands[strand.name] = strand
+#		
+#		for complex in self.SLC_enumerator.initial_complexes:
+#			self.complexes[complex.name] = complex
 		
-		for strand in self.SLC_enumerator.strands:
-			self.strands[strand.name] = strand
+		(self.domains,self.strands,self.complexes) = index_parts(self.SLC_enumerator)
 		
-		for complex in self.SLC_enumerator.initial_complexes:
-			self.complexes[complex.name] = complex
+		
 	
 		self.three_arm_enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
 		self.domains2 = {}
 		self.strands2 = {}
 		self.complexes2 = {}		
 		
-		for domain in self.three_arm_enumerator.domains:
-			self.domains2[domain.name] = domain
+		(self.domains2,self.strands2,self.complexes2) = index_parts(self.three_arm_enumerator)
 		
-		for strand in self.three_arm_enumerator.strands:
-			self.strands2[strand.name] = strand
-		
-		for complex in self.three_arm_enumerator.initial_complexes:
-			self.complexes2[complex.name] = complex
+#		for domain in self.three_arm_enumerator.domains:
+#			self.domains2[domain.name] = domain
+#		
+#		for strand in self.three_arm_enumerator.strands:
+#			self.strands2[strand.name] = strand
+#		
+#		for complex in self.three_arm_enumerator.initial_complexes:
+#			self.complexes2[complex.name] = complex
 			
 	def testDomains(self):
 		exp_domains = [Domain('1', 'short'), Domain('1', 'short', True), Domain('2', 'short'), Domain('2', 'short', True), Domain('3', 'short'), Domain('3', 'short', True), Domain('4', 'long'), Domain('4', 'long', True), Domain('5', 'short'), Domain('5', 'short', True), Domain('6', 'long'), Domain('6', 'long', True), Domain('7', 'short'), Domain('7', 'short', True)]
@@ -439,8 +445,7 @@ class EnumeratorTests(unittest.TestCase):
 			for product in reaction.products:
 				if not (product in polymer_enum.complexes):
 					undefined_complexes.append(product)
-					print reaction
-					print product
+					print "Reaction: %s, Product: %s" % (repr(reaction), repr(product))
 		
 		#undefined_complexes = [product for reaction in self.polymer_enum.reactions for product in reaction.products if not (product in complexes) ]
 		

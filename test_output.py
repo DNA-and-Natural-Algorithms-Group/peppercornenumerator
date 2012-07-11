@@ -24,14 +24,16 @@ class OutputTests(unittest.TestCase):
 		self.strands = {}
 		self.complexes = {}		
 		
-		for domain in self.SLC_enumerator.domains:
-			self.domains[domain.name] = domain
-		
-		for strand in self.SLC_enumerator.strands:
-			self.strands[strand.name] = strand
-		
-		for complex in self.SLC_enumerator.initial_complexes:
-			self.complexes[complex.name] = complex
+#		for domain in self.SLC_enumerator.domains:
+#			self.domains[domain.name] = domain
+#		
+#		for strand in self.SLC_enumerator.strands:
+#			self.strands[strand.name] = strand
+#		
+#		for complex in self.SLC_enumerator.initial_complexes:
+#			self.complexes[complex.name] = complex
+
+		(self.domains,self.strands,self.complexes) = index_parts(self.SLC_enumerator)
 
 		self.SLC_enumerator_reduced = Enumerator(self.SLC_enumerator.domains, self.SLC_enumerator.strands, [self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']])
 			
@@ -200,19 +202,20 @@ class OutputTests(unittest.TestCase):
 		condensed = condense_resting_states(self.simple2_enumerator)
 		
 		enum = self.simple2_enumerator
-		domains = {}
-		strands = {}
-		complexes = {}
+#		domains = {}
+#		strands = {}
+#		complexes = {}
+#		
+#		for domain in enum.domains:
+#			domains[domain.name] = domain
+#		
+#		for strand in enum.strands:
+#			strands[strand.name] = strand
+#		
+#		for complex in enum.initial_complexes:
+#			complexes[complex.name] = complex
 		
-		for domain in enum.domains:
-			domains[domain.name] = domain
-		
-		for strand in enum.strands:
-			strands[strand.name] = strand
-		
-		for complex in enum.initial_complexes:
-			complexes[complex.name] = complex
-		
+		(domains,strands,complexes) = index_parts(enum)
 		
 #		# End-state Complexes 
 #		structure RC1 = S1 + S3 : ((+))
@@ -253,18 +256,20 @@ class OutputTests(unittest.TestCase):
 		enum = self.SLC_enumerator
 		condensed = condense_resting_states(enum)
 		
-		domains = {}
-		strands = {}
-		complexes = {}
-		
-		for domain in enum.domains:
-			domains[domain.name] = domain
-		
-		for strand in enum.strands:
-			strands[strand.name] = strand
-		
-		for complex in enum.initial_complexes:
-			complexes[complex.name] = complex
+#		domains = {}
+#		strands = {}
+#		complexes = {}
+#		
+#		for domain in enum.domains:
+#			domains[domain.name] = domain
+#		
+#		for strand in enum.strands:
+#			strands[strand.name] = strand
+#		
+#		for complex in enum.initial_complexes:
+#			complexes[complex.name] = complex
+
+		(domains,strands,complexes) = index_parts(enum)
 	
 #		state RS_C1 = C1
 #		state RS_C2 = C2

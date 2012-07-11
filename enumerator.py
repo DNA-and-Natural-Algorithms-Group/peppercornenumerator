@@ -67,6 +67,8 @@ class Enumerator(object):
 	def auto_name(self):
 		return reactions.auto_name
 
+	def get_auto_name(self):
+		return reactions.get_auto_name()
 	
 	@property
 	def domains(self):
@@ -378,9 +380,7 @@ class Enumerator(object):
 		of complexes which are transient states, complexes which are in resting
 		states, and the set of resting states, all in a dictionary.
 		"""
-		
-		global auto_name
-		
+				
 		# First we initialize the graph variables that will be used for
 		# Tarjan's algorithm
 		
@@ -450,8 +450,7 @@ class Enumerator(object):
 			
 			if is_resting_state:
 				resting_state_complexes.extend(scc)
-				resting_state = RestingState(str(auto_name), scc[:])
-				auto_name += 1
+				resting_state = RestingState(self.get_auto_name(), scc[:])
 				resting_states.append(resting_state)
 				
 			else:

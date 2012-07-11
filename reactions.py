@@ -12,6 +12,11 @@ from utils import *
 # TODO: fix naming!
 auto_name = 0
 
+def get_auto_name():
+	global auto_name
+	auto_name += 1
+	return str(auto_name)
+
 # TODO: refactor this
 RELEASE_CUTOFF = 6
 
@@ -153,7 +158,7 @@ def bind11(reactant):
 		new_structure = copy.deepcopy(reactant.structure)
 		new_structure[d1[0]][d1[1]] = d2
 		new_structure[d2[0]][d2[1]] = d1
-		product = Complex(reactant.name + "(" + str(d1) + "+" + str(d2) + ")",
+		product = Complex(get_auto_name(),  #reactant.name + "(" + str(d1) + "+" + str(d2) + ")",
 						  reactant.strands, new_structure)		
 		products.append(product)
 	
@@ -424,11 +429,8 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 #	except IndexError:
 #		print "Agh!"
 #		raise Exception()
-	
-	global auto_name
-	
-	new_complex = Complex(str(auto_name), new_strands, new_structure)
-	auto_name += 1
+		
+	new_complex = Complex(get_auto_name(), new_strands, new_structure)
 	
 	return new_complex
 
@@ -755,12 +757,9 @@ def split_complex(reactant, split_start, split_end):
 	out1_structure = new_structure1 + new_structure3
 	out2_structure = new_structure2
 	
-	global auto_name
 	
-	out1 = Complex(str(auto_name), out1_strands, out1_structure)
-	auto_name += 1
-	out2 = Complex(str(auto_name), out2_strands, out2_structure)
-	auto_name += 1
+	out1 = Complex(get_auto_name(), out1_strands, out1_structure)
+	out2 = Complex(get_auto_name(), out2_strands, out2_structure)
 	
 	return [out1, out2]
 
@@ -915,10 +914,7 @@ def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	out_reactant.structure[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
 	out_reactant.structure[displaced_loc[0]][displaced_loc[1]] = None
 	
-	global auto_name
-	
-	out_reactant._name = str(auto_name)
-	auto_name += 1
+	out_reactant._name = get_auto_name()	
 	
 	global UNZIP
 	
@@ -1034,9 +1030,6 @@ def do_4way_migration(reactant, loc1, loc2, loc3, loc4):
 	new_struct[loc2[0]][loc2[1]] = loc4
 	new_struct[loc4[0]][loc4[1]] = loc2
 	
-	global auto_name
-	
-	out = Complex(str(auto_name), reactant.strands[:], new_struct)
-	auto_name += 1
+	out = Complex(get_auto_name(), reactant.strands[:], new_struct)
 	
 	return find_releases(out)

@@ -40,22 +40,6 @@ class BindTests(unittest.TestCase):
 		self.three_arm_enumerator_reduced = Enumerator(self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
 		
 		
-		def index_parts(enum):
-			domains = {}
-			strands = {}
-			complexes = {}
-			
-			for domain in enum.domains:
-				domains[domain.name] = domain
-			
-			for strand in enum.strands:
-				strands[strand.name] = strand
-			
-			for complex in enum.initial_complexes:
-				complexes[complex.name] = complex
-			
-			return (domains,strands,complexes)
-		
 		self.index_parts = index_parts
 		
 	def testFindExternalStrandBreak(self):

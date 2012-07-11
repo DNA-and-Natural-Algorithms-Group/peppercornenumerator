@@ -13,6 +13,19 @@ import copy
 class MiscTests(unittest.TestCase):
 	def testNaturalSort(self):
 		assert natural_sort(['c10','b','c2','c1','a']) == ['a','b','c1','c2','c10']
+		
+	def testParseDotParen(self):
+		#						012345678
+		assert parse_dot_paren('(((...)))') == [[(0,8),(0,7),(0,6),None,None,None,(0,2),(0,1),(0,0)]]
+		
+		#						0	1
+		#						012 012345
+		assert parse_dot_paren('(((+...)))') == [[(1,5),(1,4),(1,3)],[None,None,None,(0,2),(0,1),(0,0)]]
+		
+		#						0    1
+		#						0123 01234
+		assert parse_dot_paren('((((+))).)') == [[(1,4),(1,2),(1,1),(1,0)],[(0,3),(0,2),(0,1),None,(0,0)]]
+
 
 class DomainTests(unittest.TestCase):
 	def setUp(self):
@@ -206,8 +219,17 @@ class ComplexTests(unittest.TestCase):
 	
 		# different strands, same structure
 		assert not hash(self.complexes['C3']) == hash(self.complexes['C2'])
-		
 	
+	def testGetDomain(self):
+		print self.complexes['C1'].get_domain((0,0))
+		assert self.complexes['C1'].get_domain((0,0)) == self.domains['1']
+		
+		print self.complexes['C1'].get_domain((0,1))
+		assert self.complexes['C1'].get_domain((0,1)) == self.domains['2']
+		
+		print self.complexes['C1'].get_domain((1,0))
+		assert self.complexes['C1'].get_domain((1,0)) == self.domains['3*']
+		
 	def testName(self):
 		assert self.complexes['C1'].name == 'C1'
 		def assnName(self):
@@ -291,14 +313,40 @@ class ComplexTests(unittest.TestCase):
 		c4 = self.complexes['Cat'].rotate_strands()
 		assert c4.strands == [self.strands['Cat']]
 		assert c4.structure == [[None, None]]
-		
+	
+	def testRotateStrands2(self):
+		from input import input_standard
+		self.biggate_enum = input_standard('test_files/examples/sarma2010/biggate.in');
+		(domains,strands,complexes) = index_parts(self.biggate_enum)
+	
+		c16 = Complex('16',[strands['a1'],strands['a1'],strands['b1']],parse_dot_paren('(..+(((+))))'))
+		c38 = Complex('38',[strands['a1'],strands['b1'],strands['a1']],parse_dot_paren('(((+)))(+)..'))
+		assert c16 == c38
+	
 	def testDotParenString(self):
 		str = self.complexes['I1'].dot_paren_string()
 		assert str == "(((...+))+.)"
 		
 		str = self.complexes['I4'].dot_paren_string()
 		assert str == "(((...+(((.+)))).+))"
-		
+	
+	def testCheckStructure(self):
+		#                 0                 1                 2                 3                  4
+		s1 = Strand('S1',[self.domains['1'],self.domains['2'],self.domains['3'],self.domains['1*'],self.domains['2*']])
+		c1 = Complex('C1',[s1],[(0,4),(0,3),None,(0,1),(0,0)])
+		def checkStruct1():
+			c1.check_structure()
+		assert_raises(Exception,checkStruct1)
+	
+		c2 = Complex('C2',[s1],[(0,4),None,None,None,None])
+		def checkStruct2():
+			c2.check_structure()
+		assert_raises(Exception,checkStruct2)
+	
+		assert self.complexes['C1'].check_structure()
+		assert self.complexes['C2'].check_structure()
+		assert self.complexes['Cat'].check_structure()		
+	
 class RestingStateTests(unittest.TestCase):
 	def setUp(self):
 		setUpSLC(self)
