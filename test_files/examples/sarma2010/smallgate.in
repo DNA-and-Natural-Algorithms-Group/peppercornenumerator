@@ -1,5 +1,5 @@
 # gate.in enumerates to an error, suggesting polymer formation.  G1, G2, In is a minimal error input.
-# Here, the input G1, G2, Out produces a finite reaction graph, but complex 4 == complex 5.  They should be equated.
+# Here, the input G1, G2, Out produces a finite reaction graph.
 domain 1 : long
 domain 2 : short
 domain 3 : short

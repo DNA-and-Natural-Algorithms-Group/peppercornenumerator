@@ -7,11 +7,11 @@ sequence 2 = : 12
 
 
 # End-state Complexes 
-1
+2
 1 2 + 2* 1*
 ((+))
 
-2
+3
 2
 .
 
@@ -27,7 +27,7 @@ initial
 
 
 # Reactions 
-initial -> 1 + 2 
+initial -> 2 + 3 
 ###############################
 
 
