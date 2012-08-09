@@ -651,7 +651,7 @@ class RestingState(object):
 		complexes.sort()
 		self._complexes = complexes
 		self._name = name
-		self._canonical = find(lambda s: not str(s).isdigit(),complexes,str(complexes[0]))
+		self._canonical = find(lambda s: not str(s).isdigit(),sorted(complexes),str(complexes[0]))
 		
 	@property
 	def name(self):

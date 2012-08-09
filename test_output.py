@@ -148,8 +148,8 @@ class OutputTests(unittest.TestCase):
 			
 	def testJSONInputOutputLoop(self):
 
-		output_json(self.SLC_enumerator_reduced, 'test_files/testJSONInputOutputLoop.out')
-		enumerator = load_json('test_files/testJSONInputOutputLoop.out')
+		output_json(self.SLC_enumerator_reduced, 'test_files/test_output/testJSONInputOutputLoop.out')
+		enumerator = load_json('test_files/test_output/testJSONInputOutputLoop.out')
 		assert enumerator == self.SLC_enumerator_reduced
 
 	def testOutputSBML(self):

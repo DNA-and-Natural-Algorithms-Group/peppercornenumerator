@@ -64,6 +64,10 @@ class ReactionPathway(object):
 	def products(self):
 		return self._products
 		
+	@property
+	def arity(self):
+		return (len(self._reactants),len(self._products))	
+	
 	def __eq__(self, other):
 		return (self.name == other.name) and \
 			   (self.reactants == other.reactants) and \

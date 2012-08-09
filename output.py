@@ -162,6 +162,117 @@ def condense_resting_states(enumerator):
 			 }
 	#assert False
 	return output
+		
+#def condense_resting_states(enumerator):
+#	"""
+#	Outputs a set of 'resting state complexes' and reactions between them
+#	which represent a version of the reaction graph in which transient
+#	complexes have been removed and resting states are represented by a single
+#	node.
+#	"""
+#	
+#	complexes = enumerator.complexes
+#	reactions = enumerator.reactions[:]
+#	resting_states = enumerator.resting_states
+#	
+#	new_complexes = []
+#	new_reactions = []
+#	
+#	# First we need to mark resting state complexes
+#	for complex in complexes:
+#		complex._is_resting_state = False
+#		complex._resting_state = None
+#	
+#	for resting_state in resting_states:
+#		for complex in resting_state.complexes:
+#			complex._is_resting_state = True
+#			complex._resting_state = resting_state
+#			new_complexes.append(complex)
+#			
+#	
+#	# Now we iterate through the complexes and link transients to their resting states
+#	for complex in complexes:
+#	
+#		# We only want to eliminate transient states
+#		if (complex._resting_state is not None):
+#			continue
+#			
+#		reagent_reactions = []
+#		product_reactions = []
+#		
+#		# We loop through the reactions and segment them into those that have
+#		# the complex as either a reagent or a product
+#		for reaction in reactions:
+#			if complex in reaction.reactants:
+#				reagent_reactions.append(reaction)
+#			elif complex in reaction.products:
+#				product_reactions.append(reaction)
+#
+#		
+#		# We now loop over the reactions with complex as a reagent
+#		for reaction in reagent_reactions:
+#			# Count how many times complex appears
+#			counter = reaction.reactants.count(complex)
+#			
+#			# We need to make a new reaction for every reaction producing complex
+#			for reaction2 in product_reactions:
+#				new_react_reagents = reaction.reactants[:] + (reaction2.reactants * counter)
+#				new_react_products = reaction.products[:] + (reaction2.products * counter)
+#				
+#				new_react_products.remove(complex)
+#				new_react_reagents.remove(complex)
+#			
+#				new_react = ReactionPathway(str(enumerator.auto_name), new_react_reagents,
+#										new_react_products)
+#				new_reactions.append(new_react)
+#
+#			
+#
+#		# Now we do the same for the reactions with complex as a product
+#		for reaction in product_reactions:
+#			# Count how many times complex appears
+#			counter = reaction.products.count(complex)
+#			
+#			# We need to make a new reaction for every reaction taking complex
+#			for reaction2 in reagent_reactions:
+#				new_react_reagents = reaction.reactants[:] + (reaction2.reactants * counter)
+#				new_react_products = reaction.products[:] + (reaction2.products * counter)
+#				
+#				new_react_products.remove(complex)
+#				new_react_reagents.remove(complex)
+#				
+#				new_react = ReactionPathway(str(enumerator.auto_name), new_react_reagents,
+#										new_react_products)
+#				new_reactions.append(new_react)
+#
+#
+#		reactions.extend(new_reactions)
+#		new_reactions = []
+#		
+#					
+#	new_reactions = set()
+#	for reaction in reactions:
+#		
+#		# Filter reactions with no products/reactants
+#		if (len(reaction.reactants) == 0) and (len(reaction.products) == 0):
+#			continue
+#		
+#		# And trivial reactions
+#		if(sorted(reaction.reactants) == sorted(reaction.products)):
+#			continue
+#		
+#		new_reagents = [reagent._resting_state for reagent in reaction.reactants]
+#		new_products = [product._resting_state for product in reaction.products]
+#			
+#		new_reactions.add(ReactionPathway('condensed', new_reagents, new_products))
+#
+#
+#	output = {
+#				'resting_states': resting_states[:],
+#				'reactions': list(new_reactions)
+#			 }
+#	#assert False
+#	return output
 
 
 def output_legacy(enumerator, filename, output_condensed = False):

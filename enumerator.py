@@ -1,4 +1,4 @@
-#
+#!/usr/bin/python -O
 #  enumerator.py
 #  EnumeratorProject
 #
@@ -507,6 +507,11 @@ def main(argv):
 	parser.add_argument('-o', action='store', dest='output_format', default='standard')
 	parser.add_argument('-i', action='store', dest='input_format', default='standard')
 	parser.add_argument('-c', action='store_true', dest='condensed', default=False)
+	
+	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None)
+	parser.add_argument('--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=None)
+	parser.add_argument('--max-reactions', action='store', dest='MAX_REACTION_COUNT', default=None)
+	
 
 	cl_opts = parser.parse_args()
 	
@@ -522,6 +527,16 @@ def main(argv):
 	else:
 		print "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
 		raise Exception('Error!')
+
+	if cl_opts.MAX_REACTION_COUNT is not None:
+		enum.MAX_REACTION_COUNT = cl_opts.MAX_REACTION_COUNT
+	
+	if cl_opts.MAX_COMPLEX_COUNT is not None:
+		enum.MAX_COMPLEX_COUNT = cl_opts.MAX_COMPLEX_COUNT
+	
+	if cl_opts.MAX_COMPLEX_SIZE is not None:
+		enum.MAX_COMPLEX_SIZE = cl_opts.MAX_COMPLEX_SIZE
+	
 
 	print "Enumerating reactions..."
 
