@@ -1,0 +1,24 @@
+# Example of strand displacement on a bulged duplex that yields a single-stranded species that can fold up two ways.
+# The resting state complexes look right, but two structures are named "substrate".
+# The transient complexes are too many to check, but two of them are both called "4".
+# Condensing the reactions appears to hang.
+
+domain a : short
+domain t : short
+domain x : long
+domain p : long
+
+strand folder : x* p* x a* x* p x a
+strand bottom : a* x p x t*
+strand trigger : t x* p* x* a
+
+complex substrate :
+folder bottom
+((..(..( + )))).
+
+complex input :
+trigger
+.....
+
+
+

@@ -10,19 +10,19 @@ sequence 5 = : 6
 
 
 # End-state Complexes 
-10
+11
 1 4* 3 + 3* 4 1* 1*
 (((+))).
 
-0
+1
 1 4* 3 + 4 1* 5* 4
 ((.+))..
 
-1
+2
 1 4* + 3* 4 1* 1*
 ((+.)).
 
-9
+10
 1 4* + 4 1* 5* 4
 ((+))..
 
@@ -30,7 +30,7 @@ sequence 5 = : 6
 
 
 # Fast (Transition) Complexes 
-2
+3
 1 4* 3 + 3* 4 1* 1* + 1 4* + 4 1* 5* 4
 (((+))(.+)(+))..
 
@@ -42,13 +42,13 @@ Transient
 
 
 # Reactions 
-0 + 1 -> Transient 
-2 -> 10 + 9 
-2 -> Transient 
-Transient -> 2 
-Transient -> 0 + 1 
+1 + 2 -> Transient 
+3 -> 11 + 10 
+3 -> Transient 
+Transient -> 3 
+Transient -> 1 + 2 
 ###############################
 
 
 # Condensed Reactions 
-0 + 1 -> 10 + 9 
+1 + 2 -> 11 + 10 

@@ -1,6 +1,6 @@
 # trying to find the minimal subset of gate.in that produces the polymer bug, but here it's finite.
 # But lots of transients and reactions that I haven't checked.  
-# The resting-state complexes look right, except that 15 should be equivalent to 6.
+# The resting-state complexes look right.
 domain 1 : long
 domain 2 : short
 domain 3 : short

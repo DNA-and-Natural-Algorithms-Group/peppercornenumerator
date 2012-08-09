@@ -1,10 +1,5 @@
 # This is a test of the resting state / transient state dichotomy during enumeration.
 # Without it, hybridizing strands with two long domains will lead to enumeration of infinite polymers.
-# Two problems uncovered:
-# 1.  binding at the distal 1 domain [ a2 b1 : (. + ...) ] should result in bulged complex [ a2 b1 : (( + .).) ]
-# 2.  a very odd name appears as a transient.  in fact, it is the missing complex above.  
-#     it is correctly labeled a transient because of a three-way branch migration that I missed at first.
-#     so the only problem here is the naming scheme, that could be a debugging tool that wasn't cleaned up.
 # However, successfully, no infinite polymers are formed.
 domain 1 : long
 domain 2 : short

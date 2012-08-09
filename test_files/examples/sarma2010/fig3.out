@@ -12,11 +12,11 @@ sequence 7 = : 12
 
 
 # End-state Complexes 
-initial((2, 0)+(1, 2))
+4
 1 2 + 3 4 5 + 5* 7 + 7* 6 3* 1*
 (.+(.(+)(+).))
 
-open((0, 0)+(0, 2))
+1
 1* 2 1
 (.)
 
@@ -36,8 +36,8 @@ open
 
 
 # Reactions 
-initial -> initial((2, 0)+(1, 2)) 
-open -> open((0, 0)+(0, 2)) 
+initial -> 4 
+open -> 1 
 ###############################
 
 
