@@ -1,9 +1,8 @@
 import itertools
 import operator
 import logging
-from utils import RestingState
 from reactions import get_auto_name,ReactionPathway
-from utils import Complex, Domain, Strand
+from utils import Complex, Domain, Strand, RestingState
 
 class ReachableRestingStates(object):
     """
@@ -409,10 +408,14 @@ def condense_graph(enumerator):
 #        print "End reaction "+str(reaction)
     
     return {
-                'resting_states': resting_states,
+                'resting_states': resting_states.values(),
+                'resting_state_map': resting_states,
                 'resting_state_targets':resting_state_targets,
                 'condensed_reactions':list(condensed_reactions),
                 'reactions': list(condensed_reactions)
              }
     
     #return (resting_states,resting_state_targets,condensed_reactions)
+
+
+condense_resting_states = condense_graph

@@ -8,7 +8,6 @@
 import sys
 import utils
 import reactions
-import input, output
 import logging
 import itertools
 import argparse
@@ -501,6 +500,8 @@ class Enumerator(object):
 			self._SCC_stack.append(scc)
 
 def main(argv):
+	import input, output
+
 	parser = argparse.ArgumentParser(description="Main CL argument parser")
 	parser.add_argument('--infile', action='store', dest='input_filename', default=None)
 	parser.add_argument('--outfile', action='store', dest='output_filename', default=None)
