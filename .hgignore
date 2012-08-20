@@ -1,5 +1,7 @@
 syntax: glob
 
 .coverage
+./cover/
+./test_files/test_output/
 *.pyc
 *~
