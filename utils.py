@@ -308,7 +308,7 @@ class Complex(object):
 		
 		# Rotate until we're in canonical form
 		perms = [tuple(strands[x:] + strands[:x]) for x in range(len(strands))] # calculate all circular permutations
-		min_perm = min(range(len(strands)),key=lambda(i): perms[i]) # select lexicographically minimum permutation
+		min_perm = min(range(len(strands)),key=lambda i : perms[i]) # select lexicographically minimum permutation
 		self._rotate_strands_n(min_perm) # rotate until we're in that form
 		
 		# Holds a unique hash identifying this complex (computed lazily by self.__hash__)

@@ -147,7 +147,8 @@ class Enumerator(object):
 				for reaction in self.reactions:
 					reaction_ok = True
 					for product in reaction.products:
-						if (product in self._B) and not (product in self._complexes):
+						#if (product in self._B) and not (product in self._complexes):
+						if not (product in self._complexes):
 							reaction_ok = False
 					if reaction_ok:
 						new_reactions.append(reaction)
@@ -502,16 +503,16 @@ class Enumerator(object):
 def main(argv):
 	import input, output
 
-	parser = argparse.ArgumentParser(description="Main CL argument parser")
-	parser.add_argument('--infile', action='store', dest='input_filename', default=None)
-	parser.add_argument('--outfile', action='store', dest='output_filename', default=None)
-	parser.add_argument('-o', action='store', dest='output_format', default='standard')
-	parser.add_argument('-i', action='store', dest='input_format', default='standard')
-	parser.add_argument('-c', action='store_true', dest='condensed', default=False)
+	parser = argparse.ArgumentParser(description="Domain-level nucleic acid reaction enumerator")
+	parser.add_argument('--infile', action='store', dest='input_filename', default=None, help="Path to the input file")
+	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, help="Path to the output file")
+	parser.add_argument('-o', action='store', dest='output_format', default='standard', help="Desired format for the output file")
+	parser.add_argument('-i', action='store', dest='input_format', default='standard', help="Desired format for the input file")
+	parser.add_argument('-c', action='store_true', dest='condensed', default=False, help="Condense reactions into only resting complexes")
 	
-	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None)
-	parser.add_argument('--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=None)
-	parser.add_argument('--max-reactions', action='store', dest='MAX_REACTION_COUNT', default=None)
+	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None, type=int, help="Maximum number of strands allowed in a complex (used to prevent polymerization)")
+	parser.add_argument('--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=None, type=int, help="Maximum number of complexes that may be enumerated before the enumerator halts.")
+	parser.add_argument('--max-reactions', action='store', dest='MAX_REACTION_COUNT', default=None, type=int, help="Maximum number of reactions that may be enumerated before the enumerator halts.")
 	
 
 	cl_opts = parser.parse_args()
