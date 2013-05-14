@@ -1,15 +1,16 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>enumerator &mdash; Enumerator v2 documentation</title>
+    <title>enumerator &mdash; Enumerator 2 documentation</title>
+    
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
@@ -22,7 +23,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="Enumerator v2 documentation" href="../index.html" />
+    <link rel="top" title="Enumerator 2 documentation" href="../index.html" />
     <link rel="up" title="Module code" href="index.html" /> 
   </head>
   <body>
@@ -35,7 +36,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+        <li><a href="../index.html">Enumerator 2 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
@@ -46,17 +47,19 @@
           <div class="body">
             
   <h1>Source code for enumerator</h1><div class="highlight"><pre>
-<span class="c">#</span>
+<span class="c">#!/usr/bin/python -O</span>
 <span class="c">#  enumerator.py</span>
 <span class="c">#  EnumeratorProject</span>
 <span class="c">#</span>
 <span class="c">#  Created by Karthik Sarma on 4/18/10.</span>
 <span class="c">#</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">utils</span>
 <span class="kn">import</span> <span class="nn">reactions</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
 <span class="kn">from</span> <span class="nn">reactions</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="c"># These are sanity checks to prevent infinite looping</span>
@@ -86,7 +89,7 @@
 <span class="sd">	all 3-way branch migrations are greedy.</span>
 <span class="sd">	&quot;&quot;&quot;</span>
 
-	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domains</span><span class="p">,</span> <span class="n">strands</span><span class="p">,</span> <span class="n">initial_complexes</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.__init__"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domains</span><span class="p">,</span> <span class="n">strands</span><span class="p">,</span> <span class="n">initial_complexes</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Initializes the enumerator. Takes a list of domains, a list of strands</span>
 <span class="sd">		made up of those domains, and a list of the initial complexes, made</span>
@@ -101,52 +104,72 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">_transient_complexes</span> <span class="o">=</span> <span class="bp">None</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_resting_complexes</span> <span class="o">=</span> <span class="bp">None</span>
 		
-    
+		<span class="k">global</span> <span class="n">MAX_COMPLEX_SIZE</span>
+		<span class="k">global</span> <span class="n">MAX_REACTION_COUNT</span>
+		<span class="k">global</span> <span class="n">MAX_COMPLEX_COUNT</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">MAX_COMPLEX_SIZE</span> <span class="o">=</span> <span class="n">MAX_COMPLEX_SIZE</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">MAX_REACTION_COUNT</span> <span class="o">=</span> <span class="n">MAX_REACTION_COUNT</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">MAX_COMPLEX_COUNT</span> <span class="o">=</span> <span class="n">MAX_COMPLEX_COUNT</span>
+		</div>
+	<span class="nd">@property</span> 
+<div class="viewcode-block" id="Enumerator.auto_name"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.auto_name">[docs]</a>	<span class="k">def</span> <span class="nf">auto_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">reactions</span><span class="o">.</span><span class="n">auto_name</span>
+</div>
+<div class="viewcode-block" id="Enumerator.get_auto_name"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.get_auto_name">[docs]</a>	<span class="k">def</span> <span class="nf">get_auto_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">reactions</span><span class="o">.</span><span class="n">get_auto_name</span><span class="p">()</span>
+	</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">domains</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.domains"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.domains">[docs]</a>	<span class="k">def</span> <span class="nf">domains</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domains</span><span class="p">[:]</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">strands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.strands"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.strands">[docs]</a>	<span class="k">def</span> <span class="nf">strands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strands</span><span class="p">[:]</span>
-	
+	</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">initial_complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.initial_complexes"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.initial_complexes">[docs]</a>	<span class="k">def</span> <span class="nf">initial_complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initial_complexes</span><span class="p">[:]</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.reactions"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.reactions">[docs]</a>	<span class="k">def</span> <span class="nf">reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reactions</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
 			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;enumerate not yet called!&quot;</span><span class="p">)</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reactions</span><span class="p">[:]</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">resting_states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.resting_states"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.resting_states">[docs]</a>	<span class="k">def</span> <span class="nf">resting_states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resting_states</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
 			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;enumerate not yet called!&quot;</span><span class="p">)</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resting_states</span><span class="p">[:]</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.complexes"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.complexes">[docs]</a>	<span class="k">def</span> <span class="nf">complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
 			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;enumerate not yet called!&quot;</span><span class="p">)</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span><span class="p">[:]</span>
-			
+			</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">resting_complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.resting_complexes"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.resting_complexes">[docs]</a>	<span class="k">def</span> <span class="nf">resting_complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resting_complexes</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
 			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;enumerate not yet called!&quot;</span><span class="p">)</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resting_complexes</span><span class="p">[:]</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">transient_complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Enumerator.transient_complexes"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.transient_complexes">[docs]</a>	<span class="k">def</span> <span class="nf">transient_complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transient_complexes</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
 			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;enumerate not yet called!&quot;</span><span class="p">)</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transient_complexes</span><span class="p">[:]</span>
 		
-			
+			</div>
 	<span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
-		<span class="k">return</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domains</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">domains</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">strands</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_complexes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">initial_complexes</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">reactions</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resting_states</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">resting_states</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">complexes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">complexes</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resting_complexes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">resting_complexes</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transient_complexes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">transient_complexes</span><span class="p">))</span>
+		<span class="k">return</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domains</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">domains</span><span class="p">))</span> <span class="ow">and</span> \
+	 		<span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">strands</span><span class="p">))</span> <span class="ow">and</span> \
+	 		<span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_complexes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">initial_complexes</span><span class="p">))</span> <span class="ow">and</span> \
+	 		<span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">reactions</span><span class="p">))</span> <span class="ow">and</span> \
+	 		<span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resting_states</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">resting_states</span><span class="p">))</span> <span class="ow">and</span> \
+	 		<span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">complexes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">complexes</span><span class="p">))</span> <span class="ow">and</span> \
+	 		<span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resting_complexes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">resting_complexes</span><span class="p">))</span> <span class="ow">and</span> \
+	 		<span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transient_complexes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">object</span><span class="o">.</span><span class="n">transient_complexes</span><span class="p">))</span>
 	
 <div class="viewcode-block" id="Enumerator.enumerate"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.enumerate">[docs]</a>	<span class="k">def</span> <span class="nf">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
@@ -154,8 +177,32 @@
 <span class="sd">		the initial set of complexes. Produces a full list of complexes, resting</span>
 <span class="sd">		states, and reactions.</span>
 <span class="sd">		&quot;&quot;&quot;</span>
-		<span class="k">global</span> <span class="n">MAX_COMPLEX_COUNT</span>
-		<span class="k">global</span> <span class="n">MAX_REACTION_COUNT</span>
+		
+		<span class="c"># Will be called once enumeration halts, either because it&#39;s finished or</span>
+		<span class="c"># because too many complexes/reactions have been enumerated</span>
+		<span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="n">premature</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_E</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_T</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_transient_complexes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_T</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_resting_complexes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_E</span>
+			
+			<span class="c"># If we&#39;re bailing because of too many reactions or complexes, search </span>
+			<span class="c"># self._reactions to ensure there are no reactions which contain </span>
+			<span class="c"># products that never made it into self._complexes</span>
+			<span class="c"># TODO: this is ugly and Om(n*m*p)... should we just go thru self._B</span>
+			<span class="c"># and try to classify?</span>
+			<span class="k">if</span> <span class="n">premature</span><span class="p">:</span>
+				<span class="n">new_reactions</span> <span class="o">=</span> <span class="p">[]</span>
+				<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+					<span class="n">reaction_ok</span> <span class="o">=</span> <span class="bp">True</span>
+					<span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+						<span class="c">#if (product in self._B) and not (product in self._complexes):</span>
+						<span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">product</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span><span class="p">):</span>
+							<span class="n">reaction_ok</span> <span class="o">=</span> <span class="bp">False</span>
+					<span class="k">if</span> <span class="n">reaction_ok</span><span class="p">:</span>
+						<span class="n">new_reactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reaction</span><span class="p">)</span>
+				
+				<span class="bp">self</span><span class="o">.</span><span class="n">_reactions</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">new_reactions</span>
 		
 		<span class="c"># List E contains enumerated resting states. Only cross-reactions with</span>
 		<span class="c"># other end states need to be considered for these complexes. These</span>
@@ -203,6 +250,7 @@
 		<span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_S</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 			<span class="c"># element is the complex for which we will consider slow reactions</span>
 			<span class="n">element</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_S</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+				
 			<span class="n">slow_reactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_slow_reactions</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
 			<span class="bp">self</span><span class="o">.</span><span class="n">_E</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
 			
@@ -211,21 +259,23 @@
 			<span class="bp">self</span><span class="o">.</span><span class="n">_reactions</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">slow_reactions</span><span class="p">)</span>
 			
 			<span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_B</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-				<span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_E</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_T</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_S</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_COMPLEX_COUNT</span><span class="p">):</span>
+				<span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_E</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_T</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_S</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_COMPLEX_COUNT</span><span class="p">):</span>
 					<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Too many complexes enumerated!&quot;</span><span class="p">)</span>
-					<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Too many complexes generated, aborting...&quot;</span><span class="p">)</span>
-				
-				<span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reactions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_REACTION_COUNT</span><span class="p">):</span>
+					<span class="c"># raise Exception(&quot;Too many complexes generated, aborting...&quot;)</span>
+					<span class="n">finish</span><span class="p">(</span><span class="n">premature</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+					<span class="k">return</span>
+					
+				<span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reactions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_REACTION_COUNT</span><span class="p">):</span>
 					<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Too many reactions enumerated!&quot;</span><span class="p">)</span>
-					<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Too many reactions generated, aborting...&quot;</span><span class="p">)</span>
-			
+					<span class="c">#raise Exception(&quot;Too many reactions generated, aborting...&quot;)</span>
+					<span class="n">finish</span><span class="p">(</span><span class="n">premature</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+					<span class="k">return</span>
+					
 				<span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_B</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
 				<span class="bp">self</span><span class="o">.</span><span class="n">process_neighborhood</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
-				
-		<span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_E</span><span class="p">)</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_T</span><span class="p">)</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">_transient_complexes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_T</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">_resting_complexes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_E</span>
+		
+		<span class="n">finish</span><span class="p">()</span>
+		
 				</div>
 <div class="viewcode-block" id="Enumerator.process_neighborhood"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.process_neighborhood">[docs]</a>	<span class="k">def</span> <span class="nf">process_neighborhood</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
@@ -303,23 +353,32 @@
 		<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">fast_reactions</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
 			<span class="n">reactions</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reaction</span><span class="p">(</span><span class="nb">complex</span><span class="p">))</span>
 		<span class="k">return</span> <span class="n">reactions</span>
-				</div>
+	</div>
 <div class="viewcode-block" id="Enumerator.get_new_products"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.get_new_products">[docs]</a>	<span class="k">def</span> <span class="nf">get_new_products</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reactions</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Checks the products in the list of reactions. Updates the pointers in</span>
 <span class="sd">		those reactions to point to pre-existing complexes if necessary. Else,</span>
 <span class="sd">		returns the new complexes in a list.</span>
+<span class="sd">		</span>
+<span class="sd">		Additionally, prunes passed reactions to remove those with excessively</span>
+<span class="sd">		large complexes (len(complex) &gt; self.MAX_COMPLEX_SIZE)</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="n">new_products</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="n">new_reactions</span> <span class="o">=</span> <span class="p">[]</span>
 		
 		<span class="c"># Loop over every reaction</span>
 		<span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">reactions</span><span class="p">:</span>
+			
+			<span class="c"># This will be set to False if we bail out of the inner loop upon finding a complex that&#39;s too large</span>
+			<span class="n">complex_size_ok</span> <span class="o">=</span> <span class="bp">True</span>
+			
 			<span class="c"># Check every product of the reaction to see if it is new</span>
 			<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">product</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">products</span><span class="p">):</span>
-			
-				<span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">strands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_COMPLEX_SIZE</span><span class="p">):</span>
-					<span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Complex </span><span class="si">%s</span><span class="s"> too large, ignoring!&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">strands</span><span class="p">))</span>
-					<span class="k">continue</span>
+				
+				<span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">strands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_COMPLEX_SIZE</span><span class="p">):</span>
+					<span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Complex </span><span class="si">%(name)s</span><span class="s"> (</span><span class="si">%(strands)d</span><span class="s"> strands) too large, ignoring!&quot;</span> <span class="o">%</span> <span class="p">{</span><span class="s">&quot;name&quot;</span><span class="p">:</span><span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="s">&quot;strands&quot;</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">strands</span><span class="p">)})</span>
+					<span class="n">complex_size_ok</span> <span class="o">=</span> <span class="bp">False</span>
+					<span class="k">break</span>
 			
 				<span class="c"># This will be set to True if we&#39;ve already seen this complex</span>
 				<span class="n">enumerated</span> <span class="o">=</span> <span class="bp">False</span>
@@ -353,7 +412,14 @@
 				
 				<span class="k">if</span> <span class="ow">not</span> <span class="n">enumerated</span><span class="p">:</span>
 					<span class="n">new_products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
-					
+			
+			<span class="c"># If this reaction contained a complex that was too big, ignore the whole reaction.</span>
+			<span class="k">if</span> <span class="n">complex_size_ok</span><span class="p">:</span>
+				<span class="n">new_reactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reaction</span><span class="p">)</span>
+		
+		<span class="c"># Clobber the old value of reactions with the filtered list</span>
+		<span class="n">reactions</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">new_reactions</span>
+			
 		<span class="k">return</span> <span class="n">new_products</span>
 				</div>
 <div class="viewcode-block" id="Enumerator.segment_neighborhood"><a class="viewcode-back" href="../index.html#enumerator.Enumerator.segment_neighborhood">[docs]</a>	<span class="k">def</span> <span class="nf">segment_neighborhood</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">complexes</span><span class="p">,</span> <span class="n">reactions</span><span class="p">):</span>
@@ -363,9 +429,7 @@
 <span class="sd">		of complexes which are transient states, complexes which are in resting</span>
 <span class="sd">		states, and the set of resting states, all in a dictionary.</span>
 <span class="sd">		&quot;&quot;&quot;</span>
-		
-		<span class="k">global</span> <span class="n">auto_name</span>
-		
+				
 		<span class="c"># First we initialize the graph variables that will be used for</span>
 		<span class="c"># Tarjan&#39;s algorithm</span>
 		
@@ -435,8 +499,7 @@
 			
 			<span class="k">if</span> <span class="n">is_resting_state</span><span class="p">:</span>
 				<span class="n">resting_state_complexes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scc</span><span class="p">)</span>
-				<span class="n">resting_state</span> <span class="o">=</span> <span class="n">RestingState</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">auto_name</span><span class="p">),</span> <span class="n">scc</span><span class="p">[:])</span>
-				<span class="n">auto_name</span> <span class="o">+=</span> <span class="mi">1</span>
+				<span class="n">resting_state</span> <span class="o">=</span> <span class="n">RestingState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_auto_name</span><span class="p">(),</span> <span class="n">scc</span><span class="p">[:])</span>
 				<span class="n">resting_states</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">resting_state</span><span class="p">)</span>
 				
 			<span class="k">else</span><span class="p">:</span>
@@ -484,7 +547,69 @@
 					<span class="n">stop_flag</span> <span class="o">=</span> <span class="bp">True</span>
 			
 			<span class="c"># Add the SCC to the list of SCCs</span>
-			<span class="bp">self</span><span class="o">.</span><span class="n">_SCC_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scc</span><span class="p">)</span></div></div>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_SCC_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scc</span><span class="p">)</span>
+</div></div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../index.html#enumerator.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">):</span>
+	<span class="kn">import</span> <span class="nn">input</span><span class="o">,</span> <span class="nn">output</span>
+
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&quot;Domain-level nucleic acid reaction enumerator&quot;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--infile&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;input_filename&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Path to the input file&quot;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--outfile&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;output_filename&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Path to the output file&quot;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-o&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;output_format&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;standard&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Desired format for the output file&quot;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-i&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;input_format&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;standard&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Desired format for the input file&quot;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-c&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;condensed&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Condense reactions into only resting complexes&quot;</span><span class="p">)</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--max-complex-size&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;MAX_COMPLEX_SIZE&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Maximum number of strands allowed in a complex (used to prevent polymerization)&quot;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--max-complexes&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;MAX_COMPLEX_COUNT&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Maximum number of complexes that may be enumerated before the enumerator halts.&quot;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--max-reactions&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;MAX_REACTION_COUNT&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Maximum number of reactions that may be enumerated before the enumerator halts.&quot;</span><span class="p">)</span>
+	
+
+	<span class="n">cl_opts</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+	
+	<span class="k">print</span> <span class="s">&quot;Domain-level Reaction Enumerator (v0.2.0)&quot;</span>
+	<span class="k">print</span> <span class="s">&quot;=========================================&quot;</span>
+	
+	
+	<span class="n">condensed</span> <span class="o">=</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">condensed</span>
+	
+	<span class="k">if</span> <span class="p">(</span><span class="n">cl_opts</span><span class="o">.</span><span class="n">input_format</span> <span class="ow">in</span> <span class="nb">input</span><span class="o">.</span><span class="n">new_input_functions</span><span class="p">):</span>
+		<span class="k">print</span> <span class="s">&quot;Reading Input file : </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">input_filename</span>
+		<span class="n">enum</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">new_input_functions</span><span class="p">[</span><span class="n">cl_opts</span><span class="o">.</span><span class="n">input_format</span><span class="p">](</span><span class="n">cl_opts</span><span class="o">.</span><span class="n">input_filename</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">print</span> <span class="s">&quot;Unrecognized input format &#39;</span><span class="si">%s</span><span class="s">&#39;. Exiting.&quot;</span> <span class="o">%</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">input_format</span>
+		<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Error!&#39;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">MAX_REACTION_COUNT</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">enum</span><span class="o">.</span><span class="n">MAX_REACTION_COUNT</span> <span class="o">=</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">MAX_REACTION_COUNT</span>
+	
+	<span class="k">if</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">MAX_COMPLEX_COUNT</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">enum</span><span class="o">.</span><span class="n">MAX_COMPLEX_COUNT</span> <span class="o">=</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">MAX_COMPLEX_COUNT</span>
+	
+	<span class="k">if</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">MAX_COMPLEX_SIZE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">enum</span><span class="o">.</span><span class="n">MAX_COMPLEX_SIZE</span> <span class="o">=</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">MAX_COMPLEX_SIZE</span>
+	
+
+	<span class="k">print</span> <span class="s">&quot;Enumerating reactions...&quot;</span>
+
+	<span class="n">enum</span><span class="o">.</span><span class="n">enumerate</span><span class="p">()</span>
+	
+	<span class="k">print</span> <span class="s">&quot;Done.&quot;</span>
+	
+	<span class="k">if</span><span class="p">(</span><span class="n">condensed</span><span class="p">):</span>
+		<span class="k">print</span> <span class="s">&quot;Condensing output to remove transient complexes.&quot;</span>
+		
+	<span class="k">if</span> <span class="p">(</span><span class="n">cl_opts</span><span class="o">.</span><span class="n">output_format</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">text_output_functions</span><span class="p">):</span>
+		<span class="k">print</span> <span class="s">&quot;Writing text output to file </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">output_filename</span>
+		<span class="n">output</span><span class="o">.</span><span class="n">text_output_functions</span><span class="p">[</span><span class="n">cl_opts</span><span class="o">.</span><span class="n">output_format</span><span class="p">](</span><span class="n">enum</span><span class="p">,</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">output_filename</span><span class="p">,</span><span class="n">output_condensed</span><span class="o">=</span><span class="n">condensed</span><span class="p">)</span>
+	<span class="k">elif</span> <span class="p">(</span><span class="n">cl_opts</span><span class="o">.</span><span class="n">output_format</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">graph_output_functions</span><span class="p">):</span>
+		<span class="k">print</span> <span class="s">&quot;Writing graph output to file </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">output_filename</span>
+		<span class="n">output</span><span class="o">.</span><span class="n">graph_output_functions</span><span class="p">[</span><span class="n">cl_opts</span><span class="o">.</span><span class="n">output_format</span><span class="p">](</span><span class="n">enum</span><span class="p">,</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">output_filename</span><span class="p">,</span><span class="n">output_condensed</span><span class="o">=</span><span class="n">condensed</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">print</span> <span class="s">&quot;Unrecognized output format &#39;</span><span class="si">%s</span><span class="s">&#39;. Exiting.&quot;</span> <span class="o">%</span> <span class="n">cl_opts</span><span class="o">.</span><span class="n">output_format</span>
+		<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Error!&#39;</span><span class="p">)</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+	<span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">))</span>
 </pre></div>
 
           </div>
@@ -495,7 +620,7 @@
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -518,13 +643,13 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+        <li><a href="../index.html">Enumerator 2 documentation</a> &raquo;</li>
           <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Karthik Sarma, Brian Wolfe, Erik Winfree.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+        &copy; Copyright 2013, Karthik Sarma, Casey Grun, Brian Wolfe, Erik Winfree.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>
 </html>

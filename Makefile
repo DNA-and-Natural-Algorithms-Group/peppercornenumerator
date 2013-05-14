@@ -15,3 +15,6 @@ docs:
 README.pdf: README.md
 	pandoc README.md -o README.pdf
 
+architecture.pdf: architecture.md
+	pandoc architecture.md -o architecture.pdf
+

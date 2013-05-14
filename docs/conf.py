@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Enumerator'
-copyright = u'2011, Karthik Sarma, Brian Wolfe, Erik Winfree'
+copyright = u'2013, Karthik Sarma, Casey Grun, Brian Wolfe, Erik Winfree'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -180,7 +180,7 @@ htmlhelp_basename = 'Enumeratordoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'Enumerator.tex', u'Enumerator Documentation',
-   u'Karthik Sarma, Brian Wolfe, Erik Winfree', 'manual'),
+   u'Karthik Sarma, Casey Grun, Brian Wolfe, Erik Winfree', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -213,5 +213,12 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'enumerator', u'Enumerator Documentation',
-     [u'Karthik Sarma, Brian Wolfe, Erik Winfree'], 1)
+     [u'Karthik Sarma, Casey Grun, Brian Wolfe, Erik Winfree'], 1)
 ]
+
+
+# -- Options for autodoc ------------------------------------------------------
+
+autodoc_default_flags = ['members','special-members','show-inheritance'];
+#autoclass_content = 'both';
+

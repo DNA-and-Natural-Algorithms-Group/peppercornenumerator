@@ -86,7 +86,7 @@ class Domain(object):
 	def __init__(self, name, length, is_complement=False, sequence=None):
 		"""
 		Default constructor. Takes a domain name, a length (positive integer or 
-		"short" or "long", and optionally a base sequence.
+		"short" or "long"), and optionally a base sequence.
 		"""
 		self._name = name
 		self._length = length
@@ -258,20 +258,20 @@ class Complex(object):
 		This constructor assumes that the structure is unpseudoknotted, and will
 		rotate this complex automatically until it is in canonical form.
 		
-		name = string holding complex name
-		strands = list of Strand objects in order
-		structure = list of lists of tuples indicating pairing of domains in 
-					complex with None indicating unpaired --
-					tuple: (strand, domain)
-					Ex:
-					[[(0, 2) None (0, 0)]] 
-					indicates one strand with 3 domains with the first one bound 
-					to the last one, and the middle one free. 
-					
-					[[None (1, 0) (1, 1)] [(0, 1) (0, 2) None]]
-					indicates 2 strands with 3 domains each -- the first two
-					domains of the second strand are bound to the last two
-					of the first.
+		:param name: string holding complex name
+		:param strands: list of Strand objects in order
+		:param structure: list of lists of tuples indicating pairing of domains in the
+					complex. ``None`` indicates the domain is unpaired, while a
+					``(strand, domain)`` tuple indicates the domain is paired to ``domain``
+					on ``strand``.
+
+					Examples:
+
+					*	``[[(0, 2) None (0, 0)]]`` indicates one strand with 3 domains 
+						with the first one bound to the last one, and the middle one free. 
+					*	``[[None (1, 0) (1, 1)], [(0, 1) (0, 2) None]]`` indicates 2 
+						strands with 3 domains each -- the first two domains of the second 
+						strand are bound to the last two of the first.
 					
 					Lists should be in the same order as the strands in the
 					second argument, with each strand's domains from 5' to 3'

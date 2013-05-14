@@ -19,18 +19,31 @@ MAX_REACTION_COUNT = 1000
 MAX_COMPLEX_COUNT = 200
 
 
-# Fast reactions cannot be bimolecular!
+
 fast_reactions = {
 	1: [bind11, open, branch_3way, branch_4way]
 }
+"""
+Dictionary of reaction functions considered *fast* for a given "arity". 
+Keys are arities (e.g. 1 = unimolecular, 2 = bimolecular, 3 = trimolecular, 
+etc.), and values are lists of reaction functions. Currently, only 
+unimolecular fast reactions (arity = 1) are supported.  
+"""
 
-# Slow reactions can only be unimolecular or bimolecular, though
-# make_slow_reactions below could be changed in order to lift this
-# restriction
 slow_reactions = {
 	1: [],
 	2: [bind21]
 }
+"""
+Similar to :py:func:`.fast_reactions` above, 
+a dictionary of reaction functions considered *slow* for a given "arity". 
+Keys are arities (e.g. 1 = unimolecular, 2 = bimolecular, 3 = trimolecular, 
+etc.), and values are lists of reaction functions. Currently, only 
+unimolecular fast reactions (arity = 1) are supported.  
+Slow reactions can only be unimolecular or bimolecular, though
+:py:func:`Enumerator.make_slow_reactions` below could be changed in 
+order to lift this restriction.
+"""
 
 class Enumerator(object):
 	"""
@@ -45,6 +58,10 @@ class Enumerator(object):
 		Initializes the enumerator. Takes a list of domains, a list of strands
 		made up of those domains, and a list of the initial complexes, made
 		of the strands.		
+
+		:param list domains: Domain objects in the ensemble
+		:param list strands: Strand objects in the ensemble
+		:param list initial_complexes: Complex objects in the system starting configuration. 
 		"""
 		self._domains = domains
 		self._strands = strands
@@ -79,34 +96,58 @@ class Enumerator(object):
 	
 	@property
 	def initial_complexes(self):
+		"""
+		Complexes present in the system's initial configuration
+		"""
 		return self._initial_complexes[:]
 		
 	@property
 	def reactions(self):
+		""""
+		List of reactions enumerated. :py:meth:`.enumerate` must be
+		called before access.
+		"""
 		if self._reactions == None:
 			raise Exception("enumerate not yet called!")
 		return self._reactions[:]
 		
 	@property
 	def resting_states(self):
+		""""
+		List of resting states enumerated. :py:meth:`.enumerate` must be
+		called before access.
+		"""
 		if self._resting_states == None:
 			raise Exception("enumerate not yet called!")
 		return self._resting_states[:]
 		
 	@property
 	def complexes(self):
+		""""
+		List of complexes enumerated. :py:meth:`.enumerate` must be
+		called before access.
+		"""
 		if self._complexes == None:
 			raise Exception("enumerate not yet called!")
 		return self._complexes[:]
 			
 	@property
 	def resting_complexes(self):
+		""""
+		List of complexes enumerated that are within resting states. 
+		:py:meth:`.enumerate` must be called before access.
+		"""
 		if self._resting_complexes == None:
 			raise Exception("enumerate not yet called!")
 		return self._resting_complexes[:]
 		
 	@property
 	def transient_complexes(self):
+		""""
+		List of complexes enumerated that are not within resting states (e.g. 
+		complexes which are transient). :py:meth:`.enumerate` must be
+		called before access.
+		"""
 		if self._transient_complexes == None:
 			raise Exception("enumerate not yet called!")
 		return self._transient_complexes[:]
@@ -125,8 +166,9 @@ class Enumerator(object):
 	def enumerate(self):
 		"""
 		Generates the reaction graph consisting of all complexes reachable from
-		the initial set of complexes. Produces a full list of complexes, resting
-		states, and reactions.
+		the initial set of complexes. Produces a full list of :py:meth:`complexes`, resting
+		states, and :py:meth:`reactions, which are stored in the associated members of this
+		class.
 		"""
 		
 		# Will be called once enumeration halts, either because it's finished or
@@ -379,6 +421,15 @@ class Enumerator(object):
 		neighborhood into resting states and transient states. Returns the set
 		of complexes which are transient states, complexes which are in resting
 		states, and the set of resting states, all in a dictionary.
+		
+		:param complexes: set of complexes
+		:param reactions: set of reactions
+		:returns: dictionary with keys:
+
+			*	``resting_states``: set of resting states 
+			*	``resting_state_complexes``: set of resting state complexes
+			*	``transient_state_complexes``: set of transient complexes
+
 		"""
 				
 		# First we initialize the graph variables that will be used for
@@ -503,6 +554,7 @@ class Enumerator(object):
 def main(argv):
 	import input, output
 
+	# Parse command-line arguments
 	parser = argparse.ArgumentParser(description="Domain-level nucleic acid reaction enumerator")
 	parser.add_argument('--infile', action='store', dest='input_filename', default=None, help="Path to the input file")
 	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, help="Path to the output file")
@@ -521,11 +573,11 @@ def main(argv):
 	print "========================================="
 	
 	
-	condensed = cl_opts.condensed
 	
-	if (cl_opts.input_format in input.new_input_functions):
+	# Attempt to load an input parser to generate an enumerator object
+	if (cl_opts.input_format in input.text_input_functions):
 		print "Reading Input file : %s" % cl_opts.input_filename
-		enum = input.new_input_functions[cl_opts.input_format](cl_opts.input_filename)
+		enum = input.text_input_functions[cl_opts.input_format](cl_opts.input_filename)
 	else:
 		print "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
 		raise Exception('Error!')
@@ -540,15 +592,17 @@ def main(argv):
 		enum.MAX_COMPLEX_SIZE = cl_opts.MAX_COMPLEX_SIZE
 	
 
+	# Run reaction enumeration
 	print "Enumerating reactions..."
-
 	enum.enumerate()
-	
 	print "Done."
 	
+	# Handle condensed reactions
+	condensed = cl_opts.condensed
 	if(condensed):
 		print "Condensing output to remove transient complexes."
-		
+	
+	# Attempt to load an output generator to serialize the enumerator object to an output file	
 	if (cl_opts.output_format in output.text_output_functions):
 		print "Writing text output to file %s" % cl_opts.output_filename
 		output.text_output_functions[cl_opts.output_format](enum, cl_opts.output_filename,output_condensed=condensed)

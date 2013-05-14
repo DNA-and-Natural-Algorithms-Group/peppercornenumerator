@@ -3,23 +3,31 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Enumerator's documentation!
-======================================
+Enumerator Documentation
+========================
 
 Contents:
 
 .. toctree::
-   :maxdepth: 2
 
+
+Utilities
+=========
 .. automodule:: utils
    :members:
 
+Reactions
+=========
 .. automodule:: reactions
    :members:
-   
+
+Enumerator
+==========
 .. automodule:: enumerator
    :members:
 
+Input and Output
+================
 .. automodule:: output
    :members:   
    

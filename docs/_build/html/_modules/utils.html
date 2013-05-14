@@ -1,15 +1,16 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>utils &mdash; Enumerator v2 documentation</title>
+    <title>utils &mdash; Enumerator 2 documentation</title>
+    
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
@@ -22,7 +23,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="Enumerator v2 documentation" href="../index.html" />
+    <link rel="top" title="Enumerator 2 documentation" href="../index.html" />
     <link rel="up" title="Module code" href="index.html" /> 
   </head>
   <body>
@@ -35,7 +36,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+        <li><a href="../index.html">Enumerator 2 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
@@ -54,10 +55,75 @@
 <span class="c">#</span>
 
 <span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">re</span>
 
 <span class="n">SHORT_DOMAIN_LENGTH</span> <span class="o">=</span> <span class="mi">6</span>
 <span class="n">LONG_DOMAIN_LENGTH</span> <span class="o">=</span> <span class="mi">12</span>
 
+<span class="kn">import</span> <span class="nn">re</span>
+
+<div class="viewcode-block" id="natural_sort"><a class="viewcode-back" href="../index.html#utils.natural_sort">[docs]</a><span class="k">def</span> <span class="nf">natural_sort</span><span class="p">(</span><span class="n">l</span><span class="p">):</span> 
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Sorts a collection in the order humans would expect. Implementation from</span>
+<span class="sd">	http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">convert</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">text</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">else</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> 
+	<span class="n">alphanum_key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">key</span><span class="p">:</span> <span class="p">[</span> <span class="n">convert</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;([0-9]+)&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span> <span class="p">]</span> 
+	<span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="n">alphanum_key</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="find"><a class="viewcode-back" href="../index.html#utils.find">[docs]</a><span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Return first item in sequence where f(item) == True.&quot;&quot;&quot;</span>
+	<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">f</span><span class="p">(</span><span class="n">item</span><span class="p">):</span> 
+			<span class="k">return</span> <span class="n">item</span>
+	<span class="k">return</span> <span class="n">default</span>
+</div>
+<div class="viewcode-block" id="parse_dot_paren"><a class="viewcode-back" href="../index.html#utils.parse_dot_paren">[docs]</a><span class="k">def</span> <span class="nf">parse_dot_paren</span><span class="p">(</span><span class="n">structure_line</span><span class="p">):</span>	
+	<span class="n">complex_structure</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">dot_paren_stack</span> <span class="o">=</span> <span class="p">[]</span>			
+	<span class="n">strand_index</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="n">domain_index</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="n">curr_strand</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">complex_structure</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_strand</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">structure_line</span><span class="p">:</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">part</span> <span class="o">==</span> <span class="s">&quot;+&quot;</span><span class="p">):</span>
+			<span class="n">strand_index</span> <span class="o">+=</span> <span class="mi">1</span>
+			<span class="n">domain_index</span> <span class="o">=</span> <span class="mi">0</span>
+			<span class="n">curr_strand</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="n">complex_structure</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_strand</span><span class="p">)</span>
+			<span class="k">continue</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">part</span> <span class="o">==</span> <span class="s">&quot;.&quot;</span><span class="p">):</span>
+			<span class="n">curr_strand</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+			<span class="n">domain_index</span> <span class="o">+=</span> <span class="mi">1</span>
+		<span class="k">elif</span> <span class="p">(</span><span class="n">part</span> <span class="o">==</span> <span class="s">&quot;(&quot;</span><span class="p">):</span>
+			<span class="n">curr_strand</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+			<span class="n">dot_paren_stack</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span><span class="p">))</span>
+			<span class="n">domain_index</span> <span class="o">+=</span> <span class="mi">1</span>
+		<span class="k">elif</span> <span class="p">(</span><span class="n">part</span> <span class="o">==</span> <span class="s">&quot;)&quot;</span><span class="p">):</span>
+			<span class="n">loc</span> <span class="o">=</span> <span class="n">dot_paren_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+			<span class="n">curr_strand</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span>
+			<span class="n">complex_structure</span><span class="p">[</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span><span class="p">)</span>
+			<span class="n">domain_index</span> <span class="o">+=</span> <span class="mi">1</span>
+	<span class="k">return</span> <span class="n">complex_structure</span>
+
+
+<span class="c"># More of a testing tool than anything</span></div>
+<div class="viewcode-block" id="index_parts"><a class="viewcode-back" href="../index.html#utils.index_parts">[docs]</a><span class="k">def</span> <span class="nf">index_parts</span><span class="p">(</span><span class="n">enum</span><span class="p">):</span>
+	<span class="n">domains</span> <span class="o">=</span> <span class="p">{}</span>
+	<span class="n">strands</span> <span class="o">=</span> <span class="p">{}</span>
+	<span class="n">complexes</span> <span class="o">=</span> <span class="p">{}</span>
+	
+	<span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">enum</span><span class="o">.</span><span class="n">domains</span><span class="p">:</span>
+		<span class="n">domains</span><span class="p">[</span><span class="n">domain</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">domain</span>
+	
+	<span class="k">for</span> <span class="n">strand</span> <span class="ow">in</span> <span class="n">enum</span><span class="o">.</span><span class="n">strands</span><span class="p">:</span>
+		<span class="n">strands</span><span class="p">[</span><span class="n">strand</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">strand</span>
+	
+	<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">enum</span><span class="o">.</span><span class="n">initial_complexes</span><span class="p">:</span>
+		<span class="n">complexes</span><span class="p">[</span><span class="nb">complex</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span>
+	
+	<span class="k">return</span> <span class="p">(</span><span class="n">domains</span><span class="p">,</span><span class="n">strands</span><span class="p">,</span><span class="n">complexes</span><span class="p">)</span>
+</div>
 <div class="viewcode-block" id="Domain"><a class="viewcode-back" href="../index.html#utils.Domain">[docs]</a><span class="k">class</span> <span class="nc">Domain</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Represents a single domain. We allow several options for specifying domain</span>
@@ -66,7 +132,7 @@
 <span class="sd">	the relevant constant as the integer domain length.</span>
 <span class="sd">	&quot;&quot;&quot;</span>
 	
-	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">is_complement</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">sequence</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Domain.__init__"><a class="viewcode-back" href="../index.html#utils.Domain.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">is_complement</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">sequence</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Default constructor. Takes a domain name, a length (positive integer or </span>
 <span class="sd">		&quot;short&quot; or &quot;long&quot;, and optionally a base sequence.</span>
@@ -90,8 +156,7 @@
 				<span class="k">elif</span> <span class="p">(</span><span class="n">l</span> <span class="o">==</span> <span class="s">&#39;G&#39;</span><span class="p">):</span>
 					<span class="bp">self</span><span class="o">.</span><span class="n">_complement_sequence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;C&#39;</span>
 			<span class="bp">self</span><span class="o">.</span><span class="n">_complement_sequence</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_complement_sequence</span><span class="p">)</span>
-	
-	
+	</div>
 	<span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="s">&quot;Domain(</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 	
@@ -177,17 +242,24 @@
 <span class="sd">	Represents a strand, which is an ordered sequence of domains.</span>
 <span class="sd">	&quot;&quot;&quot;</span>
 	
-	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">domains</span><span class="p">):</span>
+<div class="viewcode-block" id="Strand.__init__"><a class="viewcode-back" href="../index.html#utils.Strand.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">domains</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Constructor for Strand objects. Takes a strand name and the ordered list</span>
 <span class="sd">		of Domain objects from 5&#39; to 3&#39;.</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_domains</span> <span class="o">=</span> <span class="n">domains</span>
-
+		<span class="bp">self</span><span class="o">.</span><span class="n">_hash</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># assigned lazily by __hash__</span>
+</div>
 	<span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 		<span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domains</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">domains</span><span class="p">)</span>
-
+	
+	<span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hash</span> <span class="o">==</span> <span class="bp">None</span><span class="p">):</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domains</span><span class="p">)))</span>
+		
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hash</span>
+	
 	<span class="k">def</span> <span class="nf">__cmp__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 		<span class="k">return</span> <span class="nb">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
@@ -201,27 +273,27 @@
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Strand.name"><a class="viewcode-back" href="../index.html#utils.Strand.name">[docs]</a>	<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
-		
+		</div>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Returns the number of domains in this strand.</span>
 <span class="sd">	&quot;&quot;&quot;</span>	
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Strand.length"><a class="viewcode-back" href="../index.html#utils.Strand.length">[docs]</a>	<span class="k">def</span> <span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_domains</span><span class="p">)</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">domains</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Strand.domains"><a class="viewcode-back" href="../index.html#utils.Strand.domains">[docs]</a>	<span class="k">def</span> <span class="nf">domains</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domains</span>
-</div>
+</div></div>
 <div class="viewcode-block" id="Complex"><a class="viewcode-back" href="../index.html#utils.Complex">[docs]</a><span class="k">class</span> <span class="nc">Complex</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Represents a complex, which is a set of connected strands with a particular</span>
 <span class="sd">	secondary structure.</span>
 <span class="sd">	&quot;&quot;&quot;</span>
 	
-	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">strands</span><span class="p">,</span> <span class="n">structure</span><span class="p">):</span>
+<div class="viewcode-block" id="Complex.__init__"><a class="viewcode-back" href="../index.html#utils.Complex.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">strands</span><span class="p">,</span> <span class="n">structure</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Constructor for complex objects. Takes a name, the ordered list of</span>
 <span class="sd">		strands, and the appropriate structure. Complexes are assumed to be</span>
@@ -241,7 +313,7 @@
 <span class="sd">					complex with None indicating unpaired --</span>
 <span class="sd">					tuple: (strand, domain)</span>
 <span class="sd">					Ex:</span>
-<span class="sd">					[[(0, 2) None (0, 1)]] </span>
+<span class="sd">					[[(0, 2) None (0, 0)]] </span>
 <span class="sd">					indicates one strand with 3 domains with the first one bound </span>
 <span class="sd">					to the last one, and the middle one free. </span>
 <span class="sd">					</span>
@@ -284,12 +356,22 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">_valid_available_domains</span> <span class="o">=</span> <span class="bp">False</span>				
 		
 		<span class="c"># Rotate until we&#39;re in canonical form</span>
-		<span class="c"># TODO: this could be optimized by writing a rotation method that</span>
-		<span class="c">#		rotates N strands at a time</span>
-		<span class="k">while</span> <span class="p">(</span><span class="n">strandNames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
-			<span class="bp">self</span><span class="o">.</span><span class="n">_rotate_strands</span><span class="p">()</span>
+		<span class="n">perms</span> <span class="o">=</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">strands</span><span class="p">[</span><span class="n">x</span><span class="p">:]</span> <span class="o">+</span> <span class="n">strands</span><span class="p">[:</span><span class="n">x</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">strands</span><span class="p">))]</span> <span class="c"># calculate all circular permutations</span>
+		<span class="n">min_perm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">strands</span><span class="p">)),</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">i</span> <span class="p">:</span> <span class="n">perms</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="c"># select lexicographically minimum permutation</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_rotate_strands_n</span><span class="p">(</span><span class="n">min_perm</span><span class="p">)</span> <span class="c"># rotate until we&#39;re in that form</span>
+		
+		<span class="c"># Holds a unique hash identifying this complex (computed lazily by self.__hash__)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_hash</span> <span class="o">=</span> <span class="bp">None</span>
+	</div>
+	<span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hash</span> <span class="o">==</span> <span class="bp">None</span><span class="p">):</span>
+			<span class="n">strands</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_strands</span><span class="p">)</span>
+			<span class="n">struct</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">tuple</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_structure</span><span class="p">])</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span> <span class="p">(</span><span class="n">strands</span><span class="p">,</span> <span class="n">struct</span><span class="p">)</span> <span class="p">)</span>
 			
-	<span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hash</span>
+	
+<div class="viewcode-block" id="Complex.__eq__"><a class="viewcode-back" href="../index.html#utils.Complex.__eq__">[docs]</a>	<span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Tests two complexes for equality. Complexes are equal if and only if</span>
 <span class="sd">		they have the same strands (in the same order) and the same structure.</span>
@@ -299,7 +381,7 @@
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="k">return</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_strands</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_strands</span><span class="p">)</span> <span class="ow">and</span> 
 			   <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_structure</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_structure</span><span class="p">))</span>
-	
+	</div>
 	<span class="k">def</span> <span class="nf">__cmp__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 		<span class="n">out</span> <span class="o">=</span> <span class="nb">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">strands</span><span class="p">)</span>
 		<span class="k">if</span> <span class="p">(</span><span class="n">out</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
@@ -324,27 +406,35 @@
 	<span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 		
-	<span class="k">def</span> <span class="nf">full_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Complex.full_string"><a class="viewcode-back" href="../index.html#utils.Complex.full_string">[docs]</a>	<span class="k">def</span> <span class="nf">full_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="s">&quot;Complex(</span><span class="si">%s</span><span class="s">): </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">))</span>
-	
+	</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Complex.name"><a class="viewcode-back" href="../index.html#utils.Complex.name">[docs]</a>	<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
-	
+	</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">strands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Complex.strands"><a class="viewcode-back" href="../index.html#utils.Complex.strands">[docs]</a>	<span class="k">def</span> <span class="nf">strands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strands</span><span class="p">[:]</span>
-	
+	</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">structure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Complex.structure"><a class="viewcode-back" href="../index.html#utils.Complex.structure">[docs]</a>	<span class="k">def</span> <span class="nf">structure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_structure</span><span class="p">[:]</span>
-	
+	</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">available_domains</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Complex.available_domains"><a class="viewcode-back" href="../index.html#utils.Complex.available_domains">[docs]</a>	<span class="k">def</span> <span class="nf">available_domains</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_valid_available_domains</span><span class="p">):</span>
 			<span class="bp">self</span><span class="o">.</span><span class="n">update_available_domains</span><span class="p">()</span>			
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_available_domains</span>
-	
+	</div>
+<div class="viewcode-block" id="Complex.get_domain"><a class="viewcode-back" href="../index.html#utils.Complex.get_domain">[docs]</a>	<span class="k">def</span> <span class="nf">get_domain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">loc</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Returns the domain at the given (strand,domain) index in this complex (loc is a (strand,domain) tuple)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span><span class="p">(</span><span class="n">loc</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">):</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">[</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">domains</span><span class="p">[</span><span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+		<span class="k">return</span> <span class="bp">None</span>
+		</div>
 <div class="viewcode-block" id="Complex.strand_index"><a class="viewcode-back" href="../index.html#utils.Complex.strand_index">[docs]</a>	<span class="k">def</span> <span class="nf">strand_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strand_name</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Returns the index of the strand with the specified name in this</span>
@@ -451,7 +541,8 @@
 							<span class="n">checking_strand_num</span><span class="p">,</span> <span class="n">checking_dom_num</span> <span class="o">=</span> \
 								<span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">[</span><span class="n">checking_strand_num</span><span class="p">]</span>\
 								<span class="p">[</span><span class="n">checking_dom_num</span><span class="p">]</span>
-							<span class="n">checking_dom_num</span> <span class="o">-=</span> <span class="mi">1</span>
+<span class="c">#							checking_dom_num -= 1</span>
+							<span class="n">checking_dom_num</span> <span class="o">+=</span> <span class="mi">1</span>
 				<span class="k">if</span> <span class="n">available</span><span class="p">:</span>
 					<span class="bp">self</span><span class="o">.</span><span class="n">_available_domains</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">[</span><span class="n">strand_num</span><span class="p">]</span>\
 									                <span class="o">.</span><span class="n">domains</span><span class="p">[</span><span class="n">dom_num</span><span class="p">],</span> \
@@ -492,6 +583,38 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">_valid_available_domains</span> <span class="o">=</span> <span class="bp">False</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_structure</span> <span class="o">=</span> <span class="n">new_struct</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_strands</span> <span class="o">=</span> <span class="n">new_strands</span>	
+	
+	<span class="k">def</span> <span class="nf">_rotate_strands_n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">n</span><span class="p">):</span>
+		<span class="n">new_strands</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">[:]</span>
+		<span class="n">new_struct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">[:]</span>
+		<span class="n">old_struct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">[:]</span>
+		
+		<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+			<span class="n">new_strands</span> <span class="o">=</span> <span class="n">new_strands</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_strands</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+		
+			<span class="n">new_struct</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="n">n_strands</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_strands</span><span class="p">)</span>
+			
+			<span class="k">for</span> <span class="nb">list</span> <span class="ow">in</span> <span class="n">old_struct</span><span class="p">:</span>
+				<span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
+				<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">:</span>
+					<span class="k">if</span> <span class="n">el</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+						<span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+					<span class="k">else</span><span class="p">:</span>
+						<span class="p">(</span><span class="n">strand</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span> <span class="o">=</span> <span class="n">el</span>
+						<span class="k">if</span> <span class="n">strand</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+							<span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">strand</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">domain</span><span class="p">))</span>
+						<span class="k">else</span><span class="p">:</span>
+							<span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">n_strands</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">domain</span><span class="p">))</span>
+				<span class="n">new_struct</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_list</span><span class="p">)</span>
+			
+			<span class="n">new_struct</span> <span class="o">=</span> <span class="n">new_struct</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_struct</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+			<span class="n">old_struct</span> <span class="o">=</span> <span class="n">new_struct</span><span class="p">[:]</span>
+			
+		<span class="bp">self</span><span class="o">.</span><span class="n">_avaliable_domains</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_valid_available_domains</span> <span class="o">=</span> <span class="bp">False</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_structure</span> <span class="o">=</span> <span class="n">new_struct</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_strands</span> <span class="o">=</span> <span class="n">new_strands</span>	
 		
 <div class="viewcode-block" id="Complex.rotate_strands"><a class="viewcode-back" href="../index.html#utils.Complex.rotate_strands">[docs]</a>	<span class="k">def</span> <span class="nf">rotate_strands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
@@ -500,10 +623,30 @@
 		<span class="n">out</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 		<span class="n">out</span><span class="o">.</span><span class="n">_rotate_strands</span><span class="p">()</span>
 		<span class="k">return</span> <span class="n">out</span>
-		</div>
+	</div>
+<div class="viewcode-block" id="Complex.check_structure"><a class="viewcode-back" href="../index.html#utils.Complex.check_structure">[docs]</a>	<span class="k">def</span> <span class="nf">check_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Determines whether the structure includes pairs only between complementary domains. </span>
+<span class="sd">		Returns True if all paired domains are complementary, raises an Exception otherwise</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">for</span> <span class="p">(</span><span class="n">strand_index</span><span class="p">,</span><span class="n">strand_struct</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">):</span>
+			<span class="k">for</span> <span class="p">(</span><span class="n">domain_index</span><span class="p">,</span><span class="n">target</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">strand_struct</span><span class="p">):</span>
+				
+				<span class="n">source_domain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">((</span><span class="n">strand_index</span><span class="p">,</span><span class="n">domain_index</span><span class="p">))</span>
+				<span class="n">target_domain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+				
+				<span class="k">if</span><span class="p">((</span><span class="n">source_domain</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">target_domain</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)):</span>
+					<span class="k">if</span><span class="p">(</span><span class="ow">not</span> <span class="n">source_domain</span><span class="o">.</span><span class="n">can_pair</span><span class="p">(</span><span class="n">target_domain</span><span class="p">)):</span>
+						<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;In complex </span><span class="si">%s</span><span class="s">, domain </span><span class="si">%s</span><span class="s"> is paired with domain </span><span class="si">%s</span><span class="s">, but the domains are not complementary.&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+									<span class="n">source_domain</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="n">target_domain</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+					
+					<span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">[</span><span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">target</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">!=</span> <span class="p">(</span><span class="n">strand_index</span><span class="p">,</span><span class="n">domain_index</span><span class="p">)):</span>
+						<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;In complex </span><span class="si">%s</span><span class="s">, incoherent structure at (</span><span class="si">%d</span><span class="s">, </span><span class="si">%d</span><span class="s">) and (</span><span class="si">%d</span><span class="s">, </span><span class="si">%d</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span><span class="p">,</span> <span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+		<span class="k">return</span> <span class="bp">True</span>
+				</div>
 <div class="viewcode-block" id="Complex.dot_paren_string"><a class="viewcode-back" href="../index.html#utils.Complex.dot_paren_string">[docs]</a>	<span class="k">def</span> <span class="nf">dot_paren_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">		Returns the dot paren representation of this complex.</span>
+<span class="sd">		Returns the segment-wise dot paren representation of this complex.</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
 		<span class="k">for</span> <span class="n">strand_num</span><span class="p">,</span> <span class="n">strand</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">):</span>
@@ -521,6 +664,27 @@
 				<span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;+&#39;</span><span class="p">)</span>
 		
 		<span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+	</div>
+<div class="viewcode-block" id="Complex.dot_paren_string_full"><a class="viewcode-back" href="../index.html#utils.Complex.dot_paren_string_full">[docs]</a>	<span class="k">def</span> <span class="nf">dot_paren_string_full</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Returns the base-wise dot paren representation of this complex.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">strand_num</span><span class="p">,</span> <span class="n">strand</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">):</span>
+			<span class="k">for</span> <span class="n">dom_num</span><span class="p">,</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">strand</span><span class="p">):</span>
+				<span class="k">if</span> <span class="n">el</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+					<span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;.&#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">[</span><span class="n">strand_num</span><span class="p">]</span><span class="o">.</span><span class="n">domains</span><span class="p">[</span><span class="n">dom_num</span><span class="p">]))</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="p">(</span><span class="n">b_strand</span><span class="p">,</span> <span class="n">b_domain</span><span class="p">)</span> <span class="o">=</span> <span class="n">el</span>
+					<span class="k">if</span> <span class="p">((</span><span class="n">b_strand</span> <span class="o">&gt;</span> <span class="n">strand_num</span><span class="p">)</span> <span class="ow">or</span>
+						<span class="p">((</span><span class="n">b_strand</span> <span class="o">==</span> <span class="n">strand_num</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">b_domain</span> <span class="o">&gt;</span> <span class="n">dom_num</span><span class="p">))):</span>
+						<span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;(&#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">[</span><span class="n">strand_num</span><span class="p">]</span><span class="o">.</span><span class="n">domains</span><span class="p">[</span><span class="n">dom_num</span><span class="p">]))</span>
+					<span class="k">else</span><span class="p">:</span>
+						<span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;)&#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strands</span><span class="p">[</span><span class="n">strand_num</span><span class="p">]</span><span class="o">.</span><span class="n">domains</span><span class="p">[</span><span class="n">dom_num</span><span class="p">]))</span>
+			<span class="k">if</span> <span class="n">strand_num</span> <span class="o">!=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+				<span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;+&#39;</span><span class="p">)</span>
+		
+		<span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
 		
 		</div></div>
 <div class="viewcode-block" id="RestingState"><a class="viewcode-back" href="../index.html#utils.RestingState">[docs]</a><span class="k">class</span> <span class="nc">RestingState</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -528,7 +692,7 @@
 <span class="sd">	Represents a resting state, which is a collection of complexes.</span>
 <span class="sd">	&quot;&quot;&quot;</span>
 	
-	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">complexes</span><span class="p">):</span>
+<div class="viewcode-block" id="RestingState.__init__"><a class="viewcode-back" href="../index.html#utils.RestingState.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">complexes</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Constructor for RestingState objects. Takes a (unique) name and list of</span>
 <span class="sd">		complexes.</span>
@@ -536,15 +700,24 @@
 		<span class="n">complexes</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span> <span class="o">=</span> <span class="n">complexes</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
-		
+		<span class="bp">self</span><span class="o">.</span><span class="n">_canonical</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">(),</span><span class="nb">sorted</span><span class="p">(</span><span class="n">complexes</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">complexes</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RestingState.name"><a class="viewcode-back" href="../index.html#utils.RestingState.name">[docs]</a>	<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RestingState.complexes"><a class="viewcode-back" href="../index.html#utils.RestingState.complexes">[docs]</a>	<span class="k">def</span> <span class="nf">complexes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complexes</span><span class="p">[:]</span>
-		
+	</div>
+	<span class="nd">@property</span>
+<div class="viewcode-block" id="RestingState.canonical_name"><a class="viewcode-back" href="../index.html#utils.RestingState.canonical_name">[docs]</a>	<span class="k">def</span> <span class="nf">canonical_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_canonical</span><span class="p">)</span>
+	</div>
+	<span class="nd">@property</span>
+<div class="viewcode-block" id="RestingState.canonical"><a class="viewcode-back" href="../index.html#utils.RestingState.canonical">[docs]</a>	<span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canonical</span>
+	</div>
 	<span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 		<span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">complexes</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">complexes</span><span class="p">)</span>
 		
@@ -552,7 +725,7 @@
 		<span class="k">return</span> <span class="nb">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">complexes</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">complexes</span><span class="p">)</span>
 
 	<span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">canonical_name</span>
 
 	<span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="s">&quot;RestingState(</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">complexes</span><span class="p">))</span></div>
@@ -566,7 +739,7 @@
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -589,13 +762,13 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+        <li><a href="../index.html">Enumerator 2 documentation</a> &raquo;</li>
           <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Karthik Sarma, Brian Wolfe, Erik Winfree.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+        &copy; Copyright 2013, Karthik Sarma, Casey Grun, Brian Wolfe, Erik Winfree.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>
 </html>

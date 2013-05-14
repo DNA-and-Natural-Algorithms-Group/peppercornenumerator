@@ -486,7 +486,7 @@ def load_json(filename):
 
 
 
-new_input_functions = {
+text_input_functions = {
 						'standard': input_standard
 					  }
 					  

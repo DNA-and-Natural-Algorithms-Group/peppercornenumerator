@@ -1,15 +1,16 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>reactions &mdash; Enumerator v2 documentation</title>
+    <title>reactions &mdash; Enumerator 2 documentation</title>
+    
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
@@ -22,7 +23,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="Enumerator v2 documentation" href="../index.html" />
+    <link rel="top" title="Enumerator 2 documentation" href="../index.html" />
     <link rel="up" title="Module code" href="index.html" /> 
   </head>
   <body>
@@ -35,7 +36,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+        <li><a href="../index.html">Enumerator 2 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
@@ -60,7 +61,12 @@
 <span class="c"># TODO: fix naming!</span>
 <span class="n">auto_name</span> <span class="o">=</span> <span class="mi">0</span>
 
-<span class="c"># TODO: refactor this</span>
+<div class="viewcode-block" id="get_auto_name"><a class="viewcode-back" href="../index.html#reactions.get_auto_name">[docs]</a><span class="k">def</span> <span class="nf">get_auto_name</span><span class="p">():</span>
+	<span class="k">global</span> <span class="n">auto_name</span>
+	<span class="n">auto_name</span> <span class="o">+=</span> <span class="mi">1</span>
+	<span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">auto_name</span><span class="p">)</span>
+
+<span class="c"># TODO: refactor this</span></div>
 <span class="n">RELEASE_CUTOFF</span> <span class="o">=</span> <span class="mi">6</span>
 
 <span class="c"># If true, 3 way branch migrations are always greedy</span>
@@ -74,7 +80,7 @@
 <span class="sd">	&quot;&quot;&quot;</span>
 	<span class="c"># TODO: This needs to be actually used!</span>
 	
-	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">reactants</span><span class="p">,</span> <span class="n">products</span><span class="p">):</span>
+<div class="viewcode-block" id="ReactionPathway.__init__"><a class="viewcode-back" href="../index.html#reactions.ReactionPathway.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">reactants</span><span class="p">,</span> <span class="n">products</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Default constructor. Takes a name, a list of reactants (Complexes) and</span>
 <span class="sd">		a list of products (Complexes).</span>
@@ -84,7 +90,7 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">_reactants</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_products</span> <span class="o">=</span> <span class="n">products</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_products</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
-		
+		</div>
 	<span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_string</span><span class="p">()</span>
 <span class="c">#		return &quot;ReactionPathway(%s)&quot; % (self.name)</span>
@@ -92,26 +98,33 @@
 	<span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
-	<span class="k">def</span> <span class="nf">full_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ReactionPathway.full_string"><a class="viewcode-back" href="../index.html#reactions.ReactionPathway.full_string">[docs]</a>	<span class="k">def</span> <span class="nf">full_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="s">&quot;ReactionPathway(</span><span class="si">%s</span><span class="s">): </span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">))</span>
-
+</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ReactionPathway.name"><a class="viewcode-back" href="../index.html#reactions.ReactionPathway.name">[docs]</a>	<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">reactants</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ReactionPathway.reactants"><a class="viewcode-back" href="../index.html#reactions.ReactionPathway.reactants">[docs]</a>	<span class="k">def</span> <span class="nf">reactants</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reactants</span>
-		
+		</div>
 	<span class="nd">@property</span>
-	<span class="k">def</span> <span class="nf">products</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ReactionPathway.products"><a class="viewcode-back" href="../index.html#reactions.ReactionPathway.products">[docs]</a>	<span class="k">def</span> <span class="nf">products</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_products</span>
-		
+		</div>
+	<span class="nd">@property</span>
+<div class="viewcode-block" id="ReactionPathway.arity"><a class="viewcode-back" href="../index.html#reactions.ReactionPathway.arity">[docs]</a>	<span class="k">def</span> <span class="nf">arity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reactants</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_products</span><span class="p">))</span>	
+	</div>
 	<span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 		<span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">and</span> \
 			   <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactants</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span> <span class="ow">and</span> \
 			   <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">products</span><span class="p">)</span>
-			   
+
+	<span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">))</span> <span class="o">+</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">))</span>
+
 	<span class="k">def</span> <span class="nf">__cmp__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 		<span class="n">out</span> <span class="o">=</span> <span class="nb">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 		<span class="k">if</span> <span class="p">(</span><span class="n">out</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
@@ -183,8 +196,7 @@
 					<span class="n">struct_element</span> <span class="o">=</span> <span class="n">struct</span><span class="p">[</span><span class="n">inner_strand</span><span class="p">][</span><span class="n">inner_domain</span><span class="p">]</span>
 					<span class="n">inner_strand</span> <span class="o">=</span> <span class="n">struct_element</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 					<span class="n">inner_domain</span> <span class="o">=</span> <span class="n">struct_element</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
-				<span class="k">elif</span> <span class="ow">not</span> <span class="n">outer_domain</span><span class="o">.</span><span class="n">can_pair</span><span class="p">(</span><span class="n">strands</span><span class="p">[</span><span class="n">inner_strand</span><span class="p">]</span><span class="o">.</span>
-											   <span class="n">domains</span><span class="p">[</span><span class="n">inner_domain</span><span class="p">]):</span>
+				<span class="k">elif</span> <span class="ow">not</span> <span class="n">outer_domain</span><span class="o">.</span><span class="n">can_pair</span><span class="p">(</span><span class="n">strands</span><span class="p">[</span><span class="n">inner_strand</span><span class="p">]</span><span class="o">.</span><span class="n">domains</span><span class="p">[</span><span class="n">inner_domain</span><span class="p">]):</span>
 					<span class="c"># These domains aren&#39;t complementary</span>
 					<span class="n">inner_domain</span> <span class="o">=</span> <span class="n">inner_domain</span> <span class="o">+</span> <span class="mi">1</span>
 				<span class="k">else</span><span class="p">:</span>
@@ -199,7 +211,7 @@
 		<span class="n">new_structure</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">reactant</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span>
 		<span class="n">new_structure</span><span class="p">[</span><span class="n">d1</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">d1</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">d2</span>
 		<span class="n">new_structure</span><span class="p">[</span><span class="n">d2</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">d2</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">d1</span>
-		<span class="n">product</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="n">reactant</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s">&quot;(&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">d1</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;+&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">d2</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="p">,</span>
+		<span class="n">product</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="n">get_auto_name</span><span class="p">(),</span>  <span class="c">#reactant.name + &quot;(&quot; + str(d1) + &quot;+&quot; + str(d2) + &quot;)&quot;,</span>
 						  <span class="n">reactant</span><span class="o">.</span><span class="n">strands</span><span class="p">,</span> <span class="n">new_structure</span><span class="p">)</span>		
 		<span class="n">products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
 	
@@ -290,7 +302,8 @@
 			<span class="n">paired_dom</span> <span class="o">=</span> <span class="nb">complex</span><span class="o">.</span><span class="n">structure</span><span class="p">[</span><span class="n">search_strand_index</span><span class="p">]</span>\
 										  <span class="p">[</span><span class="n">search_dom_index</span><span class="p">]</span>
 			<span class="k">if</span> <span class="p">(</span><span class="n">paired_dom</span> <span class="o">==</span> <span class="bp">None</span><span class="p">):</span>			
-				<span class="c"># If the current domain is unpaired, move to the next one</span>
+				<span class="c"># If the current domain is unpaired, move to the next domain</span>
+				<span class="c"># to the right</span>
 				<span class="n">search_dom_index</span> <span class="o">+=</span> <span class="mi">1</span>
 			<span class="k">elif</span> <span class="p">((</span><span class="n">paired_dom</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">search_strand_index</span><span class="p">)</span> <span class="ow">or</span> \
 					 <span class="p">((</span><span class="n">paired_dom</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">search_strand_index</span><span class="p">)</span> <span class="ow">and</span> \
@@ -319,7 +332,8 @@
 			<span class="n">paired_dom</span> <span class="o">=</span> <span class="nb">complex</span><span class="o">.</span><span class="n">structure</span><span class="p">[</span><span class="n">search_strand_index</span><span class="p">]</span> \
 										  <span class="p">[</span><span class="n">search_dom_index</span><span class="p">]</span>
 			<span class="k">if</span> <span class="p">(</span><span class="n">paired_dom</span> <span class="o">==</span> <span class="bp">None</span><span class="p">):</span>			
-				<span class="c"># If the current domain is unpaired, move to the next one</span>
+				<span class="c"># If the current domain is unpaired, move to the next domain</span>
+				<span class="c"># to the left</span>
 				<span class="n">search_dom_index</span> <span class="o">-=</span> <span class="mi">1</span>
 			<span class="k">elif</span> <span class="p">((</span><span class="n">paired_dom</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">search_strand_index</span><span class="p">)</span> <span class="ow">or</span> 
 					 <span class="p">((</span><span class="n">paired_dom</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">search_strand_index</span><span class="p">)</span> <span class="ow">and</span>
@@ -364,6 +378,8 @@
 		<span class="n">s1</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">complex1</span><span class="o">.</span><span class="n">structure</span><span class="p">[</span><span class="mi">0</span><span class="p">:(</span><span class="n">insertion_index_1</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
 		<span class="n">s4</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">complex1</span><span class="o">.</span><span class="n">structure</span><span class="p">[(</span><span class="n">insertion_index_1</span><span class="o">+</span><span class="mi">1</span><span class="p">):])</span>	
 	<span class="k">else</span><span class="p">:</span>
+		<span class="c"># It&#39;s not clear to me whether this  condition will ever be executed, </span>
+		<span class="c"># because find_external_strand_break should never return &lt; 0 -CG 5/31</span>
 		<span class="n">d1</span> <span class="o">=</span> <span class="n">complex1</span><span class="o">.</span><span class="n">strands</span><span class="p">[:]</span>
 		<span class="n">d4</span> <span class="o">=</span> <span class="p">[]</span>
 		<span class="n">s1</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">complex1</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span>
@@ -376,6 +392,8 @@
 		<span class="n">s2</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">complex2</span><span class="o">.</span><span class="n">structure</span><span class="p">[(</span><span class="n">insertion_index_2</span><span class="o">+</span><span class="mi">1</span><span class="p">):])</span>
 		<span class="n">s3</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">complex2</span><span class="o">.</span><span class="n">structure</span><span class="p">[</span><span class="mi">0</span><span class="p">:(</span><span class="n">insertion_index_2</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
 	<span class="k">else</span><span class="p">:</span>
+		<span class="c"># Likewise with this one; find_external_strand_break should always</span>
+		<span class="c"># produce an index &gt;= 0</span>
 		<span class="n">d2</span> <span class="o">=</span> <span class="p">[]</span>
 		<span class="n">d3</span> <span class="o">=</span> <span class="n">complex2</span><span class="o">.</span><span class="n">strands</span><span class="p">[:]</span>
 		<span class="n">s2</span> <span class="o">=</span> <span class="p">[]</span>
@@ -440,21 +458,32 @@
 	
 	<span class="c"># Finally, we need to update given reaction indices to new indices</span>
 	<span class="c"># and then add the new pairing to the structure</span>
-	<span class="k">if</span> <span class="p">((</span><span class="n">insertion_index_1</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">location1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">insertion_index_1</span><span class="p">)):</span>
+	<span class="c"># if ((insertion_index_1 &gt; 0) and (location1[0] &gt; insertion_index_1)):</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">location1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">insertion_index_1</span><span class="p">):</span>
 		<span class="n">location1</span> <span class="o">=</span> <span class="p">(</span><span class="n">location1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">s4_strand_offset</span><span class="p">,</span> <span class="n">location1</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 	
-	<span class="k">if</span> <span class="p">((</span><span class="n">insertion_index_2</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">location2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">insertion_index_2</span><span class="p">)):</span>
+	
+	<span class="c"># NOTE: This case is unexercised by all tests written by Karthik, regardless</span>
+	<span class="c"># whether the first clause is included. Since this tests whether the </span>
+	<span class="c"># location2 is within d2 or d3, I think the first clause is unnecessary.</span>
+
+	<span class="c"># if ((insertion_index_2 &gt; 0) and (location2[0] &gt; insertion_index_2)):</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">location2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">insertion_index_2</span><span class="p">):</span>
 		<span class="n">location2</span> <span class="o">=</span> <span class="p">(</span><span class="n">location2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">s2_strand_offset</span><span class="p">,</span> <span class="n">location2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 	<span class="k">else</span><span class="p">:</span>
 		<span class="n">location2</span> <span class="o">=</span> <span class="p">(</span><span class="n">location2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">s3_strand_offset</span><span class="p">,</span> <span class="n">location2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 	
+	
 	<span class="n">new_structure</span><span class="p">[</span><span class="n">location1</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">location1</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">location2</span>
 	<span class="n">new_structure</span><span class="p">[</span><span class="n">location2</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">location2</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">location1</span>
-	
-	<span class="k">global</span> <span class="n">auto_name</span>
-	
-	<span class="n">new_complex</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">auto_name</span><span class="p">),</span> <span class="n">new_strands</span><span class="p">,</span> <span class="n">new_structure</span><span class="p">)</span>
-	<span class="n">auto_name</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="c">#	try:</span>
+<span class="c">#		new_structure[location1[0]][location1[1]] = location2</span>
+<span class="c">#		new_structure[location2[0]][location2[1]] = location1</span>
+<span class="c">#	except IndexError:</span>
+<span class="c">#		print &quot;Agh!&quot;</span>
+<span class="c">#		raise Exception()</span>
+		
+	<span class="n">new_complex</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="n">get_auto_name</span><span class="p">(),</span> <span class="n">new_strands</span><span class="p">,</span> <span class="n">new_structure</span><span class="p">)</span>
 	
 	<span class="k">return</span> <span class="n">new_complex</span>
 </div>
@@ -466,8 +495,10 @@
 <span class="sd">	reactant occurs exactly once in one of the complexes in the product set.</span>
 <span class="sd">	</span>
 <span class="sd">	A dissociation can happen to any helix under the threshold length</span>
+<span class="sd">				</span>
 <span class="sd">	&#39;&#39;&#39;</span>
 	<span class="n">product_sets</span> <span class="o">=</span> <span class="p">[]</span>
+	
 	
 	<span class="n">structure</span> <span class="o">=</span> <span class="n">reactant</span><span class="o">.</span><span class="n">structure</span>
 	<span class="n">strands</span> <span class="o">=</span> <span class="n">reactant</span><span class="o">.</span><span class="n">strands</span>
@@ -480,14 +511,17 @@
 			<span class="k">if</span> <span class="p">(</span><span class="n">structure</span><span class="p">[</span><span class="n">strand_index</span><span class="p">][</span><span class="n">domain_index</span><span class="p">]</span> <span class="o">==</span> <span class="bp">None</span><span class="p">):</span>
 				<span class="k">continue</span>
 			
+			<span class="c"># A: Strand/domain position on &quot;top&quot; strand - CG 5/21 </span>
 			<span class="n">helix_startA</span> <span class="o">=</span> <span class="p">[</span><span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span><span class="p">]</span>
-			<span class="n">helix_startB</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">structure</span><span class="p">[</span><span class="n">strand_index</span><span class="p">][</span><span class="n">domain_index</span><span class="p">])</span>
 			
+			<span class="c"># B: Strand/domain position on &quot;bottom&quot; strand - CG 5/21 </span>
+			<span class="n">helix_startB</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">structure</span><span class="p">[</span><span class="n">strand_index</span><span class="p">][</span><span class="n">domain_index</span><span class="p">])</span>
+		
 			<span class="c"># If the domain is bound to an earlier domain, then we have</span>
 			<span class="c"># already considered it, so skip it</span>
-			<span class="k">if</span> <span class="p">(((</span><span class="n">helix_startB</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">helix_startA</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">or</span> \
+			<span class="k">if</span> <span class="p">(</span> <span class="p">(</span><span class="n">helix_startB</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">helix_startA</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">or</span> \
 			     <span class="p">((</span><span class="n">helix_startB</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">helix_startA</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> \
-				  <span class="p">(</span><span class="n">helix_startB</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">helix_startA</span><span class="p">[</span><span class="mi">1</span><span class="p">])))):</span>
+				  <span class="p">(</span><span class="n">helix_startB</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">helix_startA</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="p">):</span>
 				<span class="k">continue</span>
 			
 			<span class="n">helix_endA</span> <span class="o">=</span> <span class="n">helix_startA</span><span class="p">[:]</span>
@@ -499,6 +533,10 @@
 			<span class="c"># of this one</span>
 			<span class="c"># (The helix ends at the first strand break from either direction)</span>
 			<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+				
+				<span class="c"># Strands run in opposite directions, so A must be incremented </span>
+				<span class="c"># and B decremented in order that both pointers move &quot;right&quot; </span>
+				<span class="c"># along the helix- CG 5/21</span>
 				<span class="n">helix_endA</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
 				<span class="n">helix_endB</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
 				
@@ -517,12 +555,14 @@
 				<span class="c"># Add the current domain to the current helix</span>
 				<span class="n">helix_length</span> <span class="o">+=</span> <span class="n">strands</span><span class="p">[</span><span class="n">helix_endA</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">domains</span><span class="p">[</span><span class="n">helix_endA</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>\
 									   <span class="o">.</span><span class="n">length</span>
-									   
+				
 			<span class="c"># We must also iterate in the other direction</span>
 			<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+				
+				<span class="c"># Now we move </span>
 				<span class="n">helix_startA</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
 				<span class="n">helix_startB</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-				
+
 				<span class="c"># If one of the strands has broken, the helix has ended</span>
 				<span class="k">if</span> <span class="p">(</span><span class="n">helix_startA</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
 					<span class="k">break</span>
@@ -562,7 +602,7 @@
 		
 	<span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
 	<span class="k">for</span> <span class="n">product_set</span> <span class="ow">in</span> <span class="n">product_sets</span><span class="p">:</span>
-		<span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ReactionPathway</span><span class="p">(</span><span class="s">&#39;open&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">reactant</span><span class="p">],</span> <span class="n">product_set</span><span class="p">))</span>
+		<span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ReactionPathway</span><span class="p">(</span><span class="s">&#39;open&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">reactant</span><span class="p">],</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">product_set</span><span class="p">)))</span>
 	
 	<span class="k">return</span> <span class="n">output</span>
 	
@@ -590,11 +630,14 @@
 		<span class="n">inner_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 		
 		<span class="c"># We now iterate through lower domains and see if we can find</span>
-		<span class="c"># a release point</span>
+		<span class="c"># a release point (Iterate while:</span>
+		<span class="c">#	0 &gt; inner_index strand &gt; index of last strand, and</span>
+		<span class="c"># 		inner_index strand &lt; strand_index, or</span>
+		<span class="c">#		inner_index strand = strand_index and inner_index domain &lt; domain_index)</span>
 		<span class="k">while</span> <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">strands</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="ow">and</span> \
-			  <span class="p">((</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">strand_index</span><span class="p">)</span> <span class="ow">or</span> \
-			  <span class="p">((</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">strand_index</span><span class="p">)</span> <span class="ow">and</span> \
-			  <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">domain_index</span><span class="p">))):</span>
+			  <span class="p">(</span> <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">strand_index</span><span class="p">)</span> <span class="ow">or</span> \
+			    <span class="p">((</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">strand_index</span><span class="p">)</span> <span class="ow">and</span> \
+			     <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">domain_index</span><span class="p">))</span> <span class="p">):</span>
 
 			<span class="c"># If we have run off of the end of a strand,</span>
 			<span class="c"># then we have found a release point  </span>
@@ -622,7 +665,8 @@
 
 				<span class="c"># If the structure points to a domain above the start, this section</span>
 				<span class="c"># is connected to something higher, so abort this loop</span>
-				<span class="k">if</span> <span class="p">(</span><span class="n">curr_structure</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">strand_index</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">curr_structure</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+				<span class="c">#if (curr_structure[0] &gt; strand_index) and (curr_structure[1] &gt; 0):</span>
+				<span class="k">if</span> <span class="p">(</span><span class="n">curr_structure</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">strand_index</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">curr_structure</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">):</span>
 					<span class="k">break</span>
 				  				  
 				<span class="c"># Otherwise it points to a domain between this one and the start</span>
@@ -633,53 +677,62 @@
 			<span class="k">else</span><span class="p">:</span>
 				<span class="n">inner_index</span> <span class="o">=</span> <span class="n">curr_structure</span>
 
-<span class="c">##### TODO: FIND OUT IF THIS IS NEEDED...</span>
-		<span class="n">inner_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-				
-		<span class="c"># If we didn&#39;t find a release point in the lower domains,</span>
-		<span class="c"># we now try iterating through the higher domains</span>
-		<span class="k">while</span> <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">strands</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> \
-			  <span class="p">((</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">strand_index</span><span class="p">)</span> <span class="ow">or</span> \
-			  <span class="p">((</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">strand_index</span><span class="p">)</span> <span class="ow">and</span> \
-			  <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">domain_index</span><span class="p">))):</span>
-			<span class="c"># If we have run off of the end of a strand,</span>
-			<span class="c"># then we have found a release point  </span>
-			<span class="k">if</span> <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">strands</span><span class="p">[</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">domains</span><span class="p">)):</span>
-				<span class="n">split_start</span> <span class="o">=</span> <span class="p">(</span><span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span><span class="p">)</span>
-				<span class="n">split_end</span> <span class="o">=</span> <span class="n">inner_index</span>
-				<span class="n">split_list</span> <span class="o">=</span> <span class="n">split_complex</span><span class="p">(</span><span class="n">reactant</span><span class="p">,</span> <span class="n">split_start</span><span class="p">,</span> <span class="n">split_end</span><span class="p">)</span>
-				<span class="c"># We check the two resulting complexes to see if they can</span>
-				<span class="c"># be split further</span>
-				<span class="k">for</span> <span class="nb">complex</span> <span class="ow">in</span> <span class="n">split_list</span><span class="p">:</span>
-					<span class="n">output_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">find_releases</span><span class="p">(</span><span class="nb">complex</span><span class="p">))</span>
-				<span class="k">return</span> <span class="n">output_list</span>					
-							
-			<span class="c"># Otherwise decide where to go next</span>
-			<span class="n">curr_structure</span> <span class="o">=</span> <span class="n">structure</span><span class="p">[</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>	
-			
-			<span class="c"># If this domain is unpaired, move to the next</span>
-			<span class="k">if</span> <span class="p">(</span><span class="n">curr_structure</span> <span class="o">==</span> <span class="bp">None</span><span class="p">):</span>
-				<span class="n">inner_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inner_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 
-			<span class="c"># Check if the structure points to a lower domain			</span>
-			<span class="k">elif</span> <span class="p">(</span><span class="n">curr_structure</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">or</span> \
-				 <span class="p">((</span><span class="n">curr_structure</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> \
-				  <span class="p">(</span><span class="n">curr_structure</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">inner_index</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>
-				  
-				<span class="c"># If the structure points to a domain before the start,</span>
-				<span class="c"># this section is connected to something lower, so abort this</span>
-				<span class="c"># loop</span>
-				<span class="k">if</span> <span class="p">(</span><span class="n">curr_structure</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">strand_index</span><span class="p">):</span>
-					<span class="k">break</span>
-				
-				<span class="c"># Otherwise it points to a domain between this one and the start</span>
-				<span class="c"># -- we&#39;ve already been there to move to the next</span>
-				<span class="n">inner_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">inner_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inner_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>			
-			
-			
-			<span class="c"># Otherwise, follow the structure</span>
-			<span class="k">else</span><span class="p">:</span>
-				<span class="n">inner_index</span> <span class="o">=</span> <span class="n">curr_structure</span>			
+		<span class="c"># Alright; the following statement precludes the while loop below from </span>
+		<span class="c"># ever running, since the second clause will always fail. </span>
+		<span class="c"># Then again, without ever running this while loop, all other tests pass.</span>
+		<span class="c"># OK, I&#39;m fairly convinced this isn&#39;t needed, since the above loop </span>
+		<span class="c"># effectively works by iterating (forwards) across each strand, then looking </span>
+		<span class="c"># backwards -CG 5/29</span>
+		
+		
+		<span class="c">##### TODO: FIND OUT IF THIS IS NEEDED...</span>
+<span class="c">#		inner_index = (strand_index, 0)</span>
+<span class="c">#				</span>
+<span class="c">#		# If we didn&#39;t find a release point in the lower domains,</span>
+<span class="c">#		# we now try iterating through the higher domains</span>
+<span class="c">#		while (inner_index[0] &lt; len(strands) - 1) and \</span>
+<span class="c">#			  ((inner_index[0] &gt; strand_index) or \</span>
+<span class="c">#			  ((inner_index[0] == strand_index) and \</span>
+<span class="c">#			  (inner_index[1] &gt; domain_index))):</span>
+<span class="c">#			# If we have run off of the end of a strand,</span>
+<span class="c">#			# then we have found a release point  </span>
+<span class="c">#			if (inner_index[1] == len(strands[inner_index[0]].domains)):</span>
+<span class="c">#				split_start = (strand_index, domain_index)</span>
+<span class="c">#				split_end = inner_index</span>
+<span class="c">#				split_list = split_complex(reactant, split_start, split_end)</span>
+<span class="c">#				# We check the two resulting complexes to see if they can</span>
+<span class="c">#				# be split further</span>
+<span class="c">#				for complex in split_list:</span>
+<span class="c">#					output_list.extend(find_releases(complex))</span>
+<span class="c">#				return output_list					</span>
+<span class="c">#							</span>
+<span class="c">#			# Otherwise decide where to go next</span>
+<span class="c">#			curr_structure = structure[inner_index[0]][inner_index[1]]	</span>
+<span class="c">#			</span>
+<span class="c">#			# If this domain is unpaired, move to the next</span>
+<span class="c">#			if (curr_structure == None):</span>
+<span class="c">#				inner_index = (inner_index[0], inner_index[1] + 1)</span>
+<span class="c">#</span>
+<span class="c">#			# Check if the structure points to a lower domain			</span>
+<span class="c">#			elif (curr_structure[0] &lt; inner_index[0]) or \</span>
+<span class="c">#				 ((curr_structure[0] == inner_index[0]) and \</span>
+<span class="c">#				  (curr_structure[1] &lt; inner_index[1])):</span>
+<span class="c">#				  </span>
+<span class="c">#				# If the structure points to a domain before the start,</span>
+<span class="c">#				# this section is connected to something lower, so abort this</span>
+<span class="c">#				# loop</span>
+<span class="c">#				if (curr_structure[0] &lt; strand_index):</span>
+<span class="c">#					break</span>
+<span class="c">#				</span>
+<span class="c">#				# Otherwise it points to a domain between this one and the start</span>
+<span class="c">#				# -- we&#39;ve already been there to move to the next</span>
+<span class="c">#				inner_index = (inner_index[0], inner_index[1] + 1)			</span>
+<span class="c">#			</span>
+<span class="c">#			</span>
+<span class="c">#			# Otherwise, follow the structure</span>
+<span class="c">#			else:</span>
+<span class="c">#				inner_index = curr_structure			</span>
 				
 	<span class="c"># If we still haven&#39;t found any splits, then this complex cannot be split</span>
 	
@@ -757,12 +810,9 @@
 	<span class="n">out1_structure</span> <span class="o">=</span> <span class="n">new_structure1</span> <span class="o">+</span> <span class="n">new_structure3</span>
 	<span class="n">out2_structure</span> <span class="o">=</span> <span class="n">new_structure2</span>
 	
-	<span class="k">global</span> <span class="n">auto_name</span>
 	
-	<span class="n">out1</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">auto_name</span><span class="p">),</span> <span class="n">out1_strands</span><span class="p">,</span> <span class="n">out1_structure</span><span class="p">)</span>
-	<span class="n">auto_name</span> <span class="o">+=</span> <span class="mi">1</span>
-	<span class="n">out2</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">auto_name</span><span class="p">),</span> <span class="n">out2_strands</span><span class="p">,</span> <span class="n">out2_structure</span><span class="p">)</span>
-	<span class="n">auto_name</span> <span class="o">+=</span> <span class="mi">1</span>
+	<span class="n">out1</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="n">get_auto_name</span><span class="p">(),</span> <span class="n">out1_strands</span><span class="p">,</span> <span class="n">out1_structure</span><span class="p">)</span>
+	<span class="n">out2</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="n">get_auto_name</span><span class="p">(),</span> <span class="n">out2_strands</span><span class="p">,</span> <span class="n">out2_structure</span><span class="p">)</span>
 	
 	<span class="k">return</span> <span class="p">[</span><span class="n">out1</span><span class="p">,</span> <span class="n">out2</span><span class="p">]</span>
 </div>
@@ -917,10 +967,7 @@
 	<span class="n">out_reactant</span><span class="o">.</span><span class="n">structure</span><span class="p">[</span><span class="n">new_bound_loc</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">new_bound_loc</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">displacing_loc</span>
 	<span class="n">out_reactant</span><span class="o">.</span><span class="n">structure</span><span class="p">[</span><span class="n">displaced_loc</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">displaced_loc</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span>
 	
-	<span class="k">global</span> <span class="n">auto_name</span>
-	
-	<span class="n">out_reactant</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">auto_name</span><span class="p">)</span>
-	<span class="n">auto_name</span> <span class="o">+=</span> <span class="mi">1</span>
+	<span class="n">out_reactant</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">get_auto_name</span><span class="p">()</span>	
 	
 	<span class="k">global</span> <span class="n">UNZIP</span>
 	
@@ -1036,10 +1083,7 @@
 	<span class="n">new_struct</span><span class="p">[</span><span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">loc2</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">loc4</span>
 	<span class="n">new_struct</span><span class="p">[</span><span class="n">loc4</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">loc4</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">loc2</span>
 	
-	<span class="k">global</span> <span class="n">auto_name</span>
-	
-	<span class="n">out</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">auto_name</span><span class="p">),</span> <span class="n">reactant</span><span class="o">.</span><span class="n">strands</span><span class="p">[:],</span> <span class="n">new_struct</span><span class="p">)</span>
-	<span class="n">auto_name</span> <span class="o">+=</span> <span class="mi">1</span>
+	<span class="n">out</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="n">get_auto_name</span><span class="p">(),</span> <span class="n">reactant</span><span class="o">.</span><span class="n">strands</span><span class="p">[:],</span> <span class="n">new_struct</span><span class="p">)</span>
 	
 	<span class="k">return</span> <span class="n">find_releases</span><span class="p">(</span><span class="n">out</span><span class="p">)</span></div>
 </pre></div>
@@ -1052,7 +1096,7 @@
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -1075,13 +1119,13 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+        <li><a href="../index.html">Enumerator 2 documentation</a> &raquo;</li>
           <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Karthik Sarma, Brian Wolfe, Erik Winfree.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+        &copy; Copyright 2013, Karthik Sarma, Casey Grun, Brian Wolfe, Erik Winfree.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>
 </html>

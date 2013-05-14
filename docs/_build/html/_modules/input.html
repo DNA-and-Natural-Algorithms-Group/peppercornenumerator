@@ -1,15 +1,16 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>input &mdash; Enumerator v2 documentation</title>
+    <title>input &mdash; Enumerator 2 documentation</title>
+    
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
@@ -22,7 +23,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="Enumerator v2 documentation" href="../index.html" />
+    <link rel="top" title="Enumerator 2 documentation" href="../index.html" />
     <link rel="up" title="Module code" href="index.html" /> 
   </head>
   <body>
@@ -35,7 +36,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+        <li><a href="../index.html">Enumerator 2 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
@@ -59,7 +60,8 @@
 <span class="kn">from</span> <span class="nn">enumerator</span> <span class="kn">import</span> <span class="n">Enumerator</span>
 <span class="kn">from</span> <span class="nn">reactions</span> <span class="kn">import</span> <span class="n">ReactionPathway</span>
 <span class="kn">import</span> <span class="nn">reactions</span>
-					   
+<span class="kn">import</span> <span class="nn">re</span>
+
 <div class="viewcode-block" id="input_standard"><a class="viewcode-back" href="../index.html#input.input_standard">[docs]</a><span class="k">def</span> <span class="nf">input_standard</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Initializes and returns an enumerator from a standard input file.</span>
@@ -89,6 +91,10 @@
 			
 		<span class="c"># This is the beginning of a domain</span>
 		<span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;domain&quot;</span><span class="p">):</span>
+			<span class="c"># e.g.: </span>
+			<span class="c">#       &quot;domain a : 6&quot;</span>
+			<span class="c"># parts: 0      1 2 3</span>
+			
 			<span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
 						
 			<span class="n">domain_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -97,7 +103,7 @@
 								<span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
 				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
 			
-			<span class="k">if</span> <span class="ow">not</span> <span class="n">domain_name</span><span class="o">.</span><span class="n">isalnum</span><span class="p">():</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;\w+$&#39;</span><span class="p">,</span><span class="n">domain_name</span><span class="p">):</span>
 				<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Non-alphanumeric domain name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
 								<span class="o">%</span> <span class="p">(</span><span class="n">domain_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
 			
@@ -107,8 +113,8 @@
 			<span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">domain_length</span> <span class="o">==</span> <span class="s">&#39;short&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">domain_length</span> <span class="o">==</span> <span class="s">&#39;long&#39;</span><span class="p">)):</span>
 				<span class="n">domain_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">domain_length</span><span class="p">)</span>
 				<span class="k">if</span> <span class="n">domain_length</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-					<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Domain of length </span><span class="si">%d</span><span class="s"> found in input line </span><span class="si">%d</span><span class="s">&quot;</span>
-									<span class="p">(</span><span class="n">domain_length</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
+					<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Domain of length </span><span class="si">%d</span><span class="s"> found in input line </span><span class="si">%d</span><span class="s">&quot;</span> 
+									<span class="o">%</span> <span class="p">(</span><span class="n">domain_length</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
 				
 			<span class="c"># Check to see if a sequence is specified</span>
 			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
@@ -128,6 +134,10 @@
 		
 		<span class="c"># This is the beginning of a strand	</span>
 		<span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;strand&quot;</span><span class="p">):</span>
+			<span class="c"># e.g.: </span>
+			<span class="c">#       &quot;strand A : a x b y z* c* y* b* x*&quot;</span>
+			<span class="c"># parts: 0      1 2 3 4 5 6 ...</span>
+			
 			<span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
 			
 			<span class="n">strand_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -136,7 +146,7 @@
 								<span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
 				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
 			
-			<span class="k">if</span> <span class="ow">not</span> <span class="n">strand_name</span><span class="o">.</span><span class="n">isalnum</span><span class="p">():</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;\w+$&#39;</span><span class="p">,</span><span class="n">strand_name</span><span class="p">):</span>
 				<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Non-alphanumeric strand name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
 								<span class="o">%</span> <span class="p">(</span><span class="n">strand_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
 			
@@ -154,8 +164,15 @@
 				
 			<span class="n">new_strand</span> <span class="o">=</span> <span class="n">Strand</span><span class="p">(</span><span class="n">strand_name</span><span class="p">,</span> <span class="n">strand_doms</span><span class="p">)</span>
 			<span class="n">strands</span><span class="p">[</span><span class="n">strand_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_strand</span>
+			
 		<span class="c"># This is the beginning of a complex	</span>
 		<span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;complex&quot;</span><span class="p">):</span>
+			<span class="c"># e.g.:</span>
+			<span class="c"># complex A :\n</span>
+			<span class="c"># A\n				&lt;- strands_line</span>
+			<span class="c"># .(((..)))\n		&lt;- structure_line</span>
+			
+			
 			<span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
 			
 			<span class="n">complex_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -164,10 +181,10 @@
 								<span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
 				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
 			
-			<span class="k">if</span> <span class="ow">not</span> <span class="n">complex_name</span><span class="o">.</span><span class="n">isalnum</span><span class="p">():</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;\w+$&#39;</span><span class="p">,</span><span class="n">complex_name</span><span class="p">):</span>
 				<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Non-alphanumeric complex name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
 								<span class="o">%</span> <span class="p">(</span><span class="n">complex_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
-				
+			
 			<span class="n">complex_strands</span> <span class="o">=</span> <span class="p">[]</span>
 			
 			<span class="n">strands_line</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
@@ -177,43 +194,25 @@
 				<span class="k">if</span> <span class="ow">not</span> <span class="n">strand_name</span> <span class="ow">in</span> <span class="n">strands</span><span class="p">:</span>
 					<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Invalid strand name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
 									<span class="o">%</span> <span class="p">(</span><span class="n">strand_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
+					<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
 				<span class="k">else</span><span class="p">:</span>
 					<span class="n">complex_strands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strands</span><span class="p">[</span><span class="n">strand_name</span><span class="p">])</span>
 				
 			<span class="n">structure_line</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
 			<span class="n">structure_line</span> <span class="o">=</span> <span class="n">structure_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 			
-			<span class="n">complex_structure</span> <span class="o">=</span> <span class="p">[]</span>
-			
-			<span class="n">dot_paren_stack</span> <span class="o">=</span> <span class="p">[]</span>
-			
-			<span class="n">strand_index</span> <span class="o">=</span> <span class="mi">0</span>
-			<span class="n">domain_index</span> <span class="o">=</span> <span class="mi">0</span>
-			<span class="n">curr_strand</span> <span class="o">=</span> <span class="p">[]</span>
-			<span class="n">complex_structure</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_strand</span><span class="p">)</span>
-			<span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">structure_line</span><span class="p">:</span>
-				<span class="k">if</span> <span class="p">(</span><span class="n">part</span> <span class="o">==</span> <span class="s">&quot;+&quot;</span><span class="p">):</span>
-					<span class="n">strand_index</span> <span class="o">+=</span> <span class="mi">1</span>
-					<span class="n">domain_index</span> <span class="o">=</span> <span class="mi">0</span>
-					<span class="n">curr_strand</span> <span class="o">=</span> <span class="p">[]</span>
-					<span class="n">complex_structure</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_strand</span><span class="p">)</span>
-					<span class="k">continue</span>
-				<span class="k">if</span> <span class="p">(</span><span class="n">part</span> <span class="o">==</span> <span class="s">&quot;.&quot;</span><span class="p">):</span>
-					<span class="n">curr_strand</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
-					<span class="n">domain_index</span> <span class="o">+=</span> <span class="mi">1</span>
-				<span class="k">elif</span> <span class="p">(</span><span class="n">part</span> <span class="o">==</span> <span class="s">&quot;(&quot;</span><span class="p">):</span>
-					<span class="n">curr_strand</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
-					<span class="n">dot_paren_stack</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span><span class="p">))</span>
-					<span class="n">domain_index</span> <span class="o">+=</span> <span class="mi">1</span>
-				<span class="k">elif</span> <span class="p">(</span><span class="n">part</span> <span class="o">==</span> <span class="s">&quot;)&quot;</span><span class="p">):</span>
-					<span class="n">loc</span> <span class="o">=</span> <span class="n">dot_paren_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-					<span class="n">curr_strand</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span>
-					<span class="n">complex_structure</span><span class="p">[</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">strand_index</span><span class="p">,</span> <span class="n">domain_index</span><span class="p">)</span>
-					<span class="n">domain_index</span> <span class="o">+=</span> <span class="mi">1</span>
+			<span class="n">complex_structure</span> <span class="o">=</span> <span class="n">parse_dot_paren</span><span class="p">(</span><span class="n">structure_line</span><span class="p">)</span>
 			
 			
+			<span class="n">struct_length</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span><span class="n">complex_structure</span><span class="p">))</span>
+			<span class="n">domains_length</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span><span class="n">complex_strands</span><span class="p">))</span>
+			<span class="k">if</span><span class="p">(</span><span class="n">struct_length</span> <span class="o">!=</span> <span class="n">domains_length</span><span class="p">):</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Complex </span><span class="si">%(name)s</span><span class="s"> has </span><span class="si">%(doms)d</span><span class="s"> domains but structure size </span><span class="si">%(struct)d</span><span class="s">.&quot;</span>
+								<span class="o">%</span> <span class="p">{</span><span class="s">&quot;name&quot;</span><span class="p">:</span><span class="n">complex_name</span><span class="p">,</span><span class="s">&quot;doms&quot;</span><span class="p">:</span><span class="n">domains_length</span><span class="p">,</span><span class="s">&quot;struct&quot;</span><span class="p">:</span><span class="n">struct_length</span><span class="p">})</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
 			
 			<span class="nb">complex</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="n">complex_name</span><span class="p">,</span> <span class="n">complex_strands</span><span class="p">,</span> <span class="n">complex_structure</span><span class="p">)</span>
+			<span class="nb">complex</span><span class="o">.</span><span class="n">check_structure</span><span class="p">()</span>
 			<span class="n">complexes</span><span class="p">[</span><span class="n">complex_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span>			
 			
 		<span class="k">else</span><span class="p">:</span>
@@ -229,7 +228,190 @@
 	
 	<span class="n">enumerator</span> <span class="o">=</span> <span class="n">Enumerator</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">strands</span><span class="p">,</span> <span class="n">complexes</span><span class="p">)</span>
 	<span class="k">return</span> <span class="n">enumerator</span>
-	</div>
+
+</div>
+<div class="viewcode-block" id="input_pil"><a class="viewcode-back" href="../index.html#input.input_pil">[docs]</a><span class="k">def</span> <span class="nf">input_pil</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Initializes and returns an enumerator from an input file in the Pepper Intermediate Language (PIL)</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">fin</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+	
+	<span class="n">domains</span> <span class="o">=</span> <span class="p">{}</span>
+	<span class="n">strands</span> <span class="o">=</span> <span class="p">{}</span>
+	<span class="n">complexes</span> <span class="o">=</span> <span class="p">{}</span>
+	
+	<span class="n">line_counter</span> <span class="o">=</span> <span class="mi">1</span>
+	<span class="n">line</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+	
+	<span class="c"># We loop over all the lines in the file</span>
+	<span class="k">while</span> <span class="p">(</span><span class="n">line</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">):</span>
+		<span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+		
+		<span class="c"># This was an empty line</span>
+		<span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">:</span>
+			<span class="n">line</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+			<span class="k">continue</span>
+			
+		<span class="c"># This was a comment</span>
+		<span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;#&quot;</span><span class="p">):</span>
+			<span class="n">line</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+			<span class="k">continue</span>
+			
+		<span class="c"># This is the beginning of a domain</span>
+		<span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;sequence&quot;</span><span class="p">):</span>
+			<span class="c"># e.g.: </span>
+			<span class="c">#       &quot;sequence a = 6&quot;</span>
+			<span class="c"># parts: 0        1 2 3</span>
+			
+			<span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+						
+			<span class="n">domain_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+			<span class="k">if</span> <span class="n">domain_name</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Duplicate domain name encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+								<span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+			
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;\w+$&#39;</span><span class="p">,</span><span class="n">domain_name</span><span class="p">):</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Non-alphanumeric domain name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+								<span class="o">%</span> <span class="p">(</span><span class="n">domain_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
+			
+			<span class="c"># The domain length could be either short or long or it could be</span>
+			<span class="c"># an exact number</span>
+			<span class="n">domain_length</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">domain_length</span> <span class="o">==</span> <span class="s">&#39;short&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">domain_length</span> <span class="o">==</span> <span class="s">&#39;long&#39;</span><span class="p">)):</span>
+				<span class="n">domain_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">domain_length</span><span class="p">)</span>
+				<span class="k">if</span> <span class="n">domain_length</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+					<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Domain of length </span><span class="si">%d</span><span class="s"> found in input line </span><span class="si">%d</span><span class="s">&quot;</span> 
+									<span class="o">%</span> <span class="p">(</span><span class="n">domain_length</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
+				
+			<span class="c"># Check to see if a sequence is specified</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+				<span class="n">domain_sequence</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">domain_sequence</span> <span class="o">=</span> <span class="bp">None</span>
+			
+			<span class="c"># Create the new domains</span>
+			<span class="n">new_dom</span> <span class="o">=</span> <span class="n">Domain</span><span class="p">(</span><span class="n">domain_name</span><span class="p">,</span> <span class="n">domain_length</span><span class="p">,</span> 
+							 <span class="n">sequence</span><span class="o">=</span><span class="n">domain_sequence</span><span class="p">)</span>
+			<span class="n">new_dom_comp</span> <span class="o">=</span> <span class="n">Domain</span><span class="p">(</span><span class="n">domain_name</span><span class="p">,</span> <span class="n">domain_length</span><span class="p">,</span> 
+								  <span class="n">sequence</span><span class="o">=</span><span class="n">domain_sequence</span><span class="p">,</span>
+								  <span class="n">is_complement</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+			
+			<span class="n">domains</span><span class="p">[</span><span class="n">domain_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_dom</span>
+			<span class="n">domains</span><span class="p">[</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">*&quot;</span> <span class="o">%</span> <span class="n">domain_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_dom_comp</span>
+		
+		<span class="c"># This is the beginning of a strand	</span>
+		<span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;strand&quot;</span><span class="p">):</span>
+			<span class="c"># e.g.: </span>
+			<span class="c">#       &quot;strand A = a x b y z* c* y* b* x*&quot;</span>
+			<span class="c"># parts: 0      1 2 3 4 5 6 ...</span>
+			
+			<span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+			
+			<span class="n">strand_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+			<span class="k">if</span> <span class="n">strand_name</span> <span class="ow">in</span> <span class="n">strands</span><span class="p">:</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Duplicate strand name encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+								<span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+			
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;\w+$&#39;</span><span class="p">,</span><span class="n">strand_name</span><span class="p">):</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Non-alphanumeric strand name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+								<span class="o">%</span> <span class="p">(</span><span class="n">strand_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
+			
+			<span class="n">strand_doms</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="k">for</span> <span class="n">domain_name</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">:]:</span>
+				<span class="k">if</span> <span class="ow">not</span> <span class="n">domain_name</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
+					<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Invalid domain name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+									<span class="o">%</span> <span class="p">(</span><span class="n">domain_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
+					<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+								
+				<span class="n">strand_doms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domains</span><span class="p">[</span><span class="n">domain_name</span><span class="p">])</span>
+			
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">strand_doms</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;0-length strand encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span><span class="p">)</span>			
+				
+			<span class="n">new_strand</span> <span class="o">=</span> <span class="n">Strand</span><span class="p">(</span><span class="n">strand_name</span><span class="p">,</span> <span class="n">strand_doms</span><span class="p">)</span>
+			<span class="n">strands</span><span class="p">[</span><span class="n">strand_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_strand</span>
+			
+		<span class="c"># This is the beginning of a complex	</span>
+		<span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;structure&quot;</span><span class="p">):</span>
+			<span class="c"># e.g.:</span>
+			<span class="c"># structure A = S1 : .(((..)))</span>
+			
+			<span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)</span>
+			
+			<span class="k">if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">):</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;Invalid structure statement on line </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+				
+			<span class="n">complex_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+			<span class="k">if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">complex_name</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">):</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;Invalid structure statement on line </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">complex_name</span> <span class="o">=</span> <span class="n">complex_name</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+			
+			
+			
+			
+			<span class="k">if</span> <span class="n">complex_name</span> <span class="ow">in</span> <span class="n">complexes</span><span class="p">:</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Duplicate complex name encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+								<span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+			
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;\w+$&#39;</span><span class="p">,</span><span class="n">complex_name</span><span class="p">):</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Non-alphanumeric complex name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+								<span class="o">%</span> <span class="p">(</span><span class="n">complex_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
+			
+			<span class="n">parts</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
+			<span class="k">if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">):</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;Invalid structure statement on line </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="p">(</span><span class="n">strands_line</span><span class="p">,</span><span class="n">structure_line</span><span class="p">)</span> <span class="o">=</span> <span class="n">parts</span>
+			
+			<span class="n">complex_strands</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="n">strands_line</span> <span class="o">=</span> <span class="n">strands_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+			<span class="n">strands_line_parts</span> <span class="o">=</span> <span class="n">strands_line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+			<span class="k">for</span> <span class="n">strand_name</span> <span class="ow">in</span> <span class="n">strands_line_parts</span><span class="p">:</span>
+				<span class="k">if</span> <span class="ow">not</span> <span class="n">strand_name</span> <span class="ow">in</span> <span class="n">strands</span><span class="p">:</span>
+					<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Invalid strand name </span><span class="si">%s</span><span class="s"> encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+									<span class="o">%</span> <span class="p">(</span><span class="n">strand_name</span><span class="p">,</span> <span class="n">line_counter</span><span class="p">))</span>
+					<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="n">complex_strands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strands</span><span class="p">[</span><span class="n">strand_name</span><span class="p">])</span>
+				
+			<span class="n">structure_line</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+			<span class="n">structure_line</span> <span class="o">=</span> <span class="n">structure_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+			
+			<span class="n">complex_structure</span> <span class="o">=</span> <span class="n">parse_dot_paren</span><span class="p">(</span><span class="n">structure_line</span><span class="p">)</span>
+			<span class="n">struct_length</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span><span class="n">complex_structure</span><span class="p">))</span>
+			<span class="n">domains_length</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span><span class="n">complex_strands</span><span class="p">))</span>
+			
+			<span class="k">if</span><span class="p">(</span><span class="n">struct_length</span> <span class="o">!=</span> <span class="n">domains_length</span><span class="p">):</span>
+				<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Complex </span><span class="si">%(name)s</span><span class="s"> has </span><span class="si">%(doms)d</span><span class="s"> domains but structure size </span><span class="si">%(struct)d</span><span class="s">.&quot;</span>
+								<span class="o">%</span> <span class="p">{</span><span class="s">&quot;name&quot;</span><span class="p">:</span><span class="n">complex_name</span><span class="p">,</span><span class="s">&quot;doms&quot;</span><span class="p">:</span><span class="n">domains_length</span><span class="p">,</span><span class="s">&quot;struct&quot;</span><span class="p">:</span><span class="n">struct_length</span><span class="p">})</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+			
+			<span class="nb">complex</span> <span class="o">=</span> <span class="n">Complex</span><span class="p">(</span><span class="n">complex_name</span><span class="p">,</span> <span class="n">complex_strands</span><span class="p">,</span> <span class="n">complex_structure</span><span class="p">)</span>
+			<span class="nb">complex</span><span class="o">.</span><span class="n">check_structure</span><span class="p">()</span>
+			<span class="n">complexes</span><span class="p">[</span><span class="n">complex_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">complex</span>			
+			
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Unexpected characters encountered in input line </span><span class="si">%d</span><span class="s">&quot;</span>
+							<span class="o">%</span> <span class="n">line_counter</span><span class="p">)</span>
+			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+		<span class="n">line</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+		<span class="n">line_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+		
+	<span class="n">domains</span> <span class="o">=</span> <span class="n">domains</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+	<span class="n">strands</span> <span class="o">=</span> <span class="n">strands</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+	<span class="n">complexes</span> <span class="o">=</span> <span class="n">complexes</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+	
+	<span class="n">enumerator</span> <span class="o">=</span> <span class="n">Enumerator</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">strands</span><span class="p">,</span> <span class="n">complexes</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">enumerator</span>
+
+			</div>
 <div class="viewcode-block" id="load_json"><a class="viewcode-back" href="../index.html#input.load_json">[docs]</a><span class="k">def</span> <span class="nf">load_json</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Loads a saved enumerator from a JSON output file at filename.</span>
@@ -370,7 +552,7 @@
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -393,13 +575,13 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">Enumerator v2 documentation</a> &raquo;</li>
+        <li><a href="../index.html">Enumerator 2 documentation</a> &raquo;</li>
           <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Karthik Sarma, Brian Wolfe, Erik Winfree.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+        &copy; Copyright 2013, Karthik Sarma, Casey Grun, Brian Wolfe, Erik Winfree.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>
 </html>
