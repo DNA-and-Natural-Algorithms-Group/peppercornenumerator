@@ -15,6 +15,12 @@ docs:
 README.pdf: README.md
 	pandoc README.md -o README.pdf
 
+README.html: README.md
+	pandoc -s README.md -o README.html
+
 architecture.pdf: architecture.md
 	pandoc architecture.md -o architecture.pdf
+
+architecture.html: architecture.md
+	pandoc -s architecture.md -o architecture.html
 

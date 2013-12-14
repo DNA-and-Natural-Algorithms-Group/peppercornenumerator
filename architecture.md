@@ -22,6 +22,7 @@ The `utils` module defines several classes that are used to represent the state 
 *	`RestingState` objects represent collections of `Complex`es that form a resting state---that is, a complex with no outgoing fast reactions.
 
 Additionally, the `reactions` module defines the `ReactionPathway` class:
+
 *	`ReactionPathway` objects represent a reaction between some number of substrate `Complex`es and some number of product `Complex`es. 
 
 Reaction functions
