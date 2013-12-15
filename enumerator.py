@@ -555,11 +555,11 @@ def main(argv):
 	import input, output
 
 	# Parse command-line arguments
-	parser = argparse.ArgumentParser(description="Domain-level nucleic acid reaction enumerator")
+	parser = argparse.ArgumentParser(description="Domain-level nucleic acid reaction enumerator", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--infile', action='store', dest='input_filename', default=None, help="Path to the input file")
 	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, help="Path to the output file")
-	parser.add_argument('-o', action='store', dest='output_format', default='standard', help="Desired format for the output file")
-	parser.add_argument('-i', action='store', dest='input_format', default='standard', help="Desired format for the input file")
+	parser.add_argument('-o', action='store', dest='output_format', default='standard', help="Desired format for the output file; one of: "+", ".join(input.text_input_functions.keys() + input.load_input_functions.keys())) 
+	parser.add_argument('-i', action='store', dest='input_format', default='standard', help="Desired format for the input file; one of: "+", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()))
 	parser.add_argument('-c', action='store_true', dest='condensed', default=False, help="Condense reactions into only resting complexes")
 	
 	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None, type=int, help="Maximum number of strands allowed in a complex (used to prevent polymerization)")

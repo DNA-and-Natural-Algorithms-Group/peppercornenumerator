@@ -26,23 +26,25 @@
                      [--max-reactions MAX_REACTION_COUNT]
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --infile INPUT_FILENAME
-                        Path to the input file
-  --outfile OUTPUT_FILENAME
-                        Path to the output file
-  -o OUTPUT_FORMAT      Desired format for the output file
-  -i INPUT_FORMAT       Desired format for the input file
-  -c                    Condense reactions into only resting complexes
-  --max-complex-size MAX_COMPLEX_SIZE
-                        Maximum number of strands allowed in a complex (used
-                        to prevent polymerization)
-  --max-complexes MAX_COMPLEX_COUNT
-                        Maximum number of complexes that may be enumerated
-                        before the enumerator halts.
-  --max-reactions MAX_REACTION_COUNT
-                        Maximum number of reactions that may be enumerated
-                        before the enumerator halts.</code></pre>
+    -h, --help            show this help message and exit
+    --infile INPUT_FILENAME
+                          Path to the input file
+    --outfile OUTPUT_FILENAME
+                          Path to the output file
+    -o OUTPUT_FORMAT      Desired format for the output file; one of: standard,
+                          json
+    -i INPUT_FORMAT       Desired format for the input file; one of: sbml, json,
+                          legacy, pil, standard, graph
+    -c                    Condense reactions into only resting complexes
+    --max-complex-size MAX_COMPLEX_SIZE
+                          Maximum number of strands allowed in a complex (used
+                          to prevent polymerization)
+    --max-complexes MAX_COMPLEX_COUNT
+                          Maximum number of complexes that may be enumerated
+                          before the enumerator halts.
+    --max-reactions MAX_REACTION_COUNT
+                          Maximum number of reactions that may be enumerated
+                          before the enumerator halts.</code></pre>
 <h2 id="building-documentation">Building documentation</h2>
 <p>API Documentation is built from comments in the source using <a href="http://sphinx-doc.org/">Sphinx</a>; Sphinx must be installed. Then you can run:</p>
 <pre><code>make docs</code></pre>

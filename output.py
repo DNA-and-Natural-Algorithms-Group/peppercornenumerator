@@ -195,16 +195,18 @@ def output_json(enumerator, filename, output_condensed = False):
 		}
 	
 	def serializeReaction(reaction):
-		temp_reactants = []
-		for reactant in reaction.reactants:
-			temp_reactants.append(reactant.name)
-		temp_products = []
-		for product in reaction.products:
-			temp_products.append(product.name)
+		# temp_reactants = []
+		# for reactant in reaction.reactants:
+		# 	temp_reactants.append(reactant.name)
+		# temp_products = []
+		# for product in reaction.products:
+		# 	temp_products.append(product.name)
+		reactants = map(str,reaction.reactants)
+		products = map(str,reaction.products)
 		return {
 			"name":reaction.name,
-			"reactants":temp_reactants,
-			"products":temp_products
+			"reactants": reactants,  #temp_reactants,
+			"products": products #temp_products
 		}
 	
 	def serializeDomain(domain):

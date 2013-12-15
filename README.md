@@ -21,23 +21,25 @@ Usage
 	                     [--max-reactions MAX_REACTION_COUNT]
 
 	optional arguments:
-	  -h, --help            show this help message and exit
-	  --infile INPUT_FILENAME
-	                        Path to the input file
-	  --outfile OUTPUT_FILENAME
-	                        Path to the output file
-	  -o OUTPUT_FORMAT      Desired format for the output file
-	  -i INPUT_FORMAT       Desired format for the input file
-	  -c                    Condense reactions into only resting complexes
-	  --max-complex-size MAX_COMPLEX_SIZE
-	                        Maximum number of strands allowed in a complex (used
-	                        to prevent polymerization)
-	  --max-complexes MAX_COMPLEX_COUNT
-	                        Maximum number of complexes that may be enumerated
-	                        before the enumerator halts.
-	  --max-reactions MAX_REACTION_COUNT
-	                        Maximum number of reactions that may be enumerated
-	                        before the enumerator halts.
+		-h, --help            show this help message and exit
+		--infile INPUT_FILENAME
+		                      Path to the input file
+		--outfile OUTPUT_FILENAME
+		                      Path to the output file
+		-o OUTPUT_FORMAT      Desired format for the output file; one of: standard,
+		                      json
+		-i INPUT_FORMAT       Desired format for the input file; one of: sbml, json,
+		                      legacy, pil, standard, graph
+		-c                    Condense reactions into only resting complexes
+		--max-complex-size MAX_COMPLEX_SIZE
+		                      Maximum number of strands allowed in a complex (used
+		                      to prevent polymerization)
+		--max-complexes MAX_COMPLEX_COUNT
+		                      Maximum number of complexes that may be enumerated
+		                      before the enumerator halts.
+		--max-reactions MAX_REACTION_COUNT
+		                      Maximum number of reactions that may be enumerated
+		                      before the enumerator halts.
 
 
 Building documentation
