@@ -134,6 +134,62 @@ class InputStandardTests(unittest.TestCase):
 		
 		assert (enum_complexes == complexes)
 	
+	def testPil_3arm_junction(self):
+		enumerator = input_pil('test_files/test_input_pil_3arm_junction.pil')
+		
+		da = Domain('a', 6, sequence="CTACTC")		
+		db = Domain('b', 6, sequence="TCCTCA")
+		dc = Domain('c', 6, sequence="TTTCCA")
+		dx = Domain('x', 6, sequence="CTACTC")
+		dy = Domain('y', 6, sequence="TCCTCA")
+		dz = Domain('z', 6, sequence="TTTCCA")
+		dac = Domain('a', 6, True, sequence="CTACTC")
+		dbc = Domain('b', 6, True, sequence="TCCTCA")
+		dcc = Domain('c', 6, True, sequence="TTTCCA")
+		dxc = Domain('x', 6, True, sequence="CTACTC")
+		dyc = Domain('y', 6, True, sequence="TCCTCA")
+		dzc = Domain('z', 6, True, sequence="TTTCCA")
+		
+		enum_doms = enumerator.domains[:]
+		doms = [da, dac, db, dbc, dc, dcc, dx, dxc, dy, dyc, dz, dzc]
+				
+		enum_doms.sort()
+		doms.sort()
+		
+		assert (enum_doms == doms)
+		
+		I = Strand('I', [dyc, dbc, dxc, dac])
+		A = Strand('A', [da, dx, db, dy, dzc, dcc, dyc, dbc, dxc])
+		B = Strand('B', [db, dy, dc, dz, dxc, dac, dzc, dcc, dyc])
+		C = Strand('C', [dc, dz, da, dx, dyc, dbc, dxc, dac, dzc])
+		
+		enum_strands = enumerator.strands[:]
+		strands = [I, A, B, C]
+		
+		enum_strands.sort()
+		strands.sort()
+		
+		assert (enum_strands == strands)
+		
+		IC = Complex('I', [I], [[None, None, None, None]])
+		AC = Complex('A', [A], [[None, (0, 8), (0, 7), (0, 6), None, None, (0, 3), (0, 2), (0, 1)]])
+		BC = Complex('B', [B], [[None, (0, 8), (0, 7), (0, 6), None, None, (0, 3), (0, 2), (0, 1)]])
+		CC = Complex('C', [C], [[None, (0, 8), (0, 7), (0, 6), None, None, (0, 3), (0, 2), (0, 1)]])
+		
+		IA = Complex('IA', [I, A], [[(1, 3), (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (0, 0), None, None, None, None, None]])
+		IAB = Complex('IAB', [I, A, B], [[(1, 3), (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (0, 0), (2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), None, None, None, None, None]])
+		IABC = Complex('IABC', [I, A, B, C], [[(1, 3), (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (0, 0), (2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), (3, 3), (3, 2), (3, 1), (3, 0), None], [(2, 7), (2, 6), (2, 5), (2, 4), None, None, None, None, None]])
+		ABC = Complex('ABC', [A, B, C], [[(2, 7), (2, 6), (2, 5), (2, 4), (1, 3), (1, 2), (1, 1), (1, 0), None], [(0, 7), (0, 6), (0, 5), (0, 4), (2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), (0, 3), (0, 2), (0, 1), (0, 0), None]])
+		
+		enum_complexes = enumerator.initial_complexes[:]
+		complexes = [IC, AC, BC, CC, IA, IAB, IABC, ABC]
+		
+		
+		enum_complexes.sort()
+		complexes.sort()
+		
+		
+		assert (enum_complexes == complexes)
 	
 	
 	def testErrors(self):

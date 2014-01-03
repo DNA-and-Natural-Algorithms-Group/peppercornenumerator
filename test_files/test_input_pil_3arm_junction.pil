@@ -1,0 +1,23 @@
+# This file describes the catalytically generated 3 arm junction
+# described in Yin et. al. 2008
+
+sequence a : CTACTC
+sequence b : TCCTCA
+sequence c : TTTCCA
+sequence x : CTACTC
+sequence y : TCCTCA
+sequence z : TTTCCA
+
+strand I = y* b* x* a*
+strand A = a x b y z* c* y* b* x*
+strand B = b y c z x* a* z* c* y*
+strand C = c z a x y* b* x* a* z*
+
+structure I = I : ....
+structure A = A : .(((..)))
+structure B = B : .(((..)))
+structure C = C : .(((..)))
+structure IA = I A : (((( + )))).....
+structure IAB = I A B : (((( + ))))((((. + )))).....
+structure IABC = I A B C : (((( + ))))((((. + ))))((((. + )))).....
+structure ABC = A B C : ((((((((. + ))))((((. + )))))))).

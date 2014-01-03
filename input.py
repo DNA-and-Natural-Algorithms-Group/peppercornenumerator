@@ -158,8 +158,8 @@ def input_standard(filename):
 			struct_length = sum(map(len,complex_structure))
 			domains_length = sum(map(len,complex_strands))
 			if(struct_length != domains_length):
-				logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct)d."
-								% {"name":complex_name,"doms":domains_length,"struct":struct_length})
+				logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was %(struct)s)"
+								% {"name":complex_name,"doms":domains_length,"struct_length":struct_length, "struct":structure_line})
 				raise Exception()
 			
 			complex = Complex(complex_name, complex_strands, complex_structure)
@@ -226,20 +226,9 @@ def input_pil(filename):
 				logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
 								% (domain_name, line_counter))
 			
-			# The domain length could be either short or long or it could be
-			# an exact number
-			domain_length = parts[3]
-			if not ((domain_length == 'short') or (domain_length == 'long')):
-				domain_length = int(domain_length)
-				if domain_length <= 0:
-					logging.warn("Domain of length %d found in input line %d" 
-									% (domain_length, line_counter))
-				
-			# Check to see if a sequence is specified
-			if len(parts) > 4:
-				domain_sequence = parts[4]
-			else:
-				domain_sequence = None
+			# The sequence specification
+			domain_sequence = parts[3]
+			domain_length = len(domain_sequence);
 			
 			# Create the new domains
 			new_dom = Domain(domain_name, domain_length, 
@@ -331,17 +320,14 @@ def input_pil(filename):
 					raise Exception()
 				else:
 					complex_strands.append(strands[strand_name])
-				
-			structure_line = fin.readline()
-			structure_line = structure_line.strip()
-			
+						
 			complex_structure = parse_dot_paren(structure_line)
 			struct_length = sum(map(len,complex_structure))
 			domains_length = sum(map(len,complex_strands))
 			
 			if(struct_length != domains_length):
-				logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct)d."
-								% {"name":complex_name,"doms":domains_length,"struct":struct_length})
+				logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was %(struct)s)"
+								% {"name":complex_name,"doms":domains_length,"struct_length":struct_length, "struct":structure_line})
 				raise Exception()
 			
 			complex = Complex(complex_name, complex_strands, complex_structure)
@@ -487,7 +473,8 @@ def load_json(filename):
 
 
 text_input_functions = {
-						'standard': input_standard
+						'standard': input_standard,
+						'pil': input_pil
 					  }
 					  
 load_input_functions = {

@@ -122,6 +122,35 @@ class OutputTests(unittest.TestCase):
 	def testOutputPIL4(self):
 		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.pil',output_condensed=False)
 			
+	# CRN
+	def testOutputCRN(self):
+		output_crn(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.crn',output_condensed=False)
+
+	def testOutputCRN2(self):
+		output_pil(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.crn',output_condensed=False)
+	
+	def testOutputCRN3(self):
+		output_pil(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.crn',output_condensed=False)
+	
+	def testOutputCRN4(self):
+		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.crn',output_condensed=False)
+
+
+	def testOutputCRN_condensed(self):
+		output_crn(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.crn',output_condensed=True)
+
+	def testOutputCRN_condensed2(self):
+		output_pil(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.crn',output_condensed=True)
+	
+	def testOutputCRN_condensed3(self):
+		output_pil(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.crn',output_condensed=True)
+	
+	def testOutputCRN_condensed4(self):
+		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.crn',output_condensed=True)
+
+
+
+
 	# JSON output
 		
 	def testOutputJSON(self):
@@ -302,3 +331,4 @@ class OutputTests(unittest.TestCase):
 		
 		assert sorted(condensed['reactions']) == sorted(expected_reactions)
 		assert sorted([RS_C1,RS_C2,RS_Cat,RS_I3,RS_OP,RS_SP,RS_W]) == sorted(condensed['resting_states'])
+
