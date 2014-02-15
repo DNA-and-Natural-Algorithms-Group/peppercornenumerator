@@ -60,14 +60,29 @@ def is_outgoing(reaction,SCC_set):
     """
     if SCC_set is not set:
         SCC_set = set(SCC_set)
+
     return not (set(reaction.products) <= SCC_set)
 
 def tuple_sum(iterable):
     """
     Given an iterable of iterables, concatenates each element of the 
     internal iterables into a tuple. 
+
+    e.g.: [ [a,b,c], [d], [e,f] ] -> 
     """
     return reduce(operator.concat, iterable, tuple())
+
+def cartesian_multisets(reactions):
+    """
+    Accepts a list of lists of iterables 
+    """
+    cartesian = []
+    for prods in reactions:
+        x = list(itertools.product(*prods))
+        y = map(tuple_sum,x)
+        z = sorted(y)
+        cartesian.append(z)
+    return cartesian
 
 def get_reactions_consuming(complexes,reactions):
     """
@@ -83,17 +98,7 @@ def get_reactions_producing(complexes,reactions):
     """
     return dict((c,[r for r in reactions if (c in r.products)]) for c in complexes)
 
-def cartesian_multisets(reactions):
-    """
-    Accepts a list of lists of iterables 
-    """
-    cartesian = []
-    for prods in reactions:
-        x = list(itertools.product(*prods))
-        y = map(tuple_sum,x)
-        z = sorted(y)
-        cartesian.append(z)
-    return cartesian
+
 
 def tarjans(complexes,reactions,reactions_consuming):
     """
@@ -153,38 +158,52 @@ def tarjans(complexes,reactions,reactions_consuming):
 def condense_graph(enumerator):
 
     # Approach: compute SCCs using Tarjan's algorithm, including only fast 
-    # reactions as edges. Each SCC neighborhood will either have 1+ outgoing fast 
-    # reaction, or 0 outgoing fast reactions. 
+    # reactions as edges. Compute R(Xn)---the set of destinies for each 
+    # complex Xn---for each complex in each SCC. Once R(Xn) is computed for 
+    # each Xn, compute the condensed reactions from R(Xn).
     # 
-    # let R(Xn) = the set of multisets of resting states reachable from detailed 
-    # species Xn via fast reactions
-    #
-    # let S(Xn) = the resting state to which Xn belongs, or undefined if Xn is transient. 
     # 
-    # for each SCC:
-    # let outgoing_reactions = [r for r in reactions if (SCC < r.products and r is fast)]
+    # let R(Xn) = the set of multisets of resting states reachable from 
+    #   detailed species Xn via fast reactions. That is, R(Xn) is the set of 
+    #   possible resting-state destinies for Xn (via fast reactions); each of 
+    #   these "destinies" is a multiset, because Xn might e.g. break apart 
+    #   into multiple complexes, each of which is a resting state.  
     #
-    # If 0 (fast) outgoing_reactions: for each complex Xn in the SCC, 
-    #    R(Xn) = { { SCC } }
+    # let S(Xn) = the resting state to which Xn belongs, or the value 
+    #   `undefined` if Xn is transient. 
     # 
-    # If 1+ (fast) outgoing_reactions: for each complex Xn in the SCC,
-    #    let outgoing_1_1_products = [r.products for r in outgoing_reactions if r.arity == (1,1)]
-    #    let outgoing_1_n_products = [r.products for r in outgoing_reactions if r.arity[1] > 1]
-    #    R(Xn) = union( [R(A) for A in outgoing_1_1_products], 
-    #                  [cartesian product of [R(A), R(B), R(C) ... R(N)] for [A, B, C ... N] in outgoing_1_n_products]
-    #
-    # Compute R(Xn) for Xn in complexes by iterating through each SCC, classifying 
-    # it as above, and recursing when necessary to compute R(Xn) for inner values
-    #
-    #
-    # Once R(Xn) is computed for all Xn in complexes, compute condensed reactions as follows:
-    #
-    # For each reaction r, generate all possible combinations of reachable resting states
-    # (elements of R(Xn) for each reactant Xn) for the reactants, then do the same for 
-    # the products. For each combination of reactants and each combination of products,
-    # generate a new reaction rc. 
     # 
-    # Prune duplicate and trivial reactions from condensed reactions.
+    # To compute R(Xn):
+    # 
+    #   for each SCC:
+    #       let outgoing_reactions = [r for r in reactions if (SCC < r.products and r is fast)]  
+    #         (SCC < r.products means SCC is a proper subset of _and not equal to_ r.products)
+    #       
+    #          If 0 (fast) outgoing_reactions: for each complex Xn in the SCC, 
+    #             R(Xn) = { { SCC } }
+    #          
+    #          If 1+ (fast) outgoing_reactions: for each complex Xn in the SCC,
+    #             let outgoing_1_1_products = [r.products for r in outgoing_reactions if r.arity == (1,1)]
+    #             let outgoing_1_n_products = [r.products for r in outgoing_reactions if r.arity[1] > 1]
+    #             R(Xn) = union( [R(A) for A in outgoing_1_1_products], 
+    #                           [cartesian product of [R(A), R(B), R(C) ... R(N)] for [A, B, C ... N] in outgoing_1_n_products]
+    #   
+    # Compute R(Xn) for Xn in complexes by iterating through each SCC, 
+    # classifying it as above, and recursing when necessary to compute R(Xn) 
+    # for inner values.
+    #
+    #
+    # Once R(Xn) is computed for all Xn in complexes, compute condensed 
+    # reactions as follows:
+    #
+    # For each reaction r, generate all possible combinations of reachable
+    # resting state multisets (elements of R(Xn)) for each of the reactants Xn,
+    # then do the same for  the products. For the reactants, R(Xn) is a
+    # singleton (because slow reactions only happen between resting state
+    # complexes). For the products, this means choose each possible combination
+    # of destinies for each of the products.   For each combination of reactants
+    # and each combination of products, generate a new reaction rc.   Prune
+    # duplicate and trivial reactions from condensed reactions.
     
     # This stores mappings between X1 and R(X1) for each X1 in complexes
     resting_state_targets = {}

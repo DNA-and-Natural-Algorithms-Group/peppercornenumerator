@@ -442,15 +442,15 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 	return new_complex
 
 def open(reactant):
-	'''
+	"""
 	Returns a list of reaction product sets that can be produced by the
 	'open' reaction, in which a short helix dissociates. Each product
 	set are the results of one particular dissociation; each strand in the
 	reactant occurs exactly once in one of the complexes in the product set.
 	
-	A dissociation can happen to any helix under the threshold length
-				
-	'''
+	A dissociation can happen to any helix under the threshold length		
+	"""
+
 	product_sets = []
 	
 	
@@ -458,7 +458,7 @@ def open(reactant):
 	strands = reactant.strands
 	
 	
-	# We loop through all
+	# We loop through all stands, domains
 	for (strand_index, strand) in enumerate(strands):
 		for (domain_index, domain) in enumerate(strand.domains):
 			# If the domain is unpaired, skip it
@@ -563,10 +563,10 @@ def open(reactant):
 	
 	
 def find_releases(reactant):
-	'''
+	"""
 	Determines if reactant actually represents multiple unattached complexes.
 	If so, returns a list of these complexes. Otherwise, returns [reactant].
-	'''
+	"""
 	
 	structure = reactant.structure
 	strands = reactant.strands
@@ -695,10 +695,10 @@ def find_releases(reactant):
 	return [reactant]
 	
 def split_complex(reactant, split_start, split_end):
-	'''
+	"""
 	Splits a disconnected complex between split_start and split_end (which
 	should be at ends of strands), and returns the two resulting complexes.
-	'''
+	"""
 	
 	strands = reactant.strands
 	structure = reactant.structure
@@ -773,12 +773,12 @@ def split_complex(reactant, split_start, split_end):
 	return [out1, out2]
 
 def branch_3way(reactant):
-	'''
+	"""
 	Returns a list of reaction pathways that can be created through one 
 	iteration of a 3 way branch migration reaction (more than one molecule may 
 	be produced by a reaction because branch migration can liberate strands and 
 	complexes).
-	'''
+	"""
 	
 	output_sets = []
 	structure = reactant.structure
@@ -911,11 +911,11 @@ def branch_3way(reactant):
 
 
 def do_3way_migration(reactant, displacing_loc, new_bound_loc):
-	'''
+	"""
 	Returns the product set which is the result of a 3-way branch migration
 	reaction where the domain at displacing_loc displaces the domain bound to
 	the domain at new_bound_loc.
-	'''
+	"""
 
 	out_reactant = copy.deepcopy(reactant)
 	out_reactant.structure[displacing_loc[0]][displacing_loc[1]] = new_bound_loc
@@ -944,12 +944,12 @@ def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 
 
 def branch_4way(reactant):
-	'''
+	"""
 	Returns a list of complex sets that can be created through one iteration of
 	a 4 way branch migration reaction (each set consists of the molecules that
 	result from the iteration; more than one molecule may result because branch
 	migration can liberate strands and complexes).	
-	'''
+	"""
 	
 	structure = reactant.structure
 	output_sets = []
@@ -1042,3 +1042,4 @@ def do_4way_migration(reactant, loc1, loc2, loc3, loc4):
 	out = Complex(get_auto_name(), reactant.strands[:], new_struct)
 	
 	return find_releases(out)
+
