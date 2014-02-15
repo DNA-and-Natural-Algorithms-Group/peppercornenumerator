@@ -256,9 +256,11 @@ def find_external_strand_break(complex, location):
 				# If the current domain is unpaired, move to the next domain
 				# to the right
 				search_dom_index += 1
-			elif ((paired_dom[0] > search_strand_index) or \
-					 ((paired_dom[0] == search_strand_index) and \
-					  (paired_dom[1] > search_dom_index))):
+			
+			# elif ((paired_dom[0] > search_strand_index) or \
+			# 		 ((paired_dom[0] == search_strand_index) and \
+			# 		  (paired_dom[1] > search_dom_index))):
+			elif (paired_dom > (search_strand_index,search_dom_index)):
 				# If the current domain is paired to something which is to the
 				# right of the current search domain, then we jump past that
 				# loop
@@ -286,9 +288,10 @@ def find_external_strand_break(complex, location):
 				# If the current domain is unpaired, move to the next domain
 				# to the left
 				search_dom_index -= 1
-			elif ((paired_dom[0] < search_strand_index) or 
-					 ((paired_dom[0] == search_strand_index) and
-					  (paired_dom[1] < search_dom_index))):
+			# elif ((paired_dom[0] < search_strand_index) or 
+			# 		 ((paired_dom[0] == search_strand_index) and
+			# 		  (paired_dom[1] < search_dom_index))):
+			elif (paired_dom < (search_strand_index,search_dom_index)):
 				# If the current domain is paired to something which is to the
 				# left of the current search domain, then we jump past that
 				# loop
@@ -470,9 +473,10 @@ def open(reactant):
 		
 			# If the domain is bound to an earlier domain, then we have
 			# already considered it, so skip it
-			if ( (helix_startB[0] < helix_startA[0]) or \
-			     ((helix_startB[0] == helix_startA[0]) and \
-				  (helix_startB[1] < helix_startA[1])) ):
+			# if ( (helix_startB[0] < helix_startA[0]) or \
+			#      ((helix_startB[0] == helix_startA[0]) and \
+			# 	  (helix_startB[1] < helix_startA[1])) ):
+			if (helix_startB < helix_startA):
 				continue
 			
 			helix_endA = helix_startA[:]
@@ -586,9 +590,10 @@ def find_releases(reactant):
 		# 		inner_index strand < strand_index, or
 		#		inner_index strand = strand_index and inner_index domain < domain_index)
 		while (inner_index[0] >= 0) and (inner_index[0] < (len(strands) - 1)) and \
-			  ( (inner_index[0] < strand_index) or \
-			    ((inner_index[0] == strand_index) and \
-			     (inner_index[1] < domain_index)) ):
+			  ( inner_index < (strand_index, domain_index)):
+			  # ( (inner_index[0] < strand_index) or \
+			  #   ((inner_index[0] == strand_index) and \
+			  #    (inner_index[1] < domain_index)) ):
 
 			# If we have run off of the end of a strand,
 			# then we have found a release point  
@@ -599,7 +604,7 @@ def find_releases(reactant):
 				# We check the two resulting complexes to see if they can
 				# be split further
 				for complex in split_list:
-					output_list.extend(find_releases(complex))
+					output_list += (find_releases(complex))
 				return output_list					
 			
 			# Otherwise decide where to go next
