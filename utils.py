@@ -23,13 +23,23 @@ def natural_sort(l):
 	return sorted(l, key = alphanum_key)
 
 def find(f, seq, default=None):
-	"""Return first item in sequence where f(item) == True."""
+	"""
+	Return first item in sequence where f(item) == True.
+	"""
 	for item in seq:
 		if f(item): 
 			return item
 	return default
 
-def parse_dot_paren(structure_line):	
+def parse_dot_paren(structure_line):
+	"""
+	Parses a dot-parenthesis structure into the list of lists representeation
+	used elsewhere in the enumerator.
+
+	                         0,0  0,1  0,2   0,3   0,4     1,0   1,1
+	Example: "...((+))" -> [[None,None,None,(1,0),(1,1)],[(0,4),(0,3)]] 
+
+	"""	
 	complex_structure = []
 	dot_paren_stack = []			
 	strand_index = 0
@@ -37,19 +47,26 @@ def parse_dot_paren(structure_line):
 	curr_strand = []
 	complex_structure.append(curr_strand)
 	for part in structure_line:
+		# stand break
 		if (part == "+"):
 			strand_index += 1
 			domain_index = 0
 			curr_strand = []
 			complex_structure.append(curr_strand)
 			continue
+
+		# unpaired
 		if (part == "."):
 			curr_strand.append(None)
 			domain_index += 1
+
+		# paired to later domain
 		elif (part == "("):
 			curr_strand.append(None)
 			dot_paren_stack.append((strand_index, domain_index))
 			domain_index += 1
+
+		# paired to earlier domain
 		elif (part == ")"):
 			loc = dot_paren_stack.pop()
 			curr_strand.append(loc)
@@ -58,8 +75,13 @@ def parse_dot_paren(structure_line):
 	return complex_structure
 
 
-# More of a testing tool than anything
 def index_parts(enum):
+	"""
+	Testing tool. Accepts an enumerator, produces a tuple 
+	(domains, strands, complexes) where each element is a dict mapping names 
+	of those objects to the objects in the enumerator. For instance, domains
+	maps the name of each domain in the enumerator to the Domain object
+	"""
 	domains = {}
 	strands = {}
 	complexes = {}
@@ -190,7 +212,7 @@ class Domain(object):
 					
 class Strand(object):
 	"""
-	Represents a strand, which is an ordered sequence of domains.
+	Represents a strand---an ordered sequence of domains.
 	"""
 	
 	def __init__(self, name, domains):
@@ -315,6 +337,10 @@ class Complex(object):
 		self._hash = None
 	
 	def __hash__(self):
+		"""
+		Computes a unique hash to represent this complex. Uses the tuple of 
+		strands and structure
+		"""
 		if (self._hash == None):
 			strands = tuple(self._strands)
 			struct = tuple([tuple(s) for s in self._structure])
