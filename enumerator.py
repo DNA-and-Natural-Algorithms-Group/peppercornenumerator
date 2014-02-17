@@ -7,11 +7,12 @@
 
 import sys
 import utils
+from utils import RestingState
 import reactions
 import logging
 import itertools
 import argparse
-from reactions import *
+import reactions
 
 # These are sanity checks to prevent infinite looping
 MAX_COMPLEX_SIZE = 6
@@ -21,7 +22,7 @@ MAX_COMPLEX_COUNT = 200
 
 
 fast_reactions = {
-	1: [bind11, open, branch_3way, branch_4way]
+	1: [reactions.bind11, reactions.open, reactions.branch_3way, reactions.branch_4way]
 }
 """
 Dictionary of reaction functions considered *fast* for a given "arity". 
@@ -32,7 +33,7 @@ unimolecular fast reactions (arity = 1) are supported.
 
 slow_reactions = {
 	1: [],
-	2: [bind21]
+	2: [reactions.bind21]
 }
 """
 Similar to :py:func:`.fast_reactions` above, 
@@ -579,15 +580,26 @@ def main(argv):
 
 	# Parse command-line arguments
 	parser = argparse.ArgumentParser(description="Domain-level nucleic acid reaction enumerator", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--infile', action='store', dest='input_filename', default=None, help="Path to the input file")
-	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, help="Path to the output file")
-	parser.add_argument('-o', action='store', dest='output_format', default='standard', help="Desired format for the output file; one of: "+", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys())) 
-	parser.add_argument('-i', action='store', dest='input_format', default='standard', help="Desired format for the input file; one of: "+", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()))
-	parser.add_argument('-c', action='store_true', dest='condensed', default=False, help="Condense reactions into only resting complexes")
+	parser.add_argument('--infile', action='store', dest='input_filename', default=None, \
+		help="Path to the input file")
+	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, \
+		help="Path to the output file")
+	parser.add_argument('-o', action='store', dest='output_format', default='standard', \
+		help="Desired format for the output file; one of: "+", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys())) 
+	parser.add_argument('-i', action='store', dest='input_format', default='standard', \
+		help="Desired format for the input file; one of: "+", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()))
+	parser.add_argument('-c', action='store_true', dest='condensed', default=False, \
+		help="Condense reactions into only resting complexes")
 	
-	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None, type=int, help="Maximum number of strands allowed in a complex (used to prevent polymerization)")
-	parser.add_argument('--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=None, type=int, help="Maximum number of complexes that may be enumerated before the enumerator halts.")
-	parser.add_argument('--max-reactions', action='store', dest='MAX_REACTION_COUNT', default=None, type=int, help="Maximum number of reactions that may be enumerated before the enumerator halts.")
+	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None, type=int, \
+		help="Maximum number of strands allowed in a complex (used to prevent polymerization)")
+	parser.add_argument('--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=None, type=int, \
+		help="Maximum number of complexes that may be enumerated before the enumerator halts.")
+	parser.add_argument('--max-reactions', action='store', dest='MAX_REACTION_COUNT', default=None, type=int, \
+		help="Maximum number of reactions that may be enumerated before the enumerator halts.")
+
+	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
+		help="Maximum number of bases that will be released spontaneously in an `open` reaction.")
 	
 
 	cl_opts = parser.parse_args()
@@ -595,7 +607,9 @@ def main(argv):
 	print "Domain-level Reaction Enumerator (v0.2.0)"
 	print "========================================="
 	
-	
+	if(cl_opts.input_filename is None):
+		print "No input file specified. Exiting."
+		raise Exception('Error!')
 	
 	# Attempt to load an input parser to generate an enumerator object
 	if (cl_opts.input_format in input.text_input_functions):
@@ -613,6 +627,9 @@ def main(argv):
 	
 	if cl_opts.MAX_COMPLEX_SIZE is not None:
 		enum.MAX_COMPLEX_SIZE = cl_opts.MAX_COMPLEX_SIZE
+
+	if cl_opts.RELEASE_CUTOFF is not None:
+		reactions.RELEASE_CUTOFF = cl_opts.RELEASE_CUTOFF
 	
 
 	# Run reaction enumeration
