@@ -223,14 +223,14 @@ def bind21(reactant1, reactant2):
 	
 def find_external_strand_break(complex, location):
 	"""
-	Takes a complex and a location (strand+domain index) referring to a domain in
-	the complex which is on an external loop. Returns the index of the last
-	strand before the strand break which makes the argument domain on an
-	external loop.
+	Takes a complex and a location (strand index, domain index). This location
+	refers to a domain in the `complex` which is on an external loop. Returns the 
+	index of the last strand _before_ the strand break which would put `location` 
+	on an external loop.
 	
-	The argument location is a tuple (strand_num, index_num)
-	
-	# TODO: This is really confusingly worded...
+	Finds the location of a strand break on an external loop.  Used to 
+	determine where to split a complex when merging it with another complex at
+	`location`.
 	"""
 	
 	strand_num = location[0]
@@ -473,9 +473,6 @@ def open(reactant):
 		
 			# If the domain is bound to an earlier domain, then we have
 			# already considered it, so skip it
-			# if ( (helix_startB[0] < helix_startA[0]) or \
-			#      ((helix_startB[0] == helix_startA[0]) and \
-			# 	  (helix_startB[1] < helix_startA[1])) ):
 			if (helix_startB < helix_startA):
 				continue
 			
@@ -591,9 +588,7 @@ def find_releases(reactant):
 		#		inner_index strand = strand_index and inner_index domain < domain_index)
 		while (inner_index[0] >= 0) and (inner_index[0] < (len(strands) - 1)) and \
 			  ( inner_index < (strand_index, domain_index)):
-			  # ( (inner_index[0] < strand_index) or \
-			  #   ((inner_index[0] == strand_index) and \
-			  #    (inner_index[1] < domain_index)) ):
+
 
 			# If we have run off of the end of a strand,
 			# then we have found a release point  
