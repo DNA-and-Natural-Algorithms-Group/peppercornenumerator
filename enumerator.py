@@ -197,10 +197,14 @@ class Enumerator(object):
 			# TODO: this is ugly and Om(n*m*p)... should we just go thru self._B
 			# and try to classify?
 			if premature:
+				self._resting_complexes += self._S
+				self._complexes += self._S
+				complexes = set(self._complexes)
+
 				new_reactions = []
 				for reaction in self.reactions:
-					reaction_ok = all( product in self._complexes for product in reaction.products ) and \
-						all( reactant in self._complexes for reactant in reaction.reactants )
+					reaction_ok = all( (product in complexes) for product in reaction.products ) and \
+						all( (reactant in complexes) for reactant in reaction.reactants )
 
 					# reaction_ok = True
 					# for product in reaction.products:
@@ -211,7 +215,8 @@ class Enumerator(object):
 					if reaction_ok:
 						new_reactions.append(reaction)
 				
-				self._reactions[:] = new_reactions
+				self._reactions = new_reactions
+
 		
 		# List E contains enumerated resting state complexes. Only cross-
 		# reactions  with other end states need to be considered for these
