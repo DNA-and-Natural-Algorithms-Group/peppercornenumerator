@@ -1,6 +1,7 @@
 import unittest
 # from nose.tools import *
 
+import input
 from utils import Complex, Domain, Strand, index_parts
 from reactions import ReactionPathway
 
@@ -96,7 +97,18 @@ class CondenseTests(unittest.TestCase):
                      'E->F':ReactionPathway('bind11',[complexes['E']],[complexes['F']]),
                      'F->G':ReactionPathway('bind11',[complexes['F']],[complexes['G']]),
                      'G->E':ReactionPathway('bind11',[complexes['G']],[complexes['E']]),
-                     'C+D->E':ReactionPathway('bind21',[complexes['C'],complexes['D']],[complexes['E']])
+                     'C+D->E':ReactionPathway('bind21',[complexes['C'],complexes['D']],[complexes['E']]),
+
+                     'B->A':ReactionPathway('bind11',[complexes['B']],[complexes['A']]),
+                     'C->B':ReactionPathway('bind11',[complexes['C']],[complexes['B']]),
+                     'D->C':ReactionPathway('bind11',[complexes['D']],[complexes['C']]),
+                     'A->D':ReactionPathway('bind11',[complexes['A']],[complexes['D']]),
+                     'A->E':ReactionPathway('bind11',[complexes['A']],[complexes['E']]),
+                     'E->A':ReactionPathway('bind11',[complexes['E']],[complexes['A']]),
+                     'E->C':ReactionPathway('bind11',[complexes['E']],[complexes['C']]),
+                     'E->F':ReactionPathway('bind11',[complexes['E']],[complexes['F']]),
+                     'F->D':ReactionPathway('bind11',[complexes['F']],[complexes['D']])
+
                      }
         
         enum = Enum(complexes.values(),reactions.values())
@@ -148,6 +160,28 @@ class CondenseTests(unittest.TestCase):
         SCCs = [self.neighborhood_abcd,self.neighborhood_e]
         
         assert rsort(tarjans(tarjans_complexes,tarjans_reactions,reactions_consuming_abcd_e)) == rsort(SCCs)
+
+    def testTarjans2(self):
+        reactions = pluck(self.reactions,['A->B','B->A','B->C','C->B','C->D','D->C','D->A'])
+        complexes = self.neighborhood_abcd
+        reactions_consuming = get_reactions_consuming(complexes,reactions)
+        SCCs = [complexes]
+
+        assert rsort(tarjans(complexes, reactions, reactions_consuming)) == rsort(SCCs)
+
+    def testTarjans3(self):
+        reactions = pluck(self.reactions,['A->B','B->A','B->C','C->B','C->D','D->C','D->A', 'A->E', 'E->A', 'E->F', 'F->D'])
+        complexes = pluck(self.complexes,['A','B','C','D','E','F'])
+        reactions_consuming = get_reactions_consuming(complexes,reactions)
+        SCCs = [complexes]
+
+    def testTarjans4(self):
+        reactions = pluck(self.reactions,['A->B','B->A','B->C','C->B','D->C','A->D','D->A', 'A->E', 'E->A', 'E->C'])
+        complexes = pluck(self.complexes,['A','B','C','D','E'])
+        reactions_consuming = get_reactions_consuming(complexes,reactions)
+        SCCs = [complexes]
+
+        assert rsort(tarjans(complexes, reactions, reactions_consuming)) == rsort(SCCs)
 
     def testIsOutgoing(self):
         assert is_outgoing(self.reactions['D->E'],set(self.neighborhood_abcd))
@@ -376,4 +410,20 @@ class CondenseTests(unittest.TestCase):
         ]
         
         assert sorted(reactions) == sorted(expected_reactions)
+
+    def testCondenseGraph4(self):
+
+        # import pdb; pdb.set_trace() 
+
+        self.bounded_dendrimer = input.input_standard('test_files/examples/bounded-dendrimer.enum')
+        
+        self.bounded_dendrimer.MAX_COMPLEX_SIZE = 10
+        self.bounded_dendrimer.MAX_REACTION_COUNT = 1000
+        self.bounded_dendrimer.MAX_COMPLEX_COUNT = 200
+        self.bounded_dendrimer.RELEASE_CUTOFF = 8
+
+        self.bounded_dendrimer.enumerate()
+
+        out = condense_graph(self.bounded_dendrimer)
+        
         

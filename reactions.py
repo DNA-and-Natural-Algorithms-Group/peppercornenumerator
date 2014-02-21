@@ -537,8 +537,10 @@ def open(reactant):
 			
 			# If the helix is short enough, we have a reaction	
 			if (helix_length <= RELEASE_CUTOFF):
-				release_reactant = copy.deepcopy(reactant)
-				
+
+
+				release_reactant = Complex(get_auto_name(), reactant.strands[:], 
+					copy.deepcopy(reactant.structure))
 				
 				# Delete all the pairs in the released helix
 				for dom in range(helix_startA[1], helix_endA[1]):
@@ -912,13 +914,16 @@ def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	the domain at new_bound_loc.
 	"""
 
-	out_reactant = copy.deepcopy(reactant)
-	out_reactant.structure[displacing_loc[0]][displacing_loc[1]] = new_bound_loc
-	displaced_loc = out_reactant.structure[new_bound_loc[0]][new_bound_loc[1]]
-	out_reactant.structure[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
-	out_reactant.structure[displaced_loc[0]][displaced_loc[1]] = None
+	# out_reactant = copy.deepcopy(reactant)
+
+	out_reactant_structure = copy.deepcopy(reactant.structure)
+
+	out_reactant_structure[displacing_loc[0]][displacing_loc[1]] = new_bound_loc
+	displaced_loc = out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]]
+	out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
+	out_reactant_structure[displaced_loc[0]][displaced_loc[1]] = None
 	
-	out_reactant._name = get_auto_name()	
+	out_reactant = Complex(get_auto_name(),reactant.strands[:], out_reactant_structure)
 	
 	global UNZIP
 	

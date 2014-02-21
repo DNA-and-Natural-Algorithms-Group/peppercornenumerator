@@ -7,6 +7,7 @@
 
 import unittest
 from utils import *
+from reactions import ReactionPathway
 from input import input_standard
 from enumerator import *
 from nose.tools import *
@@ -408,8 +409,18 @@ class EnumeratorTests(unittest.TestCase):
 	def testEnumeration5(self):
 		self.seesaw_enumerator = input_standard('test_files/examples/seesaw/seesaw.enum')
 		self.seesaw_enumerator.enumerate()
-		
+
 	def testEnumeration6(self):
+		self.bounded_dendrimer = input_standard('test_files/examples/bounded-dendrimer.enum')
+
+		self.bounded_dendrimer.MAX_COMPLEX_SIZE = 15	
+		self.bounded_dendrimer.MAX_REACTION_COUNT = 1000
+		self.bounded_dendrimer.MAX_COMPLEX_COUNT = 200
+		self.bounded_dendrimer.RELEASE_CUTOFF = 8
+
+		self.bounded_dendrimer.enumerate()
+		
+	def testEnumerationPolymer(self):
 		# Test polymer detection
 				
 		

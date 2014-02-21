@@ -171,10 +171,17 @@ class Enumerator(object):
 		states, and :py:meth:`reactions, which are stored in the associated members of this
 		class.
 		"""
-		
+	
+		# handle release cutoff
+		old_release_cutoff = reactions.RELEASE_CUTOFF
+		if (hasattr(self,'RELEASE_CUTOFF')):
+			reactions.RELEASE_CUTOFF = self.RELEASE_CUTOFF
+
+
 		# Will be called once enumeration halts, either because it's finished or
 		# because too many complexes/reactions have been enumerated
 		def finish(premature=False):
+			reactions.RELEASE_CUTOFF = old_release_cutoff
 
 			# copy E and T into #complexes
 			self._complexes += (self._E)
@@ -192,11 +199,15 @@ class Enumerator(object):
 			if premature:
 				new_reactions = []
 				for reaction in self.reactions:
-					reaction_ok = True
-					for product in reaction.products:
-						#if (product in self._B) and not (product in self._complexes):
-						if not (product in self._complexes):
-							reaction_ok = False
+					reaction_ok = all( product in self._complexes for product in reaction.products ) and \
+						all( reactant in self._complexes for reactant in reaction.reactants )
+
+					# reaction_ok = True
+					# for product in reaction.products:
+					# 	#if (product in self._B) and not (product in self._complexes):
+					# 	if not (product in self._complexes):
+					# 		reaction_ok = False
+					
 					if reaction_ok:
 						new_reactions.append(reaction)
 				
@@ -593,9 +604,9 @@ def main(argv):
 	
 	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None, type=int, \
 		help="Maximum number of strands allowed in a complex (used to prevent polymerization)")
-	parser.add_argument('--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=None, type=int, \
+	parser.add_argument('--max-complex-count', action='store', dest='MAX_COMPLEX_COUNT', default=None, type=int, \
 		help="Maximum number of complexes that may be enumerated before the enumerator halts.")
-	parser.add_argument('--max-reactions', action='store', dest='MAX_REACTION_COUNT', default=None, type=int, \
+	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=None, type=int, \
 		help="Maximum number of reactions that may be enumerated before the enumerator halts.")
 
 	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \

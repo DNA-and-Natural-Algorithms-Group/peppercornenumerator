@@ -111,11 +111,14 @@ def tarjans(complexes,reactions,reactions_consuming):
         """
         complex._index = index
         complex._lowlink = index
+        # print "<"+str(complex)+" i='"+str(complex._index)+"'>"
         index += 1
         S.append(complex)
         
         for reaction in reactions_consuming[complex]:
-            if is_fast(reaction):
+            if reaction.arity == (1,1):
+            # if is_fast(reaction):
+                # print '<rxn>' + repr(reaction) + '</rxn>'
                 for product in reaction.products:
                     
                     # Product hasn't been traversed; recurse
@@ -125,7 +128,8 @@ def tarjans(complexes,reactions,reactions_consuming):
                     
                     # Product is in the current neighborhood
                     elif product in S:
-                        complex._lowlink = min(product._lowlink,complex._index)
+                        complex._lowlink = min(product._index,complex._lowlink)
+                # print "<ll complex='"+str(complex)+"'>"+str(complex._lowlink)+"</ll>"
         
         if(complex._lowlink == complex._index):
             scc = []
@@ -135,7 +139,11 @@ def tarjans(complexes,reactions,reactions_consuming):
                 if(next == complex): break
         
             SCCs.append(scc)
-        
+            # print "<scc>" + str(scc) + "</scc>"
+
+        # print "<index i='"+str(index)+"' />"
+        # print "</"+str(complex)+">"
+
         return index
     
     index = 0
@@ -239,7 +247,7 @@ def condense_graph(enumerator):
         for each complex, and storing the mappings in the outer-scope 
         `resting_state_targets` dict 
         """
-        #print "Begin process SCC:" + str(scc)
+        # print "Begin process SCC:" + str(scc)
         
         # Convert to a set for fast lookup
         scc_set = frozenset(scc)
@@ -249,7 +257,7 @@ def condense_graph(enumerator):
             return
         
         outgoing_reactions = [r for c in scc for r in reactions_consuming[c] if (is_fast(r) and is_outgoing(r,scc_set)) ]
-        # print "Outgoing reactions: " + str(outgoing_reactions)
+        # print "\tOutgoing reactions: " + str(outgoing_reactions)
                 
         # Remember that we've processed this neighborhood
         processed_SCCs.add(scc_set)
