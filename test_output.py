@@ -12,6 +12,7 @@ from nose.tools import *
 from input import *
 from output import *
 import copy
+import filecmp
 
 class OutputTests(unittest.TestCase):
 	# Disable output tests until all other functionality is working!
@@ -66,50 +67,36 @@ class OutputTests(unittest.TestCase):
 	def testOutputLegacy3(self):
 		output_legacy(self.simple2_enumerator, 'test_files/test_output/test_output_Legacy3.out', output_condensed=False)
 	
-	def testOutputFullGraph(self):
-		output_full_graph(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.out')
+	# def testOutputFullGraph(self):
+	# 	output_full_graph(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.out')
 	
-	def testOutputFullGraph2(self):
-		output_full_graph(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.out')
+	# def testOutputFullGraph2(self):
+	# 	output_full_graph(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.out')
 	
-	def testOutputFullGraph3(self):
-		output_full_graph(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.out')
+	# def testOutputFullGraph3(self):
+	# 	output_full_graph(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.out')
 
-	def testOutputFullGraph4(self):
-		output_full_graph(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.out')
+	# def testOutputFullGraph4(self):
+	# 	output_full_graph(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.out')
 		
-	def testOutputCondensedGraph(self):
-		output_condensed_graph(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph.out')
+	# def testOutputCondensedGraph(self):
+	# 	output_condensed_graph(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph.out')
 	
-	def testOutputCondensedGraph2(self):
-		output_condensed_graph(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph2.out')
+	# def testOutputCondensedGraph2(self):
+	# 	output_condensed_graph(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph2.out')
 	
-	def testOutputCondensedGraph3(self):
-		output_condensed_graph(self.simple2_enumerator, 'test_files/test_output/test_output_CondensedGraph3.out')
+	# def testOutputCondensedGraph3(self):
+	# 	output_condensed_graph(self.simple2_enumerator, 'test_files/test_output/test_output_CondensedGraph3.out')
 	
-	def testOutputCondensedGraph4(self):
-		output_condensed_graph(self.SLC_enumerator, 'test_files/test_output/test_output_CondensedGraph4.out')
+	# def testOutputCondensedGraph4(self):
+	# 	output_condensed_graph(self.SLC_enumerator, 'test_files/test_output/test_output_CondensedGraph4.out')
 		
-	def testOutputGraph(self):
-		output_graph(self.simple2_enumerator,'test_files/test_output/test_output_Graph.out',output_condensed=True)
-		output_graph(self.simple2_enumerator,'test_files/test_output/test_output_GraphCondensed.out',output_condensed=False)
+	# def testOutputGraph(self):
+	# 	output_graph(self.simple2_enumerator,'test_files/test_output/test_output_Graph.out',output_condensed=True)
+	# 	output_graph(self.simple2_enumerator,'test_files/test_output/test_output_GraphCondensed.out',output_condensed=False)
 
-	# Condensed PIL output	
-	
-	def testOutputCondensedPIL(self):
-		output_pil(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph.pil',output_condensed=True)
-	
-	def testOutputCondensedPIL2(self):
-		output_pil(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph2.pil',output_condensed=True)
-	
-	def testOutputCondensedPIL3(self):
-		output_pil(self.simple2_enumerator, 'test_files/test_output/test_output_CondensedGraph3.pil',output_condensed=True)
-	
-	def testOutputCondensedPIL4(self):
-		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_CondensedGraph4.pil',output_condensed=True)
-	
+
 	# PIL output
-		
 	def testOutputPIL(self):
 		output_pil(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.pil',output_condensed=False)
 	
@@ -122,77 +109,132 @@ class OutputTests(unittest.TestCase):
 	def testOutputPIL4(self):
 		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.pil',output_condensed=False)
 			
+
+	# Condensed PIL output	
+	def testOutputCondensedPIL(self):
+		output_pil(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph.pil',output_condensed=True)
+	
+	def testOutputCondensedPIL2(self):
+		output_pil(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph2.pil',output_condensed=True)
+	
+	def testOutputCondensedPIL3(self):
+		output_pil(self.simple2_enumerator, 'test_files/test_output/test_output_CondensedGraph3.pil',output_condensed=True)
+	
+	def testOutputCondensedPIL4(self):
+		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_CondensedGraph4.pil',output_condensed=True)
+	
+
 	# CRN
 	def testOutputCRN(self):
 		output_crn(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.crn',output_condensed=False)
+		filecmp.cmp('test_files/test_output/test_output_FullGraph.crn','test_files/expected_output/test_output_FullGraph.crn')
 
 	def testOutputCRN2(self):
-		output_pil(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.crn',output_condensed=False)
+		output_crn(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.crn',output_condensed=False)
+		filecmp.cmp('test_files/test_output/test_output_FullGraph2.crn','test_files/expected_output/test_output_FullGraph2.crn')
 	
 	def testOutputCRN3(self):
-		output_pil(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.crn',output_condensed=False)
+		output_crn(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.crn',output_condensed=False)
+		filecmp.cmp('test_files/test_output/test_output_FullGraph3.crn','test_files/expected_output/test_output_FullGraph3.crn')
 	
 	def testOutputCRN4(self):
-		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.crn',output_condensed=False)
+		output_crn(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.crn',output_condensed=False)
+		filecmp.cmp('test_files/test_output/test_output_FullGraph4.crn','test_files/expected_output/test_output_FullGraph4.crn')
 
 
 	def testOutputCRN_condensed(self):
-		output_crn(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.crn',output_condensed=True)
+		output_crn(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph.crn',output_condensed=True)
+		filecmp.cmp('test_files/test_output/test_output_CondensedGraph.crn','test_files/expected_output/test_output_CondensedGraph.crn')
 
 	def testOutputCRN_condensed2(self):
-		output_pil(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.crn',output_condensed=True)
+		output_crn(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph2.crn',output_condensed=True)
+		filecmp.cmp('test_files/test_output/test_output_CondensedGraph2.crn','test_files/expected_output/test_output_CondensedGraph2.crn')
 	
 	def testOutputCRN_condensed3(self):
-		output_pil(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.crn',output_condensed=True)
+		output_crn(self.simple2_enumerator, 'test_files/test_output/test_output_CondensedGraph3.crn',output_condensed=True)
+		filecmp.cmp('test_files/test_output/test_output_CondensedGraph3.crn','test_files/expected_output/test_output_CondensedGraph3.crn')
 	
 	def testOutputCRN_condensed4(self):
-		output_pil(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.crn',output_condensed=True)
+		output_crn(self.SLC_enumerator, 'test_files/test_output/test_output_CondensedGraph4.crn',output_condensed=True)
+		filecmp.cmp('test_files/test_output/test_output_CondensedGraph4.crn','test_files/expected_output/test_output_CondensedGraph4.crn')
 
+	# K
+	def testOutputK(self):
+		output_k(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_FullGraph.k',output_condensed=False)
+		filecmp.cmp('test_files/test_output/test_output_FullGraph.k','test_files/expected_output/test_output_FullGraph.k')
+
+	def testOutputK2(self):
+		output_k(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_FullGraph2.k',output_condensed=False)
+		filecmp.cmp('test_files/test_output/test_output_FullGraph2.k','test_files/expected_output/test_output_FullGraph2.k')
+	
+	def testOutputK3(self):
+		output_k(self.simple2_enumerator, 'test_files/test_output/test_output_FullGraph3.k',output_condensed=False)
+		filecmp.cmp('test_files/test_output/test_output_FullGraph3.k','test_files/expected_output/test_output_FullGraph3.k')
+	
+	def testOutputK4(self):
+		output_k(self.SLC_enumerator, 'test_files/test_output/test_output_FullGraph4.k',output_condensed=False)
+		filecmp.cmp('test_files/test_output/test_output_FullGraph4.k','test_files/expected_output/test_output_FullGraph4.k')
+
+
+	def testOutputK_condensed(self):
+		output_k(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph.k',output_condensed=True)
+		filecmp.cmp('test_files/test_output/test_output_CondensedGraph.k','test_files/expected_output/test_output_CondensedGraph.k')
+
+	def testOutputK_condensed2(self):
+		output_k(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_CondensedGraph2.k',output_condensed=True)
+		filecmp.cmp('test_files/test_output/test_output_CondensedGraph2.k','test_files/expected_output/test_output_CondensedGraph2.k')
+	
+	def testOutputK_condensed3(self):
+		output_k(self.simple2_enumerator, 'test_files/test_output/test_output_CondensedGraph3.k',output_condensed=True)
+		filecmp.cmp('test_files/test_output/test_output_CondensedGraph3.k','test_files/expected_output/test_output_CondensedGraph3.k')
+	
+	def testOutputK_condensed4(self):
+		output_k(self.SLC_enumerator, 'test_files/test_output/test_output_CondensedGraph4.k',output_condensed=True)
+		filecmp.cmp('test_files/test_output/test_output_CondensedGraph4.k','test_files/expected_output/test_output_CondensedGraph4.k')
 
 
 
 	# JSON output
 		
 	def testOutputJSON(self):
-		output_json(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_JSON.out')
-		enumerator = load_json('test_files/test_output/test_output_JSON.out')
+		output_json(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_JSON.json')
+		enumerator = load_json('test_files/test_output/test_output_JSON.json')
 		assert enumerator == self.SLC_enumerator_reduced
 		
 	def testOutputJSON2(self):
-		output_json(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_JSON2.out')
-		enumerator = load_json('test_files/test_output/test_output_JSON2.out')
+		output_json(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_JSON2.json')
+		enumerator = load_json('test_files/test_output/test_output_JSON2.json')
 		assert enumerator == self.three_arm_enumerator_reduced
 		
 	def testOutputJSONCondensed(self):
 		output_json(self.SLC_enumerator_reduced, \
-				'test_files/test_output/test_output_JSONCondensed.out',output_condensed=True)
-		enumerator = load_json('test_files/test_output/test_output_JSON.out')
+				'test_files/test_output/test_output_JSONCondensed.json',output_condensed=True)
+		enumerator = load_json('test_files/test_output/test_output_JSON.json')
 		assert enumerator == self.SLC_enumerator_reduced
 		
 	def testOutputJSONCondensed2(self):
 		output_json(self.three_arm_enumerator_reduced, \
-				'test_files/test_output/test_output_JSONCondensed2.out',output_condensed=True)
-		enumerator = load_json('test_files/test_output/test_output_JSON2.out')
+				'test_files/test_output/test_output_JSONCondensed2.json',output_condensed=True)
+		enumerator = load_json('test_files/test_output/test_output_JSON2.json')
 		assert enumerator == self.three_arm_enumerator_reduced
 			
 	def testJSONInputOutputLoop(self):
 
-		output_json(self.SLC_enumerator_reduced, 'test_files/test_output/testJSONInputOutputLoop.out')
-		enumerator = load_json('test_files/test_output/testJSONInputOutputLoop.out')
+		output_json(self.SLC_enumerator_reduced, 'test_files/test_output/testJSONInputOutputLoop.json')
+		enumerator = load_json('test_files/test_output/testJSONInputOutputLoop.json')
 		assert enumerator == self.SLC_enumerator_reduced
 
 	def testOutputSBML(self):
-
-		output_sbml(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_SBML')
+		output_sbml(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_SBML.sbml')
 		
 	def testOutputSBML2(self):
-		output_sbml(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_SBML2')
+		output_sbml(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_SBML2.sbml')
 		
 	def testOutputSBMLCondensed(self):
-		output_sbml(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_SBMLCondensed',output_condensed=True)
+		output_sbml(self.SLC_enumerator_reduced, 'test_files/test_output/test_output_SBMLCondensed.sbml',output_condensed=True)
 		
 	def testOutputSBML2Condensed(self):
-		output_sbml(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_SBML2Condensed',output_condensed=True)
+		output_sbml(self.three_arm_enumerator_reduced, 'test_files/test_output/test_output_SBML2Condensed.sbml',output_condensed=True)
 			
 	def testOutputLegacyCondensed(self):
 		output_legacy(self.simple_enumerator, 'test_files/test_output/test_output_LegacyCondensed.out', output_condensed=True)

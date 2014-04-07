@@ -4,7 +4,7 @@ import logging
 from reactions import get_auto_name,ReactionPathway
 from utils import Complex, Domain, Strand, RestingState
 
-class ReachableRestingStates(object):
+class SetOfFates(object):
     """
     Corresponds to the set of multisets that can be reached from a given 
     complex. Thin wrapper around the frozenset, mostly for prettier printing.
@@ -45,8 +45,8 @@ class ReachableRestingStates(object):
         return len(self._states)
     
     def __repr__(self):
-        return "ReachableRestingStates([ " + ", ".join(["(" + ", ".join(map(repr,inner)) + ")" for inner in self.states]) + " ])"
-        #return 'ReachableRestingStates('+repr(self.states)+")"
+        return "SetOfFates([ " + ", ".join(["(" + ", ".join(map(repr,inner)) + ")" for inner in self.states]) + " ])"
+        #return 'SetOfFates('+repr(self.states)+")"
 
 def is_fast(reaction):
     """
@@ -65,24 +65,52 @@ def is_outgoing(reaction,SCC_set):
 
 def tuple_sum(iterable):
     """
-    Given an iterable of iterables, concatenates each element of the 
-    internal iterables into a tuple. 
+    Given an iterable of tuples, concatenates each of the tuples
+    and returns one big tuple. Precisely, for some list of tuples 
+    P = [p1, p2, p3 ...]:
 
-    e.g.: [ [a,b,c], [d], [e,f] ] -> 
+        tuple_sum(P) = p1 + p2 + p3 + ... 
+
+    where + represents the concatenation of two tuples, e.g. 
+    (a1, a2) + (a3, a4) = (a1, a2, a3, a4).
+
+    Example: 
+        tuple_sum([(1,2,3),(4,),(5,6)]) == (1, 2, 3, 4, 5, 6)
     """
-    return reduce(operator.concat, iterable, tuple())
+    return reduce(operator.concat, tuple(iterable), tuple())
+
+def cartesian_sum(iterable):
+    """
+    Takes the cartesian sum over a set of multisets (counters). We define the 
+    cartesian sum X [+] Y between two sets X and Y as:
+
+        X [+] Y = {x + y : x is in X and y is in Y}
+
+    where + represents the sum of the multisets.
+
+    Equivalently, in terms of the cartesian product X x Y, we can write X [+] Y as:
+
+        X [+] Y = { (tuple_sum_{a in p} a) : p in X x Y }
+    """
+    return map(tuple_sum,itertools.product(*iterable))
 
 def cartesian_multisets(reactions):
     """
-    Accepts a list of lists of iterables 
+    Accepts an iterable of iterables of tuples. The outer iterable 
+    represents a sequence of reactions, the inner tuple represents 
+    products of those reactions.
     """
-    cartesian = []
-    for prods in reactions:
-        x = list(itertools.product(*prods))
-        y = map(tuple_sum,x)
-        z = sorted(y)
-        cartesian.append(z)
-    return cartesian
+    # cartesian = []
+    # for prods in reactions:
+    #     # x = list(itertools.product(*prods))
+    #     # y = map(tuple_sum,x)
+        
+    #     y = cartesian_sum(prods)
+    #     z = sorted(y)
+    #     cartesian.append(z)
+    # return cartesian
+    
+    return list(itertools.chain( sorted(cartesian_sum(prods)) for prods in reactions ))
 
 def get_reactions_consuming(complexes,reactions):
     """
@@ -166,88 +194,85 @@ def tarjans(complexes,reactions,reactions_consuming):
 def condense_graph(enumerator):
 
     # Approach: compute SCCs using Tarjan's algorithm, including only fast 
-    # reactions as edges. Compute R(Xn)---the set of destinies for each 
-    # complex Xn---for each complex in each SCC. Once R(Xn) is computed for 
-    # each Xn, compute the condensed reactions from R(Xn).
+    # 1-1 reactions as edges. For each complex in the SCC, compute the 
+    # set of _fates_ of that complex (a fate is a multiset of resting states
+    # that are reachable from that complex by fast reactions). For each 
+    # detailed reaction, generate one condensed reaction for each combination
+    # of the fates of the products.
     # 
+    # Detailed description:
+    # A fate of a complex is the multiset of resting states that can be reached
+    # from the complex by a series of fast reactions. For instance, in the 
+    # network A -> B -> C, C -> D, D -> E + F where all reactions are fast,
+    # there are three resting states: ^D = { D }, ^E = { E }, ^F = { F }, and
+    # the complex A has two fates: { ^D } and { ^E, ^F }. We define F(x) for 
+    # some complex x to be the _set_ of fates of x; therefore 
+    # F(A) = { { ^D }, { ^E, ^F } }. 
     # 
-    # let R(Xn) = the set of multisets of resting states reachable from 
-    #   detailed species Xn via fast reactions. That is, R(Xn) is the set of 
-    #   possible resting-state destinies for Xn (via fast reactions); each of 
-    #   these "destinies" is a multiset, because Xn might e.g. break apart 
-    #   into multiple complexes, each of which is a resting state.  
-    #
-    # let S(Xn) = the resting state to which Xn belongs, or the value 
-    #   `undefined` if Xn is transient. 
+    # Relatedly, for some reaction r = (A, (b1, b2, ...)) where A is the set of 
+    # reactants and B is the set of products, we define 
+    # R(r) = F(b1) [+] F(b2) [+] ..., where [+] is the cartesian sum. Finally,
+    # let S(x) be the SCC containing complex x. Note that S(x) may or may not
+    # be a resting state. 
     # 
+    # With these definitions, we can calculate F(x) by a recursion;
     # 
-    # To compute R(Xn):
+    # F(x) = { { S(x) }            : if S(x) is a resting state
+    #        { U_{r in R_o} R(r)   : if S(x) is not a resting state and R_o 
+    #                                represents the set of outgoing reactions
+    #                                from S(x)
     # 
-    #   for each SCC:
-    #       let outgoing_reactions = [r for r in reactions if (SCC < r.products and r is fast)]  
-    #         (SCC < r.products means SCC is a proper subset of _and not equal to_ r.products)
-    #       
-    #          If 0 (fast) outgoing_reactions: for each complex Xn in the SCC, 
-    #             R(Xn) = { { SCC } }
-    #          
-    #          If 1+ (fast) outgoing_reactions: for each complex Xn in the SCC,
-    #             let outgoing_1_1_products = [r.products for r in outgoing_reactions if r.arity == (1,1)]
-    #             let outgoing_1_n_products = [r.products for r in outgoing_reactions if r.arity[1] > 1]
-    #             R(Xn) = union( [R(A) for A in outgoing_1_1_products], 
-    #                           [cartesian product of [R(A), R(B), R(C) ... R(N)] for [A, B, C ... N] in outgoing_1_n_products]
-    #   
-    # Compute R(Xn) for Xn in complexes by iterating through each SCC, 
-    # classifying it as above, and recursing when necessary to compute R(Xn) 
-    # for inner values.
-    #
-    #
-    # Once R(Xn) is computed for all Xn in complexes, compute condensed 
-    # reactions as follows:
-    #
-    # For each reaction r, generate all possible combinations of reachable
-    # resting state multisets (elements of R(Xn)) for each of the reactants Xn,
-    # then do the same for  the products. For the reactants, R(Xn) is a
-    # singleton (because slow reactions only happen between resting state
-    # complexes). For the products, this means choose each possible combination
-    # of destinies for each of the products.   For each combination of reactants
-    # and each combination of products, generate a new reaction rc.   Prune
-    # duplicate and trivial reactions from condensed reactions.
+    # Once we have calculated F(x) (which can be done by a DFS on the DAG formed
+    # by the SCCs of the fast, detailed, 1-1 reactions---see the paper for
+    # details on why this forms a DAG and therefore F(x) can be calculated in
+    # finite time), the set of condensed reactions can be easily computed. We
+    # generate one condensed reaction for each combination of fates of the
+    # products.
+    # 
+    # ------------------------------------------------------------------------
     
-    # This stores mappings between X1 and R(X1) for each X1 in complexes
-    resting_state_targets = {}
+    # Stores mapping between a complex x and the set of its possible
+    # fates, F(x)
+    complex_fates = {}
     
-    # This stores mappings between an SCC and the associated resting state
+    # Stores mappings between an SCC and the associated resting state
     resting_states = {}
     
-    # This stores mappings between each complex and the SCC which contains it
+    # Stores mappings between each complex x and the SCC S(x) which 
+    # contains x
     SCC_containing = {}
     
-    # This remembers which SCCs we've processed
-    processed_SCCs = set([])
+    # Remembers which SCCs we've processed (for which we've computed
+    # the fates)
+    processed_SCCs = set()
     
-    def get_reachable_resting_states(complex):
+    # Define helper functions
+    def get_fates(complex):
         """
-        Returns the resting state associated with the passed `complex`, or 
-        computes the resting state if not already calculated
+        Returns the set of possible fates for this complex, calling 
+        compute_fates if necessary
         """
-        if(complex not in resting_state_targets):
-            process_scc(SCC_containing[complex])
-        return resting_state_targets[complex]
+        if(complex not in complex_fates):
+            compute_fates(SCC_containing[complex])
+        return complex_fates[complex]
     
     def get_resting_state(complex):
+        """
+        Returns the resting state associated with this complex, if 
+        one exists.
+        """
         scc = SCC_containing[complex]
         scc_set = frozenset(scc)
         if(scc_set not in resting_states):
-            process_scc(scc)
+            compute_fates(scc)
         return resting_states[scc_set]
     
-    def process_scc(scc):
+    def compute_fates(scc):
         """
         Processes a single SCC neighborhood, generating resting state multisets 
         for each complex, and storing the mappings in the outer-scope 
-        `resting_state_targets` dict 
+        `complex_fates` dict 
         """
-        # print "Begin process SCC:" + str(scc)
         
         # Convert to a set for fast lookup
         scc_set = frozenset(scc)
@@ -257,7 +282,6 @@ def condense_graph(enumerator):
             return
         
         outgoing_reactions = [r for c in scc for r in reactions_consuming[c] if (is_fast(r) and is_outgoing(r,scc_set)) ]
-        # print "\tOutgoing reactions: " + str(outgoing_reactions)
                 
         # Remember that we've processed this neighborhood
         processed_SCCs.add(scc_set)
@@ -270,78 +294,34 @@ def condense_graph(enumerator):
             resting_states[scc_set] = resting_state
             
             for c in scc:
-                if c in resting_state_targets: 
+                if c in complex_fates: 
                     raise Exception()
                 
-                resting_state_targets[c] = frozenset([ (resting_state,) ]) #frozenset([ (get_resting_state(c),) ])
+                complex_fates[c] = frozenset([ (resting_state,) ]) #frozenset([ (get_resting_state(c),) ])
                 
         # Otherwise, if there are outgoing fast reactions:
         else:
-            # Compute the various combinations of resting states (the so-called 
-            # 'reachable resting state multisets') which can be reached from this SCC:
-            
-            # NOTE: Sets are represented as frozensets, and multisets are represented as tuples, 
-            # so { } notation is used to represent frozensets and tuple notation is used to 
-            # represent multisets. Therefore this: { {A, B, B}, {C, D}, {E, E, F}, {G} }
-            # will be represented as { (A, B, B), (C, D), (E, E, F), (G,) }
-            
-            
-            # First, compute the reachable resting state multisets due to outgoing 1-1 reactions: 
-            # all these reactions should have 1 product
-            outgoing_1_1 = frozenset().union(*[get_reachable_resting_states(A.products[0]) for A in outgoing_reactions if A.arity == (1,1)])
-            
-            
-            # outgoing_1_n is a list (reactions) of lists (products) of frozensets (resting states) of tuples (multisets)  
-            # That is, for each 1-n reaction where n>1, outgoing_1_n contains a list of the 
-            # reachable resting state multisets for each of that reaction's products.
-            # e.g.: outgoing 1-n reactions: [A1 -> B1+C1, D1 -> E1+F1+G1] =>
-            #         outgoing_1_n = [ [R(B1), R(C1)], [R(E1), R(F1), R(G1)] ]
-            #         where R(B1), R(C1), etc. are each something like { (B,), (H, J), ... }
-            outgoing_1_n = [map(get_reachable_resting_states,B.products) for B in outgoing_reactions if B.arity[1] != 1]
-            
 
+            # Compute the fates of each of the outgoing reactions
+            # This is a list (reactions) of frozensets of fates.
+            reaction_fates = [ cartesian_sum(map(get_fates,r.products)) for r in outgoing_reactions ]
             
-            # Now we need to find the reachable resting state multisets due to outgoing 1-n reactions.
-            # for each (outgoing 1-n) reaction r, let prods = the list of reachable 
-            # resting state multisets for each of r's products i.e. prods = [R(Xn) for Xn in r.products]. 
-            # Each element in prods is therefore a frozenset (reachable resting states) of tuples (multisets).  
-            # Take all cartesian products of prods. This will result in all possible sets containing one element from
-            # each frozenset in prods. 
-            # For example: if prods = [ { (A,B), (C,) }, { (D,), (E,F) } ], cartesian(prods) = [ ((A,B),(D,)), ((A,B), (E,F)), ((C,),(D,)), ((C,),(E,F)) ]. 
-            # We then flatten the outer tuples, so we get [ (A,B,D), (A,B,E,F), (C,D), (C,E,F) ]
-            # by summing each inner tuple. This is now a list of reachable resting state multisets for
-            # each outgoing 1-n reaction from this SCC.
-            
-            # outgoing_1_n = map(lambda prods: sorted(tuple_sum( itertools.product(*prods) )),outgoing_1_n)
-            # outgoing_1_n = map(lambda prods: sorted( itertools.chain(*itertools.product(*prods)) ),outgoing_1_n)
-            
-            # outgoing_1_n becomes a list (reactions) of lists (products) of tuples (multisets)
-            outgoing_1_n = cartesian_multisets(outgoing_1_n)
-            
-            # We want now to generate the set of reachable resting state multsets 
-            # outgoing_1_n is a list of lists of tuples (multisets); we want to make a frozenset
-            # of tuples, by concatenating the inner lists and converting the result to a frozenset.
-            outgoing_1_n = frozenset().union(*outgoing_1_n)
- 
-            
-            
-            # FINALLY, the set of reachable resting state multisets for this SCC is the union or the 
-            # set of reachable resting state multisets from outgoing 1-1 reactions and outgoing 1-n 
-            # reactions
-            resting_state_target = outgoing_1_1 | outgoing_1_n
-            
+            # The set of fates for the complexes in this SCC is the union of 
+            # the fates for all outgoing reactions. 
+            # 
+            # Note that frozenset().union(*X) === X[0] U X[1] U X[2] ... 
+            # where X[i] is a frozenset and a U b represents the frozenset union
+            set_of_fates = frozenset().union( *reaction_fates )
+
+
+
+
             for c in scc:
-                if c in resting_state_targets: raise Exception()
-                resting_state_targets[c] = resting_state_target
-        
-        
-        
-        # print "End process SCC: " + str(scc)
-    
+                if c in complex_fates: raise Exception()
+                complex_fates[c] = set_of_fates
+            
     
     # Cache some things for speed
-    #complex_set = set(enumerator.complexes)
-    #reactions_producing = get_reactions_producing(enumerator.complexes,enumerator.reactions) 
     reactions_consuming = get_reactions_consuming(enumerator.complexes,enumerator.reactions) 
     
     # Compute list of SCCs
@@ -355,18 +335,16 @@ def condense_graph(enumerator):
     # guarantees that all SCCs will be processed even if DFS recursion
     # misses some
     for scc in SCCs: 
-        process_scc(scc)
+        compute_fates(scc)
         
     # Map each complex to the set of multisets of resting states which it can reach    
-    resting_state_targets = { complex: ReachableRestingStates(resting_state_targets[complex]) for complex in resting_state_targets }
+    complex_fates = { complex: SetOfFates(complex_fates[complex]) for complex in complex_fates }
         
     # Generate condensed reactions
     condensed_reactions = set()
-    
-    
     for reaction in enumerator.reactions:
         
-        # Filter reactions which are not fast
+        # Filter reactions which are fast (these have been handled by the fates)
         if( is_fast(reaction) ):
             continue
         
@@ -375,44 +353,18 @@ def condense_graph(enumerator):
             continue
         
         
-        reactant_resting_states = map(get_reachable_resting_states,reaction.reactants)
-        product_resting_states = map(get_reachable_resting_states,reaction.products)
+        reactant_fates = map(get_fates,reaction.reactants)
+        product_fates = map(get_fates,reaction.products)
         
-        # Take cartesian products of reaction product reachable resting state sets multisets to get all 
+        # Take cartesian sum of reaction product fates to get all 
         # combinations of resting states
-        # e.g. for X1 -> A1 + B1, R(A1) = { {A}, {A', A''} }, R(B1) = { {B, B'}, {B''} },
-        #    we get [ ({A},{B,B'}), ({A',A''},{B,B'}), ({A},{B''}), ({A',A''},{B''}) ]
+        new_product_combinations = cartesian_sum(product_fates)
         
-        # Then, sum each individual tuple in the above list, so we get:
-        #    [ {A,B,B'}, {A',A'',B,B'}, {A,B''}, {A',A'',B''} ]
-        # This is the list of possible product sets for the new reaction
-        
-        # Note: { multisets } are actually represented as tuples in this implementation, so 
-        # the above lists are more like [((A,), (B, B')), ((A',A''),(B,B')), ...] and
-        # [ (A,B,B'), (A',A'',B,B'), ... ], respectively.
-        
-        # Note 2: product_resting_states is a *list* of frozensets of tuples, so we use the
-        # extended call notation itertools.product(*product_resting_states), which is like
-        # writing itertools.product(product_resting_states[0], product_resting_states[1], 
-        # ..., product_resting_states[n]).
-        new_product_combinations = map(tuple_sum,
-                                       itertools.product(*product_resting_states))    
-        
-        # We could do the same thing for reactants; in principle, all resting states of reactants 
-        # in bimolecular reactions should be of the form R(X1) = { {X} }, so the results of
-        # this call should be trivial:
-        #     new_reactant_combinations = map(tuple_sum,
-        #                                    itertools.product(*reactant_resting_states))
-        # Therefore we'll skip the itertools call and just map the reactants to their 
-        # resting states. 
-        # new_reactant_combinations = [tuple(r_xn.get_singleton() for r_xn in reactant_resting_states)]
-        
-        
-        new_reactant_combinations = map(tuple_sum,
-                                        itertools.product(*reactant_resting_states))
+        # Take cartesian sum of reactant fates
+        new_reactant_combinations = cartesian_sum(reactant_fates)
         
         # TODO: throw exception if R(X1) has multiple elements
-        for (i, r_xn) in enumerate(reactant_resting_states):
+        for (i, r_xn) in enumerate(reactant_fates):
             if(not r_xn.is_singleton()):
                 logging.error("Cannot condense reactions: R(%s) has multiple elements: %s"
                                 % ( str(reaction.reactants[i]), str(r_xn) ))
@@ -431,18 +383,16 @@ def condense_graph(enumerator):
             # Prune trivial reactions
             if(reactants != products):
                 condensed_reactions.add(ReactionPathway('condensed', list(reactants), list(products)))
-        
-#        print "End reaction "+str(reaction)
-    
+            
     return {
                 'resting_states': resting_states.values(),
                 'resting_state_map': resting_states,
-                'resting_state_targets':resting_state_targets,
+                'resting_state_targets':complex_fates,
                 'condensed_reactions':list(condensed_reactions),
                 'reactions': list(condensed_reactions)
              }
     
-    #return (resting_states,resting_state_targets,condensed_reactions)
+    #return (resting_states,complex_fates,condensed_reactions)
 
 
 condense_resting_states = condense_graph
