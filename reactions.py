@@ -904,8 +904,6 @@ def branch_3way(reactant):
 					# Reached the end
 					break
 				
-				
-				
 				# Check if this domain is unbound
 				elif (structure[bound_loc[0]][bound_loc[1]] == None):
 					continue

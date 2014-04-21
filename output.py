@@ -279,12 +279,15 @@ def output_graph(enumerator, filename, output_condensed=False):
 	
 output_graph.supports_condensed = True
 
-def output_full_graph(enumerator, filename):
-	"""
-	Products graphical output representing the full reaction graph, with all
-	reactions and complexes. Transient and resting states are differentiated
-	by color.
-	"""
+def output_dotfile(enumerator, filename, output_condensed=False):
+	if not output_condensed:
+		output_full_dotfile(enumerator, filename)
+	else:
+		output_condensed_dotfile(enumerator, filename)
+	
+output_dotfile.supports_condensed = True
+
+def output_full_dotfile(enumerator, filename):
 	fout = open(filename + ".dot", "w")
 	fout.write("digraph G {\n")
 	fout.write('size="7,10"\n')
@@ -377,15 +380,23 @@ def output_full_graph(enumerator, filename):
 	fout.write("}\n")
 	fout.close()
 	
+
+
+def output_full_graph(enumerator, filename):
+	"""
+	Products graphical output representing the full reaction graph, with all
+	reactions and complexes. Transient and resting states are differentiated
+	by color.
+	"""
+	
+	output_full_dotfile(enumerator,filename)
+
 	# Create the output file.
 	# TODO: make 'pdf' configurable
 	subprocess.call(["dot", "-O", "-Teps", "%s.dot" % filename])
-	
-def output_condensed_graph(enumerator, filename):
-	"""
-	Products graphical output representing the condensed reaction graph, with
-	condensed reactions and resting states aggregated into single nodes.
-	"""
+
+
+def output_condensed_dotfile(enumerator, filename):
 	fout = open(filename + ".dot", "w")
 	fout.write("digraph G {\n")
 	fout.write('size="7,10"\n')
@@ -411,6 +422,14 @@ def output_condensed_graph(enumerator, filename):
 			
 	fout.write("}\n")
 	fout.close()
+
+def output_condensed_graph(enumerator, filename):
+	"""
+	Products graphical output representing the condensed reaction graph, with
+	condensed reactions and resting states aggregated into single nodes.
+	"""
+	
+	output_condensed_dotfile(enumerator,filename)
 	
 	# Create the output file.
 	# TODO: make 'pdf' configurable
@@ -419,7 +438,7 @@ def output_condensed_graph(enumerator, filename):
 
 def output_sbml(enumerator,filename, output_condensed = False):
 	# default initial concentration of all species is 100 nM
-	initial_concentration = 1e-7 
+	initial_concentration = 10e-7 
 
 	import xml.dom.minidom
 	header = '<?xml version="1.0" encoding="UTF-8"?>'

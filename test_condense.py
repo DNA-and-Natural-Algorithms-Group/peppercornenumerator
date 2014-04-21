@@ -92,9 +92,9 @@ class CondenseTests(unittest.TestCase):
                      'D':Complex('D',[strands['s4']],[[None]]),
                      'E':Complex('E',[strands['s5']],[[None]]),
                      'F':Complex('F',[strands['s6']],[[None]]),
-                     'G':Complex('G',[strands['s7']],[[None]])
-                     'H':Complex('H',[strands['s8']],[[None]])
-                     'I':Complex('I',[strands['s9']],[[None]])
+                     'G':Complex('G',[strands['s7']],[[None]]),
+                     'H':Complex('H',[strands['s8']],[[None]]),
+                     'I':Complex('I',[strands['s9']],[[None]]),
                      'J':Complex('J',[strands['s10']],[[None]])
                      }
         self.reactions = reactions = {

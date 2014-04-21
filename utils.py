@@ -678,6 +678,7 @@ class RestingState(object):
 		self._complexes = complexes
 		self._name = name
 		self._canonical = find(lambda s: not str(s).isdigit(),sorted(complexes),str(complexes[0]))
+		self._hash = None
 		
 	@property
 	def name(self):
@@ -694,6 +695,11 @@ class RestingState(object):
 	@property
 	def canonical(self):
 		return self._canonical
+
+	def __hash__(self):
+		if self._hash == None:
+			self._hash = hash(tuple(self.complexes))
+		return self._hash
 	
 	def __eq__(self, other):
 		return (self.complexes == other.complexes)
