@@ -485,12 +485,12 @@ def output_sbml(enumerator,filename, output_condensed = False):
 	if(output_condensed):
 		for resting_state in complexes:
 			is_initial = any(c in enumerator.initial_complexes for c in resting_state.complexes)
-			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialAmount="%(initial).10f"/>' \
+			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial).10f"/>' \
 				% {"name": resting_state.name, "id": id(resting_state), "initial": (initial_concentration if is_initial else 0.) })
 	else:
 		for complex in complexes:
 			is_initial = (complex in enumerator.initial_complexes)
-			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialAmount="%(initial).10f"/>' \
+			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial).10f"/>' \
 				% {"name": complex.name, "id": id(complex), "initial": (initial_concentration if is_initial else 0.) })
 	
 	out += ['</listOfSpecies>','<listOfReactions>']
