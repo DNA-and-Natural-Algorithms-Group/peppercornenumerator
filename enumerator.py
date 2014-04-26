@@ -4,7 +4,7 @@
 #
 #  Created by Karthik Sarma on 4/18/10.
 #
-
+import os
 import sys
 import utils
 from utils import RestingState
@@ -79,6 +79,7 @@ class Enumerator(object):
 		self.MAX_COMPLEX_SIZE = MAX_COMPLEX_SIZE
 		self.MAX_REACTION_COUNT = MAX_REACTION_COUNT
 		self.MAX_COMPLEX_COUNT = MAX_COMPLEX_COUNT
+		self.DFS = True
 		
 	@property 
 	def auto_name(self):
@@ -265,7 +266,11 @@ class Enumerator(object):
 		while len(self._S) > 0:
 
 			# Find slow reactions from `element`
-			element = self._S.pop()
+			if self.DFS:
+				element = self._S.pop()
+			else:
+				element = self._S.pop(0)
+
 			slow_reactions = self.get_slow_reactions(element)
 			self._E.append(element)
 			
@@ -395,6 +400,10 @@ class Enumerator(object):
 		"""
 		new_products = []
 		new_reactions = []
+
+		ESTNF = { c:c for c in self._E + self._S + self._T + self._N + self._F }
+		B = { c:c for c in self._B}
+
 		
 		# Loop over every reaction
 		for reaction in reactions:
@@ -418,22 +427,31 @@ class Enumerator(object):
 				# TODO: This could benefit from a substantial speedup if _E, _S, 
 				#	_T, _N, _F were implemented as sets. Other parts of the 
 				#	algorithm benefit from their representation as queues though... 
-				for complex in self._E + self._S + self._T + self._N + self._F:
-					if (product == complex):
-						enumerated = True
-						reaction.products[i] = complex
-						break
+				
+				if product in ESTNF: reaction.products[i] = ESTNF[product]; enumerated = True
+				# for complex in self._E + self._S + self._T + self._N + self._F:
+				# 	if (product == complex):
+				# 		enumerated = True
+				# 		reaction.products[i] = complex
+				# 		break
 												
 				if not enumerated:
 					# If the product is in list B, then we need to remove it from
 					# that list so that it can be enumerated for self-interactions
 					# as part of this neighborhood
-					for complex in self._B:
-						if (product == complex):
-							reaction.products[i] = complex
-							self._B.remove(complex)
-							product = complex
-							break
+
+					if product in B: 
+						reaction.products[i] = B[product]; 
+						self._B.remove(B[product])
+						product = B[product]
+						del B[product]
+
+					# for complex in self._B:
+					# 	if (product == complex):
+					# 		reaction.products[i] = complex
+					# 		self._B.remove(complex)
+					# 		product = complex
+					# 		break
 							
 					# If the product has already been seen in this loop, update
 					# the pointer appropriately
@@ -613,20 +631,21 @@ def main(argv):
 		help="Maximum number of complexes that may be enumerated before the enumerator halts.")
 	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=None, type=int, \
 		help="Maximum number of reactions that may be enumerated before the enumerator halts.")
-
 	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction.")
+	parser.add_argument('--bfs', action='store_true', dest='bfs', \
+		help="Perform a breadth-first search instead of a depth-first search")
 	
 
 	cl_opts = parser.parse_args()
 	
 	print "Domain-level Reaction Enumerator (v0.2.0)"
 	print "========================================="
-	
+
 	if(cl_opts.input_filename is None):
 		print "No input file specified. Exiting."
 		raise Exception('Error!')
-	
+
 	# Attempt to load an input parser to generate an enumerator object
 	if (cl_opts.input_format in input.text_input_functions):
 		print "Reading Input file : %s" % cl_opts.input_filename
@@ -647,6 +666,7 @@ def main(argv):
 	if cl_opts.RELEASE_CUTOFF is not None:
 		reactions.RELEASE_CUTOFF = cl_opts.RELEASE_CUTOFF
 	
+	enum.DFS = not cl_opts.bfs
 
 	# Run reaction enumeration
 	print "Enumerating reactions..."
@@ -656,18 +676,42 @@ def main(argv):
 	# Handle condensed reactions
 	condensed = cl_opts.condensed
 	if(condensed):
-		print "Condensing output to remove transient complexes."
+		print "Output will be condensed to remove transient complexes."
 	
-	# Attempt to load an output generator to serialize the enumerator object to an output file	
-	if (cl_opts.output_format in output.text_output_functions):
-		print "Writing text output to file %s" % cl_opts.output_filename
-		output.text_output_functions[cl_opts.output_format](enum, cl_opts.output_filename,output_condensed=condensed)
-	elif (cl_opts.output_format in output.graph_output_functions):
-		print "Writing graph output to file %s" % cl_opts.output_filename
-		output.graph_output_functions[cl_opts.output_format](enum, cl_opts.output_filename,output_condensed=condensed)
+	# More robustly/conveniently guess the output filename(s)
+	output_filename = cl_opts.output_filename	
+	output_formats = [of.strip() for of in cl_opts.output_format.split(",")]
+
+	# if there were multiple output formats
+	if(len(output_formats) > 1):
+
+		# if there was no output filename given, tack a new suffix on the input filename
+		if output_filename == None:
+			output_prefix  = os.path.splitext(cl_opts.input_filename)[0] + "-enum"
+		else:
+			# we're going to ignore the suffix of the provided 
+			output_prefix = os.path.splitext(output_filename)[0]
+
+		# come up with a list of (format, filename) pairs
+		outputs = [ (fmt, output_prefix + "." + fmt) for fmt in output_formats ]
 	else:
-		print "Unrecognized output format '%s'. Exiting." % cl_opts.output_format
-		raise Exception('Error!')
+		if output_filename == None:
+			output_filename = os.path.splitext(cl_opts.input_filename)[0] + "-enum" + "." + output_formats[0]
+		outputs = [(output_formats[0], output_filename)]
+
+	# Print each requested output format
+	for (output_format, output_filename) in outputs:
+
+		# Attempt to load an output generator to serialize the enumerator object to an output file	
+		if (output_format in output.text_output_functions):
+			print "Writing text output to file %s" % output_filename
+			output.text_output_functions[output_format](enum, output_filename,output_condensed=condensed)
+		elif (output_format in output.graph_output_functions):
+			print "Writing graph output to file %s" % output_filename
+			output.graph_output_functions[output_format](enum, output_filename,output_condensed=condensed)
+		else:
+			print "Unrecognized output format '%s'. Exiting." % output_format
+			raise Exception('Error!')
 
 if __name__ == '__main__':
 	sys.exit(main(sys.argv))

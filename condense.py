@@ -195,7 +195,7 @@ def tarjans(complexes,reactions,reactions_consuming):
     return SCCs
 
 
-def condense_graph(enumerator):
+def condense_graph(enumerator, compute_rates=True):
 
     # Approach: compute SCCs using Tarjan's algorithm, including only fast 
     # 1-1 reactions as edges. For each complex in the SCC, compute the 

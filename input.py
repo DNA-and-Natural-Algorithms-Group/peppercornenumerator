@@ -190,44 +190,46 @@ def input_pil(filename):
 	domains = {}
 	strands = {}
 	complexes = {}
-	
-	line_counter = 1
-	line = fin.readline()
-	
+
 	# We loop over all the lines in the file
-	while (line != ""):
+	for (line_counter, line) in enumerate(fin,start=1):
 		line = line.strip()
+		print line
 		
 		# This was an empty line
 		if line == "":
-			line = fin.readline()
 			continue
 			
 		# This was a comment
 		elif line.startswith("#"):
-			line = fin.readline()
 			continue
 			
 		# This is the beginning of a domain
 		elif line.startswith("sequence"):
 			# e.g.: 
-			#       "sequence a = 6"
+			#       "sequence a = 6 : 6"
 			# parts: 0        1 2 3
 			
-			parts = line.split()
-						
-			domain_name = parts[1]
+			#                  sequence    a         =   NNNNN   :     6
+			parts = re.match(r"sequence\s*([\w-]+)\s*=\s*(\w+)\s*:?\s*(\d?)\s*",line)
+			if parts == None:
+				logging.error("Invalid syntax on input line %d"
+							% line_counter)
+				logging.error(line)
+				raise Exception()
+
+			domain_name, domain_sequence, length = parts.groups()
 			if domain_name in domains:
 				logging.error("Duplicate domain name encountered in input line %d"
 								% line_counter)
 				raise Exception()
 			
-			if not re.match(r'\w+$',domain_name):
+			if not re.match(r'[\w-]+$',domain_name):
 				logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
 								% (domain_name, line_counter))
 			
 			# The sequence specification
-			domain_sequence = parts[3]
+			# domain_sequence = parts[1]
 			domain_length = len(domain_sequence);
 			
 			# Create the new domains
@@ -240,15 +242,113 @@ def input_pil(filename):
 			domains[domain_name] = new_dom
 			domains["%s*" % domain_name] = new_dom_comp
 		
+		elif line.startswith("sup-sequence"):
+			# e.g.
+			#       "sequence a = b c d e : 6"
+			#                 0   1         2
+			parts = re.match(r"sup-sequence\s*([\w-]+)\s*=\s*((?:[\w-]+\s*)+):?(\d?)",line)
+			if parts == None:
+				logging.error("Invalid syntax on input line %d"
+							% line_counter)
+				logging.error(line)
+				raise Exception()
+
+			domain_name, sequence_names, length = parts.groups()
+
+			# domain name
+			if domain_name in domains:
+				logging.error("Duplicate domain name encountered in input line %d"
+								% line_counter)
+				raise Exception()
+			
+			if not re.match(r'[\w-]+$',domain_name):
+				logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
+								% (domain_name, line_counter))
+
+
+			# subsequences
+			sequence = ""
+			for sequence_name in sequence_names.split():
+				sequence_name = sequence_name.strip()
+				if sequence_name == "": continue
+				
+				# make sure each subsequence is defined
+				if not sequence_name in domains:
+					logging.error("Unknown domain name '%s' in super-sequence on input line %d"
+								% (sequence_name,line_counter))
+					logging.error(line)
+					raise Exception()
+
+				# build up the full sequence
+				sequence += domains[sequence_name].sequence
+
+			# check for correctness
+			if length:
+				if int(length) != len(sequence):
+					logging.error("Sequence length for super-sequence %s is %d, not equal to expected value %d on input line %d"
+								% (domain_name, len(sequence), length, line_counter))
+					raise Exception()
+
+			# The sequence specification
+			domain_sequence = sequence
+			domain_length = len(sequence)
+
+			# Create the new domains
+			new_dom = Domain(domain_name, domain_length, 
+							 sequence=domain_sequence)
+			new_dom_comp = Domain(domain_name, domain_length, 
+								  sequence=domain_sequence,
+								  is_complement=True)
+			
+			domains[domain_name] = new_dom
+			domains["%s*" % domain_name] = new_dom_comp
+
+		elif line.startswith("equal"):
+			parts = line.split()
+			if len(parts) < 3:
+				logging.error("'equal' statement does not specify at least 2 domains on input line %d"
+								% line_counter)
+				logging.error(line)
+				raise Exception()
+
+			source_domain_name = parts[1]
+			target_domain_names = parts[2:]
+
+			if not source_domain_name in domains:
+				logging.error("Unknown domain name '%s' in 'equals' statement on input line %d"
+								% (source_domain_name,line_counter))
+				logging.error(line)
+				raise Exception()
+
+			source_domain = domains[source_domain_name]
+
+
+			for target_domain_name in target_domain_names:
+				new_dom = Domain(target_domain_name, len(source_domain), 
+							 sequence=source_domain.sequence)
+				new_dom_comp = Domain(target_domain_name, len(source_domain), 
+									  sequence=source_domain.sequence,
+									  is_complement=True)
+
+				domains[target_domain_name] = new_dom
+				domains["%s*" % target_domain_name] = new_dom_comp
+
+
 		# This is the beginning of a strand	
 		elif line.startswith("strand"):
 			# e.g.: 
 			#       "strand A = a x b y z* c* y* b* x*"
 			# parts: 0      1 2 3 4 5 6 ...
 			
-			parts = line.split()
+			parts = re.match(r"strand\s*([\w-]+)\s*=\s*((?:[\w*-]+\s*)+):?(\d?)",line)
+			if parts == None:
+				logging.error("Invalid syntax on input line %d"
+							% line_counter)
+				logging.error(line)
+				raise Exception()
 			
-			strand_name = parts[1]
+			strand_name, strand_dom_names, length = parts.groups()
+
 			if strand_name in strands:
 				logging.error("Duplicate strand name encountered in input line %d"
 								% line_counter)
@@ -259,10 +359,12 @@ def input_pil(filename):
 								% (strand_name, line_counter))
 			
 			strand_doms = []
-			for domain_name in parts[3:]:
+			for domain_name in filter(None,strand_dom_names.split()):
 				if not domain_name in domains:
 					logging.error("Invalid domain name %s encountered in input line %d"
 									% (domain_name, line_counter))
+					logging.error(line)
+					print domains
 					raise Exception()
 								
 				strand_doms.append(domains[domain_name])
@@ -278,22 +380,17 @@ def input_pil(filename):
 			# e.g.:
 			# structure A = S1 : .(((..)))
 			
-			parts = line.split('=')
-			
-			if(len(parts) != 2):
-				logging.error('Invalid structure statement on line %d' % line_counter)
+			# parts = line.split('=')
+			#                  structure       [  1nt  ]      name      =   s1 s2 s3 + s4         : ....((+))...((..))....
+			parts = re.match(r"structure\s+(?:\[[^\]]+\])?\s*([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)",line)
+			if parts == None:
+				logging.error("Invalid syntax on input line %d"
+							% line_counter)
+				logging.error(line)
 				raise Exception()
-				
-			complex_name = parts[0].split()
-			if(len(complex_name) != 2):
-				logging.error('Invalid structure statement on line %d' % line_counter)
-				raise Exception()
-			else:
-				complex_name = complex_name[1]
 			
-			
-			
-			
+			complex_name, strands_line, structure_line = parts.groups() 
+						
 			if complex_name in complexes:
 				logging.error("Duplicate complex name encountered in input line %d"
 								% line_counter)
@@ -303,16 +400,9 @@ def input_pil(filename):
 				logging.warn("Non-alphanumeric complex name %s encountered in input line %d"
 								% (complex_name, line_counter))
 			
-			parts = parts[1].split(':')
-			if(len(parts) != 2):
-				logging.error('Invalid structure statement on line %d' % line_counter)
-				raise Exception()
-			else:
-				(strands_line,structure_line) = parts
 			
 			complex_strands = []
-			strands_line = strands_line.strip()
-			strands_line_parts = strands_line.split()
+			strands_line_parts = [name for name in strands_line.split() if name != "+"]
 			for strand_name in strands_line_parts:
 				if not strand_name in strands:
 					logging.error("Invalid strand name %s encountered in input line %d"
@@ -320,27 +410,40 @@ def input_pil(filename):
 					raise Exception()
 				else:
 					complex_strands.append(strands[strand_name])
-						
+
 			complex_structure = parse_dot_paren(structure_line)
 			struct_length = sum(map(len,complex_structure))
-			domains_length = sum(map(len,complex_strands))
+			domains_length = sum(map(len,complex_strands)) #sum([ len(d) for c in complex_strands for d in c.domains ])
+						
+			if(struct_length > domains_length):
+				complex_structure = parse_basewise_dot_paren(structure_line, complex_strands)						
+				struct_length = sum(map(len,complex_structure))
+				if(struct_length != domains_length):
+					logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was '%(struct)s')"
+								% {"name":complex_name,"doms":domains_length,"struct_length":struct_length, "struct":structure_line})
+					raise Exception()
 			
-			if(struct_length != domains_length):
-				logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was %(struct)s)"
+			elif(struct_length != domains_length):
+
+				logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was '%(struct)s')"
 								% {"name":complex_name,"doms":domains_length,"struct_length":struct_length, "struct":structure_line})
 				raise Exception()
 			
 			complex = Complex(complex_name, complex_strands, complex_structure)
 			complex.check_structure()
-			complexes[complex_name] = complex			
-			
+			complexes[complex_name] = complex		
+		elif line.startswith("kinetic"):
+			continue	
+		elif line.strip() == "":	
+			continue
 		else:
 			logging.error("Unexpected characters encountered in input line %d"
 							% line_counter)
 			raise Exception()
-		line = fin.readline()
-		line_counter += 1
+		# line = fin.readline()
+		# line_counter += 1
 		
+	fin.close()
 	domains = domains.values()
 	strands = strands.values()
 	complexes = complexes.values()

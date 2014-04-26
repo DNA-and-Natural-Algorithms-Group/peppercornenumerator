@@ -173,9 +173,11 @@ class EnumeratorTests(unittest.TestCase):
 																									 
 	def testProcessNeighborhood1(self):
 		enum = Enumerator(self.SLC_enumerator._domains, self.SLC_enumerator._strands, [self.complexes['Cat']])
+		enum._E = []
 		enum._N = []
 		enum._S = []
 		enum._T = []
+		enum._B = []
 		enum._resting_states = []
 		enum._reactions = []
 		enum._complexes = []

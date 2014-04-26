@@ -134,6 +134,74 @@ class InputStandardTests(unittest.TestCase):
 		
 		assert (enum_complexes == complexes)
 	
+	def testPil(self):
+		enumerator = input_pil('test_files/test_input_pil.pil')
+		
+		# domains
+		da = Domain('a', 6, sequence="CTACTC")		
+		db = Domain('b-seq', 8, sequence="ACATCGAN")
+		dz = Domain('z', 6, sequence="TTTCCA")
+		dac = Domain('a', 6, True, sequence="CTACTC")
+		dbc = Domain('b-seq', 8, True, sequence="ACATCGAN")
+		dzc = Domain('z', 6, True, sequence="TTTCCA")
+		
+		dq = Domain('q', 20, sequence="CTACTCACATCGANTTTCCA")
+		dqc = Domain('q', 20, True, sequence="CTACTCACATCGANTTTCCA")
+
+		enum_doms = enumerator.domains[:]
+		doms = [da, dac, db, dbc, dz, dzc, dq, dqc]
+				
+		enum_doms.sort()
+		doms.sort()
+		
+		print
+		print "Domains in enumerator:"
+		print enum_doms
+		print "Expected:"
+		print doms
+		print [cmp(enum_doms[i],doms[i]) for i in xrange(len(doms)) ]
+		assert (tuple(enum_doms) == tuple(doms))
+
+		# strands
+		A = Strand('A', [da, db, dz, dq])
+		B = Strand('B', [dqc, dzc, dbc])
+		
+		enum_strands = enumerator.strands[:]
+		strands = [A, B]
+		
+		enum_strands.sort()
+		strands.sort()
+		
+		print
+		print "Strands in enumerator:"
+		print enum_strands
+		print "Expected:"
+		print strands
+		print [enum_strands[i] == strands[i] for i in xrange(len(strands)) ]
+		assert (tuple(enum_strands) == tuple(strands))
+		
+		# complexes
+		# structure AB = A B : .(((+)))
+		AB = Complex('AB', [A,B], [[None, (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1)]])
+
+		enum_complexes = enumerator.initial_complexes[:]
+		complexes = [AB]
+		
+		enum_complexes.sort()
+		complexes.sort()
+		
+		print
+		print "Complexes in enumerator:"
+		print enum_complexes
+		print "Expected:"
+		print complexes
+		print [enum_complexes[i] == complexes[i] for i in xrange(len(complexes)) ]
+		assert (tuple(enum_complexes) == tuple(complexes))
+
+	def testPil_venkataraman2007(self):
+		enumerator = input_pil('test_files/examples/venkataraman2007/venkataraman2007.pil')
+		
+
 	def testPil_3arm_junction(self):
 		enumerator = input_pil('test_files/test_input_pil_3arm_junction.pil')
 		

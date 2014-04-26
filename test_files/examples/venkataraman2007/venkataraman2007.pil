@@ -1,0 +1,14 @@
+sequence a = NNNNNN
+sequence c = NNNNNN
+sequence b = NNNNNNNNNNNNNNNNNN
+sequence x = NNN
+sequence y = NNN
+
+strand h1 = a b c b* x*
+strand h2 = y* b* a* b c*
+strand A = b* a*
+strand R = x b y
+
+structure h1 = h1 : .(.).
+structure h2 = h2 : .(.).
+structure AR = A R : (.+.).
