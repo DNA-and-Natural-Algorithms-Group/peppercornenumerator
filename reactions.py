@@ -106,7 +106,7 @@ class ReactionPathway(object):
 # ----------------------------------------------------------------------------
 
 def zipping_rate(length):
-	return 10e7 / length
+	return 1.0e8 / length
 
 def opening_rate(length):
 	return 10.0 ** (6 - 1.23 * length)
@@ -114,7 +114,7 @@ def opening_rate(length):
 def hairpin_closing_rate(length):
 	a = 2.54e8
 	b = -3.61e3
-	c = -3
+	c = -3.0
 	return a * (length + 5) ** c + b
 
 def branch_3way_rate(length):
@@ -129,7 +129,7 @@ def branch_3way_remote_rate(length):
 	return 1.0 / (init + step * length**2)
 
 def branch_4way_rate(length):
-	init = 77
+	init = 77	
 	step = 1
 	return 1.0 / (init + step * length**2)
 
@@ -1087,6 +1087,7 @@ def branch_4way(reactant):
 			dom2 = reactant.strands[loc2[0]].domains[loc2[1]]
 			
 			# Template domain (replaces displaced domain, binds loc1)
+			# Effectively the toehold
 			loc3 = structure[strand_index][domain_index]
 			if (loc3 == None):
 				continue

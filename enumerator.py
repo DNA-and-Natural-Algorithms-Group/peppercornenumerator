@@ -624,7 +624,9 @@ def main(argv):
 		help="Desired format for the input file; one of: "+", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()))
 	parser.add_argument('-c', action='store_true', dest='condensed', default=False, \
 		help="Condense reactions into only resting complexes")
-	
+	parser.add_argument('-r', action='store', dest='compute_rates', default=True, \
+		help="Compute reaction rates")
+
 	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None, type=int, \
 		help="Maximum number of strands allowed in a complex (used to prevent polymerization)")
 	parser.add_argument('--max-complex-count', action='store', dest='MAX_COMPLEX_COUNT', default=None, type=int, \

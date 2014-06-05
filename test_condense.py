@@ -514,4 +514,17 @@ class CondenseTests(unittest.TestCase):
 
         out = condense_graph(self.bounded_dendrimer)
         
+    def testCondenseGraph5(self):
+
+        # import pdb; pdb.set_trace() 
+
+        self.fate_example = input.input_pil('test_files/examples/fate-example.pil')
         
+        self.fate_example.MAX_COMPLEX_SIZE = 10
+        self.fate_example.MAX_REACTION_COUNT = 1000
+        self.fate_example.MAX_COMPLEX_COUNT = 200
+        self.fate_example.RELEASE_CUTOFF = 7
+
+        self.fate_example.enumerate()
+
+        out = condense_graph(self.fate_example)
