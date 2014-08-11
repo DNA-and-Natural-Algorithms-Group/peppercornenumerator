@@ -9,16 +9,21 @@ import copy
 import utils
 from utils import *
 
-# TODO: fix naming!
 auto_name = 0
-
 def get_auto_name():
+	"""
+	Returns a new unique name
+	"""
 	global auto_name
 	auto_name += 1
 	return str(auto_name)
 
-# TODO: refactor this
 RELEASE_CUTOFF = 6
+"""
+Gives the maximum length of a duplex in nucleotides that should be considered 
+reversibly bound; that is, helices longer than RELEASE_CUTOFF will never be
+unbound by the `open` reaction function.
+"""
 
 # If true, 3 way branch migrations are always greedy
 UNZIP = True
@@ -29,7 +34,6 @@ class ReactionPathway(object):
 	and a list of products, along with a name field to denote the type of
 	reaction involved.
 	"""
-	# TODO: This needs to be actually used!
 	
 	def __init__(self, name, reactants, products):
 		"""
@@ -45,39 +49,58 @@ class ReactionPathway(object):
 		
 	def __repr__(self):
 		return self.full_string()
-#		return "ReactionPathway(%s)" % (self.name)
-	
+
 	def __str__(self):
 		return self.name
 
 	def full_string(self):
-		return "ReactionPathway(%s): %s -> %s" % (self.name, str(self.reactants), str(self.products))
+		# return "ReactionPathway(%s): %s -> %s" % (self.name, str(self.reactants), str(self.products))
+		return "ReactionPathway(\"%s\",%s,%s)" % (self.name, str(self.reactants), str(self.products))
 
 	@property
 	def name(self):
+		"""
+		Gives the name of the move type (reaction function) that generated the ReactionPathway
+		"""
 		return self._name
 		
 	@property
 	def reactants(self):
+		"""
+		Gives the list of reactants of the ReactionPathway
+		"""
 		return self._reactants
 		
 	@property
 	def products(self):
+		"""
+		Gives the list of products of the ReactionPathway
+		"""
 		return self._products
 		
 	@property
 	def arity(self):
+		"""
+		Gives a pair containing the number of reactants and the number of products in the reaction
+		"""
 		return (len(self._reactants),len(self._products))	
 	
 	def __eq__(self, other):
+		"""
+		Compares two ReactionPathway objects. ReactionPathway objects are equal if they have the same name,
+		reactants, and products.
+		"""
 		return (self.name == other.name) and \
 			   (self.reactants == other.reactants) and \
 			   (self.products == other.products)
 
 	def __hash__(self):
-		return hash(frozenset(self.reactants)) + hash(frozenset(self.products))
+		return hash(self.name) + hash(frozenset(self.reactants)) + hash(frozenset(self.products))
 
 	def __cmp__(self, other):
+		"""
+		ReactionPathway objects are sorted by name, then by reactants, then by products.
+		"""
 		out = cmp(self.name, other.name)
 		if (out != 0):
 			return out
@@ -100,40 +123,66 @@ class ReactionPathway(object):
 				self.products.remove(reactant)
 	
 	def rate(self):
+		"""
+		Gives the rate constant for this reaction
+		"""
 		return self._const	
 				
 # Rate constant formulae
 # ----------------------------------------------------------------------------
 
 def zipping_rate(length):
+	"""
+	Rate constant formula for zipping (hybridization of two single strands
+	adjacent to an existing duplex) of a given `length`.
+	"""
 	return 1.0e8 / length
 
 def opening_rate(length):
+	"""
+	Rate constant formula for opening a duplex of a given `length`.
+	"""
 	return 10.0 ** (6 - 1.23 * length)
 
 def hairpin_closing_rate(length):
+	"""
+	Rate constant formula for hairpin closing with a given loop `length`.
+	"""
 	a = 2.54e8
-	b = -3.61e3
+	b = 0
+	# b = -3.61e3
 	c = -3.0
 	return a * (length + 5) ** c + b
 
 def branch_3way_rate(length):
+	"""
+	Rate constant formula for 3-way branch migration with an adjacent toehold
+	"""
 	init = 2.8e-3
 	step = 0.1e-3
 	return 1.0 / (init + step * length**2)
 
 def branch_3way_remote_rate(length):
+	"""
+	Rate constant formula for 3-way branch migration with a remote toehold
+	"""
 	slowdown = hairpin_closing_rate(length)/zipping_rate(length)
 	init = 2.8e-3 * slowdown
 	step = 0.1e-3
 	return 1.0 / (init + step * length**2)
 
 def branch_4way_rate(length):
+	"""
+	Rate constant formula for 4-way branch migration
+	"""
 	init = 77	
 	step = 1
 	return 1.0 / (init + step * length**2)
 
 def bimolecular_binding_rate(length):
+	"""
+	Rate constant formula for bimolecular association (binding).
+	"""
 	return 1.0e6
 
 

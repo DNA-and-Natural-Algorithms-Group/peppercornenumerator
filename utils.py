@@ -54,8 +54,10 @@ def parse_dot_paren(structure_line):
 	Parses a dot-parenthesis structure into the list of lists representeation
 	used elsewhere in the enumerator.
 
+	Example::
+
 	                         0,0  0,1  0,2   0,3   0,4     1,0   1,1
-	Example: "...((+))" -> [[None,None,None,(1,0),(1,1)],[(0,4),(0,3)]] 
+	         "...((+))" -> [[None,None,None,(1,0),(1,1)],[(0,4),(0,3)]] 
 
 	"""	
 	complex_structure = []
@@ -224,7 +226,8 @@ class Domain(object):
 	@property
 	def is_complement(self):
 		"""
-		Returns true if this domain is a complement or not.
+		Returns true if this domain is a complement (e.g. A* rather than A),
+		false otherwise.
 		"""		
 		return self._is_complement
 					
@@ -237,12 +240,18 @@ class Strand(object):
 		"""
 		Constructor for Strand objects. Takes a strand name and the ordered list
 		of Domain objects from 5' to 3'.
+
+		:param string name:
+		:param list domains: List of :py:class:Domain objects
 		"""
 		self._name = name
 		self._domains = domains
 		self._hash = None # assigned lazily by __hash__
 
 	def __eq__(self, other):
+		"""
+		Strands are compared on the basis of their name and their :py:meth:`domains`
+		"""
 		return (self.name == other.name) and (self.domains == other.domains)
 	
 	def __hash__(self):
@@ -252,9 +261,15 @@ class Strand(object):
 		return self._hash
 	
 	def __cmp__(self, other):
+		"""
+		Strands are compared on the basis of their names
+		"""
 		return cmp(self.name, other.name)
 
 	def __len__(self):
+		"""
+		The length of a strand is equal to the number of :py:meth:`domains` in the strand
+		"""
 		return len(self.domains)
 
 	def __repr__(self):
@@ -265,17 +280,23 @@ class Strand(object):
 
 	@property
 	def name(self):
+		"""
+		Gives the name of the strand
+		"""
 		return self._name
 		
-	"""
-	Returns the number of domains in this strand.
-	"""	
 	@property
 	def length(self):
+		"""
+		Returns the number of domains in this strand.
+		"""	
 		return len(self._domains)
 		
 	@property
 	def domains(self):
+		"""
+		Gives the list of domains of a strand
+		"""
 		return self._domains
 
 class Complex(object):
@@ -406,18 +427,29 @@ class Complex(object):
 	
 	@property
 	def name(self):
+		"""
+		Gives the name of the complex
+		"""
 		return self._name
 	
 	@property
 	def strands(self):
+		"""
+		Gives a list of :py:class:`Strand <strands>` in the complex
+		"""
 		return self._strands[:]
 	
 	@property
 	def structure(self):
+		"""
+		Gives the structure of the complex
+		"""
 		return self._structure[:]
 	
 	@property
 	def available_domains(self):
+		"""
+		"""
 		if not (self._valid_available_domains):
 			self.update_available_domains()			
 		return self._available_domains
@@ -700,18 +732,31 @@ class RestingState(object):
 		
 	@property
 	def name(self):
+		"""
+		Gives the name of the resting state
+		"""
 		return self._name
 		
 	@property
 	def complexes(self):
+		"""
+		Gives a list of complexes in the resting state
+		"""
 		return self._complexes[:]
 	
 	@property
 	def canonical_name(self):
+		"""
+		Gives the canonical name of the resting state, chosen by the lexicographically lowest 
+		name of a complex in the resting state.
+		"""
 		return str(self._canonical)
 	
 	@property
 	def canonical(self):
+		"""
+		See ``canonical_name``.
+		"""
 		return self._canonical
 
 	def __hash__(self):
@@ -720,13 +765,19 @@ class RestingState(object):
 		return self._hash
 	
 	def __eq__(self, other):
+		"""
+		Two resting states are equal if their complexes are equal
+		"""
 		return (self.complexes == other.complexes)
 		
 	def __cmp__(self, other):
+		"""
+		Two resting states are compared on the basis of their complexes
+		"""
 		return cmp(self.complexes, other.complexes)
 
 	def __str__(self):
 		return self.canonical_name
 
 	def __repr__(self):
-		return "RestingState(%s: %s)" % (self.name, str(self.complexes))
+		return "RestingState(\"%s\", %s)" % (self.name, str(self.complexes))

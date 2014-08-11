@@ -3,13 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Enumerator Documentation
-========================
+Peppercorn Enumerator Documentation
+===================================
 
-Contents:
+This document describes the architecture and API for the "Peppercorn" domain-level enumerator. Documentation describing the use of this enumerator can be found in ``README.pdf`` or ``README.html`` in the main directory of this distribution.
 
 .. toctree::
 
+Architecture
+============
+
+.. include:: architecture.rst
 
 Utilities
 =========
@@ -33,7 +37,12 @@ Input and Output
    
 .. automodule:: input
    :members:
-   
+
+Condensation
+============
+.. automodule:: condense
+   :members:      
+
 Indices and tables
 ==================
 

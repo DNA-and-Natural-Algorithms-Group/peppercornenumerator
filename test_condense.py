@@ -220,23 +220,24 @@ class CondenseTests(unittest.TestCase):
         assert cartesian_sum( [ [(1,), (2,3)], [(4,5,6), (7,8)] ] ) == \
             [(1, 4, 5, 6), (1, 7, 8), (2, 3, 4, 5, 6), (2, 3, 7, 8)]
         
-    def testCartesianMultiset(self):
-        outgoing_1_n = [[{ (1,2), (3,) }, { (4,), (5,6) }], 
-                        [{ (7,), (8,9) }, 
-                         { (10,), (11,) }, 
-                         { (12,), (13,), (14,) }]]
+    # def testCartesianMultiset(self):
+    #     outgoing_1_n = [[{ (1,2), (3,) }, { (4,), (5,6) }], 
+    #                     [{ (7,), (8,9) }, 
+    #                      { (10,), (11,) }, 
+    #                      { (12,), (13,), (14,) }]]
         
-        ms = sorted(cartesian_multisets(outgoing_1_n))
-        expected_ms = [sorted([(1, 2, 5, 6), (1, 2, 4), (3, 5, 6), (3, 4)]), 
-                       sorted([(7,10,12),  (7,10,13),  (7,10,14),   (7,11,12),  (7,11,13),  (7,11,14),
-                               (8,9,10,12),(8,9,10,13),(8,9,10,14), (8,9,11,12),(8,9,11,13),(8,9,11,14) ])]
-        print ms
-        print expected_ms
-        assert ms == expected_ms
+    #     ms = sorted(cartesian_multisets(outgoing_1_n))
+    #     expected_ms = [sorted([(1, 2, 5, 6), (1, 2, 4), (3, 5, 6), (3, 4)]), 
+    #                    sorted([(7,10,12),  (7,10,13),  (7,10,14),   (7,11,12),  (7,11,13),  (7,11,14),
+    #                            (8,9,10,12),(8,9,10,13),(8,9,10,14), (8,9,11,12),(8,9,11,13),(8,9,11,14) ])]
+    #     print ms
+    #     print expected_ms
+    #     assert ms == expected_ms
     
     def testCondenseGraph(self):
         reactions = pluck(self.reactions,['A->B','B->C','C->D','D->A','D->E','E->F','F->G','G->E'])
-        enum = Enum(self.complexes.values(),reactions)
+        complexes = pluck(self.complexes,['A','B','C','D','E','F','G'])
+        enum = Enum(complexes,reactions)
         out = condense_graph(enum) # dict((k,v) for (k,v) in condense_graph(enum))
         resting_states = out['resting_state_map']
         resting_state_targets = out['resting_state_targets']
@@ -286,7 +287,8 @@ class CondenseTests(unittest.TestCase):
 
     def testCondenseGraph2(self):
         reactions = pluck(self.reactions,['A->B','B->C','C->D','D->A','E->F','F->G','G->E','C+D->E'])
-        enum = Enum(self.complexes.values(),reactions)
+        complexes = pluck(self.complexes,['A','B','C','D','E','F','G'])
+        enum = Enum(complexes,reactions)        
         out = condense_graph(enum)
         resting_states = out['resting_state_map']
         resting_state_targets = out['resting_state_targets']

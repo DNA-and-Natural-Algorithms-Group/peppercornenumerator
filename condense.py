@@ -1,5 +1,6 @@
 import itertools as it
 import operator
+import collections
 import logging
 import numpy as np
 from reactions import get_auto_name,ReactionPathway
@@ -65,56 +66,50 @@ def is_outgoing(reaction,SCC_set):
     return not (set(reaction.products) <= SCC_set)
 
 def times(iterable):
+    """
+    Multiplies each element of the given `iterable`, returns the product
+    """
     return reduce(operator.mul,iterable)
 
 def tuple_sum(iterable):
     """
     Given an iterable of tuples, concatenates each of the tuples
     and returns one big tuple. Precisely, for some list of tuples 
-    P = [p1, p2, p3 ...]:
+    P = [p1, p2, p3 ...]::
 
         tuple_sum(P) = p1 + p2 + p3 + ... 
 
     where + represents the concatenation of two tuples, e.g. 
     (a1, a2) + (a3, a4) = (a1, a2, a3, a4).
 
-    Example: 
+    Example::
+
         tuple_sum([(1,2,3),(4,),(5,6)]) == (1, 2, 3, 4, 5, 6)
+
     """
     return reduce(operator.concat, tuple(iterable), tuple())
+
+def cartesian_product(iterable):
+    """
+    Gives the cartesian product of the passed `iterable`
+    """
+    return it.product(*iterable)
 
 def cartesian_sum(iterable):
     """
     Takes the cartesian sum over a set of multisets (counters). We define the 
-    cartesian sum X [+] Y between two sets X and Y as:
+    cartesian sum X [+] Y between two sets X and Y as::
 
         X [+] Y = {x + y : x is in X and y is in Y}
 
     where + represents the sum of the multisets.
 
-    Equivalently, in terms of the cartesian product X x Y, we can write X [+] Y as:
+    Equivalently, in terms of the cartesian product X x Y, we can write X [+] Y as::
 
         X [+] Y = { (tuple_sum_{a in p} a) : p in X x Y }
     """
     return map(tuple_sum,it.product(*iterable))
 
-def cartesian_multisets(reactions):
-    """
-    Accepts an iterable of iterables of tuples. The outer iterable 
-    represents a sequence of reactions, the inner tuple represents 
-    products of those reactions.
-    """
-    # cartesian = []
-    # for prods in reactions:
-    #     # x = list(it.product(*prods))
-    #     # y = map(tuple_sum,x)
-        
-    #     y = cartesian_sum(prods)
-    #     z = sorted(y)
-    #     cartesian.append(z)
-    # return cartesian
-    
-    return list(it.chain( sorted(cartesian_sum(prods)) for prods in reactions ))
 
 def get_reactions_consuming(complexes,reactions):
     """
@@ -195,8 +190,24 @@ def tarjans(complexes,reactions,reactions_consuming):
     return SCCs
 
 
-def condense_graph(enumerator, compute_rates=False):
+def condense_graph(enumerator, compute_rates=True):
+    """
+    Condenses the reaction graph for the given `enumerator`.
 
+    :param enumerator.Enumerator enumerator: The enumerator object to condense; `enumerate` must already have been called.
+    :param bool compute_rates: True to compute rates for the condensed reactions; requires numpy and slows calculation.
+
+    Returns an object of the following form::
+
+        {
+            'resting_states': list of resting states
+            'resting_state_map': dict mapping names to resting states,
+            'resting_state_targets': dict mapping each complex to its fate,
+            'condensed_reactions': list of ReactionPathway objects representing the condensed reactions,
+            'reactions': same as 'condensed_reactions'
+         }
+
+    """
     # Approach: compute SCCs using Tarjan's algorithm, including only fast 
     # 1-1 reactions as edges. For each complex in the SCC, compute the 
     # set of _fates_ of that complex (a fate is a multiset of resting states
@@ -235,19 +246,19 @@ def condense_graph(enumerator, compute_rates=False):
     # 
     # ------------------------------------------------------------------------
     
-    # Stores mapping between a complex x and the set of its possible
-    # fates, F(x)
+    # F(x) : Stores mapping between a complex x and the set of its possible
+    # fates
     complex_fates = {}
     
     # Stores mappings between an SCC and the associated resting state
     resting_states = {}
     
-    # Stores mappings between each complex x and the SCC S(x) which 
+    # S(x) : Stores mappings between each complex x and the SCC S(x) which 
     # contains x
     SCC_containing = {}
     
-    # Remembers which SCCs we've processed (for which we've computed
-    # the fates)
+    # Remembers which SCCs we've processed (those SCCs for which we've 
+    # computed the fates)
     processed_SCCs = set()
 
     # The following dicts map SCCs to the various matrices used to 
@@ -263,32 +274,46 @@ def condense_graph(enumerator, compute_rates=False):
     exit_probabilities = {}
     
     # decay_probabilities[(x,F)] = P( x decays to F ), where F is a fate of x
-    decay_probabilities = {}
+    decay_probabilities = collections.defaultdict(float) # default to zero if no entry
+
+    # reaction_decay_probabilities[(r,F)] = P( products of r decay to F ), 
+    # where F is a fate
+    reaction_decay_probabilities = collections.defaultdict(float) # default to zero if no entry
 
     # Define helper functions for calculating condensed reaction rates
     def get_stationary_distribution(scc):
         scc_set = frozenset(scc)
         scc_list = sorted(scc)
+        L = len(scc)
+
+        # assign a numerical index to each complex
         complex_indices = { c:i for (i,c) in enumerate(scc_list) }
 
+        # find all reactions between complexes in this SCC (non-outgoing 1,1 reactions)
         reactions = [r for c in scc for r in reactions_consuming[c] if (r.arity == (1,1) and not is_outgoing(r,scc_set))]
-        L = len(scc)
+
+        # T is the transition rate matrix, defined as follows:
+        # T_{ij} = { rate(j -> i)       if  i != j
+        #          { - sum_{j'} T_{j'i} if  i == j 
         T = np.zeros((L,L))
 
-        # add transition rates for each reaction
+        # add transition rates for each reaction to T
         for r in reactions:
             a = r.reactants[0]
             b = r.products[0]
+            T[complex_indices[b]][complex_indices[a]] = r.rate()
 
-            T[complex_indices[a]][complex_indices[b]] = r.rate()
+        # compute diagonal elements of T
+        T_diag = np.sum(T, axis=0) # sum over columns
+        for i in xrange(L):
+            T[i][i] = -T_diag[i]
 
         # calculate eigenvalues
         (w,v) = np.linalg.eig(T)
 
         # find eigenvector corresponding to eigenvalue zero
-        # http://stackoverflow.com/questions/9542738/python-find-in-list
         try:
-            s = next((v[i,:] for (i, x) in enumerate(w) if x == 0)) # np.ones(L)/L
+            s = next(v[i,:] for (i, x) in enumerate(w) if abs(x) < 1e-15) # semi-arbitrary choice of epsilon based on what seemed to work with numpy
         except(StopIteration):
             raise Exception("Unable to find stationary distribution for resting state. No eigenvector with eigenvalue zero for transition matrix; Markov chain may be periodic.")
 
@@ -329,23 +354,31 @@ def condense_graph(enumerator, compute_rates=False):
             a = r.reactants[0]
             Te[complex_indices[a]][exit_indices[r]] = r.rate()            
         
-
-        #  P = (T_{LxL} Te_{Lxe})
+        # the full transition matrix P_{L+e x L+e} would be
+        # 
+        # P = ( Q_{LxL}  R_{Lxe}   )
+        #     ( 0_{exL}  I_{exe}   )
+        #     
+        # but we really only care about Q to calculate the fundamental matrix,
+        # so we construct 
+        # 
+        # P = (T_{LxL} Te_{Lxe})
         P = np.hstack((T, Te))
 
-        # normalize P along each row, to get the overall transition probabilities
+        # then normalize P along each row, to get the overall transition 
+        # probabilities, e.g. P_ij = P(i -> j), where i,j in 0...L+e
         P = P / np.sum(P,1)[:,np.newaxis]
 
-        # extract the interior transition probabilities
+        # extract the interior transition probabilities (Q_{LxL})
         Q = P[:,0:L]
 
-        # extract the exit probabilities
+        # extract the exit probabilities (R_{Lxe})
         R = P[:,L:L+e]
 
-        # calculate the fundamental matrix
+        # calculate the fundamental matrix (N = (I_L - Q)^-1)
         N = np.linalg.inv(np.eye(L) - Q)
 
-        # calculate the exit probabilities
+        # calculate the absorption matrix (B = NR)
         B = np.dot(N,R)
 
         # return dict mapping tuples of (incoming complex, outgoing reaction) to exit probabilities
@@ -403,17 +436,28 @@ def condense_graph(enumerator, compute_rates=False):
             if compute_rates:
                 stationary_distributions[resting_state] = get_stationary_distribution(scc)
 
-            # assign fates to each complex in the SCC
+            # assign fate to each complex in the SCC
+            fate = frozenset([ (resting_state,) ])
             for c in scc:
                 if c in complex_fates: raise Exception()
-                complex_fates[c] = frozenset([ (resting_state,) ]) #frozenset([ (get_resting_state(c),) ])
-                
+                complex_fates[c] = fate #frozenset([ (get_resting_state(c),) ])
+            
+                # all complexes in this SCC decay to this SCC with probability 1, 
+                # e.g. P(c -> SCC) = 1 for all c in this SCC
+                decay_probabilities[(c, fate)] = 1
+
         # Otherwise, if there are outgoing fast reactions:
         else:
 
-            # Compute the fates of each of the outgoing reactions
+            # Compute all possible combinations of the fates of each product of r
+            reaction_fate_combinations = [ cartesian_product(map(get_fates,r.products)) for r in outgoing_reactions ]
+
+            # Compute the fates of each of the outgoing reactions by summing each element above
             # This is a list, with each element corresponding to the frozenset of fates for one reaction.
-            reaction_fates = [ cartesian_sum(map(get_fates,r.products)) for r in outgoing_reactions ]
+            reaction_fates = [ map(tuple_sum,combination) for combination in reaction_fate_combinations ]
+
+            # !!!! PREVIOUS, WORKING VERSION
+            assert reaction_fates == [ cartesian_sum(map(get_fates,r.products)) for r in outgoing_reactions ]
             
 
             if compute_rates:
@@ -425,14 +469,39 @@ def condense_graph(enumerator, compute_rates=False):
                 for (i,r) in enumerate(outgoing_reactions):
                     # for each possible `fate` of that reaction `r`
                     for fate in reaction_fates[i]:
+
+
+                        # calculate the probability that the products of `r` 
+                        # decay to `fate`, e.g. P(r -> fate)
+                        # initialize to zero
+                        if (r,fate) not in reaction_decay_probabilities:
+                            reaction_decay_probabilities[(r,fate)] = 0
+
+                        # iterate over all combinations of the fates of `r` 
+                        # that sum to equal `fate`
+                        for fates in (combination for combination in reaction_fate_combinations if tuple_sum(combination) == fate):
+                            
+                            # each combination (`fates`) that sums to `fate` 
+                            # constitutes a possible way this reaction can 
+                            # decay to `fate`, and therefore contributes to
+                            # P(r -> fate). This contribution is the joint
+                            # probability that each product `d` of r decays to 
+                            # the corresponding fate `f` in `fates`.
+                            reaction_decay_probabilities[(r,fate)] += times( decay_probabilities[(d,f)] for (d, f) in zip(r.products, fates) )
+
                         # the decay probability will be different for different complexes in the SCC
                         for c in scc:
                             # P(x decays to F) = P(SCC exits via r | SCC was entered via c)
 
                             # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             # TODO: NEED TO MULTIPLY BY P(r decays to fate)
-                            decay_probabilities[(c, fate)] = exit_probabilities[scc_set][(c,r)]
+                            # decay_probabilities[(c, fate)] = exit_probabilities[scc_set][(c,r)]
 
+
+                            if (c, fate) not in decay_probabilities:
+                                decay_probabilities[(c, fate)] = 0
+                            
+                            decay_probabilities[(c, fate)] += exit_probabilities[scc_set][(c,r)] * reaction_decay_probabilities[(r,fate)]
 
             # The set of fates for the complexes in this SCC is the union of 
             # the fates for all outgoing reactions. 
@@ -505,47 +574,67 @@ def condense_graph(enumerator, compute_rates=False):
         
         # And generate new reactions with each combination which is not trivial (reactants == products)
         for (reactants,products) in new_reactant_product_combinations:
-            reactants = sorted(reactants)
-            products = sorted(products)
+            reactants = tuple(sorted(reactants))
+            products = tuple(sorted(products))
             
             # Prune trivial reactions
             if(reactants != products):
                 reaction = ReactionPathway('condensed', list(reactants), list(products))
 
                 if compute_rates:
+                    # # calculate reaction rate by summing over all representative detailed reactions
+                    # detailed_reactions_consuming = set([ r for reactant in reactants for c in reactant.complexes for r in reactions_consuming[c] ])
+                    # reaction_rate = 0
+                    # for r in detailed_reactions_consuming:
+                        
+                    #     # this obnoxious routine is necessary to compute the probability that any possible 
+                    #     detailed_products = sorted(tuple(r.products))
+                    #     condensed_products = products
+
+                    #     # represents all possible ways the products of the detailed 
+                    #     # reaction could decay into various fates.
+                    #     # list of tuples, each containing several (product,fate) tuples:
+                    #     # ex: [  ((p1,f11), (p2,f21)), ((p1,f12), (p2,f21)), ((p1,f11), (p2,f22)), ... ]
+                    #     fate_combinations = it.product(*[it.izip(it.repeat(product), get_fates(product)) for product in detailed_products])
+                        
+                    #     # same as fate_combinations, but filtered to only include 
+                    #     # combinations which yield the products of the condensed reaction
+                    #     decay_possibilities = [ combination for combination in fate_combinations \
+                    #         if sorted(tuple_sum( f for (p,f) in combination )) == condensed_products]
+
+                    #     # if there's any way the products of this reaction can decay to the condensed reaction products, this reaction will contribute to the rate of the condensed reaction
+                    #     if len(decay_possibilities) > 0:
+
+                    #         # probability that the products of this detailed reaction decay into fates that yield the condensed reaction
+                    #         # is the sum of the joint probabilities of each of the decay_possibilities
+                    #         product_probability = sum([  times((decay_probabilities[pair] if pair in decay_probabilities else 0) for combination in decay_possibilities for pair in combination) ])
+
+                    #         reactant_probabilities = times(stationary_distributions[resting_states[frozenset(SCC_containing[a])]][a] for a in r.reactants)
+                    #         k = r.rate()
+
+                    #         # overall contribution of detailed reaction r to rate of the condensed reaction ^r = 
+                    #         # P(reactants of ^r are present as reactants of r) * k_r * P(products of r decay to products of ^r)
+                    #         reaction_rate += reactant_probabilities * k * product_probability
+                    
+
                     # calculate reaction rate by summing over all representative detailed reactions
                     detailed_reactions_consuming = set([ r for reactant in reactants for c in reactant.complexes for r in reactions_consuming[c] ])
-                    reaction_rate = 0
+                    reaction_rate = 0.0
                     for r in detailed_reactions_consuming:
                         
-                        # this obnoxious routine is necessary to compute the probability that any possible 
-                        detailed_products = sorted(tuple(r.products))
-                        condensed_products = products
+                        # probability that the products of this detailed reaction decay into fates that yield the condensed reaction
+                        product_probability = reaction_decay_probabilities[(r, products)]
 
-                        # represents all possible ways the products of the detailed 
-                        # reaction could decay into various fates.
-                        # list of tuples, each containing several (product,fate) tuples:
-                        # ex: [  ((p1,f11), (p2,f21)), ((p1,f12), (p2,f21)), ((p1,f11), (p2,f22)), ... ]
-                        fate_combinations = it.product(*[it.izip(it.repeat(product), get_fates(product)) for product in detailed_products])
+                        # probability that the resting states comprising the reactants of the condensed reaction will be in the right
+                        # configuration to perform the detailed reaction
+                        reactant_probabilities = times(stationary_distributions[resting_states[frozenset(SCC_containing[a])]][a] for a in r.reactants)
                         
-                        # same as fate_combinations, but filtered to only include 
-                        # combinations which yield the products of the condensed reaction
-                        decay_possibilities = [ combination for combination in fate_combinations \
-                            if sorted(tuple_sum( f for (p,f) in combination )) == condensed_products]
+                        # rate of the detailed reaction
+                        k = r.rate()
 
-                        # if there's any way the products of this reaction can decay to the condensed reaction products, this reaction will contribute to the rate of the condensed reaction
-                        if len(decay_possibilities) > 0:
-
-                            # probability that the products of this detailed reaction decay into fates that yield the condensed reaction
-                            # is the sum of the joint probabilities of each of the decay_possibilities
-                            product_probability = sum([  times((decay_probabilities[pair] if pair in decay_probabilities else 0) for combination in decay_possibilities for pair in combination) ])
-
-                            reactant_probabilities = times(stationary_distributions[resting_states[frozenset(SCC_containing[a])]][a] for a in r.reactants)
-                            k = r.rate()
-
-                            # overall contribution of detailed reaction r to rate of the condensed reaction ^r = 
-                            # P(reactants of ^r are present as reactants of r) * k_r * P(products of r decay to products of ^r)
-                            reaction_rate += reactant_probabilities * k * product_probability
+                        # overall contribution of detailed reaction r to rate of the condensed reaction ^r = 
+                        # P(reactants of ^r are present as reactants of r) * k_r * P(products of r decay to products of ^r)
+                        reaction_rate += reactant_probabilities * k * product_probability
 
                     reaction._const = reaction_rate
                 condensed_reactions.add(reaction)

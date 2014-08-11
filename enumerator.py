@@ -105,7 +105,7 @@ class Enumerator(object):
 		
 	@property
 	def reactions(self):
-		""""
+		"""
 		List of reactions enumerated. :py:meth:`.enumerate` must be
 		called before access.
 		"""
@@ -115,7 +115,7 @@ class Enumerator(object):
 		
 	@property
 	def resting_states(self):
-		""""
+		"""
 		List of resting states enumerated. :py:meth:`.enumerate` must be
 		called before access.
 		"""
@@ -125,7 +125,7 @@ class Enumerator(object):
 		
 	@property
 	def complexes(self):
-		""""
+		"""
 		List of complexes enumerated. :py:meth:`.enumerate` must be
 		called before access.
 		"""
@@ -135,7 +135,7 @@ class Enumerator(object):
 			
 	@property
 	def resting_complexes(self):
-		""""
+		"""
 		List of complexes enumerated that are within resting states. 
 		:py:meth:`.enumerate` must be called before access.
 		"""
@@ -145,7 +145,7 @@ class Enumerator(object):
 		
 	@property
 	def transient_complexes(self):
-		""""
+		"""
 		List of complexes enumerated that are not within resting states (e.g. 
 		complexes which are transient). :py:meth:`.enumerate` must be
 		called before access.
