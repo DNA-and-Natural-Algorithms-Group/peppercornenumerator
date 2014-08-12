@@ -13,7 +13,7 @@ from reactions import ReactionPathway, get_auto_name
 import reactions
 import re
 
-def input_standard(filename):
+def input_enum(filename):
 	"""
 	Initializes and returns an enumerator from a standard input file.
 	"""
@@ -543,8 +543,8 @@ def input_pil(filename):
 				if identifier in domains: 
 					dom = domains[identifier]
 					if length == 'short' and dom.length != 'short':
-						error("Domain '%s' should be %s, but there is a already a domain %s that is not. "+ \
-							"Please use only either '%s' or '%s' to refer to this domain, but not both." % (name, length, dom.name, name, dom.name))
+						error(("Domain '%s' should be %s, but there is a already a domain %s that is not. "+ \
+							"Please use only either '%s' or '%s' to refer to this domain, but not both.") % (name, length, dom.name, name, dom.name))
 					return dom
 
 				# generate new domain
@@ -798,7 +798,7 @@ def load_json(filename):
 
 
 text_input_functions = {
-						'standard': input_standard,
+						'enum': input_enum,
 						'pil': input_pil
 					  }
 					  

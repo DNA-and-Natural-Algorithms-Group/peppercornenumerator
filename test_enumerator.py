@@ -8,14 +8,14 @@
 import unittest
 from utils import *
 from reactions import ReactionPathway
-from input import input_standard
+from input import input_enum
 from enumerator import *
 from nose.tools import *
 import copy
 
 class EnumeratorTests(unittest.TestCase):
 	def setUp(self):
-		self.SLC_enumerator = input_standard('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -33,7 +33,7 @@ class EnumeratorTests(unittest.TestCase):
 		
 		
 	
-		self.three_arm_enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+		self.three_arm_enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
 		self.domains2 = {}
 		self.strands2 = {}
 		self.complexes2 = {}		
@@ -236,7 +236,7 @@ class EnumeratorTests(unittest.TestCase):
 
 
 	def testEnumeration1(self):
-		enum = input_standard('test_files/test_input_standard_simple.in')
+		enum = input_enum('test_files/test_input_standard_simple.in')
 		strands = {}
 		for strand in enum.strands:
 			strands[strand.name] = strand
@@ -401,19 +401,19 @@ class EnumeratorTests(unittest.TestCase):
 		assert sorted(exp_transient_complexes + exp_resting_complexes) == sorted(enum.complexes)
 		
 #	def testEnumeration4(self):
-#		self.tet_enumerator = input_standard('test_files/examples/sadowski-tetrahedron.enum')
+#		self.tet_enumerator = input_enum('test_files/examples/sadowski-tetrahedron.enum')
 #		self.tet_enumerator.enumerate()
 	
 	def testEnumeration4(self):
-		self.three_arm_nodal_enum = input_standard('test_files/examples/3-arm-junction.enum')
+		self.three_arm_nodal_enum = input_enum('test_files/examples/3-arm-junction.enum')
 		self.three_arm_nodal_enum.enumerate()
 	
 	def testEnumeration5(self):
-		self.seesaw_enumerator = input_standard('test_files/examples/seesaw/seesaw.enum')
+		self.seesaw_enumerator = input_enum('test_files/examples/seesaw/seesaw.enum')
 		self.seesaw_enumerator.enumerate()
 
 	def testEnumeration6(self):
-		self.bounded_dendrimer = input_standard('test_files/examples/bounded-dendrimer.enum')
+		self.bounded_dendrimer = input_enum('test_files/examples/bounded-dendrimer.enum')
 
 		self.bounded_dendrimer.MAX_COMPLEX_SIZE = 15	
 		self.bounded_dendrimer.MAX_REACTION_COUNT = 1000
@@ -428,7 +428,7 @@ class EnumeratorTests(unittest.TestCase):
 		
 		# We're going to shrink some of these constants to trigger the exception
 		# Test that too many reactions triggers exception
-		polymer_enum = self.polymer_enum = input_standard('test_files/test_input_standard_polymer.in')
+		polymer_enum = self.polymer_enum = input_enum('test_files/test_input_standard_polymer.in')
 		polymer_enum.MAX_REACTION_COUNT = 10
 		polymer_enum.enumerate()
 		print "%d Complexes" % len(polymer_enum.complexes)
@@ -439,7 +439,7 @@ class EnumeratorTests(unittest.TestCase):
 		assert(len(polymer_enum.reactions) >= polymer_enum.MAX_REACTION_COUNT)
 		
 		# Now test that too many complexes also causes the error
-		polymer_enum = self.polymer_enum = input_standard('test_files/test_input_standard_polymer.in')
+		polymer_enum = self.polymer_enum = input_enum('test_files/test_input_standard_polymer.in')
 		polymer_enum.MAX_COMPLEX_COUNT = 10
 		polymer_enum.enumerate()
 		print "%d Complexes" % len(polymer_enum.complexes)

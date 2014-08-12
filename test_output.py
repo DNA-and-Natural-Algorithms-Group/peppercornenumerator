@@ -20,7 +20,7 @@ class OutputTests(unittest.TestCase):
 	# __test__ = False
 	
 	def setUp(self):
-		self.SLC_enumerator = input_standard('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -38,7 +38,7 @@ class OutputTests(unittest.TestCase):
 
 		self.SLC_enumerator_reduced = Enumerator(self.SLC_enumerator.domains, self.SLC_enumerator.strands, [self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']])
 			
-		self.three_arm_enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+		self.three_arm_enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
 		
 				
 		for complex in self.three_arm_enumerator.initial_complexes:
@@ -46,9 +46,9 @@ class OutputTests(unittest.TestCase):
 				
 		self.three_arm_enumerator_reduced = Enumerator(self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
 
-		self.simple_enumerator = input_standard('test_files/test_input_standard_simple.in')
+		self.simple_enumerator = input_enum('test_files/test_input_standard_simple.in')
 				
-		self.simple2_enumerator = input_standard('test_files/test_input_standard_simple2.in')
+		self.simple2_enumerator = input_enum('test_files/test_input_standard_simple2.in')
 		
 		
 		self.SLC_enumerator.enumerate()

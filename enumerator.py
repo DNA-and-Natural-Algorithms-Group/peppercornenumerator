@@ -623,34 +623,52 @@ def main(argv):
 	import input, output
 
 	# Parse command-line arguments
-	parser = argparse.ArgumentParser(description="Domain-level nucleic acid reaction enumerator", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--infile', action='store', dest='input_filename', default=None, \
-		help="Path to the input file")
-	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, \
-		help="Path to the output file")
-	parser.add_argument('-o', action='store', dest='output_format', default='standard', \
-		help="Desired format for the output file; one or more (comma-separated) of " + \
-		", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()) + \
-		". By default this is guessed from the extension of --outfile")
-	parser.add_argument('-i', action='store', dest='input_format', default='standard', \
-		help="Desired format for the input file; one of: "+", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()))
-	parser.add_argument('-c', action='store_true', dest='condensed', default=False, \
-		help="Condense reactions into only resting complexes")
-	parser.add_argument('-r', action='store', dest='compute_rates', default=True, \
-		help="Compute reaction rates")
-	parser.add_argument('--d', action='store', dest='dry_run', default=False, \
-		help="Dry run (read input, write output; do not enumerate any reactions)")
+	parser = argparse.ArgumentParser(description="""
+		Domain-level nucleic acid reaction enumerator
 
-	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None, type=int, \
-		help="Maximum number of strands allowed in a complex (used to prevent polymerization)")
-	parser.add_argument('--max-complex-count', action='store', dest='MAX_COMPLEX_COUNT', default=None, type=int, \
-		help="Maximum number of complexes that may be enumerated before the enumerator halts.")
-	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=None, type=int, \
-		help="Maximum number of reactions that may be enumerated before the enumerator halts.")
-	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
-		help="Maximum number of bases that will be released spontaneously in an `open` reaction.")
-	parser.add_argument('--bfs', action='store_true', dest='bfs', \
-		help="Perform a breadth-first search instead of a depth-first search")
+		Usage examples:
+
+			Load the file `input.pil`
+				enumerator.py input.pil
+
+			Load the file `system.pil`, then generate `system-enum.crn`, 
+			`system-enum.pil`, and `system-enum.sbml`:
+				enumeratpr.py -o crn,pil,sbml input.pil
+
+		""")
+	parser.add_argument('input_filename', action='store', default=None, \
+		help="Path to the input file (same as --infile)")
+	parser.add_argument('--infile', action='store', dest='infile', default=None, \
+		help="Path to the input file (same as listing the input filename after all arguments)")
+	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, \
+		help="Path to the output file (default: use the input filename, + '-enum', then add " +\
+			"an extension based on the ")
+	parser.add_argument('-i', action='store', dest='input_format', default=None, \
+		help="Parse the input file using this format; one of: " + \
+		", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()) + \
+		". (default: guess from the extension of --infile)")
+	parser.add_argument('-o', action='store', dest='output_format', default=None, \
+		help="Write the output file using this format; one or more (comma-separated) of :" + \
+		", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()) + \
+		". (default: guess from the extension of --outfile)")
+	
+	parser.add_argument('-c', action='store_true', dest='condensed', default=False, \
+		help="Condense reactions into only resting complexes (default: %(default)s)")
+	parser.add_argument('-r', action='store_true', dest='compute_rates', default=True, \
+		help="Compute reaction rates (default: %(default)s)")
+	parser.add_argument('-d', action='store_true', dest='dry_run', default=False, \
+		help="Dry run---read input, write output; do not enumerate any reactions. (default: %(default)s)")
+
+	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=MAX_COMPLEX_SIZE, type=int, \
+		help="Maximum number of strands allowed in a complex (used to prevent polymerization) (default: %(default)s)")
+	parser.add_argument('--max-complex-count', action='store', dest='MAX_COMPLEX_COUNT', default=MAX_COMPLEX_COUNT, type=int, \
+		help="Maximum number of complexes that may be enumerated before the enumerator halts. (default: %(default)s)")
+	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
+		help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
+	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=reactions.RELEASE_CUTOFF, type=int, \
+		help="Maximum number of bases that will be released spontaneously in an `open` reaction. (default: %(default)s)")
+	parser.add_argument('--bfs-ish', action='store_true', dest='bfs', \
+		help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
 
 	cl_opts = parser.parse_args()
 	
@@ -661,9 +679,19 @@ def main(argv):
 		print "No input file specified. Exiting."
 		raise Exception('Error!')
 
+	# If there was no input format given, guess from the file extension
+	if (cl_opts.input_format is None):
+		ext = os.path.splitext(cl_opts.input_filename)[1]
+		cl_opts.input_format = ext.replace('.','')
+		if cl_opts.input_format is '':
+			cl_opts.input_format = "pil"
+			print "No input format; assuming %s" % cl_opts.input_format
+		else:
+			print "Guessing input format from input file: %s" % cl_opts.input_format
+
 	# Attempt to load an input parser to generate an enumerator object
 	if (cl_opts.input_format in input.text_input_functions):
-		print "Reading Input file : %s" % cl_opts.input_filename
+		print "Reading input file : %s" % cl_opts.input_filename
 		enum = input.text_input_functions[cl_opts.input_format](cl_opts.input_filename)
 	else:
 		print "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
@@ -736,10 +764,10 @@ def main(argv):
 
 		# Attempt to load an output generator to serialize the enumerator object to an output file	
 		if (output_format in output.text_output_functions):
-			print "Writing text output to file %s" % output_filename
+			print "Writing text output to file : %s" % output_filename
 			output.text_output_functions[output_format](enum, output_filename,output_condensed=condensed)
 		elif (output_format in output.graph_output_functions):
-			print "Writing graph output to file %s" % output_filename
+			print "Writing graph output to file : %s" % output_filename
 			output.graph_output_functions[output_format](enum, output_filename,output_condensed=condensed)
 		else:
 			print "Unrecognized output format '%s'. Exiting." % output_format

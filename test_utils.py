@@ -209,7 +209,7 @@ class ComplexTests(unittest.TestCase):
 	def testHash(self):
 		# copy before hash is computed
 		c = copy.deepcopy(self.complexes['C1']) #.rotate_strands()	
-		assert not hash(self.complexes['C1']) == hash(c)
+		assert hash(self.complexes['C1']) == hash(c)
 
 		assert not hash(self.complexes['C1']) == hash(self.complexes['I1'])
 		assert hash(self.complexes['C1']) == hash(copy.deepcopy(self.complexes['C1']))
@@ -273,12 +273,12 @@ class ComplexTests(unittest.TestCase):
 
 	
 	def testAvailableDomains2(self):
-		from input import input_standard
+		from input import input_enum
 
 		# Example from 3-arm junction
 
 		
-		three_arm_nodal_enum = input_standard('test_files/examples/3-arm-junction.enum')
+		three_arm_nodal_enum = input_enum('test_files/examples/3-arm-junction.enum')
 		enum = three_arm_nodal_enum
 		
 		domains = {}
@@ -315,8 +315,8 @@ class ComplexTests(unittest.TestCase):
 		assert c4.structure == [[None, None]]
 	
 	def testRotateStrands2(self):
-		from input import input_standard
-		self.biggate_enum = input_standard('test_files/examples/sarma2010/biggate.in');
+		from input import input_enum
+		self.biggate_enum = input_enum('test_files/examples/sarma2010/biggate.in');
 		(domains,strands,complexes) = index_parts(self.biggate_enum)
 	
 		c16 = Complex('16',[strands['a1'],strands['a1'],strands['b1']],parse_dot_paren('(..+(((+))))'))
@@ -378,7 +378,8 @@ class RestingStateTests(unittest.TestCase):
 		assert str(self.rs1) == 'C1'
 		
 	def testRepr(self):
-		assert repr(self.rs) == "RestingState(RS1: %s)" % str(self.rs.complexes)
+		print repr(self.rs)
+		assert repr(self.rs) == "RestingState(\"RS1\", %s)" % str(self.rs.complexes)
 		
 	def testComplexes(self):	
 		self.rs.complexes[0] = None

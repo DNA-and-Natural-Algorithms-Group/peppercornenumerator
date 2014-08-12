@@ -14,7 +14,7 @@ import copy
 
 class InputStandardTests(unittest.TestCase):
 	def testStandard_SLC(self):
-		enumerator = input_standard('test_files/test_input_standard_SLC.in')
+		enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		
 		d1 = Domain('1', 'short')
 		d1c = Domain('1', 'short', True)
@@ -78,7 +78,7 @@ class InputStandardTests(unittest.TestCase):
 		assert (enum_complexes == complexes)
 
 	def testStandard_3arm_junction(self):
-		enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+		enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
 		
 		da = Domain('a', 6)		
 		db = Domain('b', 6)
@@ -263,30 +263,30 @@ class InputStandardTests(unittest.TestCase):
 	def testErrors(self):
 		
 		def testDuplicateDomain():
-			enum = input_standard('test_files/test_input_errors/test_input_duplicate_domain.in')
+			enum = input_enum('test_files/test_input_errors/test_input_duplicate_domain.in')
 		assert_raises(Exception, testDuplicateDomain)
 		
 		def testDuplicateStrand():
-			enum = input_standard('test_files/test_input_errors/test_input_duplicate_strand.in')	
+			enum = input_enum('test_files/test_input_errors/test_input_duplicate_strand.in')	
 		assert_raises(Exception, testDuplicateStrand)
 		
 		def testDuplicateComplex():
-			enum = input_standard('test_files/test_input_errors/test_input_duplicate_complex.in')	
+			enum = input_enum('test_files/test_input_errors/test_input_duplicate_complex.in')	
 		assert_raises(Exception, testDuplicateComplex)
 
 		def testMissingDomain():
-			enum = input_standard('test_files/test_input_errors/test_input_missing_domain.in')	
+			enum = input_enum('test_files/test_input_errors/test_input_missing_domain.in')	
 		assert_raises(Exception, testMissingDomain)
 
 		def testMissingStrand():
-			enum = input_standard('test_files/test_input_errors/test_input_missing_strand.in')	
+			enum = input_enum('test_files/test_input_errors/test_input_missing_strand.in')	
 		assert_raises(Exception, testMissingStrand)
 		
 		def testComplexError():
-			enum = input_standard('test_files/test_input_errors/test_input_size_mismatch.in')
+			enum = input_enum('test_files/test_input_errors/test_input_size_mismatch.in')
 		assert_raises(Exception, testComplexError)
 		
-		enum = input_standard('test_files/test_input_errors/test_input_warnings.in')	
+		enum = input_enum('test_files/test_input_errors/test_input_warnings.in')	
 		assert (enum != None)
 			
 	
@@ -303,6 +303,7 @@ class InputKernel(unittest.TestCase):
 		assert listify(parse_kernel("foo^*")) == ['foo^*']
 		assert listify(parse_kernel("a()")) == ['a', []]
 		assert listify(parse_kernel("a(+)")) == ['a', ['+']]
+		assert listify(parse_kernel("a+b")) == ['a', '+', 'b']
 		assert listify(parse_kernel("a(b +)")) == ['a', ['b', '+']]
 		assert listify(parse_kernel("a b(c) d")) == ['a', 'b', ['c'], 'd']
 		assert listify(parse_kernel("a(b c) d^ e(f)")) == ['a', ['b', 'c'], 'd^', 'e', ['f']]

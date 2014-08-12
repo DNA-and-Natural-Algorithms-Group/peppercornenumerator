@@ -8,7 +8,7 @@
 from utils import *
 import reactions
 from reactions import *
-from input import input_standard
+from input import input_enum
 from enumerator import Enumerator
 
 import unittest
@@ -17,7 +17,7 @@ import copy
 
 class BindTests(unittest.TestCase):
 	def setUp(self):
-		self.SLC_enumerator = input_standard('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -31,7 +31,7 @@ class BindTests(unittest.TestCase):
 		for complex in self.SLC_enumerator.initial_complexes:
 			self.complexes[complex.name] = complex
 	
-		self.three_arm_enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+		self.three_arm_enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
 	
 		
 		for complex in self.three_arm_enumerator.initial_complexes:
@@ -215,7 +215,7 @@ class BindTests(unittest.TestCase):
 		assert out_complex == exp_complex
 		
 	def test_combine_complexes_21_seesaw(self):
-		self.seesaw_enum = input_standard('test_files/examples/seesaw/seesaw.enum')
+		self.seesaw_enum = input_enum('test_files/examples/seesaw/seesaw.enum')
 		(domains,strands,complexes) = self.index_parts(self.seesaw_enum)
 		
 		exp_complex = Complex('complex',[strands['S2_T_S3'],strands['S2_T_S3'],strands['T_S3_T']],[[None,(2,2),(2,1)],[None,(2,0),None],[(1,1),(0,2),(0,1)]])
@@ -246,7 +246,7 @@ class BindTests(unittest.TestCase):
 		assert out_complex == exp_complex
 		
 	def test_combine_complexes_21_seesaw_2(self):
-		self.seesaw_enum = input_standard('test_files/examples/seesaw/seesaw2.enum')
+		self.seesaw_enum = input_enum('test_files/examples/seesaw/seesaw2.enum')
 		(domains,strands,complexes) = self.index_parts(self.seesaw_enum)
 		out_complex = reactions.combine_complexes_21(complexes["C1"], (0,3), complexes["C2"], (0,1))
 		exp_complex = complexes['C3']
@@ -278,7 +278,7 @@ class BindTests(unittest.TestCase):
 		
 class OpenTests(unittest.TestCase):
 	def setUp(self):
-		self.SLC_enumerator = input_standard('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -554,7 +554,7 @@ class OpenTests(unittest.TestCase):
 		
 class BranchMigrationTests(unittest.TestCase):
 	def setUp(self):
-		self.SLC_enumerator = input_standard('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -661,7 +661,7 @@ class BranchMigrationTests(unittest.TestCase):
 	# Test with remote toehold
 	
 	def testBranch3way4(self):
-		enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+		enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
 		
 		self.domains = {}
 		self.strands = {}
@@ -696,7 +696,7 @@ class BranchMigrationTests(unittest.TestCase):
 
 	def testBranch3way5(self):
 		
-		enumerator = input_standard('test_files/test_input_standard_3arm_junction.in')
+		enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
 		
 		self.domains = {}
 		self.strands = {}
@@ -721,7 +721,7 @@ class BranchMigrationTests(unittest.TestCase):
 		assert res_list == exp_list
 
 	def testBranch3way6(self):
-		enumerator = input_standard('test_files/test_input_standard_remote.in')
+		enumerator = input_enum('test_files/test_input_standard_remote.in')
 		
 		self.domains = {}
 		self.strands = {}
@@ -853,7 +853,7 @@ class BranchMigrationTests(unittest.TestCase):
 
 class ReactionPathwayTests(unittest.TestCase):
 	def setUp(self):
-		self.SLC_enumerator = input_standard('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		

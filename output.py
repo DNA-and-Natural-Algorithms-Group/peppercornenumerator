@@ -578,7 +578,10 @@ def output_k(enumerator, filename, output_condensed = False):
 
 	output_file.close()
 
-def output_test_case(enumerator, filename, output_condensed = False):
+# warning: I tried to make this output_test_case, but nosetests kept trying to 
+# run it as a test because magic. 
+# https://nose.readthedocs.org/en/latest/writing_tests.html#test-modules
+def output_case(enumerator, filename, output_condensed = False):
 	def tab(x):
 		return "\t" * x
 
@@ -639,14 +642,14 @@ def output_test_case(enumerator, filename, output_condensed = False):
 
 
 text_output_functions = {
-	'standard': output_legacy,
+	# 'standard': output_legacy,
 	'legacy': output_legacy,
 	'pil': output_pil,
 	'json': output_json,
 	'enjs': output_json,
 	'sbml': output_sbml,
 	'crn': output_crn,
-	'test': output_test_case
+	'test': output_case
 }
 
 graph_output_functions = {
