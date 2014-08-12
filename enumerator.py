@@ -165,6 +165,16 @@ class Enumerator(object):
 	 		(sorted(self.resting_complexes) == sorted(object.resting_complexes)) and \
 	 		(sorted(self.transient_complexes) == sorted(object.transient_complexes))
 	
+	def dry_run(self):
+		"""
+		Make it look like you've enumerated, but actually do nothing.
+		"""
+		self._complexes = self.initial_complexes[:]
+		self._resting_complexes = self._complexes[:]
+		self._resting_states = [RestingState(complex.name, [complex]) for complex in self._complexes]
+		self._transient_complexes = []
+		self._reactions = []
+
 	def enumerate(self):
 		"""
 		Generates the reaction graph consisting of all complexes reachable from
@@ -619,13 +629,17 @@ def main(argv):
 	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, \
 		help="Path to the output file")
 	parser.add_argument('-o', action='store', dest='output_format', default='standard', \
-		help="Desired format for the output file; one of: "+", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys())) 
+		help="Desired format for the output file; one or more (comma-separated) of " + \
+		", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()) + \
+		". By default this is guessed from the extension of --outfile")
 	parser.add_argument('-i', action='store', dest='input_format', default='standard', \
 		help="Desired format for the input file; one of: "+", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()))
 	parser.add_argument('-c', action='store_true', dest='condensed', default=False, \
 		help="Condense reactions into only resting complexes")
 	parser.add_argument('-r', action='store', dest='compute_rates', default=True, \
 		help="Compute reaction rates")
+	parser.add_argument('--d', action='store', dest='dry_run', default=False, \
+		help="Dry run (read input, write output; do not enumerate any reactions)")
 
 	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=None, type=int, \
 		help="Maximum number of strands allowed in a complex (used to prevent polymerization)")
@@ -637,7 +651,6 @@ def main(argv):
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction.")
 	parser.add_argument('--bfs', action='store_true', dest='bfs', \
 		help="Perform a breadth-first search instead of a depth-first search")
-	
 
 	cl_opts = parser.parse_args()
 	
@@ -656,6 +669,7 @@ def main(argv):
 		print "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
 		raise Exception('Error!')
 
+	# Transfer options to enumerator object
 	if cl_opts.MAX_REACTION_COUNT is not None:
 		enum.MAX_REACTION_COUNT = cl_opts.MAX_REACTION_COUNT
 	
@@ -670,10 +684,15 @@ def main(argv):
 	
 	enum.DFS = not cl_opts.bfs
 
-	# Run reaction enumeration
-	print "Enumerating reactions..."
-	enum.enumerate()
-	print "Done."
+	# Run reaction enumeration (or not)
+	if cl_opts.dry_run:
+		print "Dry run (not enumerating any reactions)... " 
+		enum.dry_run()
+		print "Done."
+	else:
+		print "Enumerating reactions..."
+		enum.enumerate()
+		print "Done."
 	
 	# Handle condensed reactions
 	condensed = cl_opts.condensed
@@ -684,7 +703,7 @@ def main(argv):
 	output_filename = cl_opts.output_filename	
 	output_formats = [of.strip() for of in cl_opts.output_format.split(",")]
 
-	# if there were multiple output formats
+	# if there were multiple output formats requested
 	if(len(output_formats) > 1):
 
 		# if there was no output filename given, tack a new suffix on the input filename
@@ -697,8 +716,19 @@ def main(argv):
 		# come up with a list of (format, filename) pairs
 		outputs = [ (fmt, output_prefix + "." + fmt) for fmt in output_formats ]
 	else:
-		if output_filename == None:
+		# if there was no output format given but there was an output filename
+		if output_filename != None and len(output_formats) == 0:
+			output_formats = [os.path.splitext(cl_opts.input_filename)[1]]
+
+		# if there was no output filename given, tack a suffix on the input filename
+		elif output_filename == None and len(output_formats) == 1:
 			output_filename = os.path.splitext(cl_opts.input_filename)[0] + "-enum" + "." + output_formats[0]
+		
+		elif output_filename == None and len(output_formats) == 0:
+			print "Must specify either an output filename or an output format!"
+			raise Exception('Error!')
+
+		# one output format
 		outputs = [(output_formats[0], output_filename)]
 
 	# Print each requested output format

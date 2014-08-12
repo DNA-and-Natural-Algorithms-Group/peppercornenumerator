@@ -9,7 +9,7 @@ import logging
 import json
 from utils import *
 from enumerator import Enumerator
-from reactions import ReactionPathway
+from reactions import ReactionPathway, get_auto_name
 import reactions
 import re
 
@@ -181,6 +181,33 @@ def input_standard(filename):
 	return enumerator
 
 
+def parse_kernel(line):
+	from pyparsing import Group, Forward, Word, Combine, Literal, Optional, Suppress, ZeroOrMore, OneOrMore, StringEnd, delimitedList, nestedExpr, alphanums
+	# letter = (* any alphanumeric character *)
+	# identifier = letter, {letter}, [*]
+	# pattern = expression, {space, expression}
+	# expression = domain | loop | wildcard | break
+	# domain = identifier
+	# loop = identifier, "(", [pattern] ,")"
+	# wildcard = "?" | "_" | "~" (* ... etc.*)
+	# break = "+"
+
+	identifier = Word(alphanums+"_-").setName("identifier")
+	domain = Combine(identifier + Optional(Literal("^")) + Optional(Literal("*"))).setName("domain")
+	sbreak = Literal("+").setName("strand break")
+	wildcard = Literal("?").setName("wildcard")
+	
+	pattern = Forward()
+	expression = Forward()
+	
+	loop = (domain + Suppress("(") + Group(Optional(pattern)) + Suppress(")")).setName("loop")
+	expression <<  (loop | wildcard | sbreak | domain)
+	pattern << OneOrMore(expression)
+
+	rule = pattern + StringEnd()
+
+	return rule.parseString(line)
+
 def input_pil(filename):
 	"""
 	Initializes and returns an enumerator from an input file in the Pepper Intermediate Language (PIL)
@@ -190,6 +217,9 @@ def input_pil(filename):
 	domains = {}
 	strands = {}
 	complexes = {}
+
+	# maps domain-wise strand structures to auto-generated strand names
+	structures_to_strands = {}
 
 	# We loop over all the lines in the file
 	for (line_counter, line) in enumerate(fin,start=1):
@@ -203,7 +233,41 @@ def input_pil(filename):
 		# This was a comment
 		elif line.startswith("#"):
 			continue
+		
+		elif line.startswith("length"):
+			# e.g.:
+			#       "length a = 6"
+			# parts:        0   1 
+			parts = re.match(r"length\s*([\w-]+)\s*=\s*(\d?)\s*",line)
+			if parts == None:
+				logging.error("Invalid syntax on input line %d"
+						% line_counter)
+				logging.error(line)
+				raise Exception()
+
+			domain_name, domain_length = parts.groups()
+			if domain_name in domains:
+				logging.error("Duplicate domain name encountered in input line %d"
+								% line_counter)
+				raise Exception()
 			
+			if not re.match(r'[\w-]+$',domain_name):
+				logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
+								% (domain_name, line_counter))
+
+			domain_length = int(domain_length)
+			domain_sequence = "N" * domain_length
+
+			# Create the new domains
+			new_dom = Domain(domain_name, domain_length, 
+							 sequence=domain_sequence)
+			new_dom_comp = Domain(domain_name, domain_length, 
+								  sequence=domain_sequence,
+								  is_complement=True)
+			
+			domains[domain_name] = new_dom
+			domains["%s*" % domain_name] = new_dom_comp
+
 		# This is the beginning of a domain
 		elif line.startswith("sequence"):
 			# e.g.: 
@@ -377,10 +441,9 @@ def input_pil(filename):
 			
 		# This is the beginning of a complex	
 		elif line.startswith("structure"):
+			# parse `structure` line:
 			# e.g.:
 			# structure A = S1 : .(((..)))
-			
-			# parts = line.split('=')
 			#                  structure       [  1nt  ]      name      =   s1 s2 s3 + s4         : ....((+))...((..))....
 			parts = re.match(r"structure\s+(?:\[[^\]]+\])?\s*([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)",line)
 			if parts == None:
@@ -390,17 +453,19 @@ def input_pil(filename):
 				raise Exception()
 			
 			complex_name, strands_line, structure_line = parts.groups() 
-						
+			
+			# check for duplicate complex name
 			if complex_name in complexes:
 				logging.error("Duplicate complex name encountered in input line %d"
 								% line_counter)
 				raise Exception()
 			
+			# check for non-alphanumeric complex name
 			if not re.match(r'\w+$',complex_name):
 				logging.warn("Non-alphanumeric complex name %s encountered in input line %d"
 								% (complex_name, line_counter))
 			
-			
+			# get strand names, allowing optional '+' characters
 			complex_strands = []
 			strands_line_parts = [name for name in strands_line.split() if name != "+"]
 			for strand_name in strands_line_parts:
@@ -411,6 +476,8 @@ def input_pil(filename):
 				else:
 					complex_strands.append(strands[strand_name])
 
+			# parse dot-paren structure, then do some horrible magic to guess 
+			# if it's basewise or segmentwise... 
 			complex_structure = parse_dot_paren(structure_line)
 			struct_length = sum(map(len,complex_structure))
 			domains_length = sum(map(len,complex_strands)) #sum([ len(d) for c in complex_strands for d in c.domains ])
@@ -437,9 +504,164 @@ def input_pil(filename):
 		elif line.strip() == "":	
 			continue
 		else:
-			logging.error("Unexpected characters encountered in input line %d"
-							% line_counter)
-			raise Exception()
+
+			def parse_identifier(identifier):
+				"""
+				Parse an identifier (e.g. `a^*`) to figure out the name, 
+				polarity (+1 or -1) and the length ('long' or 'short').
+
+				Returns: (name, polarity, length)
+				"""
+
+				polarity = 1
+				length = 'long'
+				if identifier[-1] == '*':
+					polarity = -1
+					identifier = identifier[:-1]
+				if identifier[-1] == '^':
+					identifier = identifier[:-1]
+					length = 'short'
+				return (identifier, polarity, length)
+
+			assert parse_identifier("a") == ("a", 1, 'long')
+			assert parse_identifier("b^") == ("b", 1, 'short')
+			assert parse_identifier("c*") == ("c", -1, 'long')
+			assert parse_identifier("d^*") == ("d", -1, 'short')
+
+			def auto_domain(name, polarity=1):
+				"""
+				Finds or automatically generates a domain and/or its complement.
+				"""
+
+				# figure name, polarity, length
+				identity, polarity, length = parse_identifier(name)
+				
+				# handle complements
+				identifier = identity + ('*' if polarity == -1 else '')
+
+				# search for existing domain
+				if identifier in domains: 
+					dom = domains[identifier]
+					if length == 'short' and dom.length != 'short':
+						error("Domain '%s' should be %s, but there is a already a domain %s that is not. "+ \
+							"Please use only either '%s' or '%s' to refer to this domain, but not both." % (name, length, dom.name, name, dom.name))
+					return dom
+
+				# generate new domain
+				else:
+					if identity in domains:
+						raise "Error!"
+					if "*" in identity:
+						raise "Error!"
+
+					new_dom = Domain(identity, length)
+					new_dom_comp = Domain(identity, length,
+										  is_complement=True)
+					domains[identity] = new_dom
+					domains[identity+'*'] = new_dom_comp
+
+					# return domain or complement depending on requested polarity
+					return new_dom if polarity == 1 else new_dom_comp
+
+			def auto_strand(doms):
+				"""
+				Finds or automatically generates a strand from a list of 
+				domains.
+				"""
+
+				# look up whether any strand with this structure exists
+				tdoms = tuple(doms)
+				if tdoms in structures_to_strands:
+					return structures_to_strands[tdoms]
+				
+				# if not, make up a name
+				else:
+					auto_name = initial_auto_name = "_".join(d.name for d in doms)
+					
+					# if another strand exists with this name but not this 
+					# structure, generate a new, uglier name 
+					if auto_name in strands:
+						auto_name += "_%d" 
+						index = 2
+						while (auto_name % index) in strands:
+							index += 1
+						auto_name = auto_name % index
+
+						# TODO: warn about this
+						warning("Auto-generated strand name %s already taken by a strand with different structure. Auto-generated strand will be named %s." % (initial_auto_name, auto_name))
+
+					# generate new strand object
+					strand = Strand(auto_name, doms)
+					strands[auto_name] = strand
+					structures_to_strands[tuple(doms)] = strand
+					return strand
+
+			def auto_complex(strands, structure):
+				"""
+				Generates a complex from a list of strands and a structure
+				"""
+				name = get_auto_name()
+				return Complex(name, strands, structure)
+
+			def resolve(parts, strands, structure):
+				"""
+				Recursively parse a list of `parts` generated by parse_kernel,
+				populating the `strands` and `structure` list
+				"""
+				for part in parts:
+
+					# strand break
+					if part == '+':
+						strands.append([])
+						structure.append([])
+					# ignore
+					elif part == '(':
+						pass
+					elif part == ')':
+						pass
+
+					# unpaired domain
+					elif isinstance(part, basestring):
+						strands[-1].append(auto_domain(part))
+						structure[-1].append(None)
+
+					# paired domain
+					else:
+						# remember opening domain (last domain of last strand)
+						last_dom = strands[-1][-1]
+						last_index = (len(strands)-1, len(strands[-1])-1 )
+						
+						# resolve loop
+						resolve(part, strands, structure)
+
+						# add closing domain
+						strands[-1].append( auto_domain(str(last_dom), -1) )
+						structure[-1].append( last_index )
+						structure[last_index[0]][last_index[1]] = (len(strands)-1, len(strands[-1])-1 )
+						# I was sad that this didn't work without numpy...
+						# structure[last_index] = ...
+
+			try:
+				kparts = parse_kernel(line)
+			except Exception as e:
+				logging.error("Unexpected characters encountered in input line %d; tried to parse as Kernel statement but got error: %s"
+								% (line_counter, str(e)))
+				raise Exception()
+				
+
+			stack = []
+			kstrands = [[]]
+			kstructure = [[]]
+
+			resolve(kparts, kstrands, kstructure)
+
+			# build strands
+			kstrands = [auto_strand(doms) for doms in kstrands]
+
+			# build complex
+			complex = auto_complex(kstrands, kstructure)
+			complexes[complex.name] = complex
+
 		# line = fin.readline()
 		# line_counter += 1
 		

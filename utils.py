@@ -7,6 +7,7 @@
 
 import copy
 import re
+import sys
 
 SHORT_DOMAIN_LENGTH = 6
 LONG_DOMAIN_LENGTH = 12
@@ -30,6 +31,23 @@ def find(f, seq, default=None):
 		if f(item): 
 			return item
 	return default
+
+def warning(message):
+	# from termcolor import colored, cprint
+	# cprint("Warning: " + message, 'yellow')
+	print "Warning: " + message
+
+def error(message):
+	print "Error: " + message
+	sys.exit(1)
+
+def resolve_length(length):
+	if (type(length) == type(0)):
+		return length
+	elif (length == "short"):
+		return SHORT_DOMAIN_LENGTH
+	elif (length == "long"):
+		return LONG_DOMAIN_LENGTH
 
 def parse_basewise_dot_paren(structure_line, strands):
 	parts = [x.strip() for x in structure_line.split("+")]
@@ -174,7 +192,10 @@ class Domain(object):
 		
 	def __len__(self):
 		return self.length
-		
+	
+	def __hash__(self):
+		return hash((self.name, self.length, self.is_complement))
+
 	def can_pair(self, other):
 		"""
 		Returns True if this domain is complementary to the argument.
@@ -205,13 +226,7 @@ class Domain(object):
 		specified or the constant associated with "short" and "long" domains as 
 		appropriate.
 		"""
-				
-		if (type(self._length) == type(0)):
-			return self._length
-		elif (self._length == "short"):
-			return SHORT_DOMAIN_LENGTH
-		elif (self._length == "long"):
-			return LONG_DOMAIN_LENGTH
+		return resolve_length(self._length)
 	
 	@property
 	def sequence(self):

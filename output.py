@@ -578,6 +578,64 @@ def output_k(enumerator, filename, output_condensed = False):
 
 	output_file.close()
 
+def output_test_case(enumerator, filename, output_condensed = False):
+	def tab(x):
+		return "\t" * x
+
+	of = open(filename, 'w')
+	of.write("def test_%s(enumerator):\n" % filename)
+
+	# Domains
+	of.write(tab(1) + "# Domains \n")
+	of.write(tab(1) + "domains = { \n")
+	lines = []
+	for domain in utils.natural_sort(enumerator.domains):
+		#  name, length, is_complement=False, sequence=None
+		lines.append(tab(2) + "'%s' : Domain('%s', %d, is_complement=%s, sequence='%s')" \
+			% (domain.name, domain.identity, domain.length, domain.is_complement, domain.sequence))
+
+	of.write(",\n".join(lines) + "\n")
+	of.write(tab(1) + "}\n")
+	of.write(tab(1) + "assert set(domains.values()) == set(enumerator.domains)\n\n")
+
+	# Strands
+	of.write(tab(1) + "# Strands \n")
+	of.write(tab(1) + "strands = { \n")
+	lines = []
+	for strand in utils.natural_sort(enumerator.strands):
+		doms = ", ".join("domains['%s']" % dom.name for dom in strand.domains)
+		lines.append(tab(2) + "'%s' : Strand('%s', [%s])" % (strand.name, strand.name, doms))
+	of.write(",\n".join(lines) + "\n")
+	of.write(tab(1) + "}\n")
+	of.write(tab(1) + "assert set(strands.values()) == set(enumerator.strands)\n\n")
+
+	# Complexes
+	of.write(tab(1) + "# Complexes \n")
+	of.write(tab(1) + "complexes = { \n")
+	lines = []
+	for complex in utils.natural_sort(enumerator.complexes):
+		strands = ", ".join("strands['%s']" % strand.name for strand in complex.strands)
+		lines.append(tab(2) + "'%s' : Complex('%s', [%s], %r)" % (complex.name, complex.name, strands, complex.structure))
+	of.write(",\n".join(lines) + "\n")
+	of.write(tab(1) + "}\n")
+	of.write(tab(1) + "assert set(complexes.values()) == set(enumerator.complexes)\n\n")
+
+	# Reactions
+	of.write(tab(1) + "# Reactions \n")
+	of.write(tab(1) + "reactions = { \n")
+	lines = []
+	for reaction in utils.natural_sort(enumerator.reactions):
+		reactants = ", ".join("complexes['%s']" % complex.name for complex in reaction.reactants)
+		products  = ", ".join("complexes['%s']" % complex.name for complex in reaction.products)
+		lines.append(tab(2) + "ReactionPathway('%s', [%s], [%s])" % (reaction.name, reactants, products))
+	of.write(",\n".join(lines) + "\n")
+	of.write(tab(1) + "}\n")
+	of.write(tab(1) + "assert set(reactions.values()) == set(enumerator.reactions)\n\n")
+
+	of.close()
+
+
+
 
 
 text_output_functions = {
@@ -587,7 +645,8 @@ text_output_functions = {
 	'json': output_json,
 	'enjs': output_json,
 	'sbml': output_sbml,
-	'crn': output_crn
+	'crn': output_crn,
+	'test': output_test_case
 }
 
 graph_output_functions = {

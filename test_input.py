@@ -289,5 +289,245 @@ class InputStandardTests(unittest.TestCase):
 		enum = input_standard('test_files/test_input_errors/test_input_warnings.in')	
 		assert (enum != None)
 			
-		
-			
+	
+class InputKernel(unittest.TestCase):
+
+	def test_parse_kernel(self):
+		def listify(x):
+			return [i if isinstance(i, basestring) else listify(i) for i in x] 
+
+		assert listify(parse_kernel("a")) == ['a']
+		assert listify(parse_kernel("a*")) == ['a*']
+		assert listify(parse_kernel("a^*")) == ['a^*']
+		assert listify(parse_kernel("1^*")) == ['1^*']
+		assert listify(parse_kernel("foo^*")) == ['foo^*']
+		assert listify(parse_kernel("a()")) == ['a', []]
+		assert listify(parse_kernel("a(+)")) == ['a', ['+']]
+		assert listify(parse_kernel("a(b +)")) == ['a', ['b', '+']]
+		assert listify(parse_kernel("a b(c) d")) == ['a', 'b', ['c'], 'd']
+		assert listify(parse_kernel("a(b c) d^ e(f)")) == ['a', ['b', 'c'], 'd^', 'e', ['f']]
+		assert listify(parse_kernel("a b c*(d + e) f a")) == ['a', 'b', 'c*', ['d', '+', 'e'], 'f', 'a']
+
+		# parse_kernel("^foo")
+		assert_raises(Exception, lambda: parse_kernel("^foo"))
+
+		# parse_kernel("a(")
+		assert_raises(Exception, lambda: parse_kernel("a("))
+		assert_raises(Exception, lambda: parse_kernel("b)"))
+		assert_raises(Exception, lambda: parse_kernel("a())"))
+
+
+	def test_kernel_1(self):
+		enumerator = input_pil('test_files/test_input_kernel_1.pil')
+		enumerator.dry_run()
+
+		# Domains 
+		domains = { 
+			'a' : Domain('a', 12, is_complement=False, sequence='None'),
+			'a*' : Domain('a', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'a' : Strand('a', [domains['a']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'1' : Complex('1', [strands['a']], [[None]]),
+			'2' : Complex('2', [strands['a']], [[None]])
+		}
+		assert set(complexes.values()) == set(enumerator.complexes)
+
+		# Reactions 
+		reactions = { 
+
+		}
+		assert set(reactions.values()) == set(enumerator.reactions)
+
+	def test_kernel_2(self):
+		enumerator = input_pil('test_files/test_input_kernel_2.pil')
+		enumerator.dry_run()
+
+		# Domains 
+		domains = { 
+			'a' : Domain('a', 12, is_complement=False, sequence='None'),
+			'a*' : Domain('a', 12, is_complement=True, sequence='None'),
+			'b' : Domain('b', 12, is_complement=False, sequence='None'),
+			'b*' : Domain('b', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'a_b' : Strand('a_b', [domains['a'], domains['b']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'1' : Complex('1', [strands['a_b']], [[None, None]])
+		}
+		assert set(complexes.values()) == set(enumerator.complexes)
+
+		# Reactions 
+		reactions = { 
+
+		}
+		assert set(reactions.values()) == set(enumerator.reactions)
+
+	def test_kernel_3(self):
+		enumerator = input_pil('test_files/test_input_kernel_3.pil')
+		enumerator.dry_run()
+		# Domains 
+		domains = { 
+			'a' : Domain('a', 12, is_complement=False, sequence='None'),
+			'a*' : Domain('a', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'a' : Strand('a', [domains['a']]),
+			'a*' : Strand('a*', [domains['a*']]),
+			'a_a' : Strand('a_a', [domains['a'], domains['a']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'1' : Complex('1', [strands['a_a']], [[(0, 1), (0, 0)]]),
+			'2' : Complex('2', [strands['a'], strands['a']], [[(1, 0)], [(0, 0)]]),
+			'3' : Complex('3', [strands['a*'], strands['a*']], [[(1, 0)], [(0, 0)]])
+		}
+		assert set(complexes.values()) == set(enumerator.complexes)
+
+		# Reactions 
+		reactions = { 
+
+		}
+		assert set(reactions.values()) == set(enumerator.reactions)		
+
+
+	def test_kernel_4(self):
+		enumerator = input_pil('test_files/test_input_kernel_4.pil')
+		enumerator.dry_run()
+		# Domains 
+		domains = { 
+			'a' : Domain('a', 12, is_complement=False, sequence='None'),
+			'a*' : Domain('a', 12, is_complement=True, sequence='None'),
+			'b' : Domain('b', 12, is_complement=False, sequence='None'),
+			'b*' : Domain('b', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'a' : Strand('a', [domains['a']]),
+			'a_b' : Strand('a_b', [domains['a'], domains['b']]),
+			'a_b_a' : Strand('a_b_a', [domains['a'], domains['b'], domains['a']]),
+			'b' : Strand('b', [domains['b']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'1' : Complex('1', [strands['a_b']], [[None, None]]),
+			'2' : Complex('2', [strands['a'], strands['b']], [[None], [None]]),
+			'3' : Complex('3', [strands['a_b_a']], [[(0, 2), None, (0, 0)]])
+		}
+		assert set(complexes.values()) == set(enumerator.complexes)
+
+		# Reactions 
+		reactions = { 
+
+		}
+		assert set(reactions.values()) == set(enumerator.reactions)
+
+
+
+	def test_kernel_5(self):
+		enumerator = input_pil('test_files/test_input_kernel_5.pil')
+		enumerator.dry_run()
+
+		# Domains 
+		domains = { 
+			'a' : Domain('a', 12, is_complement=False, sequence='None'),
+			'a*' : Domain('a', 12, is_complement=True, sequence='None'),
+			'b' : Domain('b', 12, is_complement=False, sequence='None'),
+			'b*' : Domain('b', 12, is_complement=True, sequence='None'),
+			'c' : Domain('c', 12, is_complement=False, sequence='None'),
+			'c*' : Domain('c', 12, is_complement=True, sequence='None'),
+			'd' : Domain('d', 12, is_complement=False, sequence='None'),
+			'd*' : Domain('d', 12, is_complement=True, sequence='None'),
+			'e' : Domain('e', 12, is_complement=False, sequence='None'),
+			'e*' : Domain('e', 12, is_complement=True, sequence='None'),
+			'f' : Domain('f', 12, is_complement=False, sequence='None'),
+			'f*' : Domain('f', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'a_b_c*_d' : Strand('a_b_c*_d', [domains['a'], domains['b'], domains['c*'], domains['d']]),
+			'e_c*_f_a' : Strand('e_c*_f_a', [domains['e'], domains['c*'], domains['f'], domains['a']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'1' : Complex('1', [strands['a_b_c*_d'], strands['e_c*_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
+		}
+		assert set(complexes.values()) == set(enumerator.complexes)
+
+
+	def test_kernel_6(self):
+		enumerator = input_pil('test_files/test_input_kernel_6.pil')
+		enumerator.dry_run()
+
+		# Domains 
+		domains = { 
+			'a' : Domain('a', 1, is_complement=False, sequence='N'),
+			'a*' : Domain('a', 1, is_complement=True, sequence='N'),
+			'b' : Domain('b', 12, is_complement=False, sequence='None'),
+			'b*' : Domain('b', 12, is_complement=True, sequence='None'),
+			'c' : Domain('c', 12, is_complement=False, sequence='None'),
+			'c*' : Domain('c', 12, is_complement=True, sequence='None'),
+			'd' : Domain('d', 12, is_complement=False, sequence='None'),
+			'd*' : Domain('d', 12, is_complement=True, sequence='None'),
+			'e' : Domain('e', 12, is_complement=False, sequence='None'),
+			'e*' : Domain('e', 12, is_complement=True, sequence='None'),
+			'f' : Domain('f', 12, is_complement=False, sequence='None'),
+			'f*' : Domain('f', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'a_b_c*_d' : Strand('a_b_c*_d', [domains['a'], domains['b'], domains['c*'], domains['d']]),
+			'e_c*_f_a' : Strand('e_c*_f_a', [domains['e'], domains['c*'], domains['f'], domains['a']]),
+			's' : Strand('s', [domains['a'], domains['b'], domains['c'], domains['d'], domains['e'], domains['f']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'1' : Complex('1', [strands['a_b_c*_d'], strands['e_c*_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
+		}
+		assert set(complexes.values()) == set(enumerator.complexes)
+
+		# Reactions 
+		reactions = { 
+
+		}
+		assert set(reactions.values()) == set(enumerator.reactions)
+
+		# Reactions 
+		reactions = { 
+
+		}
+		assert set(reactions.values()) == set(enumerator.reactions)
+
+
