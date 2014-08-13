@@ -339,7 +339,7 @@ class InputKernel(unittest.TestCase):
 		assert_raises(SystemExit, lambda: auto_domain("t^", 1, domains))
 
 	def test_from_kernel(self):
-		(kdomains, kstrands, kcomplexes) = from_kernel(["a( b(c + d) e) f"])
+		(kdomains, kstrands, kcomplexes) = from_kernel(["FancyComplexName = a( b(c + d) e) f"])
 
 		domains = { 
 			'a' : Domain('a', 12, is_complement=False, sequence='None'),
@@ -366,9 +366,9 @@ class InputKernel(unittest.TestCase):
 
 		# Complexes 
 		complexes = { 
-			'4' : Complex('4', [strands['a_b_c'], strands['d_b*_e_a*_f']], [[(1, 3), (1, 1), None], [None, (0, 1), None, (0, 0), None]])
+			'FancyComplexName' : Complex('FancyComplexName', [strands['a_b_c'], strands['d_b*_e_a*_f']], [[(1, 3), (1, 1), None], [None, (0, 1), None, (0, 0), None]])
 		}
-		assert set(complexes.values()) == set(kcomplexes.values())
+		assert complexes == kcomplexes
 
 	def test_kernel_1(self):
 		enumerator = input_pil('test_files/test_input_kernel_1.pil')

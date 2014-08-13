@@ -298,11 +298,12 @@ def auto_strand(doms, strands, structures_to_strands):
 		structures_to_strands[tuple(doms)] = strand
 		return strand
 
-def auto_complex(strands, structure, complexes):
+def auto_complex(strands, structure, complexes, name=None):
 	"""
 	Generates a complex from a list of strands and a structure
 	"""
-	name = get_auto_name()
+	if name is None:
+		name = get_auto_name()
 	complex = Complex(name, strands, structure)
 	complexes[complex.name] = complex
 	return complex
@@ -347,6 +348,11 @@ def resolve_kernel(lines, domains, strands, structures_to_strands, complexes):
 				# structure[last_index] = ...
 
 	for line in lines:
+		cname = None
+		parts = re.match(r"(\w+)\s*=\s*(.*)", line)
+		if parts is not None:
+			cname, line = parts.groups()
+
 		kparts = parse_kernel(line)
 
 		stack = []
@@ -359,7 +365,7 @@ def resolve_kernel(lines, domains, strands, structures_to_strands, complexes):
 		kstrands = [auto_strand(doms, strands, structures_to_strands) for doms in kstrands]
 
 		# build complex
-		complex = auto_complex(kstrands, kstructure, complexes)
+		complex = auto_complex(kstrands, kstructure, complexes, name=cname)
 
 		# check structure is valid
 		complex.check_structure()
