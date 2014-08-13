@@ -578,7 +578,7 @@ def output_k(enumerator, filename, output_condensed = False):
 
 	output_file.close()
 
-# warning: I tried to make this output_test_case, but nosetests kept trying to 
+# warning: I tried to name this output_test_case, but nosetests kept trying to 
 # run it as a test because magic. 
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-modules
 def output_case(enumerator, filename, output_condensed = False):
@@ -634,6 +634,35 @@ def output_case(enumerator, filename, output_condensed = False):
 	of.write(",\n".join(lines) + "\n")
 	of.write(tab(1) + "}\n")
 	of.write(tab(1) + "assert set(reactions.values()) == set(enumerator.reactions)\n\n")
+
+
+	if(output_condensed):
+		condensed = condense_resting_states(enumerator)
+		
+		# Resting states
+		of.write(tab(1) + "# Resting states \n")
+		of.write(tab(1) + "resting_states = { \n")
+		lines = []
+		for rs in utils.natural_sort(condensed['resting_states']):
+			complexes = ", ".join("complexes['%s']" % complex.name for complex in rs.complexes)
+			lines.append(tab(2) + "RestingState('%s', [%s])" % (rs.name, complexes))
+	
+		of.write(",\n".join(lines) + "\n")
+		of.write(tab(1) + "}\n")
+		of.write(tab(1) + "assert set(resting_states.values()) == set(condensed['resting_states'])\n\n")
+
+
+		# Condensed reactions
+		of.write(tab(1) + "# Condensed Reactions \n")
+		of.write(tab(1) + "condensed_reactions = { \n")
+		lines = []
+		for reaction in utils.natural_sort(condensed['reactions']):
+			reactants = ", ".join("resting_states['%s']" % species.name for species in reaction.reactants)
+			products  = ", ".join("resting_states['%s']" % species.name for species in reaction.products)
+			lines.append(tab(2) + "ReactionPathway('%s', [%s], [%s])" % (reaction.name, reactants, products))
+		of.write(",\n".join(lines) + "\n")
+		of.write(tab(1) + "}\n")
+		of.write(tab(1) + "assert set(condensed_reactions.values()) == set(condensed['resting_states'])\n\n")
 
 	of.close()
 

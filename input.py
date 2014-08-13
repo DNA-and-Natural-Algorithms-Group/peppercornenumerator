@@ -256,9 +256,11 @@ def auto_domain(name, polarity, domains):
 		if "*" in identity:
 			raise "Error!"
 
-		new_dom = Domain(identity, length)
+		sequence = 'N' * utils.resolve_length(length)
+
+		new_dom = Domain(identity, length, sequence=sequence)
 		new_dom_comp = Domain(identity, length,
-							  is_complement=True)
+							  is_complement=True, sequence=sequence)
 		domains[identity] = new_dom
 		domains[identity+'*'] = new_dom_comp
 

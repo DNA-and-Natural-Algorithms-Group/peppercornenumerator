@@ -8,7 +8,7 @@
 from utils import *
 import reactions
 from reactions import *
-from input import input_enum
+from input import input_enum, from_kernel
 from enumerator import Enumerator
 
 import unittest
@@ -809,7 +809,7 @@ class OpenTests(unittest.TestCase):
 		exp_list = [ReactionPathway('open', [complex], sorted([Complex('C1', [S3], [[None, None]]), Complex('C2', [S1, S2], [[None, (1, 0)], [(0, 1)]])]))]
 		assert res_list == exp_list
 		
-class BranchMigrationTests(unittest.TestCase):
+class Branch3WayTests(unittest.TestCase):
 	def setUp(self):
 		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
@@ -1051,7 +1051,155 @@ class BranchMigrationTests(unittest.TestCase):
 		print res_list
 		print exp_list
 		assert res_list == exp_list
+
+	def testBranch3wayA(self):
 		
+		# what the heck is going on here
+
+		# 3wayA: ? b ? b(?) ? <-> ? b(? b ?) ?
+		(domains, strands, complexes) = from_kernel([
+
+			# doesn't work
+			# "A1 = b b()",
+			# "A2 = b(b)"
+
+			# works <->
+			"A1 = a(b  b())",
+			"A2 = a(b( b))"
+			
+			# doesn't work
+			# "A1 = a(x b x b(x) x)",
+			# "A2 = a(x b(x b x) x)"
+			
+			# works ->
+			# "A1 = a( b x b(x) )",
+			# "A2 = a( b(x b x) )"
+
+			# works ->
+			# "A1 = a(b + b())",
+			# "A2 = a(b(+ b))"
+			
+			# doesn't work
+			# "A1 = b b()",
+			# "A2 = b(b)"
+			# 
+			# doesn't work
+			# "A1 = x b x b(x) x",
+			# "A2 = x b(x b x) x"
+		])
+		forward = branch_3way(complexes['A1'])
+		print "-> : ", forward
+		for r in forward:
+			print list(x.kernel_string() for x in r.products)
+		assert forward == [ReactionPathway('branch_3way', [complexes['A1']], [complexes['A2']])]
+
+		reverse = branch_3way(complexes['A2'])
+		print "<- : ", reverse
+		for r in reverse:
+			print list(x.kernel_string() for x in r.products)
+		assert reverse == [ReactionPathway('branch_3way', [complexes['A2']], [complexes['A1']])]
+
+	def testBranch3wayB(self):
+		
+		# 3wayB: ? b(?) ? b ? <-> ? b ? b*(?) ?
+		(domains, strands, complexes) = from_kernel([
+			# doesn't work
+			# "A1 = b() b",
+			# "A2 = b b*()"
+
+			# works <->
+			"A1 = a(b() b)",
+			"A2 = a(b b*())"
+
+			# wildcard #2--wrapped
+			# works ->
+			# "A1 = a( b(x)  b )",
+			# "A2 = a( b x b*() )"
+
+			# wildcard #3--wrapped 
+			# doesn't work
+			# "A1 = a( b() x b )",
+			# "A2 = a( b  b*(x) )"
+
+			# 2/4 wildcards--wraped
+			# doesn't work
+			# "A1 = a( b(x) x b )",
+			# "A2 = a( b x b*(x) )"
+
+			# full pattern--wrapped
+			# doesn't work
+			# "A1 = a(x b(x) x b x)",
+			# "A2 = a(x b x b*(x) x)"
+
+			# full pattern
+			# doesn't work
+			# "A1 = x b(x) x b x",
+			# "A2 = x b x b*(x) x"
+		])
+		forward = branch_3way(complexes['A1'])
+		print "-> : ", forward
+		for r in forward:
+			print list(x.kernel_string() for x in r.products)
+		assert forward == [ReactionPathway('branch_3way', [complexes['A1']], [complexes['A2']])]
+
+		reverse = branch_3way(complexes['A2'])
+		print "<- : ", reverse
+		for r in reverse:
+			print list(x.kernel_string() for x in r.products)
+		assert reverse == [ReactionPathway('branch_3way', [complexes['A2']], [complexes['A1']])]
+
+	def testBranch3wayC(self):
+		# 3wayC: ? b*(?) ? b ? <-> ? b*(? b ?) ?
+		(domains, strands, complexes) = from_kernel([
+			# doesn't work
+			# "A1 = b*() b",
+			# "A2 = b*(b)"
+
+			# works <->
+			"A1 = a(b*() b)",
+			"A2 = a(b*(b))"
+
+			# works ->
+			# "A1 = a( b*(x) x b )",
+			# "A2 = a( b*(x b x) )" 
+
+			# doesn't work
+			# "A1 = a(x b*(x) x b x)",
+			# "A2 = a(x b*(x b x) x)" 
+
+			# doesn't work
+			# "A1 = x b*(x) x b x",
+			# "A2 = x b*(x b x) x" 
+		])
+		forward = branch_3way(complexes['A1'])
+		print "-> : ", forward
+		for r in forward:
+			print list(x.kernel_string() for x in r.products)
+		assert forward == [ReactionPathway('branch_3way', [complexes['A1']], [complexes['A2']])]
+
+		reverse = branch_3way(complexes['A2'])
+		print "<- : ", reverse
+		for r in reverse:
+			print list(x.kernel_string() for x in r.products)
+		assert reverse == [ReactionPathway('branch_3way', [complexes['A2']], [complexes['A1']])]
+		
+
+class Branch4WayTests(unittest.TestCase):
+	def setUp(self):
+		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
+		self.domains = {}
+		self.strands = {}
+		self.complexes = {}		
+		
+		for domain in self.SLC_enumerator.domains:
+			self.domains[domain.name] = domain
+		
+		for strand in self.SLC_enumerator.strands:
+			self.strands[strand.name] = strand
+		
+		for complex in self.SLC_enumerator.initial_complexes:
+			self.complexes[complex.name] = complex
+
 	def testDo4wayMigration1(self):	
 		s1 = Strand('s1', [self.domains['1*'], self.domains['2*'], self.domains['3']])
 		s2 = Strand('s2', [self.domains['3*'], self.domains['2'], self.domains['4']])
@@ -1160,6 +1308,36 @@ class BranchMigrationTests(unittest.TestCase):
 		
 		assert exp_list == res_list	
 
+	def testBranch4wayA(self):
+		# 4way: b( ? ) ? b ( ? ) --> b( ? b*( ? ) ? )
+		(domains, strands, complexes) = from_kernel([
+			# doesn't work
+			# "A1 = a( x b(x) x b(x) x )",
+			# "A2 = a( x b(x b*(x) x x ))"
+			
+			# works
+			"A1 = a( b(x) x b(x)  )",
+			"A2 = a( b(x b*(x) x ))"
+
+			# works
+			# "A1 = a( b() b()  )",
+			# "A2 = a( b( b*() ))"
+			
+			# doesn't work
+			# "A1 = b() b()  ",
+			# "A2 = b( b*() )"
+
+
+			# doesn't work
+			# "A1 = b( x ) x b ( x )",
+			# "A2 = b( x b*( x ) x )"
+		])
+		rs = branch_4way(complexes['A1'])
+		print rs
+		for r in rs:
+			print list(x.kernel_string() for x in r.products)
+		assert rs == [ReactionPathway('branch_4way', [complexes['A1']], [complexes['A2']])]
+
 class ReactionPathwayTests(unittest.TestCase):
 	def setUp(self):
 		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
@@ -1200,8 +1378,7 @@ class ReactionPathwayTests(unittest.TestCase):
 		
 		assert not rp1 == rp2
 		
-		rp3 = ReactionPathway('branch_3way', [Complex('C1', [self.strands['PS'], self.strands['OP']], [[(1, 2), (1, 1), (1, 0), None, None], [(0, 2), (0, 1), (0, 0), None]])
-], [self.complexes['C2']])
+		rp3 = ReactionPathway('branch_3way', [Complex('C1', [self.strands['PS'], self.strands['OP']], [[(1, 2), (1, 1), (1, 0), None, None], [(0, 2), (0, 1), (0, 0), None]])], [self.complexes['C2']])
 
 		assert rp1 == rp3
 		
@@ -1220,8 +1397,7 @@ class ReactionPathwayTests(unittest.TestCase):
 	def testCmp(self):
 		rp1 = ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2']])		
 		rp2 = ReactionPathway('branch_4way', [self.complexes['C2']], [self.complexes['Cat']])		
-		rp3 = ReactionPathway('branch_3way', [Complex('C1', [self.strands['PS'], self.strands['OP']], [[(1, 2), (1, 1), (1, 0), None, None], [(0, 2), (0, 1), (0, 0), None]])
-], [self.complexes['C2']])
+		rp3 = ReactionPathway('branch_3way', [Complex('C1', [self.strands['PS'], self.strands['OP']], [[(1, 2), (1, 1), (1, 0), None, None], [(0, 2), (0, 1), (0, 0), None]])], [self.complexes['C2']])
 		rp4 = ReactionPathway('branch_4way', [self.complexes['C1']], [self.complexes['C2']])
 		rp5 = ReactionPathway('branch_3way', [self.complexes['Cat']], [self.complexes['C2']])
 		rp6 = ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['Cat']])
