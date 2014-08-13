@@ -663,6 +663,9 @@ def input_pil(filename):
 			# build complex
 			complex = auto_complex(kstrands, kstructure, complexes)
 
+			# check structure is valid
+			complex.check_structure()
+			
 		# line = fin.readline()
 		# line_counter += 1
 		

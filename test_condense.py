@@ -340,8 +340,8 @@ class CondenseTests(unittest.TestCase):
 
 
     # def testCondenseGraph3(self):
-    #     from input import input_standard
-    #     enum = input_standard('test_files/examples/sarma2010/fig4.in')
+    #     from input import input_enum
+    #     enum = input_enum('test_files/examples/sarma2010/fig4.in')
     #     enum.enumerate()
         
     #     complexes = dict()
@@ -505,7 +505,7 @@ class CondenseTests(unittest.TestCase):
 
         # import pdb; pdb.set_trace() 
 
-        self.bounded_dendrimer = input.input_standard('test_files/examples/bounded-dendrimer.enum')
+        self.bounded_dendrimer = input.input_enum('test_files/examples/bounded-dendrimer.enum')
         
         self.bounded_dendrimer.MAX_COMPLEX_SIZE = 10
         self.bounded_dendrimer.MAX_REACTION_COUNT = 1000

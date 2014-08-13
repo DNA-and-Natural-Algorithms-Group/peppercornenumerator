@@ -330,6 +330,13 @@ class ComplexTests(unittest.TestCase):
 		str = self.complexes['I4'].dot_paren_string()
 		assert str == "(((...+(((.+)))).+))"
 	
+	def testKernelString(self):
+		str = self.complexes['I4'].kernel_string()
+		print str
+		print list(repr(strand.domains) for strand in self.complexes['I4'].strands)
+		print 
+		assert False
+
 	def testCheckStructure(self):
 		#                 0                 1                 2                 3                  4
 		s1 = Strand('S1',[self.domains['1'],self.domains['2'],self.domains['3'],self.domains['1*'],self.domains['2*']])

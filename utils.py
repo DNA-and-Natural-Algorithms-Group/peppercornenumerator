@@ -686,6 +686,22 @@ class Complex(object):
 						raise Exception("In complex %s, incoherent structure at (%d, %d) and (%d, %d)" % self.name, strand_index, domain_index, target[0], target[1])
 		return True
 				
+	def kernel_string(self):
+		parts = []
+		for strand_num, strand in enumerate(self.strands):
+			sparts = []
+			for dom_num, dom in enumerate(strand.domains):
+				if self.structure[strand_num][dom_num] is None:
+					sparts.append(str(dom))
+				elif self.structure[strand_num][dom_num] > (strand_num, dom_num):
+					sparts.append(str(dom) + "(")
+				else:
+					sparts.append(")")
+			
+			parts.append(" ".join(sparts))
+
+		return " + ".join(parts)
+
 	def dot_paren_string(self):
 		"""
 		Returns the segment-wise dot paren representation of this complex.
