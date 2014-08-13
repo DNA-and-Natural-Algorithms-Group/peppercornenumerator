@@ -7,6 +7,7 @@
 
 import logging
 import json
+import utils
 from utils import *
 from enumerator import Enumerator
 from reactions import ReactionPathway, get_auto_name
@@ -207,6 +208,105 @@ def parse_kernel(line):
 	rule = pattern + StringEnd()
 
 	return rule.parseString(line)
+
+
+def parse_identifier(identifier):
+	"""
+	Parse an identifier (e.g. `a^*`) to figure out the name, 
+	polarity (+1 or -1) and the length ('long' or 'short').
+
+	Returns: (name, polarity, length)
+	"""
+
+	polarity = 1
+	length = 'long'
+	if identifier[-1] == '*':
+		polarity = -1
+		identifier = identifier[:-1]
+	if identifier[-1] == '^':
+		identifier = identifier[:-1]
+		length = 'short'
+	return (identifier, polarity, length)
+
+def auto_domain(name, polarity, domains):
+	"""
+	Finds or automatically generates a domain and/or its complement.
+	"""
+
+	# figure name, polarity, length
+	identity, plrt, length = parse_identifier(name)
+	polarity *= plrt
+
+	# handle complements
+	identifier = identity + ('*' if polarity == -1 else '')
+
+	# search for existing domain
+	if identifier in domains: 
+		dom = domains[identifier]
+		if (length == 'short') != (dom.length == utils.SHORT_DOMAIN_LENGTH):
+			error(("Domain '%s' should be %s, but there is a already a domain %s that is not. "+ \
+				"I assume this was a mistake; please give all domains '%s' a caret (^), "+ \
+				"or remove the caret from all domain") % (name, length, dom.name, dom.name))
+		return dom
+
+	# generate new domain
+	else:
+		if identity in domains:
+			raise "Error!"
+		if "*" in identity:
+			raise "Error!"
+
+		new_dom = Domain(identity, length)
+		new_dom_comp = Domain(identity, length,
+							  is_complement=True)
+		domains[identity] = new_dom
+		domains[identity+'*'] = new_dom_comp
+
+		# return domain or complement depending on requested polarity
+		return new_dom if polarity == 1 else new_dom_comp
+
+def auto_strand(doms, strands, structures_to_strands):
+	"""
+	Finds or automatically generates a strand from a list of 
+	domains.
+	"""
+
+	# look up whether any strand with this structure exists
+	tdoms = tuple(doms)
+	if tdoms in structures_to_strands:
+		return structures_to_strands[tdoms]
+	
+	# if not, make up a name
+	else:
+		auto_name = initial_auto_name = "_".join(d.name for d in doms)
+		
+		# if another strand exists with this name but not this 
+		# structure, generate a new, uglier name 
+		if auto_name in strands:
+			auto_name += "_%d" 
+			index = 2
+			while (auto_name % index) in strands:
+				index += 1
+			auto_name = auto_name % index
+
+			# TODO: warn about this
+			warning("Auto-generated strand name %s already taken by a strand with different structure. Auto-generated strand will be named %s." % (initial_auto_name, auto_name))
+
+		# generate new strand object
+		strand = Strand(auto_name, doms)
+		strands[auto_name] = strand
+		structures_to_strands[tuple(doms)] = strand
+		return strand
+
+def auto_complex(strands, structure, complexes):
+	"""
+	Generates a complex from a list of strands and a structure
+	"""
+	name = get_auto_name()
+	complex = Complex(name, strands, structure)
+	complexes[complex.name] = complex
+	return complex
+
 
 def input_pil(filename):
 	"""
@@ -505,104 +605,6 @@ def input_pil(filename):
 			continue
 		else:
 
-			def parse_identifier(identifier):
-				"""
-				Parse an identifier (e.g. `a^*`) to figure out the name, 
-				polarity (+1 or -1) and the length ('long' or 'short').
-
-				Returns: (name, polarity, length)
-				"""
-
-				polarity = 1
-				length = 'long'
-				if identifier[-1] == '*':
-					polarity = -1
-					identifier = identifier[:-1]
-				if identifier[-1] == '^':
-					identifier = identifier[:-1]
-					length = 'short'
-				return (identifier, polarity, length)
-
-			assert parse_identifier("a") == ("a", 1, 'long')
-			assert parse_identifier("b^") == ("b", 1, 'short')
-			assert parse_identifier("c*") == ("c", -1, 'long')
-			assert parse_identifier("d^*") == ("d", -1, 'short')
-
-			def auto_domain(name, polarity=1):
-				"""
-				Finds or automatically generates a domain and/or its complement.
-				"""
-
-				# figure name, polarity, length
-				identity, polarity, length = parse_identifier(name)
-				
-				# handle complements
-				identifier = identity + ('*' if polarity == -1 else '')
-
-				# search for existing domain
-				if identifier in domains: 
-					dom = domains[identifier]
-					if length == 'short' and dom.length != 'short':
-						error(("Domain '%s' should be %s, but there is a already a domain %s that is not. "+ \
-							"Please use only either '%s' or '%s' to refer to this domain, but not both.") % (name, length, dom.name, name, dom.name))
-					return dom
-
-				# generate new domain
-				else:
-					if identity in domains:
-						raise "Error!"
-					if "*" in identity:
-						raise "Error!"
-
-					new_dom = Domain(identity, length)
-					new_dom_comp = Domain(identity, length,
-										  is_complement=True)
-					domains[identity] = new_dom
-					domains[identity+'*'] = new_dom_comp
-
-					# return domain or complement depending on requested polarity
-					return new_dom if polarity == 1 else new_dom_comp
-
-			def auto_strand(doms):
-				"""
-				Finds or automatically generates a strand from a list of 
-				domains.
-				"""
-
-				# look up whether any strand with this structure exists
-				tdoms = tuple(doms)
-				if tdoms in structures_to_strands:
-					return structures_to_strands[tdoms]
-				
-				# if not, make up a name
-				else:
-					auto_name = initial_auto_name = "_".join(d.name for d in doms)
-					
-					# if another strand exists with this name but not this 
-					# structure, generate a new, uglier name 
-					if auto_name in strands:
-						auto_name += "_%d" 
-						index = 2
-						while (auto_name % index) in strands:
-							index += 1
-						auto_name = auto_name % index
-
-						# TODO: warn about this
-						warning("Auto-generated strand name %s already taken by a strand with different structure. Auto-generated strand will be named %s." % (initial_auto_name, auto_name))
-
-					# generate new strand object
-					strand = Strand(auto_name, doms)
-					strands[auto_name] = strand
-					structures_to_strands[tuple(doms)] = strand
-					return strand
-
-			def auto_complex(strands, structure):
-				"""
-				Generates a complex from a list of strands and a structure
-				"""
-				name = get_auto_name()
-				return Complex(name, strands, structure)
-
 			def resolve(parts, strands, structure):
 				"""
 				Recursively parse a list of `parts` generated by parse_kernel,
@@ -622,7 +624,7 @@ def input_pil(filename):
 
 					# unpaired domain
 					elif isinstance(part, basestring):
-						strands[-1].append(auto_domain(part))
+						strands[-1].append(auto_domain(part, 1, domains))
 						structure[-1].append(None)
 
 					# paired domain
@@ -635,7 +637,7 @@ def input_pil(filename):
 						resolve(part, strands, structure)
 
 						# add closing domain
-						strands[-1].append( auto_domain(str(last_dom), -1) )
+						strands[-1].append( auto_domain(str(last_dom), -1, domains) )
 						structure[-1].append( last_index )
 						structure[last_index[0]][last_index[1]] = (len(strands)-1, len(strands[-1])-1 )
 						# I was sad that this didn't work without numpy...
@@ -656,11 +658,10 @@ def input_pil(filename):
 			resolve(kparts, kstrands, kstructure)
 
 			# build strands
-			kstrands = [auto_strand(doms) for doms in kstrands]
+			kstrands = [auto_strand(doms, strands, structures_to_strands) for doms in kstrands]
 
 			# build complex
-			complex = auto_complex(kstrands, kstructure)
-			complexes[complex.name] = complex
+			complex = auto_complex(kstrands, kstructure, complexes)
 
 		# line = fin.readline()
 		# line_counter += 1

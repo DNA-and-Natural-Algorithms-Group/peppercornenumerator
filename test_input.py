@@ -317,6 +317,27 @@ class InputKernel(unittest.TestCase):
 		assert_raises(Exception, lambda: parse_kernel("b)"))
 		assert_raises(Exception, lambda: parse_kernel("a())"))
 
+	def test_kernel_helpers(self):
+		assert parse_identifier("a") == ("a", 1, 'long')
+		assert parse_identifier("b^") == ("b", 1, 'short')
+		assert parse_identifier("c*") == ("c", -1, 'long')
+		assert parse_identifier("d^*") == ("d", -1, 'short')
+
+		domains = {}
+		a = auto_domain("a", 1, domains)
+		ap = auto_domain("a*", 1, domains)
+		assert a.can_pair(ap)
+		assert auto_domain("a*", 1, domains) == ap
+		assert auto_domain("a", -1, domains) == ap
+
+		bp = auto_domain("b*", 1, domains)
+		b = auto_domain("b", 1, domains)
+		assert auto_domain("b*", -1, domains) == b
+		assert auto_domain("b", 1, domains) == b
+
+		t = auto_domain("t", 1, domains)
+		assert_raises(SystemExit, lambda: auto_domain("t^", 1, domains))
+
 
 	def test_kernel_1(self):
 		enumerator = input_pil('test_files/test_input_kernel_1.pil')
@@ -379,9 +400,11 @@ class InputKernel(unittest.TestCase):
 		}
 		assert set(reactions.values()) == set(enumerator.reactions)
 
+
 	def test_kernel_3(self):
 		enumerator = input_pil('test_files/test_input_kernel_3.pil')
 		enumerator.dry_run()
+
 		# Domains 
 		domains = { 
 			'a' : Domain('a', 12, is_complement=False, sequence='None'),
@@ -393,15 +416,15 @@ class InputKernel(unittest.TestCase):
 		strands = { 
 			'a' : Strand('a', [domains['a']]),
 			'a*' : Strand('a*', [domains['a*']]),
-			'a_a' : Strand('a_a', [domains['a'], domains['a']])
+			'a_a*' : Strand('a_a*', [domains['a'], domains['a*']])
 		}
 		assert set(strands.values()) == set(enumerator.strands)
 
 		# Complexes 
 		complexes = { 
-			'1' : Complex('1', [strands['a_a']], [[(0, 1), (0, 0)]]),
-			'2' : Complex('2', [strands['a'], strands['a']], [[(1, 0)], [(0, 0)]]),
-			'3' : Complex('3', [strands['a*'], strands['a*']], [[(1, 0)], [(0, 0)]])
+			'1' : Complex('1', [strands['a_a*']], [[(0, 1), (0, 0)]]),
+			'2' : Complex('2', [strands['a'], strands['a*']], [[(1, 0)], [(0, 0)]]),
+			'3' : Complex('3', [strands['a'], strands['a*']], [[(1, 0)], [(0, 0)]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
 
@@ -409,12 +432,13 @@ class InputKernel(unittest.TestCase):
 		reactions = { 
 
 		}
-		assert set(reactions.values()) == set(enumerator.reactions)		
+		assert set(reactions.values()) == set(enumerator.reactions)
 
 
 	def test_kernel_4(self):
 		enumerator = input_pil('test_files/test_input_kernel_4.pil')
 		enumerator.dry_run()
+
 		# Domains 
 		domains = { 
 			'a' : Domain('a', 12, is_complement=False, sequence='None'),
@@ -427,8 +451,9 @@ class InputKernel(unittest.TestCase):
 		# Strands 
 		strands = { 
 			'a' : Strand('a', [domains['a']]),
+			'a*_b_a' : Strand('a*_b_a', [domains['a*'], domains['b'], domains['a']]),
 			'a_b' : Strand('a_b', [domains['a'], domains['b']]),
-			'a_b_a' : Strand('a_b_a', [domains['a'], domains['b'], domains['a']]),
+			'a_b_a*' : Strand('a_b_a*', [domains['a'], domains['b'], domains['a*']]),
 			'b' : Strand('b', [domains['b']])
 		}
 		assert set(strands.values()) == set(enumerator.strands)
@@ -437,7 +462,8 @@ class InputKernel(unittest.TestCase):
 		complexes = { 
 			'1' : Complex('1', [strands['a_b']], [[None, None]]),
 			'2' : Complex('2', [strands['a'], strands['b']], [[None], [None]]),
-			'3' : Complex('3', [strands['a_b_a']], [[(0, 2), None, (0, 0)]])
+			'3' : Complex('3', [strands['a_b_a*']], [[(0, 2), None, (0, 0)]]),
+			'4' : Complex('4', [strands['a*_b_a']], [[(0, 2), None, (0, 0)]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
 
@@ -449,8 +475,42 @@ class InputKernel(unittest.TestCase):
 
 
 
+
 	def test_kernel_5(self):
 		enumerator = input_pil('test_files/test_input_kernel_5.pil')
+		enumerator.dry_run()
+
+		# Domains 
+		domains = { 
+			'a' : Domain('a', 12, is_complement=False, sequence='None'),
+			'a*' : Domain('a', 12, is_complement=True, sequence='None'),
+			'b' : Domain('b', 12, is_complement=False, sequence='None'),
+			'b*' : Domain('b', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'a*_b_a' : Strand('a*_b_a', [domains['a*'], domains['b'], domains['a']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'1' : Complex('1', [strands['a*_b_a']], [[(0, 2), None, (0, 0)]])
+		}
+		assert set(complexes.values()) == set(enumerator.complexes)
+
+		# Reactions 
+		reactions = { 
+
+		}
+		assert set(reactions.values()) == set(enumerator.reactions)
+
+
+
+	def test_kernel_6(self):
+		enumerator = input_pil('test_files/test_input_kernel_6.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -473,19 +533,25 @@ class InputKernel(unittest.TestCase):
 		# Strands 
 		strands = { 
 			'a_b_c*_d' : Strand('a_b_c*_d', [domains['a'], domains['b'], domains['c*'], domains['d']]),
-			'e_c*_f_a' : Strand('e_c*_f_a', [domains['e'], domains['c*'], domains['f'], domains['a']])
+			'e_c_f_a' : Strand('e_c_f_a', [domains['e'], domains['c'], domains['f'], domains['a']])
 		}
 		assert set(strands.values()) == set(enumerator.strands)
 
 		# Complexes 
 		complexes = { 
-			'1' : Complex('1', [strands['a_b_c*_d'], strands['e_c*_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
+			'1' : Complex('1', [strands['a_b_c*_d'], strands['e_c_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
 
+		# Reactions 
+		reactions = { 
 
-	def test_kernel_6(self):
-		enumerator = input_pil('test_files/test_input_kernel_6.pil')
+		}
+		assert set(reactions.values()) == set(enumerator.reactions)
+
+
+	def test_kernel_7(self):
+		enumerator = input_pil('test_files/test_input_kernel_7.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -508,14 +574,14 @@ class InputKernel(unittest.TestCase):
 		# Strands 
 		strands = { 
 			'a_b_c*_d' : Strand('a_b_c*_d', [domains['a'], domains['b'], domains['c*'], domains['d']]),
-			'e_c*_f_a' : Strand('e_c*_f_a', [domains['e'], domains['c*'], domains['f'], domains['a']]),
+			'e_c_f_a' : Strand('e_c_f_a', [domains['e'], domains['c'], domains['f'], domains['a']]),
 			's' : Strand('s', [domains['a'], domains['b'], domains['c'], domains['d'], domains['e'], domains['f']])
 		}
 		assert set(strands.values()) == set(enumerator.strands)
 
 		# Complexes 
 		complexes = { 
-			'1' : Complex('1', [strands['a_b_c*_d'], strands['e_c*_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
+			'1' : Complex('1', [strands['a_b_c*_d'], strands['e_c_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
 
@@ -525,10 +591,47 @@ class InputKernel(unittest.TestCase):
 		}
 		assert set(reactions.values()) == set(enumerator.reactions)
 
+
+	def test_kernel_8(self):
+		enumerator = input_pil('test_files/test_input_kernel_8.pil')
+		enumerator.dry_run()
+
+		# Domains 
+		domains = { 
+			'2' : Domain('2', 12, is_complement=False, sequence='None'),
+			'2*' : Domain('2', 12, is_complement=True, sequence='None'),
+			'3' : Domain('3', 12, is_complement=False, sequence='None'),
+			'3*' : Domain('3', 12, is_complement=True, sequence='None'),
+			'a' : Domain('a', 12, is_complement=False, sequence='None'),
+			'a*' : Domain('a', 12, is_complement=True, sequence='None'),
+			'b' : Domain('b', 12, is_complement=False, sequence='None'),
+			'b*' : Domain('b', 12, is_complement=True, sequence='None'),
+			'c' : Domain('c', 12, is_complement=False, sequence='None'),
+			'c*' : Domain('c', 12, is_complement=True, sequence='None'),
+			't' : Domain('t', 6, is_complement=False, sequence='None'),
+			't*' : Domain('t', 6, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'2_3' : Strand('2_3', [domains['2'], domains['3']]),
+			'3*_a*' : Strand('3*_a*', [domains['3*'], domains['a*']]),
+			'a*_b*_c_b_a_2*_t*' : Strand('a*_b*_c_b_a_2*_t*', [domains['a*'], domains['b*'], domains['c'], domains['b'], domains['a'], domains['2*'], domains['t*']]),
+			't_2_3' : Strand('t_2_3', [domains['t'], domains['2'], domains['3']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'1' : Complex('1', [strands['t_2_3']], [[None, None, None]]),
+			'2' : Complex('2', [strands['2_3'], strands['3*_a*'], strands['a*_b*_c_b_a_2*_t*']], [[(2, 5), (1, 0)], [(0, 1), None], [(2, 4), (2, 3), None, (2, 1), (2, 0), (0, 0), None]])
+		}
+		assert set(complexes.values()) == set(enumerator.complexes)
+
 		# Reactions 
 		reactions = { 
 
 		}
 		assert set(reactions.values()) == set(enumerator.reactions)
-
 

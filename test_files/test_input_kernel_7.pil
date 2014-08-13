@@ -1,0 +1,5 @@
+length a = 12
+
+a b c*(d + e) f a
+
+strand s = a b c d e f

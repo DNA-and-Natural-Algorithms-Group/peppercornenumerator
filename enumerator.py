@@ -647,7 +647,7 @@ def main(argv):
 		help="Parse the input file using this format; one of: " + \
 		", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()) + \
 		". (default: guess from the extension of --infile)")
-	parser.add_argument('-o', action='store', dest='output_format', default=None, \
+	parser.add_argument('-o', action='store', dest='output_format', default='', \
 		help="Write the output file using this format; one or more (comma-separated) of :" + \
 		", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()) + \
 		". (default: guess from the extension of --outfile)")
@@ -677,7 +677,7 @@ def main(argv):
 
 	if(cl_opts.input_filename is None):
 		print "No input file specified. Exiting."
-		raise Exception('Error!')
+		
 
 	# If there was no input format given, guess from the file extension
 	if (cl_opts.input_format is None):
@@ -685,9 +685,9 @@ def main(argv):
 		cl_opts.input_format = ext.replace('.','')
 		if cl_opts.input_format is '':
 			cl_opts.input_format = "pil"
-			print "No input format; assuming %s" % cl_opts.input_format
+			print "No input format; assuming %s." % cl_opts.input_format
 		else:
-			print "Guessing input format from input file: %s" % cl_opts.input_format
+			print "Guessing input format from input filename: %s" % cl_opts.input_format
 
 	# Attempt to load an input parser to generate an enumerator object
 	if (cl_opts.input_format in input.text_input_functions):
@@ -748,13 +748,12 @@ def main(argv):
 		if output_filename != None and len(output_formats) == 0:
 			output_formats = [os.path.splitext(cl_opts.input_filename)[1]]
 
-		# if there was no output filename given, tack a suffix on the input filename
-		elif output_filename == None and len(output_formats) == 1:
+		# if there was no output filename given, tack a suffix on to the input filename
+		elif output_filename == None:
+			if len(output_formats) == 0 or output_formats[0] == '':
+				output_formats = ['pil']
+				print "No output format specified; assuming %s." % output_formats[0]
 			output_filename = os.path.splitext(cl_opts.input_filename)[0] + "-enum" + "." + output_formats[0]
-		
-		elif output_filename == None and len(output_formats) == 0:
-			print "Must specify either an output filename or an output format!"
-			raise Exception('Error!')
 
 		# one output format
 		outputs = [(output_formats[0], output_filename)]
@@ -770,8 +769,8 @@ def main(argv):
 			print "Writing graph output to file : %s" % output_filename
 			output.graph_output_functions[output_format](enum, output_filename,output_condensed=condensed)
 		else:
-			print "Unrecognized output format '%s'. Exiting." % output_format
-			raise Exception('Error!')
+			utils.error("Unrecognized output format '%s'. Exiting." % output_format)
+			
 
 if __name__ == '__main__':
 	sys.exit(main(sys.argv))
