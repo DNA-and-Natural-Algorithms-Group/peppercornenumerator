@@ -44,9 +44,17 @@ class BindTests(unittest.TestCase):
 		
 	def testFindExternalStrandBreak(self):
 
-		#	complex I4 :
-		#	BS OP PS Cat
-		#	(((... + (((. + )))). + ))	
+		# complex I4 :
+		# BS       OP     PS     Cat
+		# (((... + (((. + )))). + ))
+		#	   
+		#        /
+		#   BS  /  OP
+		#  ____/ ___/
+		#  __ ______
+		#    /  
+		# Cat  PS
+		# 
 		I4 = self.complexes['I4']
 		
 		# find index of these strands
@@ -61,9 +69,16 @@ class BindTests(unittest.TestCase):
 		assert BS_index == find_external_strand_break(I4, (BS_index, 3))
 		
 		
-		#	complex I1 :
-		#	SP Cat BS
-		#	(( + .( + )))...
+		# complex I1 :
+		# SP Cat BS
+		# (( + .( + )))...
+		# 	
+		# 	SP   Cat
+		#    __ \_
+		#    _____
+		#   /  
+		#  /   BS
+		# /	
 		I1 = self.complexes['I1']
 		
 		# find index of these strands
@@ -83,6 +98,12 @@ class BindTests(unittest.TestCase):
 		# complex C :
 		# s1 s2
 		# .( + ).
+		# 		
+		#   s1
+		#  \_
+		#   _
+		#  /
+		#   s2
 		
 		s1 = Strand('s1', [self.domains['1'], self.domains['2']])
 		s2 = Strand('s2', [self.domains['2*'], self.domains['3']])
@@ -95,6 +116,12 @@ class BindTests(unittest.TestCase):
 		# complex C : 
 		# s1 s2 s3
 		# (. + ( + ).)
+		# 
+		#  s1   s2
+		#   _/  _
+		#   _   _
+		#    \_/
+		#        s3
 		
 		s1 = Strand('s1', [self.domains['4'], self.domains['2']])
 		s2 = Strand('s2', [self.domains['1']])
@@ -293,6 +320,19 @@ class OpenTests(unittest.TestCase):
 			self.complexes[complex.name] = complex
 	
 	def testSplitComplex1(self):
+
+		# complex I3 :
+		# BS Cat
+		# ((.... + ))
+		# ^^       ^^
+		# 
+		#        /
+		#   BS  /
+		#      /
+		#   __/
+		#   __  Cat
+		#   ^^   
+
 		complex = self.complexes['I3'].clone()
 		cat_index = complex.strand_index('Cat')
 		bs_index = complex.strand_index('BS')
@@ -314,6 +354,20 @@ class OpenTests(unittest.TestCase):
 		assert exp_list == res_list
 		
 	def testSplitComplex2(self):
+
+
+		# complex I4 :
+		# BS       OP     PS      Cat
+		# (((... + (((. + )))). + ))
+		#   ^                ^
+		#   
+		#         /
+		#    BS  / OP
+		#   ____/ ___/
+		#   __ ______
+		#     /^  
+		# Cat     PS
+		# 
 		complex = self.complexes['I4'].clone()
 				
 		BS_index = complex.strand_index('BS')
@@ -333,13 +387,39 @@ class OpenTests(unittest.TestCase):
 
 		
 	def testFindReleases1(self):
+
+		# complex I3 :
+		# BS Cat
+		# ((.... + ))
+		# 
+		# 
+		#        /
+		#   BS  /
+		#      /
+		#   __/
+		#   __  Cat
+		#      
+
 		# first test no releases case
 		complex = self.complexes['I3'].clone()
 		res_list = find_releases(complex)
 		assert res_list == [complex]
 			
 
-	def testFindReleases2(self):			
+	def testFindReleases2(self):
+
+		# complex I3 :
+		# BS Cat
+		# ((.... + ))
+		# ^^       ^^
+		# 
+		#        /
+		#   BS  /
+		#      /
+		#   __/
+		#   __  Cat
+		#   ^^ 
+
 		# now test 1 release case
 		complex = self.complexes['I3'].clone()
 		cat_index = complex.strand_index('Cat')
@@ -360,6 +440,19 @@ class OpenTests(unittest.TestCase):
 		assert exp_list == res_list
 
 	def testFindReleases3(self):		
+		# complex I4 :
+		# BS       OP     PS      Cat
+		# (((... + (((. + )))). + ))
+		#   ^                ^
+		#   
+		#         /
+		#    BS  / OP
+		#   ____/ ___/
+		#   __ ______
+		#     /^  
+		# Cat     PS
+		# 
+
 		complex = self.complexes['I4'].clone()
 				
 		BS_index = complex.strand_index('BS')
@@ -369,6 +462,28 @@ class OpenTests(unittest.TestCase):
 		complex.structure[PS_index][3] = None
 		
 		res_list = find_releases(complex)
+
+		# complex C1 : 
+		# PS OP
+		# (((.. + ))).
+		# 
+		#    PS  /
+		#    ___/
+		#    ___
+		#   / 
+		#     OP
+
+
+		# complex I3 :
+		# BS Cat
+		# ((.... + ))
+		# 
+		#        /
+		#   BS  /
+		#      /
+		#   __/
+		#   __  Cat
+		#   ^^ 
 		
 		exp_complex1 = self.complexes['C1']
 		exp_complex2 = self.complexes['I3']
@@ -383,6 +498,22 @@ class OpenTests(unittest.TestCase):
 	def testFindReleases4(self):
 		# Test another multiple releases case
 		
+		# ^ = break WC here
+		#
+		#  complex I4 :
+		# BS       OP     PS      Cat
+		# (((... + (((. + )))). + ))
+		#   ^      ^^^    ^^^^
+		# 012345   0123   01234   01
+		#   
+		#         /
+		#    BS  / OP
+		#   ____/ ___/
+		#   __ ______
+		#     /^  ^^^  
+		# Cat     PS
+		# 
+
 		complex = self.complexes['I4'].clone()
 		BS_index = complex.strand_index('BS')
 		PS_index = complex.strand_index('PS')
@@ -422,6 +553,23 @@ class OpenTests(unittest.TestCase):
 
 	def testFindReleases5(self):
 		# Test multiple releases case
+
+		# ^ = break WC here
+		#
+		#  complex I4 :
+		# BS       OP     PS      Cat
+		# (((... + (((. + )))). + ))
+		# ^^^      ^^^    ^^^^    ^^
+		# 012345   0123   01234   01
+		#   
+		#         /
+		#    BS  / OP
+		#   ____/ ___/
+		#   __ ______
+		#   ^^/^  ^^^  
+		# Cat     PS
+		# 
+
 		
 		complex = self.complexes['I4'].clone()
 		BS_index = complex.strand_index('BS')
@@ -447,6 +595,17 @@ class OpenTests(unittest.TestCase):
 	def testFindReleases6(self):
 		# Test another no releases case
 		
+		# complex T1
+		# BS OP PS Cat
+		# (((...+((..+.))).+))
+		#  
+		#        /  
+		#   BS  /   / OP
+		#  ____/ __/
+		#  __ _____
+		#          \
+		# Cat   PS
+
 		complex = Complex('T1', [self.strands['BS'], self.strands['OP'], self.strands['PS'], self.strands['Cat']], \
 						 [[(3, 1), (3, 0), (2, 3), None, None, None], [(2, 2), (2, 1), None, None], [None, (1, 1), (1, 0), (0, 2), None], [(0, 1), (0, 0)]])
 		
@@ -462,6 +621,17 @@ class OpenTests(unittest.TestCase):
 		
 	def testOpen1(self):
 		# first test no reaction case
+		
+		# complex I3 :
+		# BS Cat
+		# ((.... + ))
+		# 
+		#        /
+		#   BS  /
+		#      /
+		#   __/
+		#   __  Cat
+		#   
 		res_list = open(self.complexes['I3'])
 		
 		assert res_list == []
@@ -469,6 +639,19 @@ class OpenTests(unittest.TestCase):
 	def testOpen2(self):
 		# next test a simple case
 		
+		# complex t1
+		# PS BS
+		# ...(.+..)...
+		#    ^    ^
+		# 
+		# \ PS
+		#  \
+		#   \_/
+		#    _
+		#   /^\
+		#  /   \
+		# /  BS
+
 		complex = Complex('t1', [self.strands['PS'], self.strands['BS']], [[None, None, None, (1, 2), None], [None, None, (0, 3), None, None, None]])
 		res_list = open(complex)
 		
@@ -478,8 +661,42 @@ class OpenTests(unittest.TestCase):
 		
 	def testOpen3(self):
 		# test a real case
+		# 
+		# complex I4 :
+		# BS       OP     PS      Cat
+		# (((... + (((. + )))). + ))
+		#   ^                ^
+		#   
+		#         /
+		#    BS  / OP
+		#   ____/ ___/
+		#   __ ______
+		#     /^  
+		# Cat     PS
+		# 
 		
 		res_list = open(self.complexes['I4'])
+
+		# complex C1 : 
+		# PS OP
+		# (((.. + ))).
+		# 
+		#    PS  /
+		#    ___/
+		#    ___
+		#   / 
+		#     OP
+
+		# complex I3 :
+		# BS Cat
+		# ((.... + ))
+		# 
+		#        /
+		#   BS  /
+		#      /
+		#   __/
+		#   __  Cat
+		#   ^^ 
 		exp_list = [ReactionPathway('open', [self.complexes['I4']], [self.complexes['I3'], self.complexes['C1']])]
 		
 		res_list.sort()
@@ -490,7 +707,36 @@ class OpenTests(unittest.TestCase):
 	def testOpen4(self):
 		# another real case
 		
+		# complex I1 :
+		# SP Cat BS
+		# (( + .( + )))...
+		# 	
+		# 	SP   Cat
+		#    __ \_
+		#    _____
+		#   /  
+		#  /   BS
+		# /	
 		res_list = open(self.complexes['I1'])
+
+		# complex C2 :
+		# SP BS
+		# (( + .))...
+		# 
+		#    SP
+		#    __
+		#    __
+		#   /  \
+		#  / BS 
+		# /      
+		#        
+		# complex Cat:
+		# Cat
+		# ..
+		# 
+		#  Cat
+		#  ___
+
 		exp_list = [ReactionPathway('open', [self.complexes['I1']], [self.complexes['C2'], self.complexes['Cat']])]
 		
 		res_list.sort()
@@ -500,6 +746,16 @@ class OpenTests(unittest.TestCase):
 		
 	def testOpen5(self):
 		
+		# complex I2 :
+		# SP Cat BS
+		# (. + (( + )))...
+		# 
+		#   SP    Cat
+		#     _/ __
+		#     _____
+		#    /
+		#      BS
+
 		res_list = open(self.complexes['I2'])
 		exp_list = [ReactionPathway('open', [self.complexes['I2']], [self.complexes['I3'], self.complexes['SP']])]
 		
@@ -510,6 +766,19 @@ class OpenTests(unittest.TestCase):
 		
 	def testOpen6(self):
 		# test an Open1-1 reaction
+		# 
+		#  A: 
+		#  
+		#  1
+		#  __
+		#  __) 2
+		#  1*
+		# 
+		#  B:
+		#  
+		#  1 2 1*
+		#  ______
+		# 
 		strand = Strand('A', [self.domains['1'], self.domains['2'], self.domains['1*']])
 		complex = Complex('A', [strand], [[(0, 2), None, (0, 0)]])
 		
@@ -522,34 +791,22 @@ class OpenTests(unittest.TestCase):
 		assert res_list == exp_list
 
 	def testOpen7(self):
+
+		#   1 4
+		#   _____
+		#   __ __
+		#  /
+		# 4* 1* 4*
+		# 
+
 		S1 = Strand('S1', [self.domains['1'], self.domains['4']])
 		S2 = Strand('S2', [self.domains['4*']])
 		S3 = Strand('S3', [self.domains['1*'], self.domains['4*']])
 		complex = Complex('C', [S1, S2, S3], [[(2, 0), (1, 0)], [(0, 1)], [(0, 0), None]])
-
-		print "Input Complex"
-		print complex.full_string()
-		print "Strand:", complex.strands[0], " ", complex.strands[0].domains
-		for domain in complex.strands[0].domains:
-			print "Domain:", domain, " ", domain.length
-		
-		print
 		
 		
 		res_list = open(complex)
 		exp_list = [ReactionPathway('open', [complex], sorted([Complex('C1', [S3], [[None, None]]), Complex('C2', [S1, S2], [[None, (1, 0)], [(0, 1)]])]))]
-
-		print "Computed Result (res_list):"	
-		print res_list
-		print "Outputs:"
-		for complex in res_list[0].products:
-			print complex.full_string()
-		
-		print
-		print "Expected result (exp_list):"
-		print exp_list
-		for complex in exp_list[0].products:
-			print complex.full_string()
 		assert res_list == exp_list
 		
 class BranchMigrationTests(unittest.TestCase):
@@ -571,6 +828,31 @@ class BranchMigrationTests(unittest.TestCase):
 
 
 	def testDo3wayMigration1(self):
+		# complex I1 :
+		# SP Cat BS
+		# (((... + )) + .)
+		#  *            *
+		#          
+		#      BS  /
+		#     *   /
+		#    ____/
+		#    _ __
+		#     \  
+		#     *
+		#  Cat  SP
+		#  
+		#  
+		# complex I2 :
+		# BS SP Cat
+		# (((... + ). + ))
+		#  
+		#          /
+		#      BS /
+		#    ____/
+		#    __ _
+		#      / 
+		#  Cat  SP
+
 		# test a 3-way producing 1 outcomplex
 		res_list = do_3way_migration(self.complexes['I1'], (2, 0), (0, 1))
 		exp_list = [self.complexes['I2']]
@@ -582,11 +864,38 @@ class BranchMigrationTests(unittest.TestCase):
 		
 	def testDo3wayMigration2(self):
 		# test a 3-way producing 2 outcomplexes
+
+		# complex I5 :
+		# BS       PS      Cat
+		# .((((( + )))). + ).
+		# 
+		#   BS
+		#    *
+		#   \_______
+		#    _ _____
+		#   / /
+		#     *
+		#  Cat   PS
 		complex = self.complexes['I5'].clone()
 				
 		complex.structure[complex.strand_index('BS')][0] = None
 		complex.structure[complex.strand_index('Cat')][1] = None
-		
+
+		# complex W :
+		# BS       PS    
+		# .((((( + ))))) 
+		# 
+		#   BS
+		#   \_______
+		#    _______
+		#       PS		
+		# 
+		# complex Cat:
+		# Cat
+		# ..
+		# 
+		#  Cat
+		#  ___
 		res_list = do_3way_migration(complex, (complex.strand_index('PS'), 4), (complex.strand_index('BS'), 1))
 		exp_list = [self.complexes['W'], self.complexes['Cat']]
 		

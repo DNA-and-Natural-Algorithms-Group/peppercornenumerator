@@ -331,12 +331,8 @@ class ComplexTests(unittest.TestCase):
 		assert str == "(((...+(((.+)))).+))"
 	
 	def testKernelString(self):
-		str = self.complexes['I4'].kernel_string()
-		print str
-		print list(repr(strand.domains) for strand in self.complexes['I4'].strands)
-		print 
-		assert False
-
+		assert self.complexes['I4'].kernel_string() == "7*( 6*( 5*( 1 2 3 + 1( 2( 3( 4 + ) ) ) ) 6 + ) )"
+		
 	def testCheckStructure(self):
 		#                 0                 1                 2                 3                  4
 		s1 = Strand('S1',[self.domains['1'],self.domains['2'],self.domains['3'],self.domains['1*'],self.domains['2*']])

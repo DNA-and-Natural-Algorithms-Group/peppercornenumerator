@@ -338,6 +338,37 @@ class InputKernel(unittest.TestCase):
 		t = auto_domain("t", 1, domains)
 		assert_raises(SystemExit, lambda: auto_domain("t^", 1, domains))
 
+	def test_from_kernel(self):
+		(kdomains, kstrands, kcomplexes) = from_kernel(["a( b(c + d) e) f"])
+
+		domains = { 
+			'a' : Domain('a', 12, is_complement=False, sequence='None'),
+			'a*' : Domain('a', 12, is_complement=True, sequence='None'),
+			'b' : Domain('b', 12, is_complement=False, sequence='None'),
+			'b*' : Domain('b', 12, is_complement=True, sequence='None'),
+			'c' : Domain('c', 12, is_complement=False, sequence='None'),
+			'c*' : Domain('c', 12, is_complement=True, sequence='None'),
+			'd' : Domain('d', 12, is_complement=False, sequence='None'),
+			'd*' : Domain('d', 12, is_complement=True, sequence='None'),
+			'e' : Domain('e', 12, is_complement=False, sequence='None'),
+			'e*' : Domain('e', 12, is_complement=True, sequence='None'),
+			'f' : Domain('f', 12, is_complement=False, sequence='None'),
+			'f*' : Domain('f', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(kdomains.values())
+
+		# Strands 
+		strands = { 
+			'a_b_c' : Strand('a_b_c', [domains['a'], domains['b'], domains['c']]),
+			'd_b*_e_a*_f' : Strand('d_b*_e_a*_f', [domains['d'], domains['b*'], domains['e'], domains['a*'], domains['f']])
+		}
+		assert set(strands.values()) == set(kstrands.values())
+
+		# Complexes 
+		complexes = { 
+			'4' : Complex('4', [strands['a_b_c'], strands['d_b*_e_a*_f']], [[(1, 3), (1, 1), None], [None, (0, 1), None, (0, 0), None]])
+		}
+		assert set(complexes.values()) == set(kcomplexes.values())
 
 	def test_kernel_1(self):
 		enumerator = input_pil('test_files/test_input_kernel_1.pil')
