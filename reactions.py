@@ -185,6 +185,9 @@ def multiloop_closing_rate(length):
 	"""
 	pass
 
+def binding_rate(length, before, after):
+	return hairpin_closing_rate(length)
+
 def branch_3way_rate(length):
 	"""
 	Rate constant formula for 3-way branch migration with an adjacent toehold
@@ -228,6 +231,130 @@ def bimolecular_binding_rate(length):
 # Reaction functions
 # ----------------------------------------------------------------------------
 
+# def bind11(reactant):
+# 	"""
+# 	Returns a list of reaction pathways which can be produced by 1-1 binding 
+# 	reactions of the argument complex. The 1-1 binding reaction is the 
+# 	hybridization of two complementary unpaired domains within a single complex 
+# 	to produce a single unpseudoknotted product complex.
+# 	"""
+# 	# tuple: (strand, domain)
+# 	outer_index = (0, 0)
+# 	inner_index = (0, 0)
+# 	struct = reactant.structure
+# 	strands = reactant.strands
+# 	reactions = []
+		
+# 	# We will loop over all unpaired domains
+# 	for (strand_num, outer_strand) in enumerate(strands):
+# 		for (domain_num, outer_domain) in enumerate(outer_strand.domains):
+			
+# 			if (struct[strand_num][domain_num] != None):
+# 				# This is not an unpaired domain
+# 				continue
+
+
+# 			# For each unpaired domain, we loop over all higher-number unpaired
+# 			# domains
+# 			inner_strand = strand_num
+# 			inner_domain = domain_num + 1
+			
+# 			# Keep track of the total length of the bulge, in nucleotides, to 
+# 			# calculate the rate
+# 			bulge_length = 0
+
+# 			# Once we see another internal loop, this becomes a bulge (rather 
+# 			# than a hairpin)
+# 			loop_type = 'hairpin'
+
+# 			# We treat each internal loop as adding this many nucleotides to 
+# 			# the total size of the bulge
+# 			loop_bulge_penalty = 5
+
+# 			while (inner_strand != len(strands)):
+# 				# If we're back where we started, then we've traversed 
+# 				# a whole loop
+# 				if (inner_strand == strand_num) and \
+# 				   (inner_domain == domain_num):
+# 				   break
+				
+# 				# If we're at the end of a strand, move to the next
+# 				if (inner_domain == len(strands[inner_strand].domains)):
+# 					inner_domain = 0
+# 					inner_strand = inner_strand + 1
+
+# 				elif (struct[inner_strand][inner_domain] != None):
+# 					# This is not an unpaired domain, meaning there's an 
+# 					# internal loop here; skip around the loop to return to an
+# 					# external loop by following the structure
+# 					struct_element = struct[inner_strand][inner_domain]
+# 					inner_strand = struct_element[0]
+# 					inner_domain = struct_element[1] + 1
+
+# 					# Any subsequent pairing will need to cross this internal 
+# 					# loop, and so will not form a hairpin; either it's a bulge
+# 					# or a multiloop:
+# 					if loop_type == 'hairpin':
+# 						loop_type = 'bulge'
+# 					elif loop_type == 'bulge':
+# 						loop_type = 'multiloop'
+
+# 					# Add a length penalty for the loop
+# 					bulge_length += loop_bulge_penalty
+
+# 				elif not outer_domain.can_pair(strands[inner_strand].domains[inner_domain]):
+# 					# These domains aren't complementary
+					
+# 					# Add this domain to the size of the bulge
+# 					bulge_length += len(strands[inner_strand].domains[inner_domain])
+
+# 					# Continue in loop
+# 					inner_domain = inner_domain + 1
+# 				else:
+# 					# These domains can pair, add to the list
+# 					reactions.append(((strand_num, domain_num), 
+# 									 (inner_strand, inner_domain), 
+# 									 (bulge_length, loop_type)))
+# 					# Continue to loop
+# 					inner_domain = inner_domain + 1
+	
+# 	output = []
+# 	for (d1, d2, (bulge_length, loop_type)) in reactions:
+# 		new_structure = copy.deepcopy(reactant.structure)
+# 		new_structure[d1[0]][d1[1]] = d2
+# 		new_structure[d2[0]][d2[1]] = d1
+# 		product = Complex(get_auto_name(),  #reactant.name + "(" + str(d1) + "+" + str(d2) + ")",
+# 						  reactant.strands, new_structure)		
+# 		reaction = ReactionPathway('bind11', [reactant], [product])
+
+# 		# Calculate rate
+# 		# If, in the future, we want different rate constant equations for 
+# 		# different loop types, they can be added here
+# 		if loop_type == 'hairpin':
+# 			reaction._const = hairpin_closing_rate(bulge_length)
+# 		elif loop_type == 'bulge':
+# 			reaction._const = hairpin_closing_rate(bulge_length)
+# 		else:
+# 			reaction._const = hairpin_closing_rate(bulge_length)
+
+# 		output.append(reaction)
+
+
+# 	# remove any duplicate reactions	
+# 	if (len(output) == 0):
+# 		return output
+		
+# 	output.sort()
+# 	last = output[-1]
+# 	for i in range(len(output) - 2, -1, -1):
+# 		if last == output[i]:
+# 			del output[i]
+# 		else:
+# 			last = output[i]
+
+# 	return output
+	
+
 def bind11(reactant):
 	"""
 	Returns a list of reaction pathways which can be produced by 1-1 binding 
@@ -235,107 +362,40 @@ def bind11(reactant):
 	hybridization of two complementary unpaired domains within a single complex 
 	to produce a single unpseudoknotted product complex.
 	"""
-	# tuple: (strand, domain)
-	outer_index = (0, 0)
-	inner_index = (0, 0)
-	struct = reactant.structure
-	strands = reactant.strands
 	reactions = []
-		
-	# We will loop over all unpaired domains
-	# TODO: we can just use the available_domains field of complexes to
-	# simplify this!
-	for (strand_num, outer_strand) in enumerate(strands):
-		for (domain_num, outer_domain) in enumerate(outer_strand.domains):
-			
-			if (struct[strand_num][domain_num] != None):
-				# This is not an unpaired domain
-				continue
-			
-			# For each unpaired domain, we loop over all higher-number unpaired
-			# domains
-			inner_strand = strand_num
-			inner_domain = domain_num + 1
-			
-			# Keep track of the total length of the bulge, in nucleotides, to 
-			# calculate the rate
-			bulge_length = 0
-
-			# Once we see another internal loop, this becomes a bulge (rather 
-			# than a hairpin)
-			loop_type = 'hairpin'
-
-			# We treat each internal loop as adding this many nucleotides to 
-			# the total size of the bulge
-			loop_bulge_penalty = 5
-
-			while (inner_strand != len(strands)):
-				# If we're back where we started, then we've traversed 
-				# a whole loop
-				if (inner_strand == strand_num) and \
-				   (inner_domain == domain_num):
-				   break
-				
-				# If we're at the end of a strand, move to the next
-				if (inner_domain == len(strands[inner_strand].domains)):
-					inner_domain = 0
-					inner_strand = inner_strand + 1
-
-				elif (struct[inner_strand][inner_domain] != None):
-					# This is not an unpaired domain, meaning there's an 
-					# internal loop here; skip around the loop to return to an
-					# external loop by following the structure
-					struct_element = struct[inner_strand][inner_domain]
-					inner_strand = struct_element[0]
-					inner_domain = struct_element[1] + 1
-
-					# Any subsequent pairing will need to cross this internal 
-					# loop, and so will not form a hairpin; either it's a bulge
-					# or a multiloop:
-					if loop_type == 'hairpin':
-						loop_type = 'bulge'
-					elif loop_type == 'bulge':
-						loop_type = 'multiloop'
-
-					# Add a length penalty for the loop
-					bulge_length += loop_bulge_penalty
-
-				elif not outer_domain.can_pair(strands[inner_strand].domains[inner_domain]):
-					# These domains aren't complementary
-					
-					# Add this domain to the size of the bulge
-					bulge_length += len(strands[inner_strand].domains[inner_domain])
-
-					# Continue in loop
-					inner_domain = inner_domain + 1
-				else:
-					# These domains can pair, add to the list
-					reactions.append(((strand_num, domain_num), 
-									 (inner_strand, inner_domain), 
-									 (bulge_length, loop_type)))
-					# Continue to loop
-					inner_domain = inner_domain + 1
+	structure = reactant.structure
 	
-	output = []
-	for (d1, d2, (bulge_length, loop_type)) in reactions:
-		new_structure = copy.deepcopy(reactant.structure)
-		new_structure[d1[0]][d1[1]] = d2
-		new_structure[d2[0]][d2[1]] = d1
-		product = Complex(get_auto_name(),  #reactant.name + "(" + str(d1) + "+" + str(d2) + ")",
-						  reactant.strands, new_structure)		
-		reaction = ReactionPathway('bind11', [reactant], [product])
+	# We iterate through all the domains
+	for (strand_index, strand) in enumerate(reactant.strands):
+		for (domain_index, domain) in enumerate(strand.domains):
 
-		# Calculate rate
-		# If, in the future, we want different rate constant equations for 
-		# different loop types, they can be added here
-		if loop_type == 'hairpin':
-			reaction._const = hairpin_closing_rate(bulge_length)
-		elif loop_type == 'bulge':
-			reaction._const = hairpin_closing_rate(bulge_length)
-		else:
-			reaction._const = hairpin_closing_rate(bulge_length)
+			# The displacing domain must be free			
+			if (structure[strand_index][domain_index] != None):
+				continue
 
-		output.append(reaction)
+			d1 = strand.domains[domain_index]
+			loc1 = (strand_index, domain_index)
+
+			# search both directions around the loop for a bound domain that
+			# has the same sequence (and therefore can be displaced)
+			locs = find_on_loop(reactant, loc1, -1, \
+				lambda dom, struct, loc: struct is None and dom.can_pair(d1)) + \
+			find_on_loop(reactant, loc1, +1, \
+				lambda dom, struct, loc: struct is None and dom.can_pair(d1))
+
+			# build products
+			for (loc2, before, after) in locs:
+				product = do_bind11(reactant, loc1, loc2)		
+				reaction = ReactionPathway('bind11', [reactant], [product])
+
+				# length of invading domain
+				length = len(d1)
+
+				# calculate reaction constant
+				reaction._const = binding_rate(length, before, after)
+				reactions.append(reaction)
+
+	output = reactions
 
 	# remove any duplicate reactions	
 	if (len(output) == 0):
@@ -350,7 +410,15 @@ def bind11(reactant):
 			last = output[i]
 
 	return output
-	
+
+def do_bind11(reactant, loc1, loc2):
+	new_structure = copy.deepcopy(reactant.structure)
+	new_structure[loc1[0]][loc1[1]] = loc2
+	new_structure[loc2[0]][loc2[1]] = loc1
+	product = Complex(get_auto_name(),  #reactant.name + "(" + str(loc1) + "+" + str(loc2) + ")",
+					  reactant.strands, new_structure)
+	return product
+
 def bind21(reactant1, reactant2):
 	"""
 	Returns a list of reaction pathways which can be produced by 2-1 binding 
@@ -1433,7 +1501,7 @@ def find_on_loop(reactant, start_loc, direction, filter):
 			results.append( (bound_loc, len(loop)) )
 
 		# if the domain at bound_loc is unbound
-		elif (reactant.structure[bound_loc[0]][bound_loc[1]] == None):
+		if (reactant.structure[bound_loc[0]][bound_loc[1]] is None):
 			loop.append(triple(bound_loc))
 			# doms.append(reactant.get_domain(bound_loc))
 
