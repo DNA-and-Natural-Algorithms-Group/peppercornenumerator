@@ -127,6 +127,31 @@ class ReactionPathway(object):
 		Gives the rate constant for this reaction
 		"""
 		return self._const	
+
+
+# def unpack_loop(loop):
+# 	bases = 0
+# 	stems = 0
+# 	is_open = False
+# 	strand = None
+# 	for (dom, struct, loc) in loop:
+# 		if struct is None:
+# 			bases += 1
+
+# 			if strand is not None and loc[1] != strand:
+# 				is_open = True
+
+# 			strand = loc[1]
+
+# 		elif struct is not None:
+# 			stems += 1
+
+# 			if strand is not None and loc[1] != strand:
+# 				is_open = True
+
+# 			strand = struct[0]
+
+
 				
 # Rate constant formulae
 # ----------------------------------------------------------------------------
@@ -154,6 +179,12 @@ def hairpin_closing_rate(length):
 	c = -3.0
 	return a * (length + 5) ** c + b
 
+def multiloop_closing_rate(length):
+	"""
+	Rate constant formula for multiloop closing with a given domain `length`.
+	"""
+	pass
+
 def branch_3way_rate(length):
 	"""
 	Rate constant formula for 3-way branch migration with an adjacent toehold
@@ -162,10 +193,12 @@ def branch_3way_rate(length):
 	step = 0.1e-3
 	return 1.0 / (init + step * length**2)
 
-def branch_3way_remote_rate(length):
+def branch_3way_remote_rate(length, before, after):
 	"""
 	Rate constant formula for 3-way branch migration with a remote toehold
 	"""
+	# lp = bases + stems * 5
+
 	slowdown = hairpin_closing_rate(length)/zipping_rate(length)
 	init = 2.8e-3 * slowdown
 	step = 0.1e-3
@@ -178,6 +211,12 @@ def branch_4way_rate(length):
 	init = 77	
 	step = 1
 	return 1.0 / (init + step * length**2)
+
+def branch_4way_remote_rate(length, before, after):
+	"""
+	Rate constant formula for 4-way branch migration with a remote toehold
+	"""
+	return branch_4way_rate(length)
 
 def bimolecular_binding_rate(length):
 	"""
@@ -1253,29 +1292,24 @@ def branch_3way(reactant):
 				lambda dom, struct, loc: struct is not None and dom == displacing_domain) + \
 			find_on_loop(reactant, displacing_loc, +1, \
 				lambda dom, struct, loc: struct is not None and dom == displacing_domain)
-			
+
+
 			# build products
-			reactions.extend((do_3way_migration(\
-				reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]]),
+			for (bound_loc, before, after) in bound_doms:
+				reaction = ReactionPathway('branch_3way', [reactant], do_3way_migration(\
+					reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]])
+				)
 
-				# length of invasion
-				len(displacing_domain),
+				# length of invading domain
+				length = len(displacing_domain)
 
-				# total number of bases on internal loop
-				sum(len(d) for d in doms),
+				# calculate reaction constant
+				reaction._const = branch_3way_remote_rate(length, before, after)
+				# reaction._const = branch_3way_rate(length)
 
-				# number of duplex stems on internal loop
-				len(stems)
-
-			) for (bound_loc, doms, stems) in bound_doms)
+				reactions.append(reaction)
 				
-	output = []
-	for products, length, bases, stems in reactions:
-		reaction = ReactionPathway('branch_3way', [reactant], products)
-		
-		reaction._const = branch_3way_rate(length)
-
-		output.append(reaction)		
+	output = reactions
 
 	# Remove any duplicate reactions
 	if (len(output) == 0):
@@ -1304,13 +1338,22 @@ def find_on_loop(reactant, start_loc, direction, filter):
 			indicating what `dom` is bound to, or None if `dom` is unpaired.
 		-	loc (tuple) : a (strand index, domain index) pair
 
-	Returns an array of tuples: `(loc, domains, stems)`, where:
+
+	Returns an array of tuples: `(loc, before, after)`, where:
 		-	loc is a (strand index, domain index) pair indicating the position
 			of the matched domain
-		-	domains is a list of unpaired domains encountered in between `start_loc`
-			and `loc`
-		-	stems is an array of duplex domains encountered in between `start_loc`
-			and `loc`
+		-	`before` is a list of (domain, struct, loc) triples giving the 
+			domains after `start_loc` but before the matched domain on the loop
+		-	`after` is a list of (domain, struct, loc) triples giving the 
+			domains after the matched domain but before `start_loc` on the loop
+
+	# Returns an array of tuples: `(loc, domains, stems)`, where:
+	# 	-	loc is a (strand index, domain index) pair indicating the position
+	# 		of the matched domain
+	# 	-	domains is a list of unpaired domains encountered in between `start_loc`
+	# 		and `loc`
+	# 	-	stems is an array of duplex domains encountered in between `start_loc`
+	# 		and `loc`
 
 	Note that if the domain passed to start_loc is a duplex, the results may 
 	be unexpected:
@@ -1332,6 +1375,10 @@ def find_on_loop(reactant, start_loc, direction, filter):
 	results = []
 	doms = []
 	stems = []
+	loop = []
+
+	def triple(loc):
+		return (reactant.get_domain(loc),reactant.get_structure(loc),loc)
 
 	# We now follow the external loop from the starting pair
 	# searching for a bound domain to displace
@@ -1379,15 +1426,16 @@ def find_on_loop(reactant, start_loc, direction, filter):
 
 		
 		# try to match the filter function
-		elif (filter(reactant.strands[bound_loc[0]].domains[bound_loc[1]], \
-			reactant.structure[bound_loc[0]][bound_loc[1]], bound_loc)):
+		elif (filter(reactant.get_domain(bound_loc), \
+			reactant.get_structure(bound_loc), bound_loc)):
 
 			# append the location
-			results.append( (bound_loc, doms[:], stems[:]) )
+			results.append( (bound_loc, len(loop)) )
 
 		# if the domain at bound_loc is unbound
 		elif (reactant.structure[bound_loc[0]][bound_loc[1]] == None):
-			doms.append(reactant.get_domain(bound_loc))
+			loop.append(triple(bound_loc))
+			# doms.append(reactant.get_domain(bound_loc))
 
 			# look to the next domain
 			continue
@@ -1395,9 +1443,10 @@ def find_on_loop(reactant, start_loc, direction, filter):
 		# so it's bound to something, but that doesn't match the filter
 		# follow the structure to stay on the same loop
 		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
-		stems.append(reactant.get_domain(bound_loc))
+		loop.append(triple(bound_loc))
+		# stems.append(reactant.get_domain(bound_loc))
 
-	return results
+	return list( (bound_loc, Loop(loop[:i]), Loop(loop[i:]) ) for (bound_loc, i) in results )
 
 def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	"""
@@ -1555,34 +1604,29 @@ def branch_4way(reactant):
 
 			# search both directions around the loop for a bound domain that
 			# has the same sequence (and therefore can be displaced)
-			results = find_on_loop(reactant, structure[strand_index][domain_index], -1, \
+			bound_doms = find_on_loop(reactant, structure[strand_index][domain_index], -1, \
 				lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain)) + \
 			find_on_loop(reactant, displacing_loc, +1, \
 				lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain))
 
 			# build products
-			reactions.extend((do_4way_migration(\
-				reactant, 
-				displacing_loc, structure[displacing_loc[0]][displacing_loc[1]],
-				bound_loc, structure[bound_loc[0]][bound_loc[1]]),
+			for (bound_loc, before, after) in bound_doms:
+				reaction = ReactionPathway('branch_4way', [reactant], do_4way_migration(\
+					reactant, 
+					displacing_loc, structure[displacing_loc[0]][displacing_loc[1]],
+					bound_loc, structure[bound_loc[0]][bound_loc[1]])
+				)
 
-				# length of invasion
-				len(displacing_domain),
+				# length of invading domain
+				length = len(displacing_domain)
 
-				# total number of bases on internal loop
-				sum(len(d) for d in doms),
+				# calculate reaction constant
+				reaction._const = branch_4way_remote_rate(length, before, after)
 
-				# number of duplex stems on internal loop
-				len(stems)
+				reactions.append(reaction)
 
-			) for (bound_loc, doms, stems) in results)
-	
 
-	output = []
-	for products, length, bases, stems in reactions:
-		reaction = ReactionPathway('branch_4way', [reactant], products)
-		reaction._const = branch_4way_rate(length)
-		output.append(reaction)
+	output = reactions
 	
 	# remove any duplicate reactions	
 	if (len(output) == 0):

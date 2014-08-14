@@ -135,6 +135,70 @@ def index_parts(enum):
 	
 	return (domains,strands,complexes)
 
+class Loop(object):
+	"""
+	Represents (possibly a part) of a single open or closed loop
+	"""
+	def __init__(self, loop):
+		self._parts = loop
+
+		is_open = False
+		bases = 0
+		stems = 0
+		strand = None
+
+		# calculate stems, bases, and is_open
+		for (dom, struct, loc) in loop:
+			if struct is None:
+				bases += len(dom)
+
+				if strand is not None and loc[1] != strand:
+					is_open = True
+
+				strand = loc[1]
+
+			elif struct is not None:
+				stems += 1
+
+				if strand is not None and loc[1] != strand:
+					is_open = True
+
+				strand = struct[0]
+
+		# update cached properties
+		self._is_open = is_open
+		self._bases = bases
+		self._stems = stems
+
+
+	@property
+	def parts(self):
+		"""
+		Gives the list of (dom, struct, loc) tuples associated with this loop
+		"""
+		return self._parts[:]
+
+	@property
+	def stems(self):
+		"""
+		Gives the number of stems in the loop
+		"""
+		return self._stems
+
+	@property
+	def bases(self):
+		"""
+		Gives the number of bases in the loop
+		"""
+		return self._bases
+
+	@property
+	def is_open(self):
+		"""
+		True if the loop is an open loop, else false
+		"""
+		return self._is_open
+
 class Domain(object):
 	"""
 	Represents a single domain. We allow several options for specifying domain
@@ -474,9 +538,18 @@ class Complex(object):
 		Returns the domain at the given (strand,domain) index in this complex (loc is a (strand,domain) tuple)
 		"""
 		if(loc != None):
-			return self.strands[loc[0]].domains[loc[1]]
+			return self._strands[loc[0]]._domains[loc[1]]
 		return None
-		
+	
+	def get_structure(self, loc):
+		"""
+		Returns a (strand index, domain index) pair indicating to which domain this location is bound, 
+		or None if it is unbound.
+		"""
+		if(loc != None):
+			return self.structure[loc[0]][loc[1]]
+		return None
+
 	def strand_index(self, strand_name):
 		"""
 		Returns the index of the strand with the specified name in this

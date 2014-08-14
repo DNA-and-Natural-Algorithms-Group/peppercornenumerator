@@ -9,6 +9,7 @@ import unittest
 from utils import *
 from nose.tools import *
 import copy
+import input
 
 class MiscTests(unittest.TestCase):
 	def testNaturalSort(self):
@@ -26,6 +27,31 @@ class MiscTests(unittest.TestCase):
 		#						0123 01234
 		assert parse_dot_paren('((((+))).)') == [[(1,4),(1,2),(1,1),(1,0)],[(0,3),(0,2),(0,1),None,(0,0)]]
 
+
+class LoopTests(unittest.TestCase):
+	def testLoop(self):
+		(domains, strands, complexes) = input.from_kernel(["C = 1 2 3() + 4"])
+		
+		parts = []
+		domain_length = 0
+		complex = complexes['C']
+
+		# skip the closing helical domain
+		for strand_index, dom_index in [(0,0), (0,1), (0,2), (1,0)]:
+			loc = (strand_index, dom_index)
+			domain = complex.get_domain(loc)
+			parts.append( (domain, complex.get_structure(loc), loc) )
+			
+			# we'll naively assume all domains have the same length for the 
+			# sake of this example
+			domain_length = len(domain)
+
+		# construct a loop from parts
+		loop = Loop(parts)
+
+		assert loop.bases == domain_length*3
+		assert loop.stems == 1
+		assert loop.is_open == True
 
 class DomainTests(unittest.TestCase):
 	def setUp(self):
