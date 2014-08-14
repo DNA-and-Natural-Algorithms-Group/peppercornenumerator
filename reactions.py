@@ -1249,7 +1249,7 @@ def branch_3way(reactant):
 
 			# search both directions around the loop for a bound domain that
 			# has the same sequence (and therefore can be displaced)
-			results = find_on_loop(reactant, displacing_loc, -1, \
+			bound_doms = find_on_loop(reactant, displacing_loc, -1, \
 				lambda dom, struct, loc: struct is not None and dom == displacing_domain) + \
 			find_on_loop(reactant, displacing_loc, +1, \
 				lambda dom, struct, loc: struct is not None and dom == displacing_domain)
@@ -1261,20 +1261,19 @@ def branch_3way(reactant):
 				# length of invasion
 				len(displacing_domain),
 
-				# adjacent or remote toehold?
-				domains_adjacent(displacing_loc,bound_loc) \
-			) for bound_loc in results)
+				# total number of bases on internal loop
+				sum(len(d) for d in doms),
+
+				# number of duplex stems on internal loop
+				len(stems)
+
+			) for (bound_loc, doms, stems) in bound_doms)
 				
 	output = []
-	for output_set, length, adjacent in reactions:
-		reaction = ReactionPathway('branch_3way', [reactant], output_set)
+	for products, length, bases, stems in reactions:
+		reaction = ReactionPathway('branch_3way', [reactant], products)
 		
-		if adjacent:
-			# Branch migration between adjacent domains
-			reaction._const = branch_3way_rate(length)
-		else:
-			# Otherwise remote toehold-mediated
-			reaction._const = branch_3way_remote_rate(length)
+		reaction._const = branch_3way_rate(length)
 
 		output.append(reaction)		
 
@@ -1294,15 +1293,52 @@ def branch_3way(reactant):
 
 
 def find_on_loop(reactant, start_loc, direction, filter):
-	displacing_loc = start_loc
-	
+	"""
+	Finds the next domain within `reactant` that's on the same inner loop as 
+	`start_loc` and matches the passed `filter` function. Looks in either the 
+	5'->3' (+1) or 3'->5' (-1) `direction`.  
+
+	Filter should accept the following arguments and return True or False:
+		-	dom (utils.Domain) : the domain at `loc`
+		-	struct (tuple or None): a (strand index, domain index) pair 
+			indicating what `dom` is bound to, or None if `dom` is unpaired.
+		-	loc (tuple) : a (strand index, domain index) pair
+
+	Returns an array of tuples: `(loc, domains, stems)`, where:
+		-	loc is a (strand index, domain index) pair indicating the position
+			of the matched domain
+		-	domains is a list of unpaired domains encountered in between `start_loc`
+			and `loc`
+		-	stems is an array of duplex domains encountered in between `start_loc`
+			and `loc`
+
+	Note that if the domain passed to start_loc is a duplex, the results may 
+	be unexpected:
+
+	       ___  x  ___
+	5' ___/   \___/   \___  
+	3' ___  A  ___  B  ___)
+	      \___/   \___/
+	            x*
+
+	Notice that the duplex x() participates in two internal loops (A and B). 
+	By convention, the internal loop considered is the _internal loop which
+	encloses this domain_. That means if you pass domain x and +1, you'll get
+	loop A, whereas if you pass x and -1, you'll get domain B. This is in an
+	attempt to be consistent with the case where you pass an unpaired domain
+	(and therefore the internal loop searched is the one which encloses the 
+	unpaired domain).
+	"""	
 	results = []
+	doms = []
+	stems = []
 
 	# We now follow the external loop from the starting pair
 	# searching for a bound domain to displace
 	bound_loc = start_loc
 
-	# Avoid getting stuck inside an internal loop
+	# Avoid getting stuck inside an internal loop enclosed by this domain,
+	# if the starting domain is a duplex.
 	# 
 	# 	1      2
 	#  ___________
@@ -1317,6 +1353,8 @@ def find_on_loop(reactant, start_loc, direction, filter):
 
 	# Follow the external loop to the end
 	while True:
+		# move to the next domain in the indicated direction
+		# (+1 = 5' -> 3', -1 = 3' -> 5')
 		bound_loc = (bound_loc[0], bound_loc[1] + direction)
 
 		# if we've reached the end of the strand (5')
@@ -1334,32 +1372,30 @@ def find_on_loop(reactant, start_loc, direction, filter):
 			bound_loc = (wrap(bound_loc[0]+1, len(reactant.strands)), -1)
 			continue
 
-		if bound_loc == displacing_loc:
+		if bound_loc == start_loc:
 			# We've returned to the original location of the 
 			# displacing domain
 			break
 
 		
-		# otherwise the domain at bound_loc must be bound to 
-		# something. if the domain at bound_loc is has the same 
-		# sequence as the displacing domain
+		# try to match the filter function
 		elif (filter(reactant.strands[bound_loc[0]].domains[bound_loc[1]], \
 			reactant.structure[bound_loc[0]][bound_loc[1]], bound_loc)):
 
-			# then we have found a displacement reaction
-			results.append(bound_loc)
-				# # adjacent or remote toehold?
-				# domains_adjacent(displacing_loc,bound_loc)
-				# ))
+			# append the location
+			results.append( (bound_loc, doms[:], stems[:]) )
 
 		# if the domain at bound_loc is unbound
 		elif (reactant.structure[bound_loc[0]][bound_loc[1]] == None):
-			# then it can't be displaced by the displacing domain
+			doms.append(reactant.get_domain(bound_loc))
+
+			# look to the next domain
 			continue
 
-		# so it's bound to something, but we can't displace it
+		# so it's bound to something, but that doesn't match the filter
 		# follow the structure to stay on the same loop
 		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
+		stems.append(reactant.get_domain(bound_loc))
 
 	return results
 
@@ -1531,14 +1567,20 @@ def branch_4way(reactant):
 				bound_loc, structure[bound_loc[0]][bound_loc[1]]),
 
 				# length of invasion
-				len(displacing_domain)
+				len(displacing_domain),
 
-			) for bound_loc in results)
+				# total number of bases on internal loop
+				sum(len(d) for d in doms),
+
+				# number of duplex stems on internal loop
+				len(stems)
+
+			) for (bound_loc, doms, stems) in results)
 	
 
 	output = []
-	for output_set,length in reactions:
-		reaction = ReactionPathway('branch_4way', [reactant], output_set)
+	for products, length, bases, stems in reactions:
+		reaction = ReactionPathway('branch_4way', [reactant], products)
 		reaction._const = branch_4way_rate(length)
 		output.append(reaction)
 	
