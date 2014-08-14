@@ -393,12 +393,7 @@ class InputKernel(unittest.TestCase):
 			'2' : Complex('2', [strands['a']], [[None]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
-
-		# Reactions 
-		reactions = { 
-
-		}
-		assert set(reactions.values()) == set(enumerator.reactions)
+		
 
 	def test_kernel_2(self):
 		enumerator = input_pil('test_files/test_input_kernel_2.pil')
@@ -424,12 +419,6 @@ class InputKernel(unittest.TestCase):
 			'1' : Complex('1', [strands['a_b']], [[None, None]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
-
-		# Reactions 
-		reactions = { 
-
-		}
-		assert set(reactions.values()) == set(enumerator.reactions)
 
 
 	def test_kernel_3(self):
@@ -458,12 +447,6 @@ class InputKernel(unittest.TestCase):
 			'3' : Complex('3', [strands['a'], strands['a*']], [[(1, 0)], [(0, 0)]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
-
-		# Reactions 
-		reactions = { 
-
-		}
-		assert set(reactions.values()) == set(enumerator.reactions)
 
 
 	def test_kernel_4(self):
@@ -498,12 +481,6 @@ class InputKernel(unittest.TestCase):
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
 
-		# Reactions 
-		reactions = { 
-
-		}
-		assert set(reactions.values()) == set(enumerator.reactions)
-
 
 
 
@@ -531,12 +508,6 @@ class InputKernel(unittest.TestCase):
 			'1' : Complex('1', [strands['a*_b_a']], [[(0, 2), None, (0, 0)]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
-
-		# Reactions 
-		reactions = { 
-
-		}
-		assert set(reactions.values()) == set(enumerator.reactions)
 
 
 
@@ -574,12 +545,6 @@ class InputKernel(unittest.TestCase):
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
 
-		# Reactions 
-		reactions = { 
-
-		}
-		assert set(reactions.values()) == set(enumerator.reactions)
-
 
 	def test_kernel_7(self):
 		enumerator = input_pil('test_files/test_input_kernel_7.pil')
@@ -615,12 +580,6 @@ class InputKernel(unittest.TestCase):
 			'1' : Complex('1', [strands['a_b_c*_d'], strands['e_c_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
-
-		# Reactions 
-		reactions = { 
-
-		}
-		assert set(reactions.values()) == set(enumerator.reactions)
 
 
 	def test_kernel_8(self):
@@ -659,10 +618,4 @@ class InputKernel(unittest.TestCase):
 			'2' : Complex('2', [strands['2_3'], strands['3*_a*'], strands['a*_b*_c_b_a_2*_t*']], [[(2, 5), (1, 0)], [(0, 1), None], [(2, 4), (2, 3), None, (2, 1), (2, 0), (0, 0), None]])
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
-
-		# Reactions 
-		reactions = { 
-
-		}
-		assert set(reactions.values()) == set(enumerator.reactions)
 

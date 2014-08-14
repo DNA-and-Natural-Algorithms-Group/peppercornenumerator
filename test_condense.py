@@ -530,3 +530,168 @@ class CondenseTests(unittest.TestCase):
         self.fate_example.enumerate()
 
         out = condense_graph(self.fate_example)
+
+
+    def testCondenseGraph6(self):
+
+        self.fate_example = input.input_pil('test_files/examples/fate-example.pil')
+
+        self.fate_example.MAX_COMPLEX_SIZE = 10
+        self.fate_example.MAX_REACTION_COUNT = 1000
+        self.fate_example.MAX_COMPLEX_COUNT = 200
+        self.fate_example.RELEASE_CUTOFF = 7
+
+        self.fate_example.enumerate()
+
+        enumerator = self.fate_example
+        condensed = condense_resting_states(self.fate_example)
+
+        # Domains 
+        domains = { 
+            '2' : Domain('2', 8, is_complement=False, sequence='NNNNNNNN'),
+            '2*' : Domain('2', 8, is_complement=True, sequence='NNNNNNNN'),
+            '3' : Domain('3', 8, is_complement=False, sequence='NNNNNNNN'),
+            '3*' : Domain('3', 8, is_complement=True, sequence='NNNNNNNN'),
+            'a' : Domain('a', 8, is_complement=False, sequence='NNNNNNNN'),
+            'a*' : Domain('a', 8, is_complement=True, sequence='NNNNNNNN'),
+            'b' : Domain('b', 8, is_complement=False, sequence='NNNNNNNN'),
+            'b*' : Domain('b', 8, is_complement=True, sequence='NNNNNNNN'),
+            'c' : Domain('c', 8, is_complement=False, sequence='NNNNNNNN'),
+            'c*' : Domain('c', 8, is_complement=True, sequence='NNNNNNNN'),
+            't' : Domain('t', 4, is_complement=False, sequence='NNNN'),
+            't*' : Domain('t', 4, is_complement=True, sequence='NNNN')
+        }
+        assert set(domains.values()) == set(enumerator.domains)
+
+        # Strands 
+        strands = { 
+            '3a' : Strand('3a', [domains['3*'], domains['a*']]),
+            '23' : Strand('23', [domains['2'], domains['3']]),
+            'gate' : Strand('gate', [domains['a*'], domains['b*'], domains['c'], domains['b'], domains['a'], domains['2*'], domains['t*']]),
+            't23' : Strand('t23', [domains['t'], domains['2'], domains['3']])
+        }
+        assert set(strands.values()) == set(enumerator.strands)
+
+        # Complexes 
+        complexes = { 
+            '2' : Complex('2', [strands['23'], strands['3a'], strands['gate']], [[(2, 5), (1, 0)], [(0, 1), None], [(2, 4), (2, 3), None, (2, 1), (2, 0), (0, 0), None]]),
+            '5' : Complex('5', [strands['23'], strands['3a'], strands['gate'], strands['t23']], [[(2, 5), (1, 0)], [(0, 1), (2, 4)], [None, (2, 3), None, (2, 1), (1, 1), (0, 0), (3, 0)], [(2, 6), None, None]]),
+            '6' : Complex('6', [strands['23'], strands['3a'], strands['gate'], strands['t23']], [[(2, 5), (1, 0)], [(0, 1), None], [(2, 4), (2, 3), None, (2, 1), (2, 0), (0, 0), (3, 0)], [(2, 6), None, None]]),
+            '12' : Complex('12', [strands['gate'], strands['t23']], [[(0, 4), (0, 3), None, (0, 1), (0, 0), (1, 1), (1, 0)], [(0, 6), (0, 5), None]]),
+            '13' : Complex('13', [strands['23'], strands['3a']], [[None, (1, 0)], [(0, 1), None]]),
+            '17' : Complex('17', [strands['23'], strands['3a'], strands['gate'], strands['t23']], [[None, (1, 0)], [(0, 1), (2, 4)], [None, (2, 3), None, (2, 1), (1, 1), (3, 1), (3, 0)], [(2, 6), (2, 5), None]]),
+            '20' : Complex('20', [strands['3a'], strands['gate'], strands['t23']], [[(2, 2), (1, 4)], [None, (1, 3), None, (1, 1), (0, 1), (2, 1), (2, 0)], [(1, 6), (1, 5), (0, 0)]]),
+            '21' : Complex('21', [strands['23']], [[None, None]]),
+            '26' : Complex('26', [strands['3a'], strands['gate'], strands['t23']], [[(2, 2), None], [(1, 4), (1, 3), None, (1, 1), (1, 0), (2, 1), (2, 0)], [(1, 6), (1, 5), (0, 0)]]),
+            'gate' : Complex('gate', [strands['23'], strands['3a'], strands['gate']], [[(2, 5), (1, 0)], [(0, 1), (2, 4)], [None, (2, 3), None, (2, 1), (1, 1), (0, 0), None]]),
+            't23' : Complex('t23', [strands['t23']], [[None, None, None]])
+        }
+        assert set(complexes.values()) == set(enumerator.complexes)
+
+        # Reactions 
+        reactions = { 
+            ReactionPathway('bind21', [complexes['gate'], complexes['t23']], [complexes['5']]),
+            ReactionPathway('bind21', [complexes['2'], complexes['t23']], [complexes['6']]),
+            ReactionPathway('branch_3way', [complexes['gate']], [complexes['2']]),
+            ReactionPathway('branch_3way', [complexes['2']], [complexes['gate']]),
+            ReactionPathway('branch_3way', [complexes['6']], [complexes['13'], complexes['12']]),
+            ReactionPathway('branch_3way', [complexes['6']], [complexes['5']]),
+            ReactionPathway('branch_3way', [complexes['5']], [complexes['17']]),
+            ReactionPathway('branch_3way', [complexes['5']], [complexes['6']]),
+            ReactionPathway('branch_3way', [complexes['17']], [complexes['21'], complexes['20']]),
+            ReactionPathway('branch_3way', [complexes['17']], [complexes['13'], complexes['12']]),
+            ReactionPathway('branch_3way', [complexes['17']], [complexes['5']]),
+            ReactionPathway('branch_3way', [complexes['20']], [complexes['26']]),
+            ReactionPathway('branch_3way', [complexes['26']], [complexes['20']]),
+            ReactionPathway('open', [complexes['6']], [complexes['2'], complexes['t23']]),
+            ReactionPathway('open', [complexes['5']], [complexes['gate'], complexes['t23']])
+        }
+        assert set(reactions) == set(enumerator.reactions)
+
+        # Resting states 
+        resting_states = { 
+            '40' : RestingState('40', [complexes['12']]),
+            '42' : RestingState('42', [complexes['13']]),
+            '43' : RestingState('43', [complexes['21']]),
+            '41' : RestingState('41', [complexes['26'], complexes['20']]),
+            '38' : RestingState('38', [complexes['2'], complexes['gate']]),
+            '39' : RestingState('39', [complexes['t23']])
+        }
+        assert set(resting_states.values()) == set(condensed['resting_states'])
+
+        # Condensed Reactions 
+        condensed_reactions = { 
+            ReactionPathway('condensed', [resting_states['38'], resting_states['39']], [resting_states['43'], resting_states['41']]),
+            ReactionPathway('condensed', [resting_states['38'], resting_states['39']], [resting_states['42'], resting_states['40']])
+        }
+        assert set(condensed_reactions) == set(condensed['reactions'])
+
+    def testCondenseGraphCRN(self):
+
+        complexes, reactions = dict(), set()
+
+        def cplx(name):
+            """
+            Dummy function for generating formal species
+            """
+            name = name.strip()
+            if name in complexes: 
+                return complexes[name]
+            else:
+                complexes[name] = Complex(name, [Strand(name, [])], [])
+                return complexes[name]
+
+        def rxn(string):
+            """
+            Dummy function for generating reactions between formal species
+            """
+            reactants, products = string.split('->')
+            reactants = reactants.split('+')
+            products = products.split('+')
+
+            reactants = [cplx(x) for x in reactants]
+            products  = [cplx(x) for x in products]
+            reactions.add(ReactionPathway('dummy', reactants, products))
+
+        def rs(name): 
+            return resting_states[cplx(name)]
+
+        # CRN #1
+        complexes, reactions = dict(), set()
+        rxn('A -> B + C')
+        rxn('B -> D + E')
+        rxn('C -> F + G')
+        enum = Enum(complexes.values(), list(reactions))
+
+        out = condense_graph(enum) 
+        resting_states = out['resting_state_map']
+        resting_state_targets = out['resting_state_targets']
+        reactions = out['condensed_reactions'] 
+        print out
+        print '----------'
+        # print resting_states
+        print resting_state_targets[cplx('A')]
+        # assert resting_state_targets[cplx('A')] == SetOfFates([ rs('D') ])
+        print "========================================================"
+
+        complexes, reactions = dict(), set()
+        rxn('A -> B')
+        rxn('A -> C')
+        rxn('B -> D')
+        rxn('B -> E')
+        rxn('C -> F')
+        rxn('C -> G')
+        enum = Enum(complexes.values(), list(reactions))
+
+        out = condense_graph(enum) 
+        resting_states = out['resting_state_map']
+        resting_state_targets = out['resting_state_targets']
+        reactions = out['condensed_reactions'] 
+        print resting_state_targets[cplx('A')]
+
+        # assert False
+
+
+
+
+

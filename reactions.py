@@ -909,6 +909,170 @@ def domains_adjacent(loc1, loc2):
 	"""
 	return (loc1[0] == loc2[0]) and (abs(loc1[0] - loc2[0]) == 1)
 
+# def branch_3way(reactant):
+# 	"""
+# 	Returns a list of reaction pathways that can be created through one 
+# 	iteration of a 3 way branch migration reaction (more than one molecule may 
+# 	be produced by a reaction because branch migration can liberate strands and 
+# 	complexes).
+# 	"""
+	
+# 	reactions = []
+# 	structure = reactant.structure
+	
+# 	# We iterate through all the domains
+# 	for (strand_index, strand) in enumerate(reactant.strands):
+# 		for (domain_index, domain) in enumerate(strand.domains):
+# 			# We will search in both directions
+# 			# First direction:
+			
+# 			# The starting domain must be anchored
+# 			if (structure[strand_index][domain_index] == None):
+# 				continue
+			
+# 			# The starting domain must have another (displacing) domain 
+# 			# next to it
+# 			if ((domain_index + 1) == reactant.strands[strand_index].length):
+# 				continue
+			
+# 			# The displacing domain must be free			
+# 			if (structure[strand_index][domain_index + 1] != None):
+# 				continue
+			
+# 			displacing_domain = strand.domains[domain_index + 1]
+			
+# 			# We now follow the external loop from the starting pair
+# 			# searching for a strand to displace
+# 			bound_loc = structure[strand_index][domain_index]
+# 			bound_loc_orig = structure[strand_index][domain_index]
+# 			# Follow the external loop to the end
+# 			while True:				
+# 				bound_loc = (bound_loc[0], bound_loc[1] - 1)
+# 				# Check if we've reached the end of the external loop
+# 				if (bound_loc[1] == -1):
+# 					# Reached the end
+# 					break
+				
+# 				# Check if this domain is unbound
+# 				elif (structure[bound_loc[0]][bound_loc[1]] == None):
+# 					continue
+					
+# 				# Check to see if this domain is complementary
+# 				elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]]\
+# 							.can_pair(displacing_domain)):
+# 					# We have found a displacement reaction
+# 					reactions.append((do_3way_migration(\
+# 						reactant, (strand_index, domain_index + 1), bound_loc),
+
+# 						# length of invasion
+# 						len(reactant.strands[strand_index].domains[domain_index]),
+
+# 						# adjacent or remote toehold?
+# 						domains_adjacent(structure[strand_index][domain_index],bound_loc)
+# 						))
+					
+					
+# 				# follow the structure
+				
+# 				bound_loc = structure[bound_loc[0]][bound_loc[1]]
+# 				if bound_loc == bound_loc_orig:
+# 					# Caught in a loop
+# 					break
+			
+
+# 	for (strand_index, strand) in enumerate(reactant.strands):
+# 		for (domain_index, domain) in enumerate(strand.domains):			
+# 			# Second direction:
+
+# 			# The starting domain must be anchored
+# 			if (structure[strand_index][domain_index] == None):
+# 				continue
+						
+# 			# The starting domain must have another (displacing) domain 
+# 			# next to it
+# 			if ((domain_index - 1) == -1):
+# 				continue
+				
+# 			# The displacing domain must be free			
+# 			if (structure[strand_index][domain_index - 1] != None):
+# 				continue
+				
+# 			displacing_domain = strand.domains[domain_index - 1]
+			
+# 			# We now follow the external loop from the starting pair
+# 			# searching for a strand to displace
+# 			bound_loc = structure[strand_index][domain_index]
+# 			bound_loc_orig = structure[strand_index][domain_index]
+# 			# Follow the external loop to the end
+# 			while True:
+# 				bound_loc = (bound_loc[0], bound_loc[1] + 1)
+				
+# 				# Check if we've reached the end of the external loop
+# 				if (bound_loc[1] == reactant.strands[bound_loc[0]].length):
+# 					# Reached the end
+# 					break
+					
+# 				# Check if this domain is unbound
+# 				elif (structure[bound_loc[0]][bound_loc[1]] == None):
+# 					continue
+					
+# 				# Check to see if this domain is complementary
+# 				elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]]\
+# 							.can_pair(displacing_domain)):
+# 					# We have found a displacement reaction
+# 					reactions.append((do_3way_migration(reactant,
+# 							(strand_index, domain_index - 1), bound_loc),
+
+# 						# length of displaced domain
+# 						len(reactant.strands[strand_index].domains[domain_index]),
+
+# 						# adjacent or remote toehold?
+# 						domains_adjacent(structure[strand_index][domain_index],bound_loc)
+# 						))
+					
+					
+				
+# 				bound_loc = structure[bound_loc[0]][bound_loc[1]]
+# 				if bound_loc == bound_loc_orig:
+# 					break
+				
+# 	output = []
+# 	for output_set, length, adjacent in reactions:
+# 		reaction = ReactionPathway('branch_3way', [reactant], output_set)
+		
+# 		if adjacent:
+# 			# Branch migration between adjacent domains
+# 			reaction._const = branch_3way_rate(length)
+# 		else:
+# 			# Otherwise remote toehold-mediated
+# 			reaction._const = branch_3way_remote_rate(length)
+
+# 		output.append(reaction)		
+
+# 	# Remove any duplicate reactions
+# 	if (len(output) == 0):
+# 		return output
+		
+# 	output.sort()
+# 	last = output[-1]
+# 	for i in range(len(output) - 2, -1, -1):
+# 		if last == output[i]:
+# 			del output[i]
+# 		else:
+# 			last = output[i]
+	
+# 	return output
+
+def wrap(x, m):
+	return (x % m + m) % m
+
+assert wrap(0,3) == 0
+assert wrap(2,3) == 2
+assert wrap(3,3) == 0
+assert wrap(4,3) == 1
+assert wrap(-1,3) == 2
+assert wrap(-2,3) == 1
+
 def branch_3way(reactant):
 	"""
 	Returns a list of reaction pathways that can be created through one 
@@ -923,118 +1087,121 @@ def branch_3way(reactant):
 	# We iterate through all the domains
 	for (strand_index, strand) in enumerate(reactant.strands):
 		for (domain_index, domain) in enumerate(strand.domains):
-			# We will search in both directions
+			# We will search in both directions around the internal loop
 			# First direction:
-			
-			# The starting domain must be anchored
-			if (structure[strand_index][domain_index] == None):
-				continue
-			
-			# The starting domain must have another (displacing) domain 
-			# next to it
-			if ((domain_index + 1) == reactant.strands[strand_index].length):
-				continue
+			# ----------------------------------------------------------------
 			
 			# The displacing domain must be free			
-			if (structure[strand_index][domain_index + 1] != None):
-				continue
-			
-			displacing_domain = strand.domains[domain_index + 1]
-			
-			# We now follow the external loop from the starting pair
-			# searching for a strand to displace
-			bound_loc = structure[strand_index][domain_index]
-			bound_loc_orig = structure[strand_index][domain_index]
-			# Follow the external loop to the end
-			while True:				
-				bound_loc = (bound_loc[0], bound_loc[1] - 1)
-				# Check if we've reached the end of the external loop
-				if (bound_loc[1] == -1):
-					# Reached the end
-					break
+			if (structure[strand_index][domain_index] == None): # and \
+				# # and must not be at the 3' end of the loop
+				# (domain_index > 0):
 				
-				# Check if this domain is unbound
-				elif (structure[bound_loc[0]][bound_loc[1]] == None):
-					continue
-					
-				# Check to see if this domain is complementary
-				elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]]\
-							.can_pair(displacing_domain)):
-					# We have found a displacement reaction
-					reactions.append((do_3way_migration(\
-						reactant, (strand_index, domain_index + 1), bound_loc),
-
-						# length of invasion
-						len(reactant.strands[strand_index].domains[domain_index]),
-
-						# adjacent or remote toehold?
-						domains_adjacent(structure[strand_index][domain_index],bound_loc)
-						))
-					
-					
-				# follow the structure
+				displacing_loc = (strand_index, domain_index)			
+				displacing_domain = strand.domains[domain_index]
 				
-				bound_loc = structure[bound_loc[0]][bound_loc[1]]
-				if bound_loc == bound_loc_orig:
-					# Caught in a loop
-					break
-			
+				# We now follow the external loop from the starting pair
+				# searching for a bound domain to displace
+				bound_loc = (strand_index, domain_index)
 
-	for (strand_index, strand) in enumerate(reactant.strands):
-		for (domain_index, domain) in enumerate(strand.domains):			
+				# Follow the external loop to the end
+				while True:				
+					bound_loc = (bound_loc[0], bound_loc[1]-1)
+
+					if bound_loc == displacing_loc:
+						# We've returned to the original location of the 
+						# displacing domain
+						break
+
+					# if we've reached the end of the strand
+					if (bound_loc[1] == -1):
+
+						# Continue to next strand
+						bound_loc = (wrap(bound_loc[0]-1,len(reactant.strands)),)
+						bound_loc = (bound_loc[0], len(reactant.strands[bound_loc[0]]))
+						continue
+					
+					# if the domain at bound_loc is unbound
+					elif (structure[bound_loc[0]][bound_loc[1]] == None):
+						# then it can't be displaced by the displacing domain
+						continue
+					
+					# otherwise the domain at bound_loc must be bound to 
+					# something. if the domain at bound_loc is has the same 
+					# sequence as the displacing domain
+					elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]] == displacing_domain):
+
+						# then we have found a displacement reaction
+						reactions.append((do_3way_migration(\
+							reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]]),
+
+							# length of invasion
+							len(displacing_domain),
+
+							# adjacent or remote toehold?
+							domains_adjacent(displacing_loc,bound_loc)
+							))
+
+					# so it's bound to something, but we can't displace it
+					# follow the structure to stay on the same loop
+					bound_loc = structure[bound_loc[0]][bound_loc[1]]
+					
+			
+		
 			# Second direction:
 
 			# The starting domain must be anchored
 			if (structure[strand_index][domain_index] == None):
-				continue
-						
-			# The starting domain must have another (displacing) domain 
-			# next to it
-			if ((domain_index - 1) == -1):
-				continue
-				
-			# The displacing domain must be free			
-			if (structure[strand_index][domain_index - 1] != None):
-				continue
-				
-			displacing_domain = strand.domains[domain_index - 1]
-			
-			# We now follow the external loop from the starting pair
-			# searching for a strand to displace
-			bound_loc = structure[strand_index][domain_index]
-			bound_loc_orig = structure[strand_index][domain_index]
-			# Follow the external loop to the end
-			while True:
-				bound_loc = (bound_loc[0], bound_loc[1] + 1)
-				
-				# Check if we've reached the end of the external loop
-				if (bound_loc[1] == reactant.strands[bound_loc[0]].length):
-					# Reached the end
-					break
-					
-				# Check if this domain is unbound
-				elif (structure[bound_loc[0]][bound_loc[1]] == None):
-					continue
-					
-				# Check to see if this domain is complementary
-				elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]]\
-							.can_pair(displacing_domain)):
-					# We have found a displacement reaction
-					reactions.append((do_3way_migration(reactant,
-							(strand_index, domain_index - 1), bound_loc),
 
-						# length of displaced domain
-						len(reactant.strands[strand_index].domains[domain_index]),
-
-						# adjacent or remote toehold?
-						domains_adjacent(structure[strand_index][domain_index],bound_loc)
-						))
-					
-					
+				displacing_loc = (strand_index, domain_index)			
+				displacing_domain = strand.domains[domain_index]
 				
-				bound_loc = structure[bound_loc[0]][bound_loc[1]]
-				if bound_loc == bound_loc_orig:
-					break
+				# We now follow the external loop from the starting pair
+				# searching for a bound domain to displace
+				bound_loc = (strand_index, domain_index)
+
+				# Follow the external loop to the end
+				while True:				
+					bound_loc = (bound_loc[0], bound_loc[1] + 1)
+
+					# import pdb; pdb.set_trace()
+
+					if bound_loc == displacing_loc:
+						# We've returned to the original location of the 
+						# displacing domain
+						break
+
+					# if we've reached the end of the strand
+					if (bound_loc[1] == len(reactant.strands[bound_loc[0]])):
+
+						# Continue to next strand
+						bound_loc = (wrap(bound_loc[0]+1, len(reactant.strands)), -1)
+						continue
+					
+					# if the domain at bound_loc is unbound
+					elif (structure[bound_loc[0]][bound_loc[1]] == None):
+						# then it can't be displaced by the displacing domain
+						continue
+					
+					# otherwise the domain at bound_loc must be bound to 
+					# something. if the domain at bound_loc is has the same 
+					# sequence as the displacing domain
+					elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]] == displacing_domain):
+
+						# then we have found a displacement reaction
+						reactions.append((do_3way_migration(\
+							reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]]),
+
+							# length of invasion
+							len(displacing_domain),
+
+							# adjacent or remote toehold?
+							domains_adjacent(displacing_loc,bound_loc)
+							))
+
+					# so it's bound to something, but we can't displace it
+					# follow the structure to stay on the same loop
+					bound_loc = structure[bound_loc[0]][bound_loc[1]]
+					
 				
 	output = []
 	for output_set, length, adjacent in reactions:

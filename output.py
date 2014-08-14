@@ -633,7 +633,7 @@ def output_case(enumerator, filename, output_condensed = False):
 		lines.append(tab(2) + "ReactionPathway('%s', [%s], [%s])" % (reaction.name, reactants, products))
 	of.write(",\n".join(lines) + "\n")
 	of.write(tab(1) + "}\n")
-	of.write(tab(1) + "assert set(reactions.values()) == set(enumerator.reactions)\n\n")
+	of.write(tab(1) + "assert set(reactions) == set(enumerator.reactions)\n\n")
 
 
 	if(output_condensed):
@@ -645,7 +645,7 @@ def output_case(enumerator, filename, output_condensed = False):
 		lines = []
 		for rs in utils.natural_sort(condensed['resting_states']):
 			complexes = ", ".join("complexes['%s']" % complex.name for complex in rs.complexes)
-			lines.append(tab(2) + "RestingState('%s', [%s])" % (rs.name, complexes))
+			lines.append(tab(2) + "'%s' : RestingState('%s', [%s])" % (rs.name, rs.name, complexes))
 	
 		of.write(",\n".join(lines) + "\n")
 		of.write(tab(1) + "}\n")
@@ -662,7 +662,7 @@ def output_case(enumerator, filename, output_condensed = False):
 			lines.append(tab(2) + "ReactionPathway('%s', [%s], [%s])" % (reaction.name, reactants, products))
 		of.write(",\n".join(lines) + "\n")
 		of.write(tab(1) + "}\n")
-		of.write(tab(1) + "assert set(condensed_reactions.values()) == set(condensed['resting_states'])\n\n")
+		of.write(tab(1) + "assert set(condensed_reactions) == set(condensed['reactions'])\n\n")
 
 	of.close()
 

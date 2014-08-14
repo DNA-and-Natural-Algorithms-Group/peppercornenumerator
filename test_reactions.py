@@ -905,6 +905,13 @@ class Branch3WayTests(unittest.TestCase):
 		assert res_list == exp_list
 		
 	def testBranch3way1(self):
+
+		#  1    2
+		#  _______ 
+		#  __  ___
+		#     / 
+		#  1* 1* 2*
+
 		s1 = Strand('S1', [self.domains['1'], self.domains['2']])
 		s2 = Strand('S2', [self.domains['1*']])
 		s3 = Strand('S3', [self.domains['2*'], self.domains['1*']])
@@ -970,6 +977,29 @@ class Branch3WayTests(unittest.TestCase):
 	# Test with remote toehold
 	
 	def testBranch3way4(self):
+		# complex I :
+		# I
+		# ....
+		# 
+		# complex IABC :
+		# I A B C
+		# (((( + ))))((((. + ))))((((. + )))).....
+		# 
+		# complex ABC :
+		# A B C
+		# ((((((((. + ))))((((. + )))))))).
+
+		# reactants
+		['a( x( b( y( z*( c*( y*( b*( x* + ) ) ) ) x*( a*( z*( c*( y* + ) ) ) ) y* b* x* a* z* + ) ) ) )']
+		['((((((((.+))))((((.+)))).....+))))']
+
+		# products
+		[['a( x( b( y( z*( c*( y*( b*( x* + ) ) ) ) x*( a*( z*( c*( y* + ) ) ) ) ) ) ) ) z*', 'y* b* x* a*'], 
+		 ['a( x( b( y( z* c*( y*( b*( x* + ) ) ) z( x*( a*( z*( c*( y* + ) ) ) ) y* b* x* a* ) + ) ) ) )'], 
+		 ['a( x( b( y( z*( c*( y*( b*( x* + ) ) ) ) x* a* z* c*( y* + ) z( a( x( y* b* ) ) ) + ) ) ) )']]
+
+
+
 		enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
 		
 		self.domains = {}
@@ -989,19 +1019,20 @@ class Branch3WayTests(unittest.TestCase):
 		
 		# These results are expected with UNZIP=False
 		#out_complex = Complex('IABC-new', [self.strands['I'], self.strands['A'], self.strands['B'], self.strands['C']], [[None, (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (3, 4), (2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), (3, 3), (3, 2), (3, 1), (3, 0), None], [(2, 7), (2, 6), (2, 5), (2, 4), (1, 3), None, None, None, None]])
-		
-		
+				
 		#exp_list = [ReactionPathway('branch_3way', [self.complexes['IABC']], [out_complex])]
 		
-				
-		exp_list = [ReactionPathway('branch_3way', [self.complexes['IABC']], [self.complexes['I'], self.complexes['ABC']])]
-		res_list.sort()
-		exp_list.sort()
-				
-		print res_list
-		print exp_list
+		# with the new code, more reactions are produced that have stranger products. I'm too lazy to code them
+		# all in right now, so we'll just check for regression here.
+		exp_rxn = ReactionPathway('branch_3way', [self.complexes['IABC']], [self.complexes['I'], self.complexes['ABC']])		
+		assert exp_rxn in res_list		
 		
-		assert res_list == exp_list
+		structs_list = \
+		[['((((((((.+))))((((.+)))))))).', '....'], 
+		 ['((((.(((.+)))(((((.+))))....)+))))'], 
+		 ['((((((((.+))))...(.+)(((..)))+))))']]
+
+		assert sorted([[prod.dot_paren_string() for prod in r.products] for r in res_list]) == sorted(structs_list)
 
 	def testBranch3way5(self):
 		
@@ -1059,33 +1090,9 @@ class Branch3WayTests(unittest.TestCase):
 		# 3wayA: ? b ? b(?) ? <-> ? b(? b ?) ?
 		(domains, strands, complexes) = from_kernel([
 
-			# doesn't work
-			# "A1 = b b()",
-			# "A2 = b(b)"
-
-			# works <->
-			"A1 = a(b  b())",
-			"A2 = a(b( b))"
-			
-			# doesn't work
-			# "A1 = a(x b x b(x) x)",
-			# "A2 = a(x b(x b x) x)"
-			
-			# works ->
-			# "A1 = a( b x b(x) )",
-			# "A2 = a( b(x b x) )"
-
-			# works ->
-			# "A1 = a(b + b())",
-			# "A2 = a(b(+ b))"
-			
-			# doesn't work
-			# "A1 = b b()",
-			# "A2 = b(b)"
-			# 
-			# doesn't work
-			# "A1 = x b x b(x) x",
-			# "A2 = x b(x b x) x"
+			# works
+			"A1 = x b x b(x) x",
+			"A2 = x b(x b x) x"
 		])
 		forward = branch_3way(complexes['A1'])
 		print "-> : ", forward
@@ -1103,38 +1110,9 @@ class Branch3WayTests(unittest.TestCase):
 		
 		# 3wayB: ? b(?) ? b ? <-> ? b ? b*(?) ?
 		(domains, strands, complexes) = from_kernel([
-			# doesn't work
-			# "A1 = b() b",
-			# "A2 = b b*()"
-
-			# works <->
-			"A1 = a(b() b)",
-			"A2 = a(b b*())"
-
-			# wildcard #2--wrapped
-			# works ->
-			# "A1 = a( b(x)  b )",
-			# "A2 = a( b x b*() )"
-
-			# wildcard #3--wrapped 
-			# doesn't work
-			# "A1 = a( b() x b )",
-			# "A2 = a( b  b*(x) )"
-
-			# 2/4 wildcards--wraped
-			# doesn't work
-			# "A1 = a( b(x) x b )",
-			# "A2 = a( b x b*(x) )"
-
-			# full pattern--wrapped
-			# doesn't work
-			# "A1 = a(x b(x) x b x)",
-			# "A2 = a(x b x b*(x) x)"
-
-			# full pattern
-			# doesn't work
-			# "A1 = x b(x) x b x",
-			# "A2 = x b x b*(x) x"
+			# works
+			"A1 = x b(x) x b x",
+			"A2 = x b x b*(x) x"
 		])
 		forward = branch_3way(complexes['A1'])
 		print "-> : ", forward
@@ -1151,25 +1129,9 @@ class Branch3WayTests(unittest.TestCase):
 	def testBranch3wayC(self):
 		# 3wayC: ? b*(?) ? b ? <-> ? b*(? b ?) ?
 		(domains, strands, complexes) = from_kernel([
-			# doesn't work
-			# "A1 = b*() b",
-			# "A2 = b*(b)"
-
-			# works <->
-			"A1 = a(b*() b)",
-			"A2 = a(b*(b))"
-
-			# works ->
-			# "A1 = a( b*(x) x b )",
-			# "A2 = a( b*(x b x) )" 
-
-			# doesn't work
-			# "A1 = a(x b*(x) x b x)",
-			# "A2 = a(x b*(x b x) x)" 
-
-			# doesn't work
-			# "A1 = x b*(x) x b x",
-			# "A2 = x b*(x b x) x" 
+			# works
+			"A1 = x b*(x) x b x",
+			"A2 = x b*(x b x) x" 
 		])
 		forward = branch_3way(complexes['A1'])
 		print "-> : ", forward

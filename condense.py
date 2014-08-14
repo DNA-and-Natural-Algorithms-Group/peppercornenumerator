@@ -642,9 +642,10 @@ def condense_graph(enumerator, compute_rates=True):
     return {
                 'resting_states': resting_states.values(),
                 'resting_state_map': resting_states,
-                'resting_state_targets':complex_fates,
+                'resting_state_targets': complex_fates,
                 'condensed_reactions':list(condensed_reactions),
-                'reactions': list(condensed_reactions)
+                'reactions': list(condensed_reactions),
+                'complexes_to_resting_states': dict((c, rs) for rs in resting_states for c in rs)
              }
     
     #return (resting_states,complex_fates,condensed_reactions)
