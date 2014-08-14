@@ -53,7 +53,7 @@ class OutputTests(unittest.TestCase):
 		
 		self.SLC_enumerator.enumerate()
 		self.SLC_enumerator_reduced.enumerate()
-		self.three_arm_enumerator.enumerate()
+		# self.three_arm_enumerator.enumerate()
 		self.three_arm_enumerator_reduced.enumerate()
 		self.simple_enumerator.enumerate()
 		self.simple2_enumerator.enumerate()
@@ -241,7 +241,8 @@ class OutputTests(unittest.TestCase):
 		
 		
 	def testCondenseRestingStates(self):
-		for enum in [self.SLC_enumerator, self.three_arm_enumerator]:
+		# for enum in [self.SLC_enumerator, self.three_arm_enumerator]:
+		for enum in [self.SLC_enumerator]:
 			enum.enumerate()
 			condensed = condense_resting_states(enum)
 				

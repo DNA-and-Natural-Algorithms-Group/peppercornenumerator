@@ -1073,6 +1073,158 @@ assert wrap(4,3) == 1
 assert wrap(-1,3) == 2
 assert wrap(-2,3) == 1
 
+# def branch_3way(reactant):
+# 	"""
+# 	Returns a list of reaction pathways that can be created through one 
+# 	iteration of a 3 way branch migration reaction (more than one molecule may 
+# 	be produced by a reaction because branch migration can liberate strands and 
+# 	complexes).
+# 	"""
+	
+# 	reactions = []
+# 	structure = reactant.structure
+	
+# 	# We iterate through all the domains
+# 	for (strand_index, strand) in enumerate(reactant.strands):
+# 		for (domain_index, domain) in enumerate(strand.domains):
+			
+# 			# The displacing domain must be free			
+# 			if (structure[strand_index][domain_index] == None): # and \
+
+# 				# We will search in both directions around the internal loop
+# 				# ----------------------------------------------------------------
+# 				# First direction (3' -> 5'):
+				
+# 				displacing_loc = (strand_index, domain_index)			
+# 				displacing_domain = strand.domains[domain_index]
+				
+# 				# We now follow the external loop from the starting pair
+# 				# searching for a bound domain to displace
+# 				bound_loc = (strand_index, domain_index)
+
+# 				# Follow the external loop to the end
+# 				while True:				
+# 					bound_loc = (bound_loc[0], bound_loc[1]-1)
+
+# 					if bound_loc == displacing_loc:
+# 						# We've returned to the original location of the 
+# 						# displacing domain
+# 						break
+
+# 					# if we've reached the end of the strand
+# 					if (bound_loc[1] == -1):
+
+# 						# Continue to next strand
+# 						bound_loc = (wrap(bound_loc[0]-1,len(reactant.strands)),)
+# 						bound_loc = (bound_loc[0], len(reactant.strands[bound_loc[0]]))
+# 						continue
+					
+# 					# if the domain at bound_loc is unbound
+# 					elif (structure[bound_loc[0]][bound_loc[1]] == None):
+# 						# then it can't be displaced by the displacing domain
+# 						continue
+					
+# 					# otherwise the domain at bound_loc must be bound to 
+# 					# something. if the domain at bound_loc is has the same 
+# 					# sequence as the displacing domain
+# 					elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]] == displacing_domain):
+
+# 						# then we have found a displacement reaction
+# 						reactions.append((do_3way_migration(\
+# 							reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]]),
+
+# 							# length of invasion
+# 							len(displacing_domain),
+
+# 							# adjacent or remote toehold?
+# 							domains_adjacent(displacing_loc,bound_loc)
+# 							))
+
+# 					# so it's bound to something, but we can't displace it
+# 					# follow the structure to stay on the same loop
+# 					bound_loc = structure[bound_loc[0]][bound_loc[1]]
+					
+			
+# 				# Second direction (5' -> 3'):
+
+# 				displacing_loc = (strand_index, domain_index)			
+# 				displacing_domain = strand.domains[domain_index]
+				
+# 				# We now follow the external loop from the starting pair
+# 				# searching for a bound domain to displace
+# 				bound_loc = (strand_index, domain_index)
+
+# 				# Follow the external loop to the end
+# 				while True:				
+# 					bound_loc = (bound_loc[0], bound_loc[1] + 1)
+
+# 					# import pdb; pdb.set_trace()
+
+# 					if bound_loc == displacing_loc:
+# 						# We've returned to the original location of the 
+# 						# displacing domain
+# 						break
+
+# 					# if we've reached the end of the strand
+# 					if (bound_loc[1] == len(reactant.strands[bound_loc[0]])):
+
+# 						# Continue to next strand
+# 						bound_loc = (wrap(bound_loc[0]+1, len(reactant.strands)), -1)
+# 						continue
+					
+# 					# if the domain at bound_loc is unbound
+# 					elif (structure[bound_loc[0]][bound_loc[1]] == None):
+# 						# then it can't be displaced by the displacing domain
+# 						continue
+					
+# 					# otherwise the domain at bound_loc must be bound to 
+# 					# something. if the domain at bound_loc is has the same 
+# 					# sequence as the displacing domain
+# 					elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]] == displacing_domain):
+
+# 						# then we have found a displacement reaction
+# 						reactions.append((do_3way_migration(\
+# 							reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]]),
+
+# 							# length of invasion
+# 							len(displacing_domain),
+
+# 							# adjacent or remote toehold?
+# 							domains_adjacent(displacing_loc,bound_loc)
+# 							))
+
+# 					# so it's bound to something, but we can't displace it
+# 					# follow the structure to stay on the same loop
+# 					bound_loc = structure[bound_loc[0]][bound_loc[1]]
+					
+				
+# 	output = []
+# 	for output_set, length, adjacent in reactions:
+# 		reaction = ReactionPathway('branch_3way', [reactant], output_set)
+		
+# 		if adjacent:
+# 			# Branch migration between adjacent domains
+# 			reaction._const = branch_3way_rate(length)
+# 		else:
+# 			# Otherwise remote toehold-mediated
+# 			reaction._const = branch_3way_remote_rate(length)
+
+# 		output.append(reaction)		
+
+# 	# Remove any duplicate reactions
+# 	if (len(output) == 0):
+# 		return output
+		
+# 	output.sort()
+# 	last = output[-1]
+# 	for i in range(len(output) - 2, -1, -1):
+# 		if last == output[i]:
+# 			del output[i]
+# 		else:
+# 			last = output[i]
+	
+# 	return output
+
 def branch_3way(reactant):
 	"""
 	Returns a list of reaction pathways that can be created through one 
@@ -1087,121 +1239,31 @@ def branch_3way(reactant):
 	# We iterate through all the domains
 	for (strand_index, strand) in enumerate(reactant.strands):
 		for (domain_index, domain) in enumerate(strand.domains):
-			# We will search in both directions around the internal loop
-			# First direction:
-			# ----------------------------------------------------------------
-			
+
 			# The displacing domain must be free			
-			if (structure[strand_index][domain_index] == None): # and \
-				# # and must not be at the 3' end of the loop
-				# (domain_index > 0):
-				
-				displacing_loc = (strand_index, domain_index)			
-				displacing_domain = strand.domains[domain_index]
-				
-				# We now follow the external loop from the starting pair
-				# searching for a bound domain to displace
-				bound_loc = (strand_index, domain_index)
+			if (structure[strand_index][domain_index] != None):
+				continue
 
-				# Follow the external loop to the end
-				while True:				
-					bound_loc = (bound_loc[0], bound_loc[1]-1)
+			displacing_domain = strand.domains[domain_index]
+			displacing_loc = (strand_index, domain_index)
 
-					if bound_loc == displacing_loc:
-						# We've returned to the original location of the 
-						# displacing domain
-						break
-
-					# if we've reached the end of the strand
-					if (bound_loc[1] == -1):
-
-						# Continue to next strand
-						bound_loc = (wrap(bound_loc[0]-1,len(reactant.strands)),)
-						bound_loc = (bound_loc[0], len(reactant.strands[bound_loc[0]]))
-						continue
-					
-					# if the domain at bound_loc is unbound
-					elif (structure[bound_loc[0]][bound_loc[1]] == None):
-						# then it can't be displaced by the displacing domain
-						continue
-					
-					# otherwise the domain at bound_loc must be bound to 
-					# something. if the domain at bound_loc is has the same 
-					# sequence as the displacing domain
-					elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]] == displacing_domain):
-
-						# then we have found a displacement reaction
-						reactions.append((do_3way_migration(\
-							reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]]),
-
-							# length of invasion
-							len(displacing_domain),
-
-							# adjacent or remote toehold?
-							domains_adjacent(displacing_loc,bound_loc)
-							))
-
-					# so it's bound to something, but we can't displace it
-					# follow the structure to stay on the same loop
-					bound_loc = structure[bound_loc[0]][bound_loc[1]]
-					
+			# search both directions around the loop for a bound domain that
+			# has the same sequence (and therefore can be displaced)
+			results = find_on_loop(reactant, displacing_loc, -1, \
+				lambda dom, struct, loc: struct is not None and dom == displacing_domain) + \
+			find_on_loop(reactant, displacing_loc, +1, \
+				lambda dom, struct, loc: struct is not None and dom == displacing_domain)
 			
-		
-			# Second direction:
+			# build products
+			reactions.extend((do_3way_migration(\
+				reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]]),
 
-			# The starting domain must be anchored
-			if (structure[strand_index][domain_index] == None):
+				# length of invasion
+				len(displacing_domain),
 
-				displacing_loc = (strand_index, domain_index)			
-				displacing_domain = strand.domains[domain_index]
-				
-				# We now follow the external loop from the starting pair
-				# searching for a bound domain to displace
-				bound_loc = (strand_index, domain_index)
-
-				# Follow the external loop to the end
-				while True:				
-					bound_loc = (bound_loc[0], bound_loc[1] + 1)
-
-					# import pdb; pdb.set_trace()
-
-					if bound_loc == displacing_loc:
-						# We've returned to the original location of the 
-						# displacing domain
-						break
-
-					# if we've reached the end of the strand
-					if (bound_loc[1] == len(reactant.strands[bound_loc[0]])):
-
-						# Continue to next strand
-						bound_loc = (wrap(bound_loc[0]+1, len(reactant.strands)), -1)
-						continue
-					
-					# if the domain at bound_loc is unbound
-					elif (structure[bound_loc[0]][bound_loc[1]] == None):
-						# then it can't be displaced by the displacing domain
-						continue
-					
-					# otherwise the domain at bound_loc must be bound to 
-					# something. if the domain at bound_loc is has the same 
-					# sequence as the displacing domain
-					elif (reactant.strands[bound_loc[0]].domains[bound_loc[1]] == displacing_domain):
-
-						# then we have found a displacement reaction
-						reactions.append((do_3way_migration(\
-							reactant, displacing_loc, structure[bound_loc[0]][bound_loc[1]]),
-
-							# length of invasion
-							len(displacing_domain),
-
-							# adjacent or remote toehold?
-							domains_adjacent(displacing_loc,bound_loc)
-							))
-
-					# so it's bound to something, but we can't displace it
-					# follow the structure to stay on the same loop
-					bound_loc = structure[bound_loc[0]][bound_loc[1]]
-					
+				# adjacent or remote toehold?
+				domains_adjacent(displacing_loc,bound_loc) \
+			) for bound_loc in results)
 				
 	output = []
 	for output_set, length, adjacent in reactions:
@@ -1231,6 +1293,76 @@ def branch_3way(reactant):
 	return output
 
 
+def find_on_loop(reactant, start_loc, direction, filter):
+	displacing_loc = start_loc
+	
+	results = []
+
+	# We now follow the external loop from the starting pair
+	# searching for a bound domain to displace
+	bound_loc = start_loc
+
+	# Avoid getting stuck inside an internal loop
+	# 
+	# 	1      2
+	#  ___________
+	#  ____  _____
+	#   1*  /  2*
+	#       
+	#  If we start at domain 1, going in the - direction, then 
+	#  immediately continue to the next domain, we'll go to 1* 
+	if reactant.structure[bound_loc[0]][bound_loc[1]] is not None:
+		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
+
+
+	# Follow the external loop to the end
+	while True:
+		bound_loc = (bound_loc[0], bound_loc[1] + direction)
+
+		# if we've reached the end of the strand (5')
+		if (bound_loc[1] == -1):
+
+			# Continue to next strand
+			bound_loc = (wrap(bound_loc[0]-1,len(reactant.strands)),)
+			bound_loc = (bound_loc[0], len(reactant.strands[bound_loc[0]]))
+			continue
+
+		# if we've reached the end of the strand (3')
+		elif (bound_loc[1] == len(reactant.strands[bound_loc[0]])):
+
+			# Continue to next strand
+			bound_loc = (wrap(bound_loc[0]+1, len(reactant.strands)), -1)
+			continue
+
+		if bound_loc == displacing_loc:
+			# We've returned to the original location of the 
+			# displacing domain
+			break
+
+		
+		# otherwise the domain at bound_loc must be bound to 
+		# something. if the domain at bound_loc is has the same 
+		# sequence as the displacing domain
+		elif (filter(reactant.strands[bound_loc[0]].domains[bound_loc[1]], \
+			reactant.structure[bound_loc[0]][bound_loc[1]], bound_loc)):
+
+			# then we have found a displacement reaction
+			results.append(bound_loc)
+				# # adjacent or remote toehold?
+				# domains_adjacent(displacing_loc,bound_loc)
+				# ))
+
+		# if the domain at bound_loc is unbound
+		elif (reactant.structure[bound_loc[0]][bound_loc[1]] == None):
+			# then it can't be displaced by the displacing domain
+			continue
+
+		# so it's bound to something, but we can't displace it
+		# follow the structure to stay on the same loop
+		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
+
+	return results
+
 def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	"""
 	Returns the product set which is the result of a 3-way branch migration
@@ -1257,15 +1389,111 @@ def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 		ddomain = displacing_loc[1]
 		bstrand = new_bound_loc[0]
 		bdomain = new_bound_loc[1]
-		if (ddomain+1 < len(out_reactant.strands[dstrand].domains)) and (out_reactant.structure[dstrand][ddomain+1] == None) and (bdomain-1 >= 0) and (out_reactant.structure[bstrand][bdomain-1] != None) and (out_reactant.strands[bstrand].domains[bdomain-1].can_pair(out_reactant.strands[dstrand].domains[ddomain+1])):
+		if (ddomain+1 < len(out_reactant.strands[dstrand].domains)) and \
+			(out_reactant.structure[dstrand][ddomain+1] == None) and \
+			(bdomain-1 >= 0) and \
+			(out_reactant.structure[bstrand][bdomain-1] != None) and \
+			(out_reactant.strands[bstrand].domains[bdomain-1].can_pair(out_reactant.strands[dstrand].domains[ddomain+1])):
+			
 			return do_3way_migration(out_reactant, (dstrand, ddomain+1), (bstrand, bdomain-1))
-		elif (ddomain-1 >= 0) and (out_reactant.structure[dstrand][ddomain-1] == None) and (bdomain+1 < len(out_reactant.strands[bstrand].domains)) and (out_reactant.structure[bstrand][bdomain+1] != None) and (out_reactant.strands[bstrand].domains[bdomain+1].can_pair(out_reactant.strands[dstrand].domains[ddomain-1])):
+
+		elif (ddomain-1 >= 0) and \
+			(out_reactant.structure[dstrand][ddomain-1] == None) and \
+			(bdomain+1 < len(out_reactant.strands[bstrand].domains)) and \
+			(out_reactant.structure[bstrand][bdomain+1] != None) and \
+			(out_reactant.strands[bstrand].domains[bdomain+1].can_pair(out_reactant.strands[dstrand].domains[ddomain-1])):
+			
 			return do_3way_migration(out_reactant, (dstrand, ddomain-1), (bstrand, bdomain+1))
 		else:
 			return find_releases(out_reactant)
 	else:
 		return find_releases(out_reactant)
 
+
+# def branch_4way(reactant):
+# 	"""
+# 	Returns a list of complex sets that can be created through one iteration of
+# 	a 4 way branch migration reaction (each set consists of the molecules that
+# 	result from the iteration; more than one molecule may result because branch
+# 	migration can liberate strands and complexes).	
+# 	"""
+	
+# 	structure = reactant.structure
+# 	reactions = []
+	
+# 	# We loop through all domains
+# 	for (strand_index, strand) in enumerate(reactant.strands):
+# 		for (domain_index, domain) in enumerate(strand.domains):
+# 			# Unbound domains can't participate in branch migration
+# 			if (structure[strand_index][domain_index] == None):
+# 				continue
+			
+# 			# This domain can't be at the end of a strand
+# 			if (domain_index + 1 == reactant.strands[strand_index].length):
+# 				continue
+			
+			
+# 			# Check the 4 locations for a 4 way reaction
+			
+# 			# Displacing domain
+# 			loc1 = (strand_index, domain_index + 1)
+# 			dom1 = reactant.strands[loc1[0]].domains[loc1[1]]
+
+# 			# Displaced domain
+# 			loc2 = structure[strand_index][domain_index + 1]
+# 			if (loc2 == None):
+# 				continue
+# 			dom2 = reactant.strands[loc2[0]].domains[loc2[1]]
+			
+# 			# Template domain (replaces displaced domain, binds loc1)
+# 			# Effectively the toehold
+# 			loc3 = structure[strand_index][domain_index]
+# 			if (loc3 == None):
+# 				continue
+			
+# 			loc3 = (loc3[0], loc3[1] - 1)
+# 			if (loc3[1] < 0):
+# 				continue
+# 			dom3 = reactant.strands[loc3[0]].domains[loc3[1]]
+			
+# 			# Displaced from template domain (replaces displacing domain, binds
+# 			#								  loc2)
+# 			loc4 = structure[loc3[0]][loc3[1]]
+# 			if (loc4 == None):
+# 				continue
+# 			dom4 = reactant.strands[loc4[0]].domains[loc4[1]]
+			
+# 			# Confirm that the domains can in fact pair
+# 			if not (dom1.can_pair(dom3) and dom2.can_pair(dom4)):
+# 				continue
+				
+# 			# Confirm that this is a four way migration
+# 			if loc2 == loc3:
+# 				continue
+				
+# 			# If we are here, then we have found a candidate reaction
+# 			reactions.append((do_4way_migration(reactant, 
+# 												 loc1, loc2, loc3, loc4),len(dom1)))
+	
+# 	output = []
+# 	for output_set,length in reactions:
+# 		reaction = ReactionPathway('branch_4way', [reactant], output_set)
+# 		reaction._const = branch_4way_rate(length)
+# 		output.append(reaction)
+	
+# 	# remove any duplicate reactions	
+# 	if (len(output) == 0):
+# 		return output
+		
+# 	output.sort()
+# 	last = output[-1]
+# 	for i in range(len(output) - 2, -1, -1):
+# 		if last == output[i]:
+# 			del output[i]
+# 		else:
+# 			last = output[i]
+	
+# 	return output
 
 def branch_4way(reactant):
 	"""
@@ -1281,57 +1509,33 @@ def branch_4way(reactant):
 	# We loop through all domains
 	for (strand_index, strand) in enumerate(reactant.strands):
 		for (domain_index, domain) in enumerate(strand.domains):
+			
 			# Unbound domains can't participate in branch migration
 			if (structure[strand_index][domain_index] == None):
 				continue
-			
-			# This domain can't be at the end of a strand
-			if (domain_index + 1 == reactant.strands[strand_index].length):
-				continue
-			
-			
-			# Check the 4 locations for a 4 way reaction
-			
-			# Displacing domain
-			loc1 = (strand_index, domain_index + 1)
-			dom1 = reactant.strands[loc1[0]].domains[loc1[1]]
 
-			# Displaced domain
-			loc2 = structure[strand_index][domain_index + 1]
-			if (loc2 == None):
-				continue
-			dom2 = reactant.strands[loc2[0]].domains[loc2[1]]
-			
-			# Template domain (replaces displaced domain, binds loc1)
-			# Effectively the toehold
-			loc3 = structure[strand_index][domain_index]
-			if (loc3 == None):
-				continue
-			
-			loc3 = (loc3[0], loc3[1] - 1)
-			if (loc3[1] < 0):
-				continue
-			dom3 = reactant.strands[loc3[0]].domains[loc3[1]]
-			
-			# Displaced from template domain (replaces displacing domain, binds
-			#								  loc2)
-			loc4 = structure[loc3[0]][loc3[1]]
-			if (loc4 == None):
-				continue
-			dom4 = reactant.strands[loc4[0]].domains[loc4[1]]
-			
-			# Confirm that the domains can in fact pair
-			if not (dom1.can_pair(dom3) and dom2.can_pair(dom4)):
-				continue
-				
-			# Confirm that this is a four way migration
-			if loc2 == loc3:
-				continue
-				
-			# If we are here, then we have found a candidate reaction
-			reactions.append((do_4way_migration(reactant, 
-												 loc1, loc2, loc3, loc4),len(dom1)))
+			displacing_domain = strand.domains[domain_index]
+			displacing_loc = (strand_index, domain_index)
+
+			# search both directions around the loop for a bound domain that
+			# has the same sequence (and therefore can be displaced)
+			results = find_on_loop(reactant, structure[strand_index][domain_index], -1, \
+				lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain)) + \
+			find_on_loop(reactant, displacing_loc, +1, \
+				lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain))
+
+			# build products
+			reactions.extend((do_4way_migration(\
+				reactant, 
+				displacing_loc, structure[displacing_loc[0]][displacing_loc[1]],
+				bound_loc, structure[bound_loc[0]][bound_loc[1]]),
+
+				# length of invasion
+				len(displacing_domain)
+
+			) for bound_loc in results)
 	
+
 	output = []
 	for output_set,length in reactions:
 		reaction = ReactionPathway('branch_4way', [reactant], output_set)
@@ -1358,6 +1562,10 @@ def do_4way_migration(reactant, loc1, loc2, loc3, loc4):
 	displacing domain, loc2 as the domain displaced from loc1, loc3 as the
 	template domain, and loc4 as the domain displaced from loc3. Returns the
 	set of complexes produced by this reaction (may be one or more complexes).
+
+	loc1:loc2, loc3:loc4 -> loc1:loc3, loc2:loc4
+
+
 	"""
 	
 	new_struct = copy.deepcopy(reactant.structure)

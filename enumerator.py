@@ -670,6 +670,8 @@ def main(argv):
 	parser.add_argument('--bfs-ish', action='store_true', dest='bfs', \
 		help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
 
+	parser.add_argument('--profile', action='store_true', dest='profile',\
+		help="Enable statistical profiling")
 	cl_opts = parser.parse_args()
 	
 	print "Domain-level Reaction Enumerator (v0.2.0)"
@@ -719,7 +721,16 @@ def main(argv):
 		print "Done."
 	else:
 		print "Enumerating reactions..."
-		enum.enumerate()
+		if cl_opts.profile:
+			import statprof
+			statprof.start()
+			try:
+				enum.enumerate()
+			finally:
+				statprof.stop()
+				statprof.display()
+		else:
+			enum.enumerate()
 		print "Done."
 	
 	# Handle condensed reactions
