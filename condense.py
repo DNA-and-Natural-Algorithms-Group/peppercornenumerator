@@ -273,11 +273,12 @@ def condense_graph(enumerator, compute_rates=True):
     # probabilities
     exit_probabilities = {}
     
-    # decay_probabilities[(x,F)] = P( x decays to F ), where F is a fate of x
+    # decay_probabilities[(x,F)] = P( x decays to F ) = P( x -> F ), where F is a fate of 
+    # complex x
     decay_probabilities = collections.defaultdict(float) # default to zero if no entry
 
-    # reaction_decay_probabilities[(r,F)] = P( products of r decay to F ), 
-    # where F is a fate
+    # reaction_decay_probabilities[(r,F)] = P( products of r decay to F ) = P( r -> F )
+    # where F is a fate of reaction r
     reaction_decay_probabilities = collections.defaultdict(float) # default to zero if no entry
 
     # Define helper functions for calculating condensed reaction rates

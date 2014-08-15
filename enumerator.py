@@ -348,6 +348,8 @@ class Enumerator(object):
 			# Add new reactions to N_reactions
 			N_reactions += (reactions)			
 			self._N.append(element)
+
+			print len(self._F) + len(self._N) + len(self._S) + len(self._T) + len(self._E) + len(self._B)
 			
 		# except KeyboardInterrupt:
 		# 	pass

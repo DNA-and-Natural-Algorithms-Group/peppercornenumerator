@@ -27,6 +27,7 @@ unbound by the `open` reaction function.
 
 # If true, 3 way branch migrations are always greedy
 UNZIP = True
+# UNZIP = False
 
 class ReactionPathway(object):
 	"""
@@ -164,12 +165,12 @@ class ReactionPathway(object):
 # Rate constant formulae
 # ----------------------------------------------------------------------------
 
-def zipping_rate(length):
-	"""
-	Rate constant formula for zipping (hybridization of two single strands
-	adjacent to an existing duplex) of a given `length`.
-	"""
-	return 1.0e8 / length
+# def zipping_rate(length):
+# 	"""
+# 	Rate constant formula for zipping (hybridization of two single strands
+# 	adjacent to an existing duplex) of a given `length`.
+# 	"""
+# 	return 1.0e8 / length
 
 def opening_rate(length):
 	"""
@@ -187,47 +188,61 @@ def hairpin_closing_rate(length):
 	c = -3.0
 	return a * (length + 5) ** c + b
 
-def multiloop_closing_rate(length):
-	"""
-	Rate constant formula for multiloop closing with a given domain `length`.
-	"""
-	pass
+# def multiloop_closing_rate(length):
+# 	"""
+# 	Rate constant formula for multiloop closing with a given domain `length`.
+# 	"""
+# 	pass
+
+
 
 def binding_rate(length, before, after):
 	return hairpin_closing_rate(length)
 
-def branch_3way_rate(length):
-	"""
-	Rate constant formula for 3-way branch migration with an adjacent toehold
-	"""
-	init = 2.8e-3
-	step = 0.1e-3
-	return 1.0 / (init + step * length**2)
+# def branch_3way_rate(length):
+# 	"""
+# 	Rate constant formula for 3-way branch migration with an adjacent toehold
+# 	"""
+# 	init = 2.8e-3
+# 	step = 0.1e-3
+# 	return 1.0 / (init + step * length**2)
+
+
+
+#                before
+#                _______  x (bound domain)
+#               /       \____
+# (invading) x |         ____
+#               \_______/ x*
+#                 
+#                 after
 
 def branch_3way_remote_rate(length, before, after):
 	"""
 	Rate constant formula for 3-way branch migration with a remote toehold
 	"""
-	# lp = bases + stems * 5
 
-	slowdown = hairpin_closing_rate(length)/zipping_rate(length)
+	# slowdown = hairpin_closing_rate(length)/zipping_rate(length)
+	slowdown = 1
 	init = 2.8e-3 * slowdown
 	step = 0.1e-3
 	return 1.0 / (init + step * length**2)
 
-def branch_4way_rate(length):
-	"""
-	Rate constant formula for 4-way branch migration
-	"""
-	init = 77	
-	step = 1
-	return 1.0 / (init + step * length**2)
+# def branch_4way_rate(length):
+# 	"""
+# 	Rate constant formula for 4-way branch migration
+# 	"""
+# 	init = 77	
+# 	step = 1
+# 	return 1.0 / (init + step * length**2)
 
 def branch_4way_remote_rate(length, before, after):
 	"""
 	Rate constant formula for 4-way branch migration with a remote toehold
 	"""
-	return branch_4way_rate(length)
+	init = 77	
+	step = 1
+	return 1.0 / (init + step * length**2)
 
 def bimolecular_binding_rate(length):
 	"""
