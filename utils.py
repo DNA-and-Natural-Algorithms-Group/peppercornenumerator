@@ -750,15 +750,35 @@ class Complex(object):
 				source_domain = self.get_domain((strand_index,domain_index))
 				target_domain = self.get_domain(target)
 				
-				if((source_domain is not None) and (target_domain is not None)):
+				if (target is not None and self.structure[target[0]][target[1]] != (strand_index,domain_index)):
+					raise Exception("In complex %s, incoherent structure at (%d, %d) and (%d, %d)" % (self.name, strand_index, domain_index, target[0], target[1]))
+
+				if (target_domain is not None):
 					if(not source_domain.can_pair(target_domain)):
 						raise Exception("In complex %s, domain %s is paired with domain %s, but the domains are not complementary." % \
 							(self.name, source_domain.name,target_domain.name))
-					
-					if(self.structure[target[0]][target[1]] != (strand_index,domain_index)):
-						raise Exception("In complex %s, incoherent structure at (%d, %d) and (%d, %d)" % (self.name, strand_index, domain_index, target[0], target[1]))
+
+		return self.check_pseudoknots()
+
+	def check_pseudoknots(self):
+		"""
+		Checks if the structure is pseudoknotted
+		"""
+		stack = []
+		for (strand_index, strand) in enumerate(self.strands):
+			for (domain_index, domain) in enumerate(strand.domains):
+				target = self.get_structure((strand_index, domain_index))
+				if target is not None:
+					if len(stack) > 0:
+						if target > stack[-1]:
+							raise Exception("In complex %s, pseudoknot encountered; inner pair %s crosses outer pair %s." % \
+								( self.name, [(strand_index, domain_index), target], [self.get_structure(stack[-1]),stack[-1]] ))
+						elif (strand_index, domain_index) == stack[-1]:
+							stack.pop()
+					if target > (strand_index, domain_index):
+						stack.append(target)
 		return True
-				
+
 	def kernel_string(self):
 		parts = []
 		for strand_num, strand in enumerate(self.strands):

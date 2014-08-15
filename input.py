@@ -410,7 +410,7 @@ def input_pil(filename):
 			# e.g.:
 			#       "length a = 6"
 			# parts:        0   1 
-			parts = re.match(r"length\s*([\w-]+)\s*=\s*(\d?)\s*",line)
+			parts = re.match(r"length\s*([\w-]+)\s*=\s*(\d+)\s*",line)
 			if parts == None:
 				logging.error("Invalid syntax on input line %d"
 						% line_counter)

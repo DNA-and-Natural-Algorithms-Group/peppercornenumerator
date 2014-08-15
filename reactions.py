@@ -46,6 +46,14 @@ class ReactionPathway(object):
 		self._products = products
 		self._products.sort()
 		self._const = 1
+
+		for x in self._reactants:
+			if x is Complex:
+				assert x.check_structure()
+
+		for x in self._products:
+			if x is Complex:
+				assert x.check_structure() 
 		
 	def __repr__(self):
 		return self.full_string()
@@ -1672,17 +1680,27 @@ def branch_4way(reactant):
 
 			# search both directions around the loop for a bound domain that
 			# has the same sequence (and therefore can be displaced)
-			bound_doms = find_on_loop(reactant, structure[strand_index][domain_index], -1, \
-				lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain)) + \
-			find_on_loop(reactant, displacing_loc, +1, \
-				lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain))
+			# 
+			#   z  ___  z* (displacing)
+			#  ___/   \___>
+			# <___     ___
+			#     \___/
+			#   z*      z
+			# 
+			bound_doms = find_on_loop(reactant, displacing_loc, +1, \
+				lambda dom, struct, loc: struct is not None and dom == displacing_domain)
+
+			# bound_doms = find_on_loop(reactant, structure[strand_index][domain_index], -1, \
+			# 	lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain)) + \
+			# find_on_loop(reactant, displacing_loc, +1, \
+			# 	lambda dom, struct, loc: struct is not None and dom == displacing_domain))
 
 			# build products
 			for (bound_loc, before, after) in bound_doms:
 				reaction = ReactionPathway('branch_4way', [reactant], do_4way_migration(\
 					reactant, 
 					displacing_loc, structure[displacing_loc[0]][displacing_loc[1]],
-					bound_loc, structure[bound_loc[0]][bound_loc[1]])
+					structure[bound_loc[0]][bound_loc[1]],bound_loc)
 				)
 
 				# length of invading domain

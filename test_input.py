@@ -552,8 +552,8 @@ class InputKernel(unittest.TestCase):
 
 		# Domains 
 		domains = { 
-			'a' : Domain('a', 1, is_complement=False, sequence='N'),
-			'a*' : Domain('a', 1, is_complement=True, sequence='N'),
+			'a' : Domain('a', 15, is_complement=False, sequence='N'),
+			'a*' : Domain('a', 15, is_complement=True, sequence='N'),
 			'b' : Domain('b', 12, is_complement=False, sequence='None'),
 			'b*' : Domain('b', 12, is_complement=True, sequence='None'),
 			'c' : Domain('c', 12, is_complement=False, sequence='None'),

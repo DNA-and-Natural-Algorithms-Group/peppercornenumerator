@@ -265,6 +265,8 @@ class Enumerator(object):
 		self._complexes = []
 		self._resting_states = []
 		
+		# try:
+
 		# We first generate the states reachable by fast reactions from the
 		# initial complexes
 		while len(self._B) > 0:
@@ -307,8 +309,11 @@ class Enumerator(object):
 				# Generate a neighborhood from `source`
 				source = self._B.pop()
 				self.process_neighborhood(source)
-		
+			
 		finish()
+		
+		# except KeyboardInterrupt:
+		# 	finish(premature=True)
 		
 				
 	def process_neighborhood(self, source):
@@ -327,6 +332,8 @@ class Enumerator(object):
 		
 		self._F = [source]
 		
+		# try:
+
 		# First find all of the complexes accessible through fast
 		# reactions starting with the source
 		while (len(self._F) > 0):
@@ -341,7 +348,10 @@ class Enumerator(object):
 			# Add new reactions to N_reactions
 			N_reactions += (reactions)			
 			self._N.append(element)
-		
+			
+		# except KeyboardInterrupt:
+		# 	pass
+
 		# Now segment the neighborhood into transient and resting states
 		# by finding the strongly connected components
 		segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions)
@@ -480,7 +490,9 @@ class Enumerator(object):
 		
 		# Clobber the old value of reactions with the filtered list
 		reactions[:] = new_reactions
-			
+		
+		assert (set(ESTNF.values()) - set(new_products)) == set(ESTNF.values())
+
 		return new_products
 				
 	def segment_neighborhood(self, complexes, reactions):
