@@ -243,10 +243,10 @@ def auto_domain(name, polarity, domains):
 	# search for existing domain
 	if identifier in domains: 
 		dom = domains[identifier]
-		if (length == 'short') != (dom.length == utils.SHORT_DOMAIN_LENGTH):
-			error(("Domain '%s' should be %s, but there is a already a domain %s that is not. "+ \
-				"I assume this was a mistake; please give all domains '%s' a caret (^), "+ \
-				"or remove the caret from all domain") % (name, length, dom.name, dom.name))
+		# if (length == 'short') != (dom.length == utils.SHORT_DOMAIN_LENGTH):
+		# 	error(("Domain '%s' should be %s, but there is a already a domain %s that is not. "+ \
+		# 		"I assume this was a mistake; please give all domains '%s' a caret (^), "+ \
+		# 		"or remove the caret from all domain") % (name, length, dom.name, dom.name))
 		return dom
 
 	# generate new domain
