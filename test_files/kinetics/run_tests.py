@@ -1,0 +1,193 @@
+
+import subprocess
+
+# This is a test of the command-line parsing, as well as getting number for kinetics comparisons
+
+def CMI_enum(inputstring,maxtoesize):
+    """Calls enumerator via the command line interface, first writing input string as a file, then reading the output file."""
+
+    text_file = open("tmp-run.pil", "w")
+    text_file.write(inputstring)
+    text_file.close()
+
+#    cmd = ['enumerator.py','tmp-run.pil','-c','--release-cutoff',str(maxtoesize)]
+    cmd = ['enumerator.py','tmp-run.pil','--release-cutoff',str(maxtoesize)]
+
+    subprocess.Popen(cmd).wait()
+
+    text_file = open ("tmp-run-enum.pil", "r")
+    output=text_file.read()
+    text_file.close()    
+
+    lines = output.split('\n')
+
+    return lines
+
+
+def exchange(n,m):
+    """run enumerator for Zhang & Winfree 2009, figure 4B"""
+
+    # only if both m>0 and n>0 -- fix that  (and then it will work for figure 3B too)
+
+    assert m<8 and n<16
+    if n==0:
+        return 'Leak not modeled'
+    elif n==15:
+        assert m==0
+        sys = "length a = 16\nlength B = 20\nlength c = %d\nB c\na B( + c* )\n" % n
+    elif m==0:
+        sys = "length a = 16\nlength B = 20\nlength c = %d\nlength d = %d\nB c\na B( + d* c* )\n" % (n,15-n)
+    elif m>0:
+        sys = "length a = 16\nlength b = %d\nlength B = %d\nlength c = %d\nlength d = %d\nB c\na b(B( + d* c* ))\n" % (m,20-m,n,15-n)
+
+    pil_enum = CMI_enum(sys,8)
+
+
+    rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
+
+    # trust that the enumerator always lists reactions in a consistent order!
+    if len(rates)==1:  # must be condensed, then
+        k_eff = float(rates[0].split()[1][1:])
+    elif len(rates)==2:  # must be irreversible toehold, detailed model  **** or condensed toehold exchange
+        k_eff = float(rates[0].split()[1][1:])   # forward binding rate
+    elif len(rates)==3:  # must be reversible toehold, detailed model
+        k0=float(rates[0].split()[1][1:])   # forward binding rate
+        k1=float(rates[1].split()[1][1:])   # branch migration & strand displacement step
+        k2=float(rates[2].split()[1][1:])   # toehold dissociation
+        k_eff = k0*k1/(k1+k2)
+    elif len(rates)==6:  # must be reversible toehold exchange, detailed model
+        k0=float(rates[0].split()[1][1:])   # forward binding rate
+        k1=float(rates[1].split()[1][1:])   # reverse binding rate
+        k2=float(rates[2].split()[1][1:])   # forward branch migration step
+        k3=float(rates[3].split()[1][1:])   # reverse branch migration step
+        k4=float(rates[4].split()[1][1:])   # invading toehold dissociation
+        k5=float(rates[5].split()[1][1:])   # incumbent toehold dissociation
+#        k_eff = k0/( ((k2+k4)/k2)*((k3+k5)/k5) - k5/(k3+k5) )
+        k_eff = k0*(k5/(k3+k5)) / ( (k2+k4)/k2 - k3/(k3+k5) )
+
+    if False:
+        for s in pil_enum:
+            print s
+        print "Calculated k_eff = %f /M/s" % k_eff
+        raw_input("Press enter to continue...")  # in python 3, just input()
+
+    return k_eff
+
+# now run the simulations
+
+# print exchange(10,0)
+
+# gets model rates for Zhang & Winfree 2009 figure 3B.
+k3way_exp = [1.40, 8.17, 144, 1.08e3, 5.05e4, 9.64e5, 2.36e6, 3.22e6, 3.15e6, 2.77e6, 2.83e6, 4.78e6]
+k3way_exp = zip( range(0,11)+[15], k3way_exp )
+
+if True:
+    k3way = [ (n,exchange(n,0)) for n in range(1,16) ]
+
+    print "Toehold-mediate strand displacement rate constants, c.f. Zhang & Winfree 2009, figure 3B.  n=toehold length."
+    i=0
+    j=0
+    while i<len(k3way) and j<len(k3way_exp):
+        if k3way[i][0]==k3way_exp[j][0]:
+            print "n=%d : model k=%f,  experimental k=%f" % (k3way[i][0],k3way[i][1],k3way_exp[j][1])
+            i=i+1
+            j=j+1
+        elif k3way[i][0]<k3way_exp[j][0]:
+            print "n=%d : model k=%f,  experimental k=none" % (k3way[i][0],k3way[i][1])
+            i=i+1
+        else:
+            print "n=%d : model k=none,  experimental k=%f" % (k3way_exp[j][0],k3way_exp[j][1])
+            j=j+1
+    raw_input("Press enter to continue...")
+
+
+# now, estimate values from figure 4B  (could ask Dave Zhang for more accurate numbers)
+logk3wayx_exp = [(1,4,.95),(1,3,.8),(1,2,1.15),(1,1,1.1), \
+  (2,5,1.8),(2,4,2.15),(2,3,2.2),(2,2,2.2),(2,1,2.15), \
+  (3,6,1.9),(3,5,2.15),(3,4,3.0),(3,3,3.0),(3,2,2.95),(3,1,2.9), \
+  (4,7,2.05),(4,6,2.65),(4,5,3.65),(4,4,4.1),(4,3,4.1),(4,2,4.1),(4,1,4.05), \
+  (5,7,3.7),(5,6,4.9),(5,5,5.7),(5,4,6.15),(5,3,6.15),(5,2,6.15),(5,1,6.15), \
+  (6,7,5.1),(6,6,5.8),(6,5,6.2),(6,4,6.4),(6,3,6.2),(6,2,6.2)]
+k3wayx_exp = [ (n,m,10**v) for (n,m,v) in logk3wayx_exp ]
+
+if True:
+    k3wayx = [ (n,m, exchange(n,m)) for (n,m,v) in k3wayx_exp ]
+
+    print "Toehold exchange rate constants, c.f. Zhang & Winfree 2009, figure 4B.  n=incoming, m=incumbent. "
+    for (model,exp) in zip(k3wayx,k3wayx_exp):
+        (n,m,k)=model
+        (n_exp,m_exp,k_exp)=exp
+        assert n==n_exp and m==m_exp
+        print "n=%d, m=%d : model k=%f,  experimental k=%f" % (n,m,k,k_exp)
+    raw_input("Press enter to continue...")
+
+def fourway(n,m):
+    """run enumerator for Dabby 2013, tables 5.1 and 5.2"""
+
+    assert n<7 and (m<7 or m==16)
+    M = 0 if (m==6 or m==16) else 6-m
+    N = 6-n
+    
+    if n==0 and m==0:
+        return 'Leak not modeled'
+    if n==15:
+        assert m==0
+        sys = "length a = 9\nlength B = 9\nlength c = %d\nB c\na B( + c* )\n" % n
+    if m==0:
+        sys = "length a = 9\nlength B = 9\nlength c = %d\nlength d = 9\nB c\na B( + d* c* )\n" % n
+    if m>0:
+        sys = "length x = 21\nlength b = %d\nlength B = 9\nlength c = %d\nlength d = 9\nB c\na b(B( + d* c* ))\n" % (m,n)
+
+    sys = "length x = 21\n"
+    if m>0: 
+        sys += "length m = %d\n" % m
+    if M>0: 
+        sys += "length M = %d\n" % M
+    if n>0: 
+        sys += "length n = %d\n" % n
+    if N>0: 
+        sys += "length N = %d\n" % N
+    if m>0 and M>0:
+        sys += "x*( m* M* + "
+    elif m>0:
+        sys += "x*( m* + "
+    else:
+        sys += "x*( M* + "
+    if n>0 and N>0:
+        sys += "N* n* )\n"
+    elif n>0:
+        sys += "n* )\n"
+    else:
+        sys += "N* )\n"
+    if m>0:
+        sys += "m x( + "
+    else:
+        sys += "x( + "
+    if n>0:
+        sys += ") n\n"
+    else:
+        sys += ")\n"
+
+    print sys
+
+#    pil_enum = CMI_enum(sys,8)
+
+#    for s in pil_enum:
+#        print s
+
+#    rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
+#    return rates
+
+nm = [ (1,m) for m in range(1,5) ] + [ (2,m) for m in range(1,6) ] +[ (3,m) for m in range(1,7) ] + \
+     [ (4,m) for m in range(1,8) ] + [ (5,m) for m in range(1,8) ] +[ (6,m) for m in range(2,8) ]
+
+nm = [ (0,16), (2,16), (4,16), (6,16) ]
+for n in range(0,7,2):
+    for m in range(0,7,2):
+        nm += [(n,m)]
+
+if False:
+    for (n,m) in nm:
+        print fourway(n,m)
+    
+

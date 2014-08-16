@@ -3,7 +3,7 @@
 #  EnumeratorProject
 #
 #  Created by Karthik Sarma on 4/18/10.
-#
+#  Modifications by Casey Grun and Erik Winfree 8/15/2014.#
 
 import copy
 import re
