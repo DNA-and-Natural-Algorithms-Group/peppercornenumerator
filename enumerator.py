@@ -265,51 +265,54 @@ class Enumerator(object):
 		self._complexes = []
 		self._resting_states = []
 		
-		# try:
+		try:
 
-		# We first generate the states reachable by fast reactions from the
-		# initial complexes
-		while len(self._B) > 0:
-			# Generate a neighborhood from `source`
-			source = self._B.pop()			
-			self.process_neighborhood(source)
-		
-		# Consider slow reactions between resting state complexes
-		while len(self._S) > 0:
-
-			# Find slow reactions from `element`
-			if self.DFS:
-				element = self._S.pop()
-			else:
-				element = self._S.pop(0)
-
-			slow_reactions = self.get_slow_reactions(element)
-			self._E.append(element)
-			
-			# Find the new complexes which were generated
-			self._B = self.get_new_products(slow_reactions)
-			self._reactions += (slow_reactions)
-			
-			# Now find all complexes reachable by fast reactions from these 
-			# new complexes
+			# We first generate the states reachable by fast reactions from the
+			# initial complexes
 			while len(self._B) > 0:
-
-				# Check whether too many complexes have been generated
-				if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
-					logging.error("Too many complexes enumerated!")
-					finish(premature=True)
-					return
-				
-				# Check whether too many reactions have been generated
-				if (len(self._reactions) > self.MAX_REACTION_COUNT):
-					logging.error("Too many reactions enumerated!")
-					finish(premature=True)
-					return
-					
 				# Generate a neighborhood from `source`
-				source = self._B.pop()
+				source = self._B.pop()			
 				self.process_neighborhood(source)
 			
+			# Consider slow reactions between resting state complexes
+			while len(self._S) > 0:
+
+				# Find slow reactions from `element`
+				if self.DFS:
+					element = self._S.pop()
+				else:
+					element = self._S.pop(0)
+
+				slow_reactions = self.get_slow_reactions(element)
+				self._E.append(element)
+				
+				# Find the new complexes which were generated
+				self._B = self.get_new_products(slow_reactions)
+				self._reactions += (slow_reactions)
+				
+				# Now find all complexes reachable by fast reactions from these 
+				# new complexes
+				while len(self._B) > 0:
+
+					# Check whether too many complexes have been generated
+					if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
+						logging.error("Too many complexes enumerated!")
+						finish(premature=True)
+						return
+					
+					# Check whether too many reactions have been generated
+					if (len(self._reactions) > self.MAX_REACTION_COUNT):
+						logging.error("Too many reactions enumerated!")
+						finish(premature=True)
+						return
+						
+					# Generate a neighborhood from `source`
+					source = self._B.pop()
+					self.process_neighborhood(source)
+			
+		except KeyboardInterrupt:
+			finish(premature=True)
+
 		finish()
 		
 		# except KeyboardInterrupt:
@@ -332,46 +335,45 @@ class Enumerator(object):
 		
 		self._F = [source]
 		
-		# try:
+		try:
 
-		# First find all of the complexes accessible through fast
-		# reactions starting with the source
-		while (len(self._F) > 0):
-			# Find fast reactions from `element`
-			element = self._F.pop()
-			reactions = self.get_fast_reactions(element)		
+			# First find all of the complexes accessible through fast
+			# reactions starting with the source
+			while (len(self._F) > 0):
+				# Find fast reactions from `element`
+				element = self._F.pop()
+				reactions = self.get_fast_reactions(element)		
+				
+				# Add new products to F
+				new_products = self.get_new_products(reactions)
+				self._F += (new_products)
+
+				# Add new reactions to N_reactions
+				N_reactions += (reactions)			
+				self._N.append(element)
+
+				# print len(self._F) + len(self._N) + len(self._S) + len(self._T) + len(self._E) + len(self._B)
 			
-			# Add new products to F
-			new_products = self.get_new_products(reactions)
-			self._F += (new_products)
+		finally:
 
-			# Add new reactions to N_reactions
-			N_reactions += (reactions)			
-			self._N.append(element)
-
-			print len(self._F) + len(self._N) + len(self._S) + len(self._T) + len(self._E) + len(self._B)
+			# Now segment the neighborhood into transient and resting states
+			# by finding the strongly connected components
+			segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions)
 			
-		# except KeyboardInterrupt:
-		# 	pass
-
-		# Now segment the neighborhood into transient and resting states
-		# by finding the strongly connected components
-		segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions)
-		
-		# Resting state complexes are added to S
-		self._S += (segmented_neighborhood['resting_state_complexes'])
-		
-		# Transient state complexes are added to T
-		self._T += (segmented_neighborhood['transient_state_complexes'])
-		
-		# Resting states are added to the list
-		self._resting_states += (segmented_neighborhood['resting_states'])
-		
-		# Reactions from this neighborhood are added to the list
-		self._reactions += (N_reactions)
-		
-		# Reset neighborhood
-		self._N = []
+			# Resting state complexes are added to S
+			self._S += (segmented_neighborhood['resting_state_complexes'])
+			
+			# Transient state complexes are added to T
+			self._T += (segmented_neighborhood['transient_state_complexes'])
+			
+			# Resting states are added to the list
+			self._resting_states += (segmented_neighborhood['resting_states'])
+			
+			# Reactions from this neighborhood are added to the list
+			self._reactions += (N_reactions)
+			
+			# Reset neighborhood
+			self._N = []
 					
 	def get_slow_reactions(self, complex):
 		"""

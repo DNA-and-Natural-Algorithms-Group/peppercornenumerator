@@ -850,8 +850,10 @@ def find_releases(reactant):
 		#	0 > inner_index strand > index of last strand, and
 		# 		inner_index strand < strand_index, or
 		#		inner_index strand = strand_index and inner_index domain < domain_index)
-		while (inner_index[0] >= 0) and (inner_index[0] < (len(strands) - 1)) and \
-			  ( inner_index < (strand_index, domain_index)):
+		# while (inner_index[0] >= 0) and (inner_index[0] < (len(strands) - 1)) and \
+		# 	  ( inner_index < (strand_index, domain_index)):
+		while ( 0 <= inner_index[0] < (len(strands) - 1) ) and \
+			  ( inner_index < (strand_index, domain_index) ):
 
 
 			# If we have run off of the end of a strand,
@@ -874,9 +876,10 @@ def find_releases(reactant):
 				inner_index = (inner_index[0], inner_index[1] - 1)
 			
 			# Check if the structure points to a higher domain 
-			elif ((curr_structure[0] > inner_index[0]) or \
-			     ((curr_structure[0] == inner_index[0]) and \
-				  (curr_structure[1] > inner_index[1]))):
+			# elif ((curr_structure[0] > inner_index[0]) or \
+			#      ((curr_structure[0] == inner_index[0]) and \
+			# 	  (curr_structure[1] > inner_index[1]))):
+			elif (curr_structure > inner_index):
 
 				# If the structure points to a domain above the start, this section
 				# is connected to something higher, so abort this loop

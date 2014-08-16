@@ -779,6 +779,35 @@ class Complex(object):
 						stack.append(target)
 		return True
 
+	def check_connected(self):
+		# string = self.dot_paren_string()
+		# graph = 0
+		# stack = [0]
+		# for i, c in enumerate(string):
+		# 	if c == '(': graph += 1
+		# 	elif c == ')': graph -= 1
+		# 	elif c == '+':
+		# 		if graph == stack[-1]:
+		# 			raise Exception("In complex %s, complex disconnected between strands %d and %d" % (self.name, strand, strand + 1))
+
+		string = self.dot_paren_string()
+		parts = string.split("+")
+		subs = 1
+		if len(parts) > 1:
+			for i, strand in enumerate(parts):
+				graph = 0
+				for c in strand:
+					if c == '(': graph += 1
+					elif c == ')': graph -= 1
+					if graph < 0:
+						break
+				if graph == 0:
+					subs += 1
+		if subs > 1: 
+			raise Exception("In complex %s, complex disconnected into %d parts" % (self.name, subs))
+			return False 		
+		return True
+
 	def kernel_string(self):
 		parts = []
 		for strand_num, strand in enumerate(self.strands):
