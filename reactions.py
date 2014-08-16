@@ -2,8 +2,8 @@
 #  reactions.py
 #  EnumeratorProject
 #
-#  Created by Karthik Sarma on 4/18/10.
-#
+#  Created by Karthik Sarma on 4/18/2010.
+#  Modifications by Casey Grun and Erik Winfree 8/15/2014.
 
 import copy
 import utils
@@ -176,17 +176,23 @@ def opening_rate(length):
 	"""
 	Rate constant formula for opening a duplex of a given `length`.
 	"""
-	return 10.0 ** (6 - 1.23 * length)
+#	return 10.0 ** (6 - 1.23 * length)
+	# use k_open = k_hybrid exp( (length * dG_bp + dG_assoc) / RT )
+	# where k_hybrid = 3x10^6 /M/s   from Zhang&Winfree 2009
+	#       dG_bp = -1.7 kcal/mol
+	#       dG_assoc = +1.9 kcal/mol
+	#       R = 0.001987 kcal/mol/K
+	#       T = (273.15 + 25) K
+	return 7.41e7 * (0.0567 ** length)
 
-def hairpin_closing_rate(length):
-	"""
-	Rate constant formula for hairpin closing with a given loop `length`.
-	"""
-	a = 2.54e8
-	b = 0
-	# b = -3.61e3
-	c = -3.0
-	return a * (length + 5) ** c + b
+# def hairpin_closing_rate(length):
+#	"""
+#	Rate constant formula for hairpin closing with a given loop `length`.
+#	"""
+#	a = 2.54e8
+#	b = 0
+#	c = -3.0
+#	return a * (length + 5) ** c + b
 
 # def multiloop_closing_rate(length):
 # 	"""
@@ -195,9 +201,31 @@ def hairpin_closing_rate(length):
 # 	pass
 
 
-
 def binding_rate(length, before, after):
-	return hairpin_closing_rate(length)
+	"""
+	Rate constant formula for unimolecular binding of a domain of the given length.  
+	Could be zippering, hairpin closing, bubble closing, bulge formation, multiloop formation,
+	depending on the flanking loops, which may be open or closed.  
+	"""
+	if not before.is_open and before.stems==1 and before.bases==0:
+		if not after.is_open and after.stems==1 and after.bases==0:
+			return 1e4  # bubble closing rate from Altan-Bonnet 2003
+		return (1e6)/length  # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et al 2013, low end
+	if not after.is_open and after.stems==1 and after.bases==0:
+		return (1e6)/length  # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et al 2013, low end
+	L_stem = 2.0/0.43  # rough equivalent number of single-stranded nucleotides to span a stem
+	if not before.is_open:
+		L_before = 1 + before.bases + L_stem * before.stems
+	if not after.is_open:
+		L_after = 1 + after.bases + L_stem * after.stems
+	a = 2.5e7  # per second; fit from data in Bonnet et al 1998
+	b = 2.5    # fit from data in Bonnet et al 1998
+	if not after.is_open and not before.is_open:   # bulge closing assumed to be similar to faster of two hairpin closings
+		return a * (min(L_before,L_after))**b
+	if not before.is_open:                         # hairpin closing adapted from data in Bonnet et al 1998
+		return a * L_before**b    
+	if not after.is_open:                          # hairpin closing adapted from data in Bonnet et al 1998
+		return a * L_after**b
 
 # def branch_3way_rate(length):
 # 	"""
@@ -226,7 +254,7 @@ def branch_3way_remote_rate(length, before, after):
 	slowdown = 1
 	init = 2.8e-3 * slowdown
 	step = 0.1e-3
-	return 1.0 / (init + step * length**2)
+	return 1.0 / (init + step * length**2) / length
 
 # def branch_4way_rate(length):
 # 	"""
@@ -242,13 +270,15 @@ def branch_4way_remote_rate(length, before, after):
 	"""
 	init = 77	
 	step = 1
-	return 1.0 / (init + step * length**2)
+	return 1.0 / (init + step * length**2) / length
 
 def bimolecular_binding_rate(length):
 	"""
 	Rate constant formula for bimolecular association (binding).
 	"""
-	return 1.0e6
+#	return 1.0e6
+	# use k_hybrid = 3x10^6 /M/s   from Zhang&Winfree 2009
+	return 3.0e6
 
 
 # Reaction functions
