@@ -576,8 +576,8 @@ def condense_graph(enumerator, compute_rates=True):
         # make sure each reactant is a resting state (F(xn) is a singleton for each reactant xn)
         for (i, f_xn) in enumerate(reactant_fates):
             if(not f_xn.is_singleton()):
-                logging.error("Cannot condense reactions: F(%s) has multiple elements: %s"
-                                % ( str(reaction.reactants[i]), str(f_xn) ))
+                logging.error("Cannot condense reaction %r: reactant %s has multiple fates: F(%s) = %s"
+                                % ( reaction, str(reaction.reactants[i]), str(reaction.reactants[i]), str(f_xn) ))
                 raise Exception()
             
         
