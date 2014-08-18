@@ -165,41 +165,42 @@ class ReactionPathway(object):
 # Rate constant formulae
 # ----------------------------------------------------------------------------
 
-# def zipping_rate(length):
-# 	"""
-# 	Rate constant formula for zipping (hybridization of two single strands
-# 	adjacent to an existing duplex) of a given `length`.
-# 	"""
-# 	return 1.0e8 / length
 
 def opening_rate(length):
 	"""
 	Rate constant formula for opening a duplex of a given `length`.
 	"""
-#	return 10.0 ** (6 - 1.23 * length)
 	# use k_open = k_hybrid exp( (length * dG_bp + dG_assoc) / RT )
-	# where k_hybrid = 3x10^6 /M/s   from Zhang&Winfree 2009
+	# where k_hybrid = 3x10^6 /M/s   from Zhang&Winfree 2009 and Srinivas et al 2013
 	#       dG_bp = -1.7 kcal/mol
 	#       dG_assoc = +1.9 kcal/mol
 	#       R = 0.001987 kcal/mol/K
 	#       T = (273.15 + 25) K
 	return 7.41e7 * (0.0567 ** length)
 
-# def hairpin_closing_rate(length):
-#	"""
-#	Rate constant formula for hairpin closing with a given loop `length`.
-#	"""
-#	a = 2.54e8
-#	b = 0
-#	c = -3.0
-#	return a * (length + 5) ** c + b
-
-# def multiloop_closing_rate(length):
-# 	"""
-# 	Rate constant formula for multiloop closing with a given domain `length`.
-# 	"""
-# 	pass
-
+def polymer_link_length(before, after):
+	"""Effective length estimate for (ss+ds) linkers between two domains, one or both of which may be open."""
+	L_stem = 2.0/0.43  # rough equivalent number of single-stranded nucleotides to span a stem
+	if not before.is_open:
+		L_before = 1 + before.bases + L_stem * before.stems
+	if not after.is_open:
+		L_after = 1 + after.bases + L_stem * after.stems
+	if not after.is_open and not before.is_open:   # for both closed & open cases, assume shorter length matters most
+		return min(L_before,L_after)
+	if not before.is_open:                         
+		return L_before    
+	if not after.is_open:                          
+		return L_after
+	assert False, "should not have reached this case -- how can both sides be open?"
+	raw_input("bad bad bad -- computing polymer lengths in disconnected complex!")
+	
+def polymer_link_rate(linker_length):
+	"""Unimolecular hairpin closing rate, as a function of effective linker length. """
+	# a = 2.5e7    # per second; fit from data in Bonnet et al 1998 only
+	a = 1e6        # per second; Kuznetsov et al 2008, Nayak et al 2012, Tsukanov et al 2013ab, all say at least 10x slower
+	b = -2.5                   # fit from data in Bonnet et al 1998, consistent with Kuznetsov et al 2008
+	k = a * linker_length**b   # hairpin closing adapted (simplified) from data in Bonnet et al 1998, modified as above
+	return min(k,33000)        # hairpins shorter than about 4 nt can't close any faster.
 
 def binding_rate(length, before, after):
 	"""
@@ -213,30 +214,13 @@ def binding_rate(length, before, after):
 		return (1e6)/length  # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et al 2013, low end
 	if not after.is_open and after.stems==1 and after.bases==0:
 		return (1e6)/length  # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et al 2013, low end
-	L_stem = 2.0/0.43  # rough equivalent number of single-stranded nucleotides to span a stem
-	if not before.is_open:
-		L_before = 1 + before.bases + L_stem * before.stems
-	if not after.is_open:
-		L_after = 1 + after.bases + L_stem * after.stems
-	a = 2.5e7  # per second; fit from data in Bonnet et al 1998
-	b = 2.5    # fit from data in Bonnet et al 1998
-	if not after.is_open and not before.is_open:   # bulge closing assumed to be similar to faster of two hairpin closings
-		return a * (min(L_before,L_after))**b
-	if not before.is_open:                         # hairpin closing adapted from data in Bonnet et al 1998
-		return a * L_before**b    
-	if not after.is_open:                          # hairpin closing adapted from data in Bonnet et al 1998
-		return a * L_after**b
 
-# def branch_3way_rate(length):
-# 	"""
-# 	Rate constant formula for 3-way branch migration with an adjacent toehold
-# 	"""
-# 	init = 2.8e-3
-# 	step = 0.1e-3
-# 	return 1.0 / (init + step * length**2)
+	L = polymer_link_length(before, after)  # bulge closing assumed to be similar to faster of two hairpin closings
+	return polymer_link_rate(L)             # hairpin closing adapted (simplified) from data in Bonnet et al 1998
 
-
-
+# Diagram for 3-way branch migration, general case.
+# Loops could be listed either 5'->3' or 3'->5, but they always go from invading domain to bound stem (non-inclusive).
+#
 #                before
 #                _______  x (bound domain)
 #               /       \____
@@ -245,38 +229,78 @@ def binding_rate(length, before, after):
 #                 
 #                 after
 
+def show_loops(before, after, message):
+	"""
+	Debugging help: show (partial) loops returned by find_on_loop().  ! indicates a stem, | indicates open loop break.
+	"""
+	print "before: [ ",
+	for step in before.parts:
+		print " | " if step==None else step[0].name+("!" if step[1] is not None else "")+" ",
+	print " ] is_open = %r, stems = %d, bases = %d" % (before.is_open, before.stems, before.bases)
+	print "after: [ ",
+	for step in after.parts:
+		print " | " if step==None else step[0].name+("!" if step[1] is not None else "")+" ",
+	print " ] is_open = %r, stems = %d, bases = %d" % (after.is_open, after.stems, after.bases)
+	raw_input(message)
+
+
 def branch_3way_remote_rate(length, before, after):
 	"""
-	Rate constant formula for 3-way branch migration with a remote toehold
+	Rate constant formula for 3-way branch migration, possibly with a remote toehold
 	"""
+	# step = 0.1e-3  # 100us branch migration step time from Srinivas et al 2013 (not relevant)
+	# k_init = k_uni exp(-dGsp / RT) with k_uni = 7.5e7, dGsp = 7.3 kcal/mol, T = 273.15 + 25 K, R = 0.001987 kcal/mol/K
+	init = 3.0e-3  # sec, = 1/k_init from Srinivas et al 2013
 
-	# slowdown = hairpin_closing_rate(length)/zipping_rate(length)
-	slowdown = 1
-	init = 2.8e-3 * slowdown
-	step = 0.1e-3
-	return 1.0 / (init + step * length**2) / length
+	# show_loops(before, after, "...before & after loops for 3-way branch migration...")
 
-# def branch_4way_rate(length):
-# 	"""
-# 	Rate constant formula for 4-way branch migration
-# 	"""
-# 	init = 77	
-# 	step = 1
-# 	return 1.0 / (init + step * length**2)
+	if not after.is_open and after.stems==1 and after.bases==0: 	# "standard" 3-way bm initiation (plus "before" being closed)
+		return 1.0 / init / length  # each initiation has probability 1/length of succeeding.  how long it takes doesn't matter.
+
+	# show_loops(before, after, "run_tests.py should not have any remote toeholds for 3-way branch migration")
+	
+	# consider a slowdown analogous to Genot et al 2011 (remote) supp info derivation
+	L = polymer_link_length(before, after)  # bulge closing assumed to be similar to faster of two hairpin closings
+	ratio = polymer_link_rate(L) / (1e6)    # how much slower than our (admittedly slow) zippering rate is this?
+	return ratio / init / length            # we slow down initiation and thus success probability (note: ratio < 1/30)
+
 
 def branch_4way_remote_rate(length, before, after):
 	"""
-	Rate constant formula for 4-way branch migration with a remote toehold
+	Rate constant formula for 4-way branch migration, possibly with a remote toehold
 	"""
-	init = 77	
-	step = 1
-	return 1.0 / (init + step * length**2) / length
+	# rates recalculated from Nadine Dabby, PhD Thesis, 2013, based on assuming last 6 bp dissociate faster than 4way bm step
+	open_step   = 107   # sec, = 1/k_first  (this is for open 4-way case only)
+	closed_step = 3.0   # sec, = 1/k_bm     (this is used for initiating closed 4-way case; consistent with Panyutin&Hsieh 1993)
+
+	# open_step = 200 # fudge !
+
+	# show_loops(before, after, "before & after loops for 4-way branch migration")
+
+	if not before.is_open and not after.is_open:
+		init = closed_step
+		if before.bases==0 and before.stems==1 and after.bases==0 and after.stems==1:
+			return 1.0 / init / length   # closed & ready-to-rock-and-roll 4 way initiation
+	if before.is_open:
+		init = open_step
+		if after.bases==0 and after.stems==1:
+			return 1.0 / init / length   # we care about probability of taking this path, not actual time
+	if after.is_open:
+		init = open_step
+		if before.bases==0 and before.stems==1:
+			return 1.0 / init / length   # we care about probability of taking this path, not actual time
+
+	# show_loops(before, after, "run_tests.py should not have any remote toeholds for 4-way branch migration")
+
+	# consider a slowdown analogous to Genot et al 2011 (remote) supp info derivation
+	L = polymer_link_length(before, after)  # bulge closing assumed to be similar to faster of two hairpin closings
+	ratio = polymer_link_rate(L) / (1e6)    # how much slower than our (admittedly slow) zippering rate is this?
+	return ratio / init / length            # we slow down initiation and thus success probability (note: ratio < 1/30)
 
 def bimolecular_binding_rate(length):
 	"""
 	Rate constant formula for bimolecular association (binding).
 	"""
-#	return 1.0e6
 	# use k_hybrid = 3x10^6 /M/s   from Zhang&Winfree 2009
 	return 3.0e6
 
@@ -1461,6 +1485,9 @@ def find_on_loop(reactant, start_loc, direction, filter):
 		-	struct (tuple or None): a (strand index, domain index) pair 
 			indicating what `dom` is bound to, or None if `dom` is unpaired.
 		-	loc (tuple) : a (strand index, domain index) pair
+		-       Note that while every single-stranded domain is tested,
+		        only the "first" domain of a stem helix (in the direction of 
+			search) will be passed to the filter.
 
 
 	Returns an array of tuples: `(loc, before, after)`, where:
@@ -1468,8 +1495,18 @@ def find_on_loop(reactant, start_loc, direction, filter):
 			of the matched domain
 		-	`before` is a list of (domain, struct, loc) triples giving the 
 			domains after `start_loc` but before the matched domain on the loop
+			(or None instead of triple where there is a break in the loop)
 		-	`after` is a list of (domain, struct, loc) triples giving the 
 			domains after the matched domain but before `start_loc` on the loop
+			(or None instead of triple where there is a break in the loop)
+
+	Where a loop involves stems, only one of the complementary domains will be listed in the
+	array of tuples, specifically, the "first" one in the search direction.
+	Thus, a multiloop with n unpaired domains and m stems will result, for closed loops,
+	in `len(before+after) == n+m-2`, as the match location and `start_loc` are omitted.
+
+	`before` and `after` are converted to Loop objects (see utils.py) prior to being returned, so 
+	that the number of bases and number of stems and open/closed status is readily accessible.
 
 	# Returns an array of tuples: `(loc, domains, stems)`, where:
 	# 	-	loc is a (strand index, domain index) pair indicating the position
@@ -1491,14 +1528,12 @@ def find_on_loop(reactant, start_loc, direction, filter):
 	Notice that the duplex x() participates in two internal loops (A and B). 
 	By convention, the internal loop considered is the _internal loop which
 	encloses this domain_. That means if you pass domain x and +1, you'll get
-	loop A, whereas if you pass x and -1, you'll get domain B. This is in an
+	loop A, whereas if you pass x and -1, you'll get loop B. This is in an
 	attempt to be consistent with the case where you pass an unpaired domain
 	(and therefore the internal loop searched is the one which encloses the 
 	unpaired domain).
 	"""	
 	results = []
-	doms = []
-	stems = []
 	loop = []
 
 	def triple(loc):
@@ -1511,7 +1546,7 @@ def find_on_loop(reactant, start_loc, direction, filter):
 	# Avoid getting stuck inside an internal loop enclosed by this domain,
 	# if the starting domain is a duplex.
 	# 
-	# 	1      2
+	#   1      2
 	#  ___________
 	#  ____  _____
 	#   1*  /  2*
@@ -1520,7 +1555,6 @@ def find_on_loop(reactant, start_loc, direction, filter):
 	#  immediately continue to the next domain, we'll go to 1* 
 	if reactant.structure[bound_loc[0]][bound_loc[1]] is not None:
 		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
-
 
 	# Follow the external loop to the end
 	while True:
@@ -1534,6 +1568,7 @@ def find_on_loop(reactant, start_loc, direction, filter):
 			# Continue to next strand
 			bound_loc = (wrap(bound_loc[0]-1,len(reactant.strands)),)
 			bound_loc = (bound_loc[0], len(reactant.strands[bound_loc[0]]))
+			loop.append( None )  #EW
 			continue
 
 		# if we've reached the end of the strand (3')
@@ -1541,6 +1576,7 @@ def find_on_loop(reactant, start_loc, direction, filter):
 
 			# Continue to next strand
 			bound_loc = (wrap(bound_loc[0]+1, len(reactant.strands)), -1)
+			loop.append( None ) #EW
 			continue
 
 		if bound_loc == start_loc:
@@ -1556,21 +1592,18 @@ def find_on_loop(reactant, start_loc, direction, filter):
 			# append the location
 			results.append( (bound_loc, len(loop)) )
 
+		# store unpaired domains and "first" domain of each stem
+		loop.append(triple(bound_loc)) #EW 
+
 		# if the domain at bound_loc is unbound
 		if (reactant.structure[bound_loc[0]][bound_loc[1]] is None):
-			loop.append(triple(bound_loc))
-			# doms.append(reactant.get_domain(bound_loc))
-
 			# look to the next domain
 			continue
 
-		# so it's bound to something, but that doesn't match the filter
-		# follow the structure to stay on the same loop
+		# so it's bound to something: follow the structure to stay on the same loop
 		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
-		loop.append(triple(bound_loc))
-		# stems.append(reactant.get_domain(bound_loc))
 
-	return list( (bound_loc, Loop(loop[:i]), Loop(loop[i:]) ) for (bound_loc, i) in results )
+	return list( (bound_loc, Loop(loop[:i]), Loop(loop[i+1:]) ) for (bound_loc, i) in results )  #EW
 
 def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	"""

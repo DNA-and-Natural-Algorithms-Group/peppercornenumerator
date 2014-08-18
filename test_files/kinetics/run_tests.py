@@ -62,7 +62,6 @@ def exchange(n,m):
         k3=float(rates[3].split()[1][1:])   # reverse branch migration step
         k4=float(rates[4].split()[1][1:])   # invading toehold dissociation
         k5=float(rates[5].split()[1][1:])   # incumbent toehold dissociation
-#        k_eff = k0/( ((k2+k4)/k2)*((k3+k5)/k5) - k5/(k3+k5) )
         k_eff = k0*(k5/(k3+k5)) / ( (k2+k4)/k2 - k3/(k3+k5) )
 
     if False:
@@ -81,7 +80,8 @@ def exchange(n,m):
 k3way_exp = [1.40, 8.17, 144, 1.08e3, 5.05e4, 9.64e5, 2.36e6, 3.22e6, 3.15e6, 2.77e6, 2.83e6, 4.78e6]
 k3way_exp = zip( range(0,11)+[15], k3way_exp )
 
-if True:
+###### set this true to run the simulations
+if False:
     k3way = [ (n,exchange(n,0)) for n in range(1,16) ]
 
     print "Toehold-mediate strand displacement rate constants, c.f. Zhang & Winfree 2009, figure 3B.  n=toehold length."
@@ -102,14 +102,25 @@ if True:
 
 
 # now, estimate values from figure 4B  (could ask Dave Zhang for more accurate numbers)
-logk3wayx_exp = [(1,4,.95),(1,3,.8),(1,2,1.15),(1,1,1.1), \
+logk3wayx_exp_visual_estimate = [(1,4,.95),(1,3,.8),(1,2,1.15),(1,1,1.1), \
   (2,5,1.8),(2,4,2.15),(2,3,2.2),(2,2,2.2),(2,1,2.15), \
   (3,6,1.9),(3,5,2.15),(3,4,3.0),(3,3,3.0),(3,2,2.95),(3,1,2.9), \
   (4,7,2.05),(4,6,2.65),(4,5,3.65),(4,4,4.1),(4,3,4.1),(4,2,4.1),(4,1,4.05), \
   (5,7,3.7),(5,6,4.9),(5,5,5.7),(5,4,6.15),(5,3,6.15),(5,2,6.15),(5,1,6.15), \
   (6,7,5.1),(6,6,5.8),(6,5,6.2),(6,4,6.4),(6,3,6.2),(6,2,6.2)]
-k3wayx_exp = [ (n,m,10**v) for (n,m,v) in logk3wayx_exp ]
+k3wayx_exp_visual_estimate = [ (n,m,10**v) for (n,m,v) in logk3wayx_exp_visual_estimate ]
 
+# from Dave Zhang's matlab script, ToeEx_rates_vs_model.m
+k3wayx_exp = [(1,4,7.70),(1,3,5.48),(1,2,23.5),(1,1,18.9), \
+  (2,5,43.6),(2,4,214.05),(2,3,273.0),(2,2,249.0),(2,1,231.0), \
+  (3,6,66.9),(3,5,215.0),(3,4,939.0),(3,3,974.0),(3,2,907.0),(3,1,846.0), \
+  (4,7,131.0),(4,6,407.0),(4,5,4.25e3),(4,4,2.13e4),(4,3,2.41e4),(4,2,2.29e4),(4,1,1.97e4), \
+  (5,7,3.59e3),(5,6,9.72e4),(5,5,3.45e5),(5,4,1.53e6),(5,3,1.58e6),(5,2,1.58e6),(5,1,1.73e6), \
+  (6,7,1.61e5),(6,6,4.05e5),(6,5,1.48e6),(6,4,3.04e6),(6,3,2.59e6),(6,2,3.00e6), \
+  (7,7,4.7e5),(7,6,1.11e6),(7,5,2.90e6),(7,4,3.57e6), \
+  (8,7,1.94e6),(8,6,2.68e6),(8,5,3.14e6),(8,4,3.37e6)        ]
+
+###### set this true to run the simulations
 if True:
     k3wayx = [ (n,m, exchange(n,m)) for (n,m,v) in k3wayx_exp ]
 
@@ -129,7 +140,7 @@ def fourway(n,m):
     N = 6-n
     
     if n==0 and m==0:
-        return 'Leak not modeled'
+        return 0   # Leak not modeled, don't bother.
     if n==15:
         assert m==0
         sys = "length a = 9\nlength B = 9\nlength c = %d\nB c\na B( + c* )\n" % n
@@ -168,26 +179,91 @@ def fourway(n,m):
     else:
         sys += ")\n"
 
-    print sys
+    pil_enum = CMI_enum(sys,8)
 
-#    pil_enum = CMI_enum(sys,8)
+    rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
 
-#    for s in pil_enum:
-#        print s
+    # trust that the enumerator always lists reactions in a consistent order!
+    if len(rates)==1:  # must be condensed, then
+        k_eff = float(rates[0].split()[1][1:])
+    elif len(rates)==3:  # must be reversible toehold, detailed model  (i.e. just one toehold)
+        k0=float(rates[0].split()[1][1:])   # forward binding rate
+        k1=float(rates[1].split()[1][1:])   # branch migration & strand displacement step
+        k2=float(rates[2].split()[1][1:])   # toehold dissociation
+        k_eff = k0*k1/(k1+k2)
+    elif len(rates)==13: # both toeholds bind reversibly, and hilarity ensues...
+        k = [ float(r.split()[1][1:]) for r in rates ]
+        # reactions come out in one of two possible orders, due to mysterious reasons...
+        if rates[0].find("18 -> 23") != -1:
+            assert rates[1].find("6 -> 10") != -1
+            assert rates[2].find("5 -> 10") != -1
+            assert rates[3].find("44 -> 19") != -1
+            assert rates[4].find("2 + 1 -> 6") != -1
+            assert rates[5].find("2 + 1 -> 5") != -1
+            assert rates[6].find("6 -> 18 + 19") != -1
+            assert rates[7].find("5 -> 23 + 44") != -1
+            assert rates[8].find("10 -> 23 + 19") != -1
+            assert rates[9].find("6 -> 2 + 1") != -1
+            assert rates[10].find("5 -> 2 + 1") != -1
+            assert rates[11].find("10 -> 6") != -1
+            assert rates[12].find("10 -> 5") != -1
+            b10 = k[8]/(k[8]+k[11]+k[12])
+            y6  = k[11]/(k[8]+k[11]+k[12])
+            y5  = k[12]/(k[8]+k[11]+k[12])
+            a5  = k[2]/(k[10]+k[7]+k[2])
+            b5  = k[7]/(k[10]+k[7]+k[2])
+            a6  = k[1]/(k[9]+k[6]+k[1])
+            b6  = k[6]/(k[9]+k[6]+k[1])
+            P10 = (b10+y6*b6+y5*b5)/(1-(y6*a6+y5*a5))
+            k_eff = (k[4]*a6+k[5]*a5)*P10 + (k[4]*b6+k[5]*b5)
+        elif rates[0].find("5 -> 10") != -1:
+            assert rates[1].find("6 -> 10") != -1
+            assert rates[2].find("43 -> 18") != -1
+            assert rates[3].find("19 -> 23") != -1
+            assert rates[4].find("1 + 2 -> 5") != -1
+            assert rates[5].find("1 + 2 -> 6") != -1
+            assert rates[6].find("5 -> 43 + 23") != -1
+            assert rates[7].find("6 -> 18 + 19") != -1
+            assert rates[8].find("10 -> 18 + 23") != -1
+            assert rates[9].find("5 -> 1 + 2") != -1
+            assert rates[10].find("6 -> 1 + 2") != -1
+            assert rates[11].find("10 -> 5") != -1
+            assert rates[12].find("10 -> 6") != -1
+            b10 = k[8]/(k[8]+k[11]+k[12])
+            y6  = k[12]/(k[8]+k[11]+k[12])
+            y5  = k[11]/(k[8]+k[11]+k[12])
+            a5  = k[0]/(k[9]+k[6]+k[0])
+            b5  = k[6]/(k[9]+k[6]+k[0])
+            a6  = k[1]/(k[10]+k[7]+k[1])
+            b6  = k[7]/(k[10]+k[7]+k[1])
+            P10 = (b10+y6*b6+y5*b5)/(1-(y6*a6+y5*a5))
+            k_eff = (k[5]*a6+k[4]*a5)*P10 + (k[5]*b6+k[4]*b5)
+        else:
+            print "CRAP.  Reactions are coming out in an unexpected order."
 
-#    rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
-#    return rates
+    if False:
+        for s in pil_enum:
+            print s
+        print "Calculated k_eff = %f /M/s" % k_eff
+        raw_input("Press enter to continue...")  # in python 3, just input()
 
-nm = [ (1,m) for m in range(1,5) ] + [ (2,m) for m in range(1,6) ] +[ (3,m) for m in range(1,7) ] + \
-     [ (4,m) for m in range(1,8) ] + [ (5,m) for m in range(1,8) ] +[ (6,m) for m in range(2,8) ]
+    return k_eff
 
-nm = [ (0,16), (2,16), (4,16), (6,16) ]
-for n in range(0,7,2):
-    for m in range(0,7,2):
-        nm += [(n,m)]
 
-if False:
-    for (n,m) in nm:
-        print fourway(n,m)
-    
+
+# (n,m,k1_fit) from and Nadine Dabby, Caltech PhD Thesis, Table 5.2  (note m,n have consistent meaning, but order in table is swapped.)
+k4way_exp = [ (0,0,0.034),(0,2,0.047),(2,2,0.10),(2,0,0.033),(4,2,0.93),(4,0,0.039),(0,4,0.97), \
+              (2,4,56),(6,2,490),(0,6,58),(4,4,770),(6,0,5.0),(2,6,9.4e3),(4,6,7.0e4),(6,4,2.8e5),(6,6,6.9e5) ]
+
+###### set this true to run the simulations
+if True:
+    k4way = [ (n,m, fourway(n,m)) for (n,m,v) in k4way_exp ]
+
+    print "Toehold-mediated 4-way rate constants, c.f. Dabby's PhD thesis, table 5.2."
+    for (model,exp) in zip(k4way,k4way_exp):
+        (n,m,k)=model
+        (n_exp,m_exp,k_exp)=exp
+        assert n==n_exp and m==m_exp
+        print "n=%d, m=%d : model k=%f,  experimental k=%f" % (n,m,k,k_exp)
+    raw_input("Press enter to continue...")
 

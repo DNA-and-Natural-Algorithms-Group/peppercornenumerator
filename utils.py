@@ -145,25 +145,17 @@ class Loop(object):
 		is_open = False
 		bases = 0
 		stems = 0
-		strand = None
 
-		# calculate stems, bases, and is_open
-		for (dom, struct, loc) in loop:
-			if struct is None:
-				bases += len(dom)
-
-				if strand is not None and loc[1] != strand:
-					is_open = True
-
-				strand = loc[1]
-
-			elif struct is not None:
-				stems += 1
-
-				if strand is not None and loc[1] != strand:
-					is_open = True
-
-				strand = struct[0]
+		# calculate stems, bases, and is_open   #loop re-written by EW
+		for step in loop:
+			if step==None:
+				is_open=True
+			else:
+				(dom, struct, loc) = step
+				if struct is None:
+					bases += len(dom)
+				elif struct is not None:
+					stems += 1
 
 		# update cached properties
 		self._is_open = is_open
