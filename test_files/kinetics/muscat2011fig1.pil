@@ -1,0 +1,5 @@
+hairpin = X1 X2 b( c y* ) a* Y1*
+robot = a b( c( + ) ) X2* X1*
+target = Y1( a b( y + c* ) Y2* )
+moved_robot = a b( c( + ) ) Y2* Y1*
+
