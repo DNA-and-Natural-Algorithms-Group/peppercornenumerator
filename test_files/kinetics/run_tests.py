@@ -81,7 +81,7 @@ k3way_exp = [1.40, 8.17, 144, 1.08e3, 5.05e4, 9.64e5, 2.36e6, 3.22e6, 3.15e6, 2.
 k3way_exp = zip( range(0,11)+[15], k3way_exp )
 
 ###### set this true to run the simulations
-if False:
+if True:
     k3way = [ (n,exchange(n,0)) for n in range(1,16) ]
 
     print "Toehold-mediate strand displacement rate constants, c.f. Zhang & Winfree 2009, figure 3B.  n=toehold length."
