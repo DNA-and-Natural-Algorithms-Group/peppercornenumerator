@@ -3,15 +3,19 @@ import subprocess
 
 # This is a test of the command-line parsing, as well as getting number for kinetics comparisons
 
-def CMI_enum(inputstring,maxtoesize):
+def CMI_enum(inputstring,maxtoesize=6,semantics='detailed'):
     """Calls enumerator via the command line interface, first writing input string as a file, then reading the output file."""
 
     text_file = open("tmp-run.pil", "w")
     text_file.write(inputstring)
     text_file.close()
 
-#    cmd = ['enumerator.py','tmp-run.pil','-c','--release-cutoff',str(maxtoesize)]
-    cmd = ['enumerator.py','tmp-run.pil','--release-cutoff',str(maxtoesize)]
+    if semantics=='condensed':
+        cmd = ['enumerator.py','tmp-run.pil','-c','--release-cutoff',str(maxtoesize)]
+    elif semantics=='detailed':
+        cmd = ['enumerator.py','tmp-run.pil','--release-cutoff',str(maxtoesize)]
+    else:
+        raise NameError( "semantics must be either 'condensed' or 'detailed'." )
 
     subprocess.Popen(cmd).wait()
 
@@ -40,15 +44,12 @@ def exchange(n,m):
     elif m>0:
         sys = "length a = 16\nlength b = %d\nlength B = %d\nlength c = %d\nlength d = %d\nB c\na b(B( + d* c* ))\n" % (m,20-m,n,15-n)
 
-    pil_enum = CMI_enum(sys,8)
-
+    pil_enum = CMI_enum(sys,8,'detailed')
 
     rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
 
     # trust that the enumerator always lists reactions in a consistent order!
-    if len(rates)==1:  # must be condensed, then
-        k_eff = float(rates[0].split()[1][1:])
-    elif len(rates)==2:  # must be irreversible toehold, detailed model  **** or condensed toehold exchange
+    if len(rates)==2:  # must be irreversible toehold, detailed model  
         k_eff = float(rates[0].split()[1][1:])   # forward binding rate
     elif len(rates)==3:  # must be reversible toehold, detailed model
         k0=float(rates[0].split()[1][1:])   # forward binding rate
@@ -63,6 +64,15 @@ def exchange(n,m):
         k4=float(rates[4].split()[1][1:])   # invading toehold dissociation
         k5=float(rates[5].split()[1][1:])   # incumbent toehold dissociation
         k_eff = k0*(k5/(k3+k5)) / ( (k2+k4)/k2 - k3/(k3+k5) )
+        
+    if False: # when condensed kinetics is available, enable this
+        pil_enum = CMI_enum(sys,8,'condensed')
+        rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
+        if len(rates)==1:  # irreversibble toehold-mediated strand displacemen
+            k_con = float(rates[0].split()[1][1:])
+        elif len(rates)==2:  # reversible toehold exchange   #### check by hand to make sure first one is always forward
+            k_con = float(rates[0].split()[1][1:])   # forward binding rate
+        # now must modify stuff below to output & compare condensed rates
 
     if False:
         for s in pil_enum:

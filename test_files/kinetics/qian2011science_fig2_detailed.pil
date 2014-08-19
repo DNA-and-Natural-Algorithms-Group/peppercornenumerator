@@ -1,0 +1,30 @@
+# This is the AND/OR gate seesaw network from Figure 2 of Qian & Winfree, Science (2011)
+# but implemented explicitly using the details of clamping and extended toeholds on thresholds per figure S16.
+
+# Enumeration explores a variety of remote-toehold-type strand displacement steps involving the 2nt clamp "c".
+# These are valid, but seem to lead to some kind of infinite loop in the enumerator, 
+# even when started with just the "sumgate" by itself.
+
+length t = 3
+length c = 2
+length s1a = 4
+length s1b = 7
+length s2a = 4
+length s2b = 7
+length s3a = 4
+length s3b = 7
+length s5a = 4
+length s5b = 7
+length s6a = 4
+length s6b = 7
+length s7a = 4
+length s7b = 7
+
+# input1 = c s2a s2b c t c s1a s1b c
+# input2 = c s2a s2b c t c s3a s3b c
+sumgate = c s5a s5b c(t(c( s2a( s2b( c( + c* t* ))))))
+
+# threshold = c( s5a( s5b( c( + s2a* c* t* ))))
+# ampgate = c s6a s6b c(t(c( s5( s5b( c( + c* t* ))))))
+# fuel = c s7a s7b c t c s5a s5b c
+# reporter = c( s6a( s6b( c( + c* t* ))))

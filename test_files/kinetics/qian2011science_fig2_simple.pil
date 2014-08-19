@@ -1,0 +1,13 @@
+# This is the AND/OR gate seesaw network from Figure 2 of Qian & Winfree, Science (2011)
+# Here we make two simplifications: (a) we don't extend the threshold's toehold, and (b) we don't include clamps.
+# The detailed reactions are a mess, but the condensed reactions can be easily confirmed to be correct.
+# Kinetics has not been examined.
+
+length T = 5
+input1 = S2 T S1
+input2 = S2 T S3
+sumgate = S5 T( S2( + T* ))
+threshold = S5( + T* )
+ampgate = S6 T( S5( + T* ) )
+fuel = S7 T S5
+reporter = S6( + T* )
