@@ -1,4 +1,14 @@
 
+# must be run in this directory, because the link to enumerator.py is hard-coded.
+
+# you can turn on & off the three comparison runs by editing the flags here
+do3way = True
+do3way_exchange = True
+do4way = True
+
+# you can turn on & off the case-by-case examination of the enumerated output PIL file here
+watch = False
+
 import subprocess
 
 # This is a test of the command-line parsing, as well as getting number for kinetics comparisons
@@ -11,9 +21,9 @@ def CMI_enum(inputstring,maxtoesize=6,semantics='detailed'):
     text_file.close()
 
     if semantics=='condensed':
-        cmd = ['enumerator.py','tmp-run.pil','-c','--release-cutoff',str(maxtoesize)]
+        cmd = ['../../enumerator.py','tmp-run.pil','-c','--release-cutoff',str(maxtoesize)]
     elif semantics=='detailed':
-        cmd = ['enumerator.py','tmp-run.pil','--release-cutoff',str(maxtoesize)]
+        cmd = ['../../enumerator.py','tmp-run.pil','--release-cutoff',str(maxtoesize)]
     else:
         raise NameError( "semantics must be either 'condensed' or 'detailed'." )
 
@@ -45,8 +55,11 @@ def exchange(n,m):
         sys = "length a = 16\nlength b = %d\nlength B = %d\nlength c = %d\nlength d = %d\nB c\na b(B( + d* c* ))\n" % (m,20-m,n,15-n)
 
     pil_enum = CMI_enum(sys,8,'detailed')
-
     rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
+    if watch:
+        for s in pil_enum:
+            print s
+
 
     # trust that the enumerator always lists reactions in a consistent order!
     if len(rates)==2:  # must be irreversible toehold, detailed model  
@@ -65,22 +78,22 @@ def exchange(n,m):
         k5=float(rates[5].split()[1][1:])   # incumbent toehold dissociation
         k_eff = k0*(k5/(k3+k5)) / ( (k2+k4)/k2 - k3/(k3+k5) )
         
-    if False: # when condensed kinetics is available, enable this
-        pil_enum = CMI_enum(sys,8,'condensed')
-        rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
-        if len(rates)==1:  # irreversibble toehold-mediated strand displacemen
-            k_con = float(rates[0].split()[1][1:])
-        elif len(rates)==2:  # reversible toehold exchange   #### check by hand to make sure first one is always forward
-            k_con = float(rates[0].split()[1][1:])   # forward binding rate
-        # now must modify stuff below to output & compare condensed rates
+    pil_enum = CMI_enum(sys,8,'condensed')
+    rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
 
-    if False:
+    if len(rates)==1:  # irreversibble toehold-mediated strand displacemen
+        k_con = float(rates[0].split()[1][1:])
+    elif len(rates)==2:  # reversible toehold exchange   #### check by hand to make sure first one is always forward
+        k_con = float(rates[0].split()[1][1:])   # forward binding rate
+    # now must modify stuff below to output & compare condensed rates
+
+    if watch:
         for s in pil_enum:
             print s
-        print "Calculated k_eff = %f /M/s" % k_eff
+        print "Calculated k_eff = %f /M/s from detailed reactions and k_con = %f /M/s from condensed reactions." % (k_eff,k_con)
         raw_input("Press enter to continue...")  # in python 3, just input()
 
-    return k_eff
+    return (k_eff,k_con)
 
 # now run the simulations
 
@@ -91,22 +104,23 @@ k3way_exp = [1.40, 8.17, 144, 1.08e3, 5.05e4, 9.64e5, 2.36e6, 3.22e6, 3.15e6, 2.
 k3way_exp = zip( range(0,11)+[15], k3way_exp )
 
 ###### set this true to run the simulations
-if True:
+if do3way:
     k3way = [ (n,exchange(n,0)) for n in range(1,16) ]
 
     print "Toehold-mediate strand displacement rate constants, c.f. Zhang & Winfree 2009, figure 3B.  n=toehold length."
+    print " toehold :  detailed/analytic :     condensed     :    experimental"
     i=0
     j=0
     while i<len(k3way) and j<len(k3way_exp):
         if k3way[i][0]==k3way_exp[j][0]:
-            print "n=%d : model k=%f,  experimental k=%f" % (k3way[i][0],k3way[i][1],k3way_exp[j][1])
+            print "  n = %2d : k_eff = %10.4g : k_con = %10.4g : k_exp = %10.4g" % (k3way[i][0],k3way[i][1][0],k3way[i][1][1],k3way_exp[j][1])
             i=i+1
             j=j+1
         elif k3way[i][0]<k3way_exp[j][0]:
-            print "n=%d : model k=%f,  experimental k=none" % (k3way[i][0],k3way[i][1])
+            print "  n = %2d : k_eff = %10.4g : k_con = %10.4g : k_exp = %10s" % (k3way[i][0],k3way[i][1][0],k3way[i][1][1],'None')
             i=i+1
         else:
-            print "n=%d : model k=none,  experimental k=%f" % (k3way_exp[j][0],k3way_exp[j][1])
+            print "  n = %2d : k_eff = %10s : k_con = %10s : k_exp = %10.4g" % (k3way_exp[j][0],'None','None',k3way_exp[j][1])
             j=j+1
     raw_input("Press enter to continue...")
 
@@ -131,15 +145,16 @@ k3wayx_exp = [(1,4,7.70),(1,3,5.48),(1,2,23.5),(1,1,18.9), \
   (8,7,1.94e6),(8,6,2.68e6),(8,5,3.14e6),(8,4,3.37e6)        ]
 
 ###### set this true to run the simulations
-if True:
+if do3way_exchange:
     k3wayx = [ (n,m, exchange(n,m)) for (n,m,v) in k3wayx_exp ]
 
     print "Toehold exchange rate constants, c.f. Zhang & Winfree 2009, figure 4B.  n=incoming, m=incumbent. "
+    print "invading,incumbent : detailed/analytic :      condensed      :     experimental"
     for (model,exp) in zip(k3wayx,k3wayx_exp):
-        (n,m,k)=model
+        (n,m,(k_eff,k_con))=model
         (n_exp,m_exp,k_exp)=exp
         assert n==n_exp and m==m_exp
-        print "n=%d, m=%d : model k=%f,  experimental k=%f" % (n,m,k,k_exp)
+        print "   n=%2d, m=%2d      :  k_eff=%10.4g :  k_con = %10.4g :  k_exp = %10.4g" % (n,m,k_eff,k_con,k_exp)
     raw_input("Press enter to continue...")
 
 def fourway(n,m):
@@ -150,7 +165,7 @@ def fourway(n,m):
     N = 6-n
     
     if n==0 and m==0:
-        return 0   # Leak not modeled, don't bother.
+        return (0,0)   # Leak not modeled, don't bother.  detailed and condensed semantics both give 0.
     if n==15:
         assert m==0
         sys = "length a = 9\nlength B = 9\nlength c = %d\nB c\na B( + c* )\n" % n
@@ -189,12 +204,14 @@ def fourway(n,m):
     else:
         sys += ")\n"
 
-    pil_enum = CMI_enum(sys,8)
-
+    pil_enum = CMI_enum(sys,8,'detailed')
     rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
+    if watch:
+        for s in pil_enum:
+            print s
 
     # trust that the enumerator always lists reactions in a consistent order!
-    if len(rates)==1:  # must be condensed, then
+    if len(rates)==1:  # must be condensed, then, so must not actually ever happen here.
         k_eff = float(rates[0].split()[1][1:])
     elif len(rates)==3:  # must be reversible toehold, detailed model  (i.e. just one toehold)
         k0=float(rates[0].split()[1][1:])   # forward binding rate
@@ -251,14 +268,22 @@ def fourway(n,m):
         else:
             print "CRAP.  Reactions are coming out in an unexpected order."
 
-    if False:
+    pil_enum = CMI_enum(sys,8,'condensed')
+    rates = [s for s in pil_enum if len(s)>0 and s[0]=='k']
+
+    if len(rates)==1:  # irreversibble toehold-mediated strand displacemen
+        k_con = float(rates[0].split()[1][1:])
+    elif len(rates)==2:  # reversible toehold exchange   #### check by hand to make sure first one is always forward
+        k_con = float(rates[0].split()[1][1:])   # forward binding rate
+    # now must modify stuff below to output & compare condensed rates
+
+    if watch:
         for s in pil_enum:
             print s
-        print "Calculated k_eff = %f /M/s" % k_eff
+        print "Calculated k_eff = %f /M/s from detailed reactions and k_con = %f /M/s from condensed reactions." % (k_eff,k_con)
         raw_input("Press enter to continue...")  # in python 3, just input()
 
-    return k_eff
-
+    return (k_eff,k_con)
 
 
 # (n,m,k1_fit) from and Nadine Dabby, Caltech PhD Thesis, Table 5.2  (note m,n have consistent meaning, but order in table is swapped.)
@@ -266,14 +291,15 @@ k4way_exp = [ (0,0,0.034),(0,2,0.047),(2,2,0.10),(2,0,0.033),(4,2,0.93),(4,0,0.0
               (2,4,56),(6,2,490),(0,6,58),(4,4,770),(6,0,5.0),(2,6,9.4e3),(4,6,7.0e4),(6,4,2.8e5),(6,6,6.9e5) ]
 
 ###### set this true to run the simulations
-if True:
+if do4way:
     k4way = [ (n,m, fourway(n,m)) for (n,m,v) in k4way_exp ]
 
     print "Toehold-mediated 4-way rate constants, c.f. Dabby's PhD thesis, table 5.2."
+    print "  toehold lengths  : detailed/analytic :      condensed      :     experimental"
     for (model,exp) in zip(k4way,k4way_exp):
-        (n,m,k)=model
+        (n,m,(k_eff,k_con))=model
         (n_exp,m_exp,k_exp)=exp
         assert n==n_exp and m==m_exp
-        print "n=%d, m=%d : model k=%f,  experimental k=%f" % (n,m,k,k_exp)
+        print "   n=%2d, m=%2d      :  k_eff=%10.4g :  k_con = %10.4g :  k_exp = %10.4g" % (n,m,k_eff,k_con,k_exp)
     raw_input("Press enter to continue...")
 
