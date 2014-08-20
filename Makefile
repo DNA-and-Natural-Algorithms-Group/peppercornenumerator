@@ -1,6 +1,7 @@
 .PHONY: tests
 .PHONY: profile
 .PHONY: docs
+.PHONY: README
 
 tests:
 	nosetests -v --with-coverage --cover-package=enumerator --cover-html test_condense.py test_enumerator.py test_input.py test_output.py test_reactions.py test_utils.py
@@ -11,6 +12,9 @@ profile:
 
 docs: 
 	cd docs && $(MAKE) html
+
+README: README.pdf README.html
+	
 
 README.pdf: README.md
 	pandoc README.md -o README.pdf

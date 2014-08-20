@@ -10,6 +10,12 @@ This document describes the architecture and API for the "Peppercorn" domain-lev
 
 .. toctree::
 
+
+API Quickstart
+==============
+
+.. include:: quickstart.rst
+
 Architecture
 ============
 

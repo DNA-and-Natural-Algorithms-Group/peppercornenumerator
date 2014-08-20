@@ -640,17 +640,7 @@ def main(argv):
 
 	# Parse command-line arguments
 	parser = argparse.ArgumentParser(description="""
-		Domain-level nucleic acid reaction enumerator
-
-		Usage examples:
-
-			Load the file `input.pil`
-				enumerator.py input.pil
-
-			Load the file `system.pil`, then generate `system-enum.crn`, 
-			`system-enum.pil`, and `system-enum.sbml`:
-				enumeratpr.py -o crn,pil,sbml input.pil
-
+		Domain-level nucleic acid reaction enumerator. See README.{html, pdf} for usage examples.
 		""")
 	parser.add_argument('input_filename', action='store', default=None, \
 		help="Path to the input file (same as --infile)")

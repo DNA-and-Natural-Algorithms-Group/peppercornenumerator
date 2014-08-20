@@ -15,40 +15,54 @@
 </div>
 <h2 id="overview">Overview</h2>
 <p>This package predicts the set of possible reactions between a set of initial nucleic acid complexes. Complexes are comprised of strands, which are subdivided into &quot;domains&quot;---contiguous regions of nucleotide bases which participate in Watson-Crick hybridization. The enumerator only considers reactions between complexes with complementary domains. At this point, only unpseudoknotted intermediate complexes are considered.</p>
-<p>This document describes basic usage of the software, automatic generation of API documentation, and running of unit tests. There's a separate document, <code>architecture.pdf</code>, which describes the internal architecture of the software.</p>
+<p>This document describes basic usage of the software, automatic generation of API documentation, and running of unit tests. API documentation is found in the <code>docs</code> subdirectory.</p>
 <p>This package is written for Python 2.7; Python must be installed and in the user's <code>path</code> in order to run the program.</p>
 <h2 id="usage">Usage</h2>
-<pre><code>usage: enumerator.py [-h] [--infile INPUT_FILENAME]
-                     [--outfile OUTPUT_FILENAME] [-o OUTPUT_FORMAT]
-                     [-i INPUT_FORMAT] [-c]
-                     [--max-complex-size MAX_COMPLEX_SIZE]
-                     [--max-complexes MAX_COMPLEX_COUNT]
-                     [--max-reactions MAX_REACTION_COUNT]
-
-Domain-level nucleic acid reaction enumerator
+<pre><code>positional arguments:
+  input_filename        Path to the input file (same as --infile)
 
 optional arguments:
   -h, --help            show this help message and exit
-  --infile INPUT_FILENAME
-                        Path to the input file (default: None)
+  --infile INFILE       Path to the input file (same as listing the input
+                        filename after all arguments)
   --outfile OUTPUT_FILENAME
-                        Path to the output file (default: None)
-  -o OUTPUT_FORMAT      Desired format for the output file; one of: pil, crn,
-                        standard, json, legacy, sbml, graph (default:
-                        standard)
-  -i INPUT_FORMAT       Desired format for the input file; one of: pil,
-                        standard, json (default: standard)
+                        Path to the output file (default: use the input
+                        filename, + &#39;-enum&#39;, then add an extension based on
+                        the
+  -i INPUT_FORMAT       Parse the input file using this format; one of: enum,
+                        pil, json. (default: guess from the extension of
+                        --infile)
+  -o OUTPUT_FORMAT      Write the output file using this format; one or more
+                        (comma-separated) of :pil, crn, enjs, json, legacy,
+                        test, sbml, graph. (default: guess from the extension
+                        of --outfile)
   -c                    Condense reactions into only resting complexes
                         (default: False)
+  -r                    Compute reaction rates (default: True)
+  -d                    Dry run---read input, write output; do not enumerate
+                        any reactions. (default: False)
   --max-complex-size MAX_COMPLEX_SIZE
                         Maximum number of strands allowed in a complex (used
-                        to prevent polymerization) (default: None)
-  --max-complexes MAX_COMPLEX_COUNT
+                        to prevent polymerization) (default: 6)
+  --max-complex-count MAX_COMPLEX_COUNT
                         Maximum number of complexes that may be enumerated
-                        before the enumerator halts. (default: None)
-  --max-reactions MAX_REACTION_COUNT
+                        before the enumerator halts. (default: 200)
+  --max-reaction-count MAX_REACTION_COUNT
                         Maximum number of reactions that may be enumerated
-                        before the enumerator halts. (default: None)</code></pre>
+                        before the enumerator halts. (default: 1000)
+  --release-cutoff RELEASE_CUTOFF
+                        Maximum number of bases that will be released
+                        spontaneously in an `open` reaction. (default: 6)
+  --bfs-ish             When searching for bimolecular reactions, look to the
+                        oldest complexes first. (default: False)
+  --profile             Enable statistical profiling</code></pre>
+<h2 id="usage-examples">Usage Examples</h2>
+<p>Load the file <code>system.pil</code>, write results to <code>system-enum.pil</code>:</p>
+<pre><code>enumerator.py system.pil</code></pre>
+<p>Load the file <code>system.pil</code>, then generate <code>system-enum.crn</code>, <code>system-enum.pil</code>, and <code>system-enum.sbml</code>:</p>
+<pre><code>enumerator.py -o crn,pil,sbml system.pil</code></pre>
+<p>Load the file <code>system.pil</code>, then write the results to <code>output.sbml</code>:</p>
+<pre><code>enumerator.py system.pil --outfile output.sbml</code></pre>
 <h2 id="input-formats">Input formats</h2>
 <p>There are 2 input formats available, which may be specified using the <code>-i</code> option:</p>
 <ul>

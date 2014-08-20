@@ -1491,8 +1491,8 @@ def find_on_loop(reactant, start_loc, direction, filter):
 
 
 	Returns an array of tuples: `(loc, before, after)`, where:
-		-	loc is a (strand index, domain index) pair indicating the position
-			of the matched domain
+		-	`loc` is a (strand index, domain index) pair indicating the 
+			position of the matched domain
 		-	`before` is a list of (domain, struct, loc) triples giving the 
 			domains after `start_loc` but before the matched domain on the loop
 			(or None instead of triple where there is a break in the loop)
@@ -1500,23 +1500,33 @@ def find_on_loop(reactant, start_loc, direction, filter):
 			domains after the matched domain but before `start_loc` on the loop
 			(or None instead of triple where there is a break in the loop)
 
-	Where a loop involves stems, only one of the complementary domains will be listed in the
-	array of tuples, specifically, the "first" one in the search direction.
-	Thus, a multiloop with n unpaired domains and m stems will result, for closed loops,
-	in `len(before+after) == n+m-2`, as the match location and `start_loc` are omitted.
+	Where a loop involves stems, only one of the complementary domains will be 
+	listed in the array of tuples, specifically, the "first" one in the search 
+	direction. Thus, a multiloop with n unpaired domains and m stems will 
+	result, for closed loops, in `len(before+after) == n+m-2`, as the match 
+	location and `start_loc` are omitted.
 
-	`before` and `after` are converted to Loop objects (see utils.py) prior to being returned, so 
-	that the number of bases and number of stems and open/closed status is readily accessible.
+	`before` and `after` are converted to Loop objects (see utils.py) prior 
+	to being returned, so that the number of bases and number of stems and 
+	open/closed status is readily accessible.
 
-	# Returns an array of tuples: `(loc, domains, stems)`, where:
-	# 	-	loc is a (strand index, domain index) pair indicating the position
-	# 		of the matched domain
-	# 	-	domains is a list of unpaired domains encountered in between `start_loc`
-	# 		and `loc`
-	# 	-	stems is an array of duplex domains encountered in between `start_loc`
-	# 		and `loc`
+	Note 1: `before` and `after` refer to the partial loops between `start_loc` 
+	and each of the results, _in the `direction`_ of the search. For example:
+  
+           A
+	      ____
+	     /    \ 
+	 x  |     |  x*
+	    |
+	     \____> 3'
 
-	Note that if the domain passed to start_loc is a duplex, the results may 
+	        B
+
+	If `start_loc` pointed to `x` and `direction` is +1, then `before` would 
+	be `A` and `after` would be `B`. If instead `direction` is -1, then 
+	`before` is `B` and `after` is `A`. 
+
+	Note 2: If the domain passed to `start_loc` is a duplex, the results may 
 	be unexpected:
 
 	       ___  x  ___

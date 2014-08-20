@@ -373,12 +373,23 @@ def resolve_kernel(lines, domains, strands, structures_to_strands, complexes):
 		complex.check_structure()
 
 def from_kernel(lines):
+	# split string into lines if necessary
+	if isinstance(lines, basestring):
+		lines = lines.split("\n")
+
+	# remove blank lines
+	lines = filter(None, lines)
+
 	domains = {}
 	strands = {}
 	structures_to_strands = {}
 	complexes = {}
 	resolve_kernel(lines, domains, strands, structures_to_strands, complexes)
 	return (domains, strands, complexes)
+
+def enum_from_kernel(lines):
+	(domains, strands, complexes) = from_kernel(lines)
+	return Enumerator(domains, strands, complexes)
 
 def input_pil(filename):
 	"""
