@@ -316,10 +316,11 @@ def condense_graph(enumerator, compute_rates=True):
         (w,v) = np.linalg.eig(T)
 
         # find eigenvector corresponding to eigenvalue zero
+        epsilon = 1e-14
         try:
-            s = next(v[i,:] for (i, x) in enumerate(w) if abs(x) < 1e-15) # semi-arbitrary choice of epsilon based on what seemed to work with numpy
+            s = next(v[i,:] for (i, x) in enumerate(w) if abs(x) < epsilon) # semi-arbitrary choice of epsilon based on what seemed to work with numpy
         except(StopIteration):
-            raise Exception("Unable to find stationary distribution for resting state. No eigenvector with eigenvalue zero for transition matrix; Markov chain may be periodic.")
+            raise Exception("Unable to find stationary distribution for resting state. No eigenvector with eigenvalue less than epsilon = %e for transition matrix; Markov chain may be periodic, or epsilon may be too high." % epsilon)
 
         # return dict mapping complexes to stationary probabilities
         return { c: s[i] for (c,i) in complex_indices.iteritems() }

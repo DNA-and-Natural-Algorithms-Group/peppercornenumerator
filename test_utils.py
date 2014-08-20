@@ -37,8 +37,11 @@ class LoopTests(unittest.TestCase):
 		complex = complexes['C']
 
 		# skip the closing helical domain
-		for strand_index, dom_index in [(0,0), (0,1), (0,2), (1,0)]:
-			loc = (strand_index, dom_index)
+		for loc in [(0,0), (0,1), (0,2), None, (1,0)]:
+			if loc is None:
+				parts.append(None)
+				continue
+
 			domain = complex.get_domain(loc)
 			parts.append( (domain, complex.get_structure(loc), loc) )
 			
