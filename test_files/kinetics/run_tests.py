@@ -108,7 +108,7 @@ if do3way:
     k3way = [ (n,exchange(n,0)) for n in range(1,16) ]
 
     print "Toehold-mediate strand displacement rate constants, c.f. Zhang & Winfree 2009, figure 3B.  n=toehold length."
-    print " toehold :  detailed/analytic :     condensed     :    experimental"
+    print " toehold :  detailed+algebra  :     condensed     :    experimental"
     i=0
     j=0
     while i<len(k3way) and j<len(k3way_exp):
@@ -149,7 +149,7 @@ if do3way_exchange:
     k3wayx = [ (n,m, exchange(n,m)) for (n,m,v) in k3wayx_exp ]
 
     print "Toehold exchange rate constants, c.f. Zhang & Winfree 2009, figure 4B.  n=incoming, m=incumbent. "
-    print "invading,incumbent : detailed/analytic :      condensed      :     experimental"
+    print "invading,incumbent : detailed+algebra  :      condensed      :     experimental"
     for (model,exp) in zip(k3wayx,k3wayx_exp):
         (n,m,(k_eff,k_con))=model
         (n_exp,m_exp,k_exp)=exp
@@ -295,7 +295,7 @@ if do4way:
     k4way = [ (n,m, fourway(n,m)) for (n,m,v) in k4way_exp ]
 
     print "Toehold-mediated 4-way rate constants, c.f. Dabby's PhD thesis, table 5.2."
-    print "  toehold lengths  : detailed/analytic :      condensed      :     experimental"
+    print "  toehold lengths  : detailed+algebra  :      condensed      :     experimental"
     for (model,exp) in zip(k4way,k4way_exp):
         (n,m,(k_eff,k_con))=model
         (n_exp,m_exp,k_exp)=exp

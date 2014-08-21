@@ -1,0 +1,41 @@
+# Figure 2 of Xi Chen, JACS 2012, Expanding the rule set of DNA circuitry with associative toehold activation.
+#
+# values read "by eye":
+#
+# for direct associative toeholds (1 stem, 0 bases in intervening loop)
+# toehold lengths 8, 10, 14 give second order bimolecular rate constants 6x10^2, 8x10^3, 1x10^5 /M/s (w/o 2nt spacer)
+#
+# for bulged associative toeholds (1 stem, 2 bases in intervening loop)
+# toehold lengths 8, 10, 14 give second order bimolecular rate constants 3x10^3, 5x10^4, 2x10^5 /M/s (w/ 2nt spacer)
+#
+# compared to regular toehold-mediated strand displacement (0 stems, 0 bases)
+# toehold length 8 gives second order bimolecular rate constants 2x10^5 /M/s 
+
+length T = 8
+length D = 24
+length C = 3
+length P = 19
+length h = 9
+length p = 2
+length b = 2
+
+substrate = C( D( T + )) P
+direct_invader = T* h(p) D*
+bulged_invader = T* b h(p) D*
+invader = T* D*
+
+# ../../enumerator.py xichen2012fig2.pil --release-cutoff 8 -c
+# more xichen2012fig2-enum.pil
+#
+# this generates a lot of detailed reactions, but the condensed reactions seem plausible, 
+# other than the remote toehold slowdown not being enough.
+#
+# however, when preparing to test larger toeholds, the combinatorics gets 5x worse (due to the hairpin opening?)
+# and then some rates go negative during the condensation, even when only one invader strand is used.
+#
+# ../../enumerator.py xichen2012fig2.pil --release-cutoff 9 -c
+# more xichen2012fig2-enum.pil
+# 
+# so (a) there is a numerics issue, and (b) we might want to have a different release-cutoff for 1-1 and 1-2 reactions.
+# once this issue is fixed, I will re-evaluate the remote-toehold initiation rate formula, presumably to slow it down...
+# (but note that the even the "standard" toehold displacement is 30x slower than our lab's results... why?)
