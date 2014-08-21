@@ -128,14 +128,3 @@ doctest: architecture.rst
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
-
-
-architecture.rst: architecture.md
-	pandoc architecture.md -o architecture.rst
-
-architecture.pdf: architecture.md
-	pandoc architecture.md -o architecture.pdf
-
-architecture.html: architecture.md
-	pandoc -s architecture.md -o architecture.html
-
