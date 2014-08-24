@@ -1,4 +1,8 @@
 # This is the AND/OR gate seesaw network from Figure 2 of Qian & Winfree, Science (2011)
+#
+# TAE + 12.5 mM Mg++, at 20C (but sqrt was at 25C)  
+# (paper does not mention carrier DNA, but Lulu's notebook says 1.7uM poly-T20 carrier for sqrt, others have a bit more or a bit less)
+#
 # Here we make two simplifications: (a) we don't extend the threshold's toehold, and (b) we don't include clamps.
 # The detailed reactions are a mess, but the condensed reactions can be easily confirmed to be correct.
 # Kinetics has not been examined.
@@ -11,3 +15,4 @@ threshold = S5( + T* )
 ampgate = S6 T( S5( + T* ) )
 fuel = S7 T S5
 reporter = S6( + T* )
+

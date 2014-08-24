@@ -2,8 +2,16 @@
 # must be run in this directory, because the link to enumerator.py is hard-coded.
 
 # you can turn on & off the three comparison runs by editing the flags here
+
+# Zhang & Winfree 2009, figures 3B and 4B, toehold-mediated strand displacement and toehold exchange, respectively
+# TE + 12.5 mM Mg++, pH 8.0, 25 C
+# (1 uM poly-T20 carrier DNA added to all samples with 1uM or less of sample DNA)
 do3way = True
 do3way_exchange = True
+
+# Nadine Dabby PhD thesis, table 5.2, 
+# TAE = 12.5 mM Mg++, 25 C, 
+# (1 uM poly-T20 carrier DNA added to all samples with 10nM or less of sample DNA, and pipet tips pre-absorbed with carrier before use)
 do4way = True
 
 # you can turn on & off the case-by-case examination of the enumerated output PIL file here
@@ -107,7 +115,7 @@ k3way_exp = zip( range(0,11)+[15], k3way_exp )
 if do3way:
     k3way = [ (n,exchange(n,0)) for n in range(1,16) ]
 
-    print "Toehold-mediate strand displacement rate constants, c.f. Zhang & Winfree 2009, figure 3B.  n=toehold length."
+    print "Toehold-mediate strand displacement rate constants, c.f. Zhang & Winfree 2009, figure 3B. TE+12.5mM Mg++ at 25C.  n=toehold length."
     print " toehold :  detailed+algebra  :     condensed     :    experimental"
     i=0
     j=0
@@ -148,7 +156,7 @@ k3wayx_exp = [(1,4,7.70),(1,3,5.48),(1,2,23.5),(1,1,18.9), \
 if do3way_exchange:
     k3wayx = [ (n,m, exchange(n,m)) for (n,m,v) in k3wayx_exp ]
 
-    print "Toehold exchange rate constants, c.f. Zhang & Winfree 2009, figure 4B.  n=incoming, m=incumbent. "
+    print "Toehold exchange rate constants, c.f. Zhang & Winfree 2009, figure 4B.  TE+12.5mM Mg++ at 25C.  n=incoming, m=incumbent. "
     print "invading,incumbent : detailed+algebra  :      condensed      :     experimental"
     for (model,exp) in zip(k3wayx,k3wayx_exp):
         (n,m,(k_eff,k_con))=model
@@ -294,7 +302,7 @@ k4way_exp = [ (0,0,0.034),(0,2,0.047),(2,2,0.10),(2,0,0.033),(4,2,0.93),(4,0,0.0
 if do4way:
     k4way = [ (n,m, fourway(n,m)) for (n,m,v) in k4way_exp ]
 
-    print "Toehold-mediated 4-way rate constants, c.f. Dabby's PhD thesis, table 5.2."
+    print "Toehold-mediated 4-way rate constants, c.f. Dabby's PhD thesis, table 5.2.  TAE+12.5mM Mg++ at 25C."
     print "  toehold lengths  : detailed+algebra  :      condensed      :     experimental"
     for (model,exp) in zip(k4way,k4way_exp):
         (n,m,(k_eff,k_con))=model

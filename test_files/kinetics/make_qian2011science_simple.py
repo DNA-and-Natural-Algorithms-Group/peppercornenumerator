@@ -1,5 +1,5 @@
 
-# write python script to make circuit.  concentrations aren't given
+# python script to make circuit.  concentrations aren't given.
 
 # use same names and numbers as Qian & Winfree, Science, 2011 supp info figure S10.  also figure S4.
 

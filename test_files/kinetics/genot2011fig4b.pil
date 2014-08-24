@@ -1,7 +1,25 @@
-length d = 7
-length t = 7
+# ss-ss remote toeholds from Genot et al 2011, figure 4b (other panels can be done similarly)
+# buffer: TE + 12.5 mM Mg at 25 C and pH 8.0 (paper does not mention carrier DNA)
+#
+# panel a:  t = 9 or 11.  s = 0.  kinetics saturated at 3x10^6 /M/s and toehold binding is essentially irreversible.
+# panel b:  t = 9 or 11.  s = 1.  roughly estimate k = 8x10^5 /M/s and 3x10^6 /M/s respectively (approx 4-fold slowdown).
+# panel c:  t = 6.  s=0.  roughly estimate k = 7x10^4 /M/s.  (Zhang & Winfree params give 2x10^6 for n=6, 5x10^4 for n=4.)
+# panel d:  with t=14, these are all rate-limited by the unimolecular step, and thus not compatible with our condensation assumptions.
+
+# note that since the enumerator uses Zhang & Winfree parameters, the equivalent toehold lengths for panel b would be 6 and 7.
+# there is little clear justification for this, other than mysteriously Genot has a slow 6nt toehold rate, 
+# so we multiply all toehold lengths by 2/3.
+
+length d = 8  # d + t = 14 for full substrate toehold
+length t = 6
 length b = 22
 length s = 1
 invading = t b
-substrate = b( + ) s t* d*
+remote_substrate = b( + ) s t* d*
+proximal_substrate = b( + ) t* d*
 
+# ../../enumerator.py genot2011fig4b.pil --release-cutoff 8 -c
+#
+# changing t to 6 and 7 gives 1.5x10^5 /M/s and 1.2x10^6 /M/s respectively for the remote substate (s==1).
+# respectively 1.6x10^6 /M/s and 2.1x10^6 /M/s for the proximal substrate (s==0).
+# that is, for the shorter toehold, we get a 10-fold slowdown in the model, compared to a 4-fold slowdown in the experiments.

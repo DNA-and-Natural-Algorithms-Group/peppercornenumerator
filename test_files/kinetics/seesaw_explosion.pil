@@ -1,0 +1,5 @@
+# ../../enumerator.py seesaw_explosion.pil --max-complex-count 10
+# example excerpted from make_qian2011_intermediate when there was a bug resulting in a remote toehold on the threshold.
+# we see an undesireable combinatorial explosion that results from 1-1 opening of the length-6 domain S4b^.
+threshold = S1a( S1b^( + S4b^* T^* )) 
+signal = S1a S1b^ T^ S4a S4b^

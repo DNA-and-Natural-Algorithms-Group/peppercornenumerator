@@ -1,5 +1,5 @@
 
-# write python script to make circuit.  concentrations aren't given
+# write python script to make circuit.  concentrations aren't given.
 
 # use same names and numbers as Qian & Winfree, Science, 2011 supp info figure S10.  also figure S4.
 
@@ -7,51 +7,46 @@
 
 # an intermediate level of detail is used: clamps aren't modeled, but the extended toehold is.
 
-# UNFORTUNATELY, even this level of detail is TOO MUCH.  
-#
-# a reaction count of 50000 is exceeded when starting with just a subset of the qian_andor example:
-#   x2 = S4a S4b^ T^ S9a S9b^
-#   x3 = S2a S2b^ T^ S3a S3b^
-#   S1a S1b^ T^( S4a( S4b^( + T^* )))
-#   S1a( S1b^( + S4b^* T^* ))
-#   S0a S0b^ T^ S1a S1b^
-# I do not know what is going wrong... is it the model definition, or a software bug?
-
-# in this directory, for the smaller circuit of figure S4 -- although it doesn't work:
-# python make_qian2011science.py
+# in this directory, for the smaller circuit of figure S4:
+# python make_qian2011science_intermediate.py
 # more qian_andor.pil
-# ../../enumerator.py qian_andor.pil  --max-complex-count 2000 --max-reaction-count 10000
+# ../../enumerator.py qian_andor.pil  --max-complex-count 2000 --max-reaction-count 10000 -c
 # more qian_andor-enum.pil
 
+# 32 resting complexes, 27 reactions... this is a bit much... how to verify its correctness?
+
 # for the full circuit:
-# python make_qian2011science.py
+# python make_qian2011science_intermediate.py
 # more qian_sqrt.pil
-# ../../enumerator.py qian_sqrt.pil  --max-complex-count 2000 --max-reaction-count 10000
+# ../../enumerator.py qian_sqrt.pil  --max-complex-count 2000 --max-reaction-count 10000 -c 
 # more qian_sqrt-enum.pil
+
+# 234 resting complexes, 230 reactions... this is more than a bit much... how to verify its correctness?
+
 
 def wire(Nfrom, Nto):
     i=str(Nto)
     j=str(Nfrom)
-    return "S"+i+"a S"+i+"b^ T^ S"+j+"a S"+j+"b^"
+    return "Wire_"+i+"_to_"+j+" = S"+i+"a^ S"+i+"b T^ S"+j+"a^ S"+j+"b"
 
 def threshold(Nfrom, Nnode):
     i=str(Nnode)
     j=str(Nfrom)
-    return "S"+i+"a( S"+i+"b^( + S"+j+"b^* T^* ))"
+    return "Threshold_"+i+" = S"+i+"a^( S"+i+"b( + S"+j+"a^* T^* ))"
 
 def gate_output(Nnode, Nto):
     i=str(Nnode)
     j=str(Nto)
-    return "S"+j+"a S"+j+"b^ T^( S"+i+"a( S"+i+"b^( + T^* )))"
+    return "Gate_"+i+"_to_"+j+" = S"+j+"a^ S"+j+"b T^( S"+i+"a^( S"+i+"b( + T^* )))"
 
 def reporter(name, Nnode):
     i=str(Nnode)
-    return name+" = S"+i+"a( S"+i+"b^( + T^* ))"
+    return name+"_Reporter_"+i+" = S"+i+"a^( S"+i+"b( + T^* ))"
 
 def input(name, Nfrom, Nto):
     i=str(Nto)
     j=str(Nfrom)
-    return name+" = S"+i+"a S"+i+"b^ T^ S"+j+"a S"+j+"b^"
+    return name+"_Wire_"+i+"_to_"+j+" = S"+i+"a^ S"+i+"b T^ S"+j+"a^ S"+j+"b"
 
 def fanout_gate(Nfrom, Nnode, Ntos):
     fuels = [ threshold(Nfrom,Nnode), wire(Nnode,0) ]
@@ -75,7 +70,7 @@ def andorcascade():
     fuels = [ input("x1",8,4), input("x2",9,4), input("x3",3,2) ]
     fuels += AND_gate(4,1,[2])
     fuels += AND_gate(2,5,[6])
-    fuels.append( reporter("rep_y_ROX",6) )
+    fuels.append( reporter("y_ROX",6) )
     return fuels
 
 fuels=andorcascade()
@@ -105,10 +100,10 @@ def squarerootcircuit():
     fuels += AND_gate(40,27,[10])
     fuels += OR_gate(10,1,[23])
     fuels += AND_gate(53,5,[6])
-    fuels.append( reporter("rep_y01_ROX",6) )
-    fuels.append( reporter("rep_y11_FAM",23) )
-    fuels.append( reporter("rep_y02_TYE563",24) )
-    fuels.append( reporter("rep_y12_TYE665",25) )
+    fuels.append( reporter("y01_ROX",6) )
+    fuels.append( reporter("y11_FAM",23) )
+    fuels.append( reporter("y02_TYE563",24) )
+    fuels.append( reporter("y12_TYE665",25) )
     return fuels
 
 fuels=squarerootcircuit()

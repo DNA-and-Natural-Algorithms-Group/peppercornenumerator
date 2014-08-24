@@ -1,6 +1,7 @@
 # Figure 2 of Xi Chen, JACS 2012, Expanding the rule set of DNA circuitry with associative toehold activation.
+# TNKMg = 20 mM Tris + 140 mM NaCl + 5 mM KCl + 5 mM MgCl2 + 0.5 mM EDTA  all at 37 C  (plus 1 uM carrier dT21), pH 7.5
 #
-# values read "by eye":
+# values read "by eye" from figure 2:
 #
 # for direct associative toeholds (1 stem, 0 bases in intervening loop)
 # toehold lengths 8, 10, 14 give second order bimolecular rate constants 6x10^2, 8x10^3, 1x10^5 /M/s (w/o 2nt spacer)
@@ -10,8 +11,13 @@
 #
 # compared to regular toehold-mediated strand displacement (0 stems, 0 bases)
 # toehold length 8 gives second order bimolecular rate constants 2x10^5 /M/s 
+#
+# these experimental results are at 37 C, in a less stabilizing buffer, while our rate formulas are for 25 C in a stronger buffer.
+# it might make sense, therefore, to approximate T = 8 @ 37C using T = 5 @ 25 C, for which the model gives regular displacement 5x10^5 /M/s.  
+# Similarly, 6 and 8 as 25C equivalents for the 10 and 14 at 37C cases.
+# But since we don't know branch migration and initiation rates at 37C, this is a shot in the dark.
 
-length T = 8
+length T = 5
 length D = 24
 length C = 3
 length P = 19
@@ -28,14 +34,18 @@ invader = T* D*
 # more xichen2012fig2-enum.pil
 #
 # this generates a lot of detailed reactions, but the condensed reactions seem plausible, 
-# other than the remote toehold slowdown not being enough.
+# other than the remote toehold slowdown not being enough using the original toehold lengths.
+# so, we will change to use T=5, or T=6, or T=8, above.
 #
-# however, when preparing to test larger toeholds, the combinatorics gets 5x worse (due to the hairpin opening?)
-# and then some rates go negative during the condensation, even when only one invader strand is used.
+# for the associative toehold reactions, the bulged case works out well after "toehold length conversion":
+#  2x10^3 (model T=5) vs 3x10^3 (exp T=8), 3x10^4 (model T=6) vs 5x10^4 (exp T=10), 2x10^6 (model T=8) vs 2x10^5 (exp T=14)
+# for the "direct" case, the enumerator model doesn't predict the experimentally observed 2x to 5x slowdown; in fact it slightly speeds up.
 #
-# ../../enumerator.py xichen2012fig2.pil --release-cutoff 9 -c
-# more xichen2012fig2-enum.pil
-# 
+# that's generally good, but there is a lot of the combinatorics prior to condensation (due to the hairpin opening?)
+# and some "slow reaction" rates go negative during the condensation, even when only one invader strand is used.  (e.g. for T=5 and T=6)
+#
 # so (a) there is a numerics issue, and (b) we might want to have a different release-cutoff for 1-1 and 1-2 reactions.
-# once this issue is fixed, I will re-evaluate the remote-toehold initiation rate formula, presumably to slow it down...
-# (but note that the even the "standard" toehold displacement is 30x slower than our lab's results... why?)
+#
+# overall conclusion is that the remote-toehold initiation rate formula is not ridiculously bad.  
+# we could consider special-casing some slow-down for non-bulged intiation, but this is just one of a thousand special cases
+# where the domain-level model is too simple to be very accurate.

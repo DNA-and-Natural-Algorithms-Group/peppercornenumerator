@@ -1,0 +1,8 @@
+# investigate whether multi-complex resting sets correctly adjust their condensed reaction rates based on equilibrium occupancy
+# simple example:  a pair of hairpins that, only when both have popped open, can hybridize fully.
+
+length b = 5
+length h = 10
+
+one = b( h )
+two = b( h* )

@@ -1,5 +1,6 @@
 # Figure S3 of Anthony Genot et al, Angewandte Chemie 2013, 
 # "Combinatorial Displacement of DNA Strands: Application to Matrix Multiplication and Weighted Sums"
+# buffer:  TAE + 12mM Mg++, pH 8.0, 23.5 C (paper does not mention carrier DNA)
 #
 # measured second order bimolecular rate constant is 4x10^4 /M/s
 
@@ -18,6 +19,9 @@ substrate = d*( p* s t* + ) r
 # ../../enumerator.py genot2013figS3.pil --release-cutoff 10 -c
 #
 # the five resulting reactions look right, although simulator thinks rates should be much faster with toehold length 10.
+# i.e. Peppercorn predicts 3x10^6 /M/s instead of 4x10^4.
 #
-# unfortunately, when I reduce the length of toehold t to 4, we get a numerical error during the condensation step.
+# we could follow the mysterious 2/3 equivalent toehold length formula from the genot2011fig4b.pil analysis,
+# in which case we would use t=6 above.  remarkably, that gives input + substrate reacting at 7.5x10^4, off by just x2.
+
 

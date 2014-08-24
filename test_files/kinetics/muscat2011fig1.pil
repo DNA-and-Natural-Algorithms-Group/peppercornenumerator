@@ -1,5 +1,31 @@
+# system of Muscat et al 2011 ("A Programmable Molecular Robot"), figure 1.
+# SPSC buffer, 200 mM NaCl, 50 mM sodium phosphate, pH 7.5, "room temperature" (paper does not mention carrier DNA)
+# not interested in rate constants here, just the pathway enumeration.
+# (may want to look at kinetics from figure S5, for example with rate constants)
+
+length X1 = 7
+length X2 = 4
+length Y1 = 7
+length Y2 = 4
+length a = 5
+length b = 7
+length c = 5
+
 hairpin = X1 X2 b( c y* ) a* Y1*
 robot = a b( c( + ) ) X2* X1*
 target = Y1( a b( y + c* ) Y2* )
 moved_robot = a b( c( + ) ) Y2* Y1*
+
+# enumerates "correctly" with all lengths being the default 12 (i.e. comment out all the length statements above.)
+# however, this results in an irreversible reaction between 
+# the fuel and the moved_robot via domain Y1.
+
+# even so, numerics go negative when condensing.
+
+# if the actual lengths are used, it seems to hit an infinite loop (with default release cutoff 6)
+# even though this does not eliminate the spurious irreversible reaction.
+
+# with release cutoff 7, too many reactions are produced, but this completes, and gives positive condensed rates:
+# ../../enumerator.py muscat2011fig1.pil --release-cutoff 7 --max-complex-count 10000 --max-reaction-count 10000 -c
+
 

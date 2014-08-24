@@ -1,0 +1,17 @@
+# test whether the enumerator correctly handles cases where there are two distinct reactions that have the same reactants and products
+
+asym = a( b*(+) a*(+) c(+) )
+
+sym =  a( b*(+) a*(+) b*(+) )
+
+symtails = a( b*( x + ) a*( y + ) b*( z + ) ) w 
+
+# ../../enumerator.py multiplicities.pil
+
+# looks like it's not correct for kinetics.  sym should react twice as fast as asym, i.e. the sum of the two symtails reactions.
+
+# but if we're happy with factors of two...
+
+# Note: do not use condensation on this example.  no reactions are produced.  
+# this is correct behavior:  the initial complexes are not resting complexes,
+# and none of the resting complexes that result from their decomposition can react.

@@ -176,7 +176,12 @@ def opening_rate(length):
 	#       dG_assoc = +1.9 kcal/mol
 	#       R = 0.001987 kcal/mol/K
 	#       T = (273.15 + 25) K
-	return 7.41e7 * (0.0567 ** length)
+	# return 7.41e7 * (0.0567 ** length)
+	#
+	# instead, use k_hybrid = L * 3 * 10^5, which matches the above for L=10.
+	# this is to be consistent with the bimolecular binding rate.
+	return length * 7.41e6 * (0.0567 ** length)
+
 
 def polymer_link_length(before, after):
 	"""Effective length estimate for (ss+ds) linkers between two domains, one or both of which may be open."""
@@ -302,7 +307,12 @@ def bimolecular_binding_rate(length):
 	Rate constant formula for bimolecular association (binding).
 	"""
 	# use k_hybrid = 3x10^6 /M/s   from Zhang&Winfree 2009
-	return 3.0e6
+	# return 3.0e6
+	#
+	# instead, use k_hybrid = L * 3 * 10^5, which matches the above for L=10.
+	# see Wetmur 1976 review, and Srinivas et al 2013 AEL model.
+	# another motivation is to have binding rate approx = if a domain is divided into two domains.
+	return length * 3e5
 
 
 # Reaction functions
