@@ -1,9 +1,13 @@
-#!/usr/bin/python -O
 #  enumerator.py
 #  EnumeratorProject
 #
 #  Created by Karthik Sarma on 4/18/10.
 #
+
+##  used to have this:  but removed because with homebrew we must use /usr/local/bin/python
+##  !/usr/bin/python -O
+##  !/usr/local/bin/python -O
+
 import os
 import sys
 import utils

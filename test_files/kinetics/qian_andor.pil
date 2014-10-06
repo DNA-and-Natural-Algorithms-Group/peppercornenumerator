@@ -1,0 +1,22 @@
+length T = 5
+length S4a = 4
+length S4b = 11
+length S8a = 4
+length S8b = 11
+length S9a = 4
+length S9b = 11
+length S3a = 4
+length S3b = 11
+length S2a = 4
+length S2b = 11
+length S1a = 4
+length S1b = 11
+length S5a = 4
+length S5b = 11
+length S0a = 4
+length S0b = 11
+length S6a = 4
+length S6b = 11
+
+x1_Wire_4_to_8 = S4a S4b T S8a S8b
+Gate_4_to_1 = S1a S1b T( S4a( S4b( + T* )))
