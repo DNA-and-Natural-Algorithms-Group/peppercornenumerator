@@ -84,6 +84,7 @@ class Enumerator(object):
 		self.DFS = True
 		self.FAST_REACTIONS = fast_reactions[1]
 		self.interruptible = True
+		self.interactive = False
 		
 	@property 
 	def auto_name(self):
@@ -294,6 +295,9 @@ class Enumerator(object):
 				self._B = self.get_new_products(slow_reactions)
 				self._reactions += (slow_reactions)
 
+				# Display new reactions in interactive mode
+				self.reactions_interactive(slow_reactions)
+
 				# Now find all complexes reachable by fast reactions from these
 				# new complexes
 				while len(self._B) > 0:
@@ -318,6 +322,8 @@ class Enumerator(object):
 			try:
 				do_enumerate()
 			except KeyboardInterrupt:
+				print 
+				print "Interrupted; gracefully exiting..."
 				finish(premature=True)
 		else:
 			do_enumerate() 
@@ -327,6 +333,17 @@ class Enumerator(object):
 		# except KeyboardInterrupt:
 		# 	finish(premature=True)
 
+
+	def reactions_interactive(self, reactions):
+		"""
+		Prints the passed reactions as a kernel string, then waits for keyboard
+		input before continuing.
+		"""
+		if self.interactive:
+			for r in reactions:
+				print r.kernel_string()
+			print
+			utils.wait_for_input()
 
 	def process_neighborhood(self, source):
 		"""
@@ -361,7 +378,8 @@ class Enumerator(object):
 				N_reactions += (reactions)
 				self._N.append(element)
 
-				# print len(self._F) + len(self._N) + len(self._S) + len(self._T) + len(self._E) + len(self._B)
+				# Display new reactions in interactive mode
+				self.reactions_interactive(reactions)
 
 		finally:
 
@@ -674,6 +692,8 @@ def main(argv):
 		help="Compute reaction rates (default: %(default)s)")
 	parser.add_argument('-d', action='store_true', dest='dry_run', default=False, \
 		help="Dry run---read input, write output; do not enumerate any reactions. (default: %(default)s)")
+	parser.add_argument('-s', action='store_true', dest='interactive', default=False, \
+		help="Interactive---display new reactions after each step. (default: %(default)s)")
 
 	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=MAX_COMPLEX_SIZE, type=int, \
 		help="Maximum number of strands allowed in a complex (used to prevent polymerization) (default: %(default)s)")
@@ -720,6 +740,11 @@ def main(argv):
 		print "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
 		raise Exception('Error!')
 
+	# Print initial complexes
+	print "Initial complexes: "
+	for c in enum.initial_complexes:
+		print c.kernel_string()
+
 	# Transfer options to enumerator object
 	if cl_opts.MAX_REACTION_COUNT is not None:
 		enum.MAX_REACTION_COUNT = cl_opts.MAX_REACTION_COUNT
@@ -734,6 +759,7 @@ def main(argv):
 		reactions.RELEASE_CUTOFF = cl_opts.RELEASE_CUTOFF
 
 	enum.DFS = not cl_opts.bfs
+	enum.interactive = cl_opts.interactive
 
 	# Modify enumeration events based on command line options.
 	if cl_opts.ignore_branch_3way:

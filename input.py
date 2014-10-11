@@ -407,7 +407,6 @@ def input_pil(filename):
 	# We loop over all the lines in the file
 	for (line_counter, line) in enumerate(fin,start=1):
 		line = line.strip()
-		print line
 		
 		# This was an empty line
 		if line == "":

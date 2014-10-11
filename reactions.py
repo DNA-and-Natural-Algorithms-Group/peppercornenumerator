@@ -137,6 +137,11 @@ class ReactionPathway(object):
 		"""
 		return self._const	
 
+	def kernel_string(self):
+		return \
+		"  +  ".join(r.kernel_string() for r in self.reactants) + \
+		"  ->  " + \
+		"  +  ".join(p.kernel_string() for p in self.products) 
 
 # def unpack_loop(loop):
 # 	bases = 0

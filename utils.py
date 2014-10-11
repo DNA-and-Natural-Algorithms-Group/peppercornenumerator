@@ -41,6 +41,9 @@ def error(message):
 	print "Error: " + message
 	sys.exit(1)
 
+def wait_for_input(message="[Press Enter to continue...]"):
+	raw_input(message)
+
 def resolve_length(length):
 	if (type(length) == type(0)):
 		return length
