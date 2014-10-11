@@ -1,12 +1,9 @@
+#!/usr/bin/env python
 #  enumerator.py
 #  EnumeratorProject
 #
 #  Created by Karthik Sarma on 4/18/10.
 #
-
-##  used to have this:  but removed because with homebrew we must use /usr/local/bin/python
-##  !/usr/bin/python -O
-##  !/usr/local/bin/python -O
 
 import os
 import sys
@@ -84,9 +81,10 @@ class Enumerator(object):
 		self.MAX_REACTION_COUNT = MAX_REACTION_COUNT
 		self.MAX_COMPLEX_COUNT = MAX_COMPLEX_COUNT
 		self.DFS = True
-                self.FAST_REACTIONS = fast_reactions[1]
-
-	@property
+		self.FAST_REACTIONS = fast_reactions[1]
+		self.interruptible = True
+		
+	@property 
 	def auto_name(self):
 		return reactions.auto_name
 
@@ -151,7 +149,7 @@ class Enumerator(object):
 	@property
 	def transient_complexes(self):
 		"""
-		List of complexes enumerated that are not within resting states (e.g.
+		List of complexes enumerated that are not within resting states (e.g. 
 		complexes which are transient). :py:meth:`.enumerate` must be
 		called before access.
 		"""
@@ -162,13 +160,13 @@ class Enumerator(object):
 
 	def __eq__(self, object):
 		return (sorted(self.domains) == sorted(object.domains)) and \
-	 		(sorted(self.strands) == sorted(object.strands)) and \
-	 		(sorted(self.initial_complexes) == sorted(object.initial_complexes)) and \
-	 		(sorted(self.reactions) == sorted(object.reactions)) and \
-	 		(sorted(self.resting_states) == sorted(object.resting_states)) and \
-	 		(sorted(self.complexes) == sorted(object.complexes)) and \
-	 		(sorted(self.resting_complexes) == sorted(object.resting_complexes)) and \
-	 		(sorted(self.transient_complexes) == sorted(object.transient_complexes))
+			(sorted(self.strands) == sorted(object.strands)) and \
+			(sorted(self.initial_complexes) == sorted(object.initial_complexes)) and \
+			(sorted(self.reactions) == sorted(object.reactions)) and \
+			(sorted(self.resting_states) == sorted(object.resting_states)) and \
+			(sorted(self.complexes) == sorted(object.complexes)) and \
+			(sorted(self.resting_complexes) == sorted(object.resting_complexes)) and \
+			(sorted(self.transient_complexes) == sorted(object.transient_complexes))
 
 	def dry_run(self):
 		"""
@@ -270,7 +268,7 @@ class Enumerator(object):
 		self._complexes = []
 		self._resting_states = []
 
-		try:
+		def do_enumerate():
 
 			# We first generate the states reachable by fast reactions from the
 			# initial complexes
@@ -314,9 +312,14 @@ class Enumerator(object):
 					# Generate a neighborhood from `source`
 					source = self._B.pop()
 					self.process_neighborhood(source)
-
-		except KeyboardInterrupt:
-			finish(premature=True)
+		
+		if self.interruptible:
+			try:
+				do_enumerate()
+			except KeyboardInterrupt:
+				finish(premature=True)
+		else:
+			do_enumerate() 
 
 		finish()
 
@@ -414,7 +417,7 @@ class Enumerator(object):
 		reactions = []
 
 		# Do unimolecular reactions
-                for reaction in self.FAST_REACTIONS:
+		for reaction in self.FAST_REACTIONS:
 			reactions += (reaction(complex))
 		return reactions
 
@@ -501,6 +504,7 @@ class Enumerator(object):
 		reactions[:] = new_reactions
 
 		assert (set(ESTNF.values()) - set(new_products)) == set(ESTNF.values())
+		assert (set(ESTNF.values()) - set(B.values())) == set(ESTNF.values())
 
 		return new_products
 
@@ -600,7 +604,7 @@ class Enumerator(object):
 		transient_state_complexes.sort()
 		return {
 				'resting_states': resting_states,
-			    'resting_state_complexes': resting_state_complexes,
+				'resting_state_complexes': resting_state_complexes,
 				'transient_state_complexes': transient_state_complexes
 				}
 
@@ -680,10 +684,10 @@ def main(argv):
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction. (default: %(default)s)")
 	parser.add_argument('--bfs-ish', action='store_true', dest='bfs', \
 		help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
-        parser.add_argument('--ignore-branch-3way', action='store_true', dest='ignore_branch_3way', \
-                help="Ignore 3-way branch migration events during enumeration.  (default: %(default)s)")
-        parser.add_argument('--ignore-branch-4way', action='store_true', dest='ignore_branch_4way', \
-                help="Ignore 4-way branch migration events during enumeration.  (default: %(default)s)")
+		parser.add_argument('--ignore-branch-3way', action='store_true', dest='ignore_branch_3way', \
+				help="Ignore 3-way branch migration events during enumeration.  (default: %(default)s)")
+		parser.add_argument('--ignore-branch-4way', action='store_true', dest='ignore_branch_4way', \
+				help="Ignore 4-way branch migration events during enumeration.  (default: %(default)s)")
 
 
 	parser.add_argument('--profile', action='store_true', dest='profile',\
@@ -730,14 +734,14 @@ def main(argv):
 
 	enum.DFS = not cl_opts.bfs
 
-        # Modify enumeration events based on command line options.
-        if cl_opts.ignore_branch_3way:
-                if reactions.branch_3way in enum.FAST_REACTIONS:
-                        enum.FAST_REACTIONS.remove(reactions.branch_3way)
+		# Modify enumeration events based on command line options.
+		if cl_opts.ignore_branch_3way:
+				if reactions.branch_3way in enum.FAST_REACTIONS:
+						enum.FAST_REACTIONS.remove(reactions.branch_3way)
 
-        if cl_opts.ignore_branch_4way:
-                if reactions.branch_4way in enum.FAST_REACTIONS:
-                        enum.FAST_REACTIONS.remove(reactions.branch_4way)
+		if cl_opts.ignore_branch_4way:
+				if reactions.branch_4way in enum.FAST_REACTIONS:
+						enum.FAST_REACTIONS.remove(reactions.branch_4way)
 
 	# Run reaction enumeration (or not)
 	if cl_opts.dry_run:
