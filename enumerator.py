@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#
 #  enumerator.py
 #  EnumeratorProject
 #
@@ -684,10 +685,10 @@ def main(argv):
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction. (default: %(default)s)")
 	parser.add_argument('--bfs-ish', action='store_true', dest='bfs', \
 		help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
-		parser.add_argument('--ignore-branch-3way', action='store_true', dest='ignore_branch_3way', \
-				help="Ignore 3-way branch migration events during enumeration.  (default: %(default)s)")
-		parser.add_argument('--ignore-branch-4way', action='store_true', dest='ignore_branch_4way', \
-				help="Ignore 4-way branch migration events during enumeration.  (default: %(default)s)")
+	parser.add_argument('--ignore-branch-3way', action='store_true', dest='ignore_branch_3way', \
+		help="Ignore 3-way branch migration events during enumeration.  (default: %(default)s)")
+	parser.add_argument('--ignore-branch-4way', action='store_true', dest='ignore_branch_4way', \
+		help="Ignore 4-way branch migration events during enumeration.  (default: %(default)s)")
 
 
 	parser.add_argument('--profile', action='store_true', dest='profile',\
@@ -734,14 +735,14 @@ def main(argv):
 
 	enum.DFS = not cl_opts.bfs
 
-		# Modify enumeration events based on command line options.
-		if cl_opts.ignore_branch_3way:
-				if reactions.branch_3way in enum.FAST_REACTIONS:
-						enum.FAST_REACTIONS.remove(reactions.branch_3way)
+	# Modify enumeration events based on command line options.
+	if cl_opts.ignore_branch_3way:
+			if reactions.branch_3way in enum.FAST_REACTIONS:
+					enum.FAST_REACTIONS.remove(reactions.branch_3way)
 
-		if cl_opts.ignore_branch_4way:
-				if reactions.branch_4way in enum.FAST_REACTIONS:
-						enum.FAST_REACTIONS.remove(reactions.branch_4way)
+	if cl_opts.ignore_branch_4way:
+			if reactions.branch_4way in enum.FAST_REACTIONS:
+					enum.FAST_REACTIONS.remove(reactions.branch_4way)
 
 	# Run reaction enumeration (or not)
 	if cl_opts.dry_run:
