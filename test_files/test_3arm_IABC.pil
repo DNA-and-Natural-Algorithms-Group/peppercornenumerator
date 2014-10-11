@@ -1,0 +1,8 @@
+length a = 5
+length b = 5
+length c = 5
+length x = 5
+length y = 5
+length z = 5
+
+IABC = a( x( b( y( z*( c*( y*( b*( x* + ) ) ) ) x*( a*( z*( c*( y* + ) ) ) ) y* b* x* a* z* + ) ) ) )
