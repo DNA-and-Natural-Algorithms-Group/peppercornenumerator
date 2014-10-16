@@ -108,7 +108,10 @@ def output_pil(enumerator, filename, output_condensed = False, output_rates = Tr
 	"""
 	
 	def write_complex(output_file,complex):
-		output_file.write("structure " + str(complex) + " = ")
+		params = ""
+		if complex.concentration is not None:
+			params = "[%g %sM] " % utils.format_si(complex.concentration)
+		output_file.write("structure " + params + str(complex) + " = ")
 		names = map(lambda strand: strand.name, complex.strands)
 		strands_string = " + ".join(names)
 		output_file.write(strands_string + " : ")
@@ -443,8 +446,8 @@ def output_condensed_graph(enumerator, filename):
 	
 
 def output_sbml(enumerator,filename, output_condensed = False):
-	# default initial concentration of all species is 100 nM
-	initial_concentration = 10e-7 
+	# # default initial concentration of all species is 100 nM
+	# initial_concentration = 10e-7 
 
 	import xml.dom.minidom
 	header = '<?xml version="1.0" encoding="UTF-8"?>'
@@ -484,14 +487,16 @@ def output_sbml(enumerator,filename, output_condensed = False):
 	# build elements for each species
 	if(output_condensed):
 		for resting_state in complexes:
-			is_initial = any(c in enumerator.initial_complexes for c in resting_state.complexes)
+			# is_initial = any(c in enumerator.initial_complexes for c in resting_state.complexes)
+			initial_concentration = sum((c.concentration if c.concentration is not None else 0.0) for c in resting_state.complexes)
 			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial).10f"/>' \
-				% {"name": resting_state.name, "id": id(resting_state), "initial": (initial_concentration if is_initial else 0.) })
+				% {"name": resting_state.name, "id": id(resting_state), "initial": initial_concentration })
 	else:
 		for complex in complexes:
-			is_initial = (complex in enumerator.initial_complexes)
+			# is_initial = (complex in enumerator.initial_complexes)
+			initial_concentration = complex.concentration if complex.concentration is not None else 0.0
 			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial).10f"/>' \
-				% {"name": complex.name, "id": id(complex), "initial": (initial_concentration if is_initial else 0.) })
+				% {"name": complex.name, "id": id(complex), "initial": initial_concentration })
 	
 	out += ['</listOfSpecies>','<listOfReactions>']
 

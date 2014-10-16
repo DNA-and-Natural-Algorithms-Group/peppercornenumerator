@@ -8,6 +8,7 @@
 import copy
 import re
 import sys
+from math import log10
 
 SHORT_DOMAIN_LENGTH = 6
 LONG_DOMAIN_LENGTH = 12
@@ -43,6 +44,54 @@ def error(message):
 
 def wait_for_input(message="[Press Enter to continue...]"):
 	raw_input(message)
+	print ""
+
+def parse_parameters(parameters):
+	match = re.match(r"\s*\[([^\]]+)\]\s*",parameters)
+	if match is not None:
+		parameters, = match.groups() 
+
+	params = { 'concentration': None }
+
+	# parse parameters into <list of targets> @ <list of conditions>
+	parameters = parameters.split("@")
+	if len(parameters) > 1:
+		targets, conditions = parameters
+
+		# split conditions into comma-separated list
+		conditions = conditions.split(",")
+		for condition in conditions:
+			
+			# try to parse a concentration
+			concentration = parse_concentration(condition)
+			if concentration is not None:
+				params['concentration'] = concentration
+	return params
+
+exp_to_si_prefix = {9: 'G', 6: 'M', 3: 'k', 0: '',
+	-3: 'm', -6: 'u', -9: 'n', -12: 'p', -15: 'f', -18: 'a', -21: 'z'} 
+
+si_prefix_to_exp = dict( (pre, 10**exp) for (exp, pre) in exp_to_si_prefix.iteritems() )
+
+def parse_concentration(condition):
+	parts = re.match(r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*(p|n|u|m|d|)M",condition)
+
+	if parts != None:
+		conc, unit = parts.groups()
+		# units = { 'p':1e-12, 'n':1e-9, 'u':1e-6, 'm':1e-3, 'c':1e-2, 'd':1e-1, '':1.0 }
+		# base = units[unit]
+		base = si_prefix_to_exp[unit]
+		concentration = float(conc) * base
+		return concentration
+	return None
+
+def format_si(n):
+	try:
+		x = int(log10(n)//3)*3
+		u = exp_to_si_prefix[x]
+	except (ValueError, KeyError):
+		x = 0
+	return (n/10**x), exp_to_si_prefix[x]
 
 def resolve_length(length):
 	if (type(length) == type(0)):
@@ -448,6 +497,9 @@ class Complex(object):
 		
 		# Holds a unique hash identifying this complex (computed lazily by self.__hash__)
 		self._hash = None
+
+		# Store concentration
+		self.concentration = None
 	
 	def __hash__(self):
 		"""

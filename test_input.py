@@ -619,3 +619,28 @@ class InputKernel(unittest.TestCase):
 		}
 		assert set(complexes.values()) == set(enumerator.complexes)
 
+	def test_kernel_9(self):
+		enumerator = input_pil('test_files/test_input_kernel_9.pil')
+		enumerator.dry_run()
+
+		# Domains 
+		domains = { 
+			'2' : Domain('2', 12, is_complement=False, sequence='None'),
+			'2*' : Domain('2', 12, is_complement=True, sequence='None'),
+			'3' : Domain('3', 12, is_complement=False, sequence='None'),
+			'3*' : Domain('3', 12, is_complement=True, sequence='None')
+		}
+		assert set(domains.values()) == set(enumerator.domains)
+
+		# Strands 
+		strands = { 
+			'2_3' : Strand('2_3', [domains['2'], domains['3']])
+		}
+		assert set(strands.values()) == set(enumerator.strands)
+
+		# Complexes 
+		complexes = { 
+			'2' : Complex('2', [strands['2_3']], [[None, None, None]])
+		}
+		complexes['2'].concentration = 5e-7
+		assert complexes['2'].concentration == enumerator.complexes[0].concentration

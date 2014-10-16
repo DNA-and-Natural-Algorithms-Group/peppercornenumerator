@@ -27,6 +27,21 @@ class MiscTests(unittest.TestCase):
 		#						0123 01234
 		assert parse_dot_paren('((((+))).)') == [[(1,4),(1,2),(1,1),(1,0)],[(0,3),(0,2),(0,1),None,(0,0)]]
 
+	def testParseConcentration(self):
+		assert parse_concentration('0.05 uM') == 5e-8
+		assert parse_concentration('17e-4 M') == 17e-4
+		assert parse_concentration('2e-5pM') == 2e-17
+		assert parse_concentration('1pM') == 1e-12
+
+	def testParseParameters(self):
+		assert parse_parameters('[1nt]') == { 'concentration': None }
+		assert parse_parameters('[@1uM]') == { 'concentration': 1e-6 }
+		assert parse_parameters('1nt@1pM') == { 'concentration': 1e-12 }
+
+	def testFormatSI(self):
+		assert format_si(1e-6) == (1, 'u')
+		assert format_si(5e-9) == (5, 'n')
+		assert format_si(50e-12) == (50, 'p')
 
 class LoopTests(unittest.TestCase):
 	def testLoop(self):

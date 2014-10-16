@@ -296,7 +296,7 @@ class Enumerator(object):
 				self._reactions += (slow_reactions)
 
 				# Display new reactions in interactive mode
-				self.reactions_interactive(slow_reactions)
+				self.reactions_interactive(element, slow_reactions, 'slow')
 
 				# Now find all complexes reachable by fast reactions from these
 				# new complexes
@@ -334,14 +334,18 @@ class Enumerator(object):
 		# 	finish(premature=True)
 
 
-	def reactions_interactive(self, reactions):
+	def reactions_interactive(self, root, reactions, type='fast'):
 		"""
 		Prints the passed reactions as a kernel string, then waits for keyboard
 		input before continuing.
 		"""
 		if self.interactive:
+			print "%s = %s (%s)" % (root.name, root.kernel_string(), type)
+			print
 			for r in reactions:
 				print r.kernel_string()
+			if len(reactions) is 0:
+				print "(No %s reactions)" % type
 			print
 			utils.wait_for_input()
 
@@ -379,7 +383,7 @@ class Enumerator(object):
 				self._N.append(element)
 
 				# Display new reactions in interactive mode
-				self.reactions_interactive(reactions)
+				self.reactions_interactive(element, reactions, 'fast')
 
 		finally:
 
@@ -777,6 +781,12 @@ def main(argv):
 		print "Done."
 	else:
 		print "Enumerating reactions..."
+		if cl_opts.interactive:
+			print 
+			print "Interactive mode enabled: fast and slow reactions will be printed for each "
+			print "complex as enumerated. Press ^C at any time to terminate and write accumulated "
+			print "complexes to output."
+			print 
 		if cl_opts.profile:
 			import statprof
 			statprof.start()

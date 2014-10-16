@@ -351,10 +351,17 @@ def resolve_kernel(lines, domains, strands, structures_to_strands, complexes):
 
 	for line in lines:
 		cname = None
-		parts = re.match(r"(\w+)\s*=\s*(.*)", line)
+		parameters = None
+		parts = re.match(r"(\w+)\s*(\[[^\]]+\])?\s*=\s*(.*)", line)
 		if parts is not None:
-			cname, line = parts.groups()
+			cname, parameters, line = parts.groups()
 
+		# parse parameters
+		if parameters is None:
+			parameters = ""
+		params = utils.parse_parameters(parameters)
+
+		# parse the structure portion
 		kparts = parse_kernel(line)
 
 		stack = []
@@ -371,6 +378,10 @@ def resolve_kernel(lines, domains, strands, structures_to_strands, complexes):
 
 		# check structure is valid
 		complex.check_structure()
+
+		# apply parameters
+		if params['concentration'] is not None:
+			complex.concentration = params['concentration']
 
 def from_kernel(lines):
 	# split string into lines if necessary
@@ -626,16 +637,34 @@ def input_pil(filename):
 			# parse `structure` line:
 			# e.g.:
 			# structure A = S1 : .(((..)))
-			#                  structure       [  1nt  ]      name      =   s1 s2 s3 + s4         : ....((+))...((..))....
-			parts = re.match(r"structure\s+(?:\[[^\]]+\])?\s*([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)",line)
+			#                  structure    [  1nt  ]      name      =   s1 s2 s3 + s4         : ....((+))...((..))....
+			parts = re.match(r"structure\s+(\[[^\]]+\])?\s*([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)",line)
+
 			if parts == None:
-				logging.error("Invalid syntax on input line %d"
-							% line_counter)
-				logging.error(line)
-				raise Exception()
+
+				# parse `structure` line:
+				# e.g.:
+				# structure A = S1 : .(((..)))
+				#                  structure    name      =   s1 s2 s3 + s4         : ....((+))...((..))....
+				parts = re.match(r"structure\s+([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)",line)
+
+				if parts == None:
+
+					logging.error("Invalid syntax on input line %d"
+								% line_counter)
+					logging.error(line)
+					raise Exception()
+				else:
+					complex_name, strands_line, structure_line = parts.groups()
+					parameters = ""
+			else:
+				parameters, complex_name, strands_line, structure_line = parts.groups() 
 			
-			complex_name, strands_line, structure_line = parts.groups() 
-			
+			# parse parameters
+			if parameters is None:
+				parameters = ""
+			params = utils.parse_parameters(parameters)
+
 			# check for duplicate complex name
 			if complex_name in complexes:
 				logging.error("Duplicate complex name encountered in input line %d"
@@ -680,6 +709,11 @@ def input_pil(filename):
 			
 			complex = Complex(complex_name, complex_strands, complex_structure)
 			complex.check_structure()
+
+			# apply parameters
+			if params['concentration'] is not None:
+				complex.concentration = params['concentration']
+
 			complexes[complex_name] = complex		
 		elif line.startswith("kinetic"):
 			continue	
