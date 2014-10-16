@@ -471,9 +471,10 @@ def bind11(reactant):
 			# search both directions around the loop for a bound domain that
 			# has the same sequence (and therefore can be displaced)
 			locs = find_on_loop(reactant, loc1, -1, \
-				lambda dom, struct, loc: struct is None and dom.can_pair(d1)) + \
+				# lambda dom, struct, loc: struct is None and dom.can_pair(d1)) + \
+				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1)) + \
 			find_on_loop(reactant, loc1, +1, \
-				lambda dom, struct, loc: struct is None and dom.can_pair(d1))
+				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1))
 
 			# build products
 			for (loc2, before, after) in locs:
@@ -1452,9 +1453,13 @@ def branch_3way(reactant):
 			# search both directions around the loop for a bound domain that
 			# has the same sequence (and therefore can be displaced)
 			bound_doms = find_on_loop(reactant, displacing_loc, -1, \
-				lambda dom, struct, loc: struct is not None and dom == displacing_domain) + \
+				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2) + \
 			find_on_loop(reactant, displacing_loc, +1, \
-				lambda dom, struct, loc: struct is not None and dom == displacing_domain)
+				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2)
+			# bound_doms = find_on_loop(reactant, displacing_loc, -1, \
+			# 	lambda dom, struct, loc: struct is not None and dom == displacing_domain) + \
+			# find_on_loop(reactant, displacing_loc, +1, \
+			# 	lambda dom, struct, loc: struct is not None and dom == displacing_domain)
 
 
 			# build products
@@ -1488,6 +1493,147 @@ def branch_3way(reactant):
 	
 	return output
 
+
+# def find_on_loop(reactant, start_loc, direction, filter):
+# 	"""
+# 	Finds the next domain within `reactant` that's on the same inner loop as 
+# 	`start_loc` and matches the passed `filter` function. Looks in either the 
+# 	5'->3' (+1) or 3'->5' (-1) `direction`.  
+
+# 	Filter should accept the following arguments and return True or False:
+# 		-	dom (utils.Domain) : the domain at `loc`
+# 		-	struct (tuple or None): a (strand index, domain index) pair 
+# 			indicating what `dom` is bound to, or None if `dom` is unpaired.
+# 		-	loc (tuple) : a (strand index, domain index) pair
+# 		-       Note that while every single-stranded domain is tested,
+# 		        only the "first" domain of a stem helix (in the direction of 
+# 			search) will be passed to the filter.
+
+
+# 	Returns an array of tuples: `(loc, before, after)`, where:
+# 		-	`loc` is a (strand index, domain index) pair indicating the 
+# 			position of the matched domain
+# 		-	`before` is a list of (domain, struct, loc) triples giving the 
+# 			domains after `start_loc` but before the matched domain on the loop
+# 			(or None instead of triple where there is a break in the loop)
+# 		-	`after` is a list of (domain, struct, loc) triples giving the 
+# 			domains after the matched domain but before `start_loc` on the loop
+# 			(or None instead of triple where there is a break in the loop)
+
+# 	Where a loop involves stems, only one of the complementary domains will be 
+# 	listed in the array of tuples, specifically, the "first" one in the search 
+# 	direction. Thus, a multiloop with n unpaired domains and m stems will 
+# 	result, for closed loops, in `len(before+after) == n+m-2`, as the match 
+# 	location and `start_loc` are omitted.
+
+# 	`before` and `after` are converted to Loop objects (see utils.py) prior 
+# 	to being returned, so that the number of bases and number of stems and 
+# 	open/closed status is readily accessible.
+
+# 	Note 1: `before` and `after` refer to the partial loops between `start_loc` 
+# 	and each of the results, _in the `direction`_ of the search. For example:
+  
+#            A
+# 	      ____
+# 	     /    \ 
+# 	 x  |     |  x*
+# 	    |
+# 	     \____> 3'
+
+# 	        B
+
+# 	If `start_loc` pointed to `x` and `direction` is +1, then `before` would 
+# 	be `A` and `after` would be `B`. If instead `direction` is -1, then 
+# 	`before` is `B` and `after` is `A`. 
+
+# 	Note 2: If the domain passed to `start_loc` is a duplex, the results may 
+# 	be unexpected:
+
+# 	       ___  x  ___
+# 	5' ___/   \___/   \___  
+# 	3' ___  A  ___  B  ___)
+# 	      \___/   \___/
+# 	            x*
+
+# 	Notice that the duplex x() participates in two internal loops (A and B). 
+# 	By convention, the internal loop considered is the _internal loop which
+# 	encloses this domain_. That means if you pass domain x and +1, you'll get
+# 	loop A, whereas if you pass x and -1, you'll get loop B. This is in an
+# 	attempt to be consistent with the case where you pass an unpaired domain
+# 	(and therefore the internal loop searched is the one which encloses the 
+# 	unpaired domain).
+# 	"""	
+# 	results = []
+# 	loop = []
+
+# 	def triple(loc):
+# 		return (reactant.get_domain(loc),reactant.get_structure(loc),loc)
+
+# 	# We now follow the external loop from the starting pair
+# 	# searching for a bound domain to displace
+# 	bound_loc = start_loc
+
+# 	# Avoid getting stuck inside an internal loop enclosed by this domain,
+# 	# if the starting domain is a duplex.
+# 	# 
+# 	#   1      2
+# 	#  ___________
+# 	#  ____  _____
+# 	#   1*  /  2*
+# 	#       
+# 	#  If we start at domain 1, going in the - direction, then 
+# 	#  immediately continue to the next domain, we'll go to 1* 
+# 	if reactant.structure[bound_loc[0]][bound_loc[1]] is not None:
+# 		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
+
+# 	# Follow the external loop to the end
+# 	while True:
+# 		# move to the next domain in the indicated direction
+# 		# (+1 = 5' -> 3', -1 = 3' -> 5')
+# 		bound_loc = (bound_loc[0], bound_loc[1] + direction)
+
+# 		# if we've reached the end of the strand (5')
+# 		if (bound_loc[1] == -1):
+
+# 			# Continue to next strand
+# 			bound_loc = (wrap(bound_loc[0]-1,len(reactant.strands)),)
+# 			bound_loc = (bound_loc[0], len(reactant.strands[bound_loc[0]]))
+# 			loop.append( None )  #EW
+# 			continue
+
+# 		# if we've reached the end of the strand (3')
+# 		elif (bound_loc[1] == len(reactant.strands[bound_loc[0]])):
+
+# 			# Continue to next strand
+# 			bound_loc = (wrap(bound_loc[0]+1, len(reactant.strands)), -1)
+# 			loop.append( None ) #EW
+# 			continue
+
+# 		if bound_loc == start_loc:
+# 			# We've returned to the original location of the 
+# 			# displacing domain
+# 			break
+
+		
+# 		# try to match the filter function
+# 		elif (filter(reactant.get_domain(bound_loc), \
+# 			reactant.get_structure(bound_loc), bound_loc)):
+
+# 			# append the location
+# 			results.append( (bound_loc, len(loop)) )
+
+# 		# store unpaired domains and "first" domain of each stem
+# 		loop.append(triple(bound_loc)) #EW 
+
+# 		# if the domain at bound_loc is unbound
+# 		if (reactant.structure[bound_loc[0]][bound_loc[1]] is None):
+# 			# look to the next domain
+# 			continue
+
+# 		# so it's bound to something: follow the structure to stay on the same loop
+# 		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
+
+# 	return list( (bound_loc, Loop(loop[:i]), Loop(loop[i+1:]) ) for (bound_loc, i) in results )  #EW
 
 def find_on_loop(reactant, start_loc, direction, filter):
 	"""
@@ -1611,8 +1757,13 @@ def find_on_loop(reactant, start_loc, direction, filter):
 
 		
 		# try to match the filter function
-		elif (filter(reactant.get_domain(bound_loc), \
-			reactant.get_structure(bound_loc), bound_loc)):
+		elif (filter(
+			reactant.get_domain(start_loc),
+			reactant.get_structure(start_loc),
+			start_loc,
+			reactant.get_domain(bound_loc), 
+			reactant.get_structure(bound_loc), 
+			bound_loc)):
 
 			# append the location
 			results.append( (bound_loc, len(loop)) )
@@ -1629,6 +1780,125 @@ def find_on_loop(reactant, start_loc, direction, filter):
 		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
 
 	return list( (bound_loc, Loop(loop[:i]), Loop(loop[i+1:]) ) for (bound_loc, i) in results )  #EW
+
+def zip(reactant, start_loc, bound_loc, before, after, direction, filter):
+	"""
+	Takes a result from `find_on_loop` and "zips" it inwards (in the given 
+	`direction`); that is, given some `start_loc` and some `bound_loc`, tries 
+	to find as many adjacent domains as possible such that the `filter` 
+	function still returns True.
+
+
+	For example, if `start_loc` was b1 and `bound_loc` was b1*, and the filter
+	function specified that the domain at `start_loc` must be complementary to 
+	the domain at `bound_loc`, then the function would return [b1,b2] as 
+	start_locs and [b1*, b2*] as bound_locs
+
+
+	        b1* b2*
+	        ______
+	     __/      \__>
+	    <__        __
+	       \______/
+	        b1  b2
+
+
+	"""
+	def triple(loc):
+		return (reactant.get_domain(loc),reactant.get_structure(loc),loc)
+
+	start_locs = [triple(start_loc)]
+	bound_locs = [triple(bound_loc)]
+
+	dstrand, ddomain = start_loc
+	bstrand, bdomain = bound_loc
+
+	while True:
+		# move domain pointers "inwards" towards each other
+		ddomain += direction
+		bdomain -= direction
+
+		# if ddomain is still on strand 
+		if ((ddomain < len(reactant.strands[dstrand].domains) and ddomain >= 0) and 
+			
+			# and bdomain is still on strand 
+			(bdomain < len(reactant.strands[dstrand].domains) and bdomain >= 0) and 
+			
+			# and ddomain hasn't passed bound_loc 
+			(cmp((dstrand, ddomain), bound_loc) == +direction ) and 
+			
+			# and bdomain hasn't passed start_loc
+			(cmp((bstrand, bdomain), start_loc) == -direction ) and 
+			
+			# and filter condition still applies
+			filter( 
+				reactant.get_domain((dstrand, ddomain)),
+				reactant.get_structure((dstrand, ddomain)),
+				(dstrand, ddomain),
+				reactant.get_domain((bstrand, bdomain)), 
+				reactant.get_structure((bstrand, bdomain)), 
+				(bstrand, bdomain))):
+
+			# add new positions to list
+			start_locs.append(triple((dstrand, ddomain)))
+			bound_locs.append(triple((bstrand, bdomain)))
+
+			before_index = (-direction-1/2)
+			after_index =   (direction-1/2)
+
+			try:
+				if before[before_index][0] == (dstrand, ddomain):
+					del before[before_index]
+			except IndexError: pass
+
+			try:
+				if after[after_index][0] == (bstrand, bdomain):
+					del after[after_index]
+			except IndexError: pass
+
+		else: break
+
+	start_locs = Loop(start_locs)
+	bound_locs = Loop(bound_locs)
+	before = Loop(before)
+	after = Loop(after)
+	
+	return start_locs, bound_locs, before, after		
+
+# def zip(reactant, loc1, before, loc2, after, filter):
+# 	dstrand = displacing_loc[0]
+# 	ddomain = displacing_loc[1]
+# 	bstrand = new_bound_loc[0]
+# 	bdomain = new_bound_loc[1]
+# 	if (ddomain+1 < len(reactant.strands[dstrand].domains)) and \
+# 		(reactant.structure[dstrand][ddomain+1] == None) and \
+# 		(bdomain-1 >= 0) and \
+# 		(reactant.structure[bstrand][bdomain-1] != None) and \
+# 		(reactant.strands[bstrand].domains[bdomain-1].can_pair(reactant.strands[dstrand].domains[ddomain+1])):
+		
+# 		return do_3way_migration(reactant, (dstrand, ddomain+1), (bstrand, bdomain-1))
+
+# 	elif (ddomain-1 >= 0) and \
+# 		(reactant.structure[dstrand][ddomain-1] == None) and \
+# 		(bdomain+1 < len(reactant.strands[bstrand].domains)) and \
+# 		(reactant.structure[bstrand][bdomain+1] != None) and \
+# 		(reactant.strands[bstrand].domains[bdomain+1].can_pair(reactant.strands[dstrand].domains[ddomain-1])):
+		
+# 		return do_3way_migration(reactant, (dstrand, ddomain-1), (bstrand, bdomain+1))
+# 	else:
+# 		return
+
+def do_single_3way_migration(reaction, displacing_loc, new_bound_loc):
+	out_reactant_structure = copy.deepcopy(reactant.structure)
+
+	out_reactant_structure[displacing_loc[0]][displacing_loc[1]] = new_bound_loc
+	displaced_loc = out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]]
+	out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
+	out_reactant_structure[displaced_loc[0]][displaced_loc[1]] = None
+	
+	out_reactant = Complex(get_auto_name(),reactant.strands[:], out_reactant_structure)
+
+	return out_reactant
 
 def do_3way_migration(reactant, displacing_loc, new_bound_loc):
 	"""
@@ -1794,7 +2064,8 @@ def branch_4way(reactant):
 			#   z*      z
 			# 
 			bound_doms = find_on_loop(reactant, displacing_loc, +1, \
-				lambda dom, struct, loc: struct is not None and dom == displacing_domain)
+				# lambda dom, struct, loc: struct is not None and dom == displacing_domain)
+				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2)
 
 			# bound_doms = find_on_loop(reactant, structure[strand_index][domain_index], -1, \
 			# 	lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain)) + \
