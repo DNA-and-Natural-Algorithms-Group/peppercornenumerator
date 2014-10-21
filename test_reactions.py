@@ -20,18 +20,20 @@ def print_products(reactions):
 	for r in reactions:
 		print list(x.kernel_string() for x in r.products)
 
-def enable_new_zipping(reactions):
+def enable_new_zipping():
 	reactions.UNZIP = True
 	reactions.LEGACY_UNZIP = False
 
-def enable_old_zipping(reactions):
+def enable_old_zipping():
+	# return
 	reactions.UNZIP = True
 	reactions.LEGACY_UNZIP = True
 
+# enable_new_zipping(reactions)
 
 class ReactionTests(unittest.TestCase):
 	def testFindOnLoop(self):
-		enable_new_zipping(reactions)
+		enable_new_zipping()
 
 		(domains, strands, complexes) = from_kernel([
 			#     0 1 2 3  4
@@ -87,7 +89,7 @@ class ReactionTests(unittest.TestCase):
 		print expected_locs
 		assert locs == expected_locs
 
-		enable_old_zipping(reactions)
+		enable_old_zipping()
 
 
 
@@ -372,7 +374,7 @@ class BindTests(unittest.TestCase):
 	
 	def testBind11A(self):
 		# enable new zipping
-		enable_new_zipping(reactions)
+		enable_new_zipping()
 		
 
 		# bind11: a ? a* ? -> a( ? ) ?
@@ -399,7 +401,7 @@ class BindTests(unittest.TestCase):
 		assert rxns == [ReactionPathway('bind11', [complexes['A3']], [complexes['A4']])]
 
 		# disable zipping again
-		enable_old_zipping(reactions)
+		enable_old_zipping()
 
 	def testBind21(self):
 		out_list = bind21(self.complexes['C1'], self.complexes['I3'])

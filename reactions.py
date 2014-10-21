@@ -27,8 +27,9 @@ unbound by the `open` reaction function.
 
 # If true, 3 way branch migrations are always greedy
 UNZIP = True
-LEGACY_UNZIP = True
 # UNZIP = False
+LEGACY_UNZIP = True
+# LEGACY_UNZIP = False
 
 class ReactionPathway(object):
 	"""
@@ -1509,57 +1510,66 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
 	def triple(loc):
 		return (reactant.get_domain(loc),reactant.get_structure(loc),loc)
 
+	def move_towards_middle(middle, direction):
+
+		dstrand, ddomain = start_loc
+		bstrand, bdomain = bound_loc
+
+		while True:
+			# move domain pointers "inwards" towards each other
+			ddomain += direction
+			bdomain -= direction
+
+			# if ddomain is still on strand 
+			if ((ddomain < len(reactant.strands[dstrand].domains) and ddomain >= 0) and 
+
+				# and bdomain is still on strand 
+				(bdomain < len(reactant.strands[dstrand].domains) and bdomain >= 0) and 
+
+				# and ddomain hasn't passed bound_loc 
+				(cmp((dstrand, ddomain), bound_loc) == -direction ) and 
+
+				# and bdomain hasn't passed start_loc
+				(cmp((bstrand, bdomain), start_loc) == +direction ) and 
+
+				# and filter condition still applies
+				filter( 
+					reactant.get_domain((dstrand, ddomain)),
+					reactant.get_structure((dstrand, ddomain)),
+					(dstrand, ddomain),
+					reactant.get_domain((bstrand, bdomain)), 
+					reactant.get_structure((bstrand, bdomain)), 
+					(bstrand, bdomain))):
+
+				# add new positions to list
+				if direction == 1:
+					start_locs[-1:] = [ triple((dstrand, ddomain)) ]
+					bound_locs[-1:] = [ triple((bstrand, bdomain)) ]
+				elif direction == -1:
+					start_locs[:0] = [ triple((dstrand, ddomain)) ]
+					bound_locs[:0] = [ triple((bstrand, bdomain)) ]
+
+				# remove zipped positions from `middle` loop
+				displacing_index = (direction-1)/2
+				bound_index =   (-direction-1)/2
+
+				try:
+					if middle[displacing_index] is not None and middle[displacing_index][2] == (dstrand, ddomain):
+						del middle[displacing_index]
+				except IndexError: pass
+
+				try:
+					if middle[bound_index] is not None and middle[bound_index][2] == (bstrand, bdomain):
+						del middle[bound_index]
+				except IndexError: pass
+
+			else: break
+
 	start_locs = [triple(start_loc)]
 	bound_locs = [triple(bound_loc)]
 
-	dstrand, ddomain = start_loc
-	bstrand, bdomain = bound_loc
-
-	while True:
-		# move domain pointers "inwards" towards each other
-		ddomain += direction
-		bdomain -= direction
-
-		# if ddomain is still on strand 
-		if ((ddomain < len(reactant.strands[dstrand].domains) and ddomain >= 0) and 
-
-			# and bdomain is still on strand 
-			(bdomain < len(reactant.strands[dstrand].domains) and bdomain >= 0) and 
-
-			# and ddomain hasn't passed bound_loc 
-			(cmp((dstrand, ddomain), bound_loc) == -direction ) and 
-
-			# and bdomain hasn't passed start_loc
-			(cmp((bstrand, bdomain), start_loc) == +direction ) and 
-
-			# and filter condition still applies
-			filter( 
-				reactant.get_domain((dstrand, ddomain)),
-				reactant.get_structure((dstrand, ddomain)),
-				(dstrand, ddomain),
-				reactant.get_domain((bstrand, bdomain)), 
-				reactant.get_structure((bstrand, bdomain)), 
-				(bstrand, bdomain))):
-
-			# add new positions to list
-			start_locs.append(triple((dstrand, ddomain)))
-			bound_locs.append(triple((bstrand, bdomain)))
-
-			# remove zipped positions from `before` and `after` loops
-			displacing_index = (direction-1)/2
-			bound_index =   (-direction-1)/2
-
-			try:
-				if before[displacing_index] is not None and before[displacing_index][2] == (dstrand, ddomain):
-					del before[displacing_index]
-			except IndexError: pass
-
-			try:
-				if before[bound_index] is not None and before[bound_index][2] == (bstrand, bdomain):
-					del before[bound_index]
-			except IndexError: pass
-
-		else: break
+	for (d, middle) in [ (direction, before), (-direction, after) ]:
+		move_towards_middle(middle, d)
 
 	start_locs = Loop(start_locs)
 	bound_locs = Loop(bound_locs)
