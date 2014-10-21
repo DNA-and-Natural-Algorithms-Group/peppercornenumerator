@@ -216,6 +216,22 @@ class Loop(object):
 
 
 	@property
+	def locs(self):
+		return (part[2] if part is not None else None for part in self._parts)
+
+	@property
+	def domains(self):
+		return (part[0] if part is not None else None for part in self._parts)
+
+	@property
+	def structures(self):
+		return (part[1] if part is not None else None for part in self._parts)
+
+	@property
+	def structs(self):
+		return self.structures
+
+	@property
 	def parts(self):
 		"""
 		Gives the list of (dom, struct, loc) tuples associated with this loop
@@ -242,6 +258,18 @@ class Loop(object):
 		True if the loop is an open loop, else false
 		"""
 		return self._is_open
+
+	def __str__(self):
+		return "Loop(%s)" % list(self.domains)
+
+	def __repr__(self):
+		return str(self)
+
+	def __len__(self):
+		return sum(len(dom) for dom in self.domains)
+
+	def __eq__(self, other):
+		return self._parts == other._parts
 
 class Domain(object):
 	"""
@@ -596,6 +624,9 @@ class Complex(object):
 		if(loc != None):
 			return self.structure[loc[0]][loc[1]]
 		return None
+
+	def triple(self,*loc):
+		return (self.get_domain(loc),self.get_structure(loc),loc)
 
 	def strand_index(self, strand_name):
 		"""
