@@ -1064,10 +1064,20 @@ def branch_3way(reactant):
 			# build products
 			# [ (Loop([triple(start_loc)]), Loop([triple(bound_loc]), Loop(loop[:i]), Loop(loop[i+1:])) ]
 			for (displacing, displaced, before, after) in bound_doms:
-				reaction = ReactionPathway('branch_3way', [reactant], do_3way_migration(
-					reactant, displacing.locs, 
-					(structure[bound_loc[0]][bound_loc[1]] for bound_loc in displaced.locs))
-				)
+
+				if UNZIP and LEGACY_UNZIP:
+					displacing_loc = list(displacing.locs)[0]
+					bound_loc = list(displaced.locs)[0]
+					reaction = ReactionPathway('branch_3way', [reactant], do_3way_migration_legacy(
+						reactant, 
+						displacing_loc, 
+						structure[bound_loc[0]][bound_loc[1]])
+					)
+				else:
+					reaction = ReactionPathway('branch_3way', [reactant], do_3way_migration(
+						reactant, displacing.locs, 
+						(structure[bound_loc[0]][bound_loc[1]] for bound_loc in displaced.locs))
+					)
 
 				# length of invading domain
 				length = len(displacing_domain)
@@ -1129,6 +1139,52 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
 		product = do_single_3way_migration(product, displacing_loc, bound_loc)
 
 	return find_releases(product)
+
+def do_3way_migration_legacy(reactant, displacing_loc, new_bound_loc):
+	"""
+	Returns the product set which is the result of a 3-way branch migration
+	reaction where the domain at displacing_loc displaces the domain bound to
+	the domain at new_bound_loc.
+	"""
+
+	# out_reactant = copy.deepcopy(reactant)
+
+	out_reactant_structure = copy.deepcopy(reactant.structure)
+
+	out_reactant_structure[displacing_loc[0]][displacing_loc[1]] = new_bound_loc
+	displaced_loc = out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]]
+	out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
+	out_reactant_structure[displaced_loc[0]][displaced_loc[1]] = None
+	
+	out_reactant = Complex(get_auto_name(),reactant.strands[:], out_reactant_structure)
+	
+	global UNZIP
+	
+	# Check to see if an adjacent displacement is possible
+	if (UNZIP):
+		dstrand = displacing_loc[0]
+		ddomain = displacing_loc[1]
+		bstrand = new_bound_loc[0]
+		bdomain = new_bound_loc[1]
+		if (ddomain+1 < len(out_reactant.strands[dstrand].domains)) and \
+			(out_reactant.structure[dstrand][ddomain+1] == None) and \
+			(bdomain-1 >= 0) and \
+			(out_reactant.structure[bstrand][bdomain-1] != None) and \
+			(out_reactant.strands[bstrand].domains[bdomain-1].can_pair(out_reactant.strands[dstrand].domains[ddomain+1])):
+			
+			return do_3way_migration_legacy(out_reactant, (dstrand, ddomain+1), (bstrand, bdomain-1))
+
+		elif (ddomain-1 >= 0) and \
+			(out_reactant.structure[dstrand][ddomain-1] == None) and \
+			(bdomain+1 < len(out_reactant.strands[bstrand].domains)) and \
+			(out_reactant.structure[bstrand][bdomain+1] != None) and \
+			(out_reactant.strands[bstrand].domains[bdomain+1].can_pair(out_reactant.strands[dstrand].domains[ddomain-1])):
+			
+			return do_3way_migration_legacy(out_reactant, (dstrand, ddomain-1), (bstrand, bdomain+1))
+		else:
+			return find_releases(out_reactant)
+	else:
+		return find_releases(out_reactant)
 
 
 # def find_on_loop(reactant, start_loc, direction, filter):
@@ -1423,8 +1479,9 @@ def find_on_loop(reactant, start_loc, direction, filter):
 			zipped_results.append( zipper(reactant, start_loc, bound_loc, loop[:i], loop[i+1:], direction, filter) )
 		return zipped_results
 	else:
+		return [(Loop([triple(start_loc)]), Loop([triple(bound_loc)]), Loop(loop[:i]), Loop(loop[i+1:])) for (bound_loc, i) in results]
 		# return list( (bound_loc, Loop(loop[:i]), Loop(loop[i+1:]) ) for (bound_loc, i) in results )  #EW
-		return [ (Loop([triple(start_loc)]), Loop([triple(bound_loc)]), Loop(loop[:i]), Loop(loop[i+1:])) ]
+			
 
 def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
 	"""

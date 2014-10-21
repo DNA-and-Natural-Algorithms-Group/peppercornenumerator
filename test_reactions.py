@@ -20,8 +20,19 @@ def print_products(reactions):
 	for r in reactions:
 		print list(x.kernel_string() for x in r.products)
 
+def enable_new_zipping(reactions):
+	reactions.UNZIP = True
+	reactions.LEGACY_UNZIP = False
+
+def enable_old_zipping(reactions):
+	reactions.UNZIP = True
+	reactions.LEGACY_UNZIP = True
+
+
 class ReactionTests(unittest.TestCase):
 	def testFindOnLoop(self):
+		enable_new_zipping(reactions)
+
 		(domains, strands, complexes) = from_kernel([
 			#     0 1 2 3  4
 			"A1 = x y z x* y",
@@ -34,7 +45,7 @@ class ReactionTests(unittest.TestCase):
 		])
 
 		# test outside loop
-		locs = find_on_loop(complexes['A1'], (0,0), 1, \
+		locs = reactions.find_on_loop(complexes['A1'], (0,0), 1, \
 				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1))
 		A1 = complexes['A1']
 		expected_locs = [( 
@@ -48,7 +59,7 @@ class ReactionTests(unittest.TestCase):
 		assert locs == expected_locs
 
 		# test within loop with strand break, no zippering possible
-		locs = find_on_loop(complexes['A2'], (0,1), 1, \
+		locs = reactions.find_on_loop(complexes['A2'], (0,1), 1, \
 				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1))
 		A2 = complexes['A2']
 		expected_locs = [( 
@@ -63,7 +74,7 @@ class ReactionTests(unittest.TestCase):
 
 		# test within loop with strand break, zippering possible
 		# from nose.tools import set_trace; set_trace()
-		locs = find_on_loop(complexes['A3'], (0,1), 1, \
+		locs = reactions.find_on_loop(complexes['A3'], (0,1), 1, \
 				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1))
 		A3 = complexes['A3']
 		expected_locs = [( 
@@ -76,6 +87,7 @@ class ReactionTests(unittest.TestCase):
 		print expected_locs
 		assert locs == expected_locs
 
+		enable_old_zipping(reactions)
 
 
 
@@ -359,6 +371,10 @@ class BindTests(unittest.TestCase):
 		# assert out_complex == exp_complex
 	
 	def testBind11A(self):
+		# enable new zipping
+		enable_new_zipping(reactions)
+		
+
 		# bind11: a ? a* ? -> a( ? ) ?
 		(domains, strands, complexes) = from_kernel([
 			# ?
@@ -370,17 +386,20 @@ class BindTests(unittest.TestCase):
 			"A4 = x() a( b( x() )  )  x()"
 		])
 		# No zipping possible
-		rxns = bind11(complexes['A1'])
+		rxns = reactions.bind11(complexes['A1'])
 		print "-> : ", rxns
 		print_products(rxns)
 		assert rxns == [ReactionPathway('bind11', [complexes['A1']], [complexes['A2']])]
 
 
 		# Zipping possible
-		rxns = bind11(complexes['A3'])
+		rxns = reactions.bind11(complexes['A3'])
 		print "-> : ", rxns
 		print_products(rxns)
 		assert rxns == [ReactionPathway('bind11', [complexes['A3']], [complexes['A4']])]
+
+		# disable zipping again
+		enable_old_zipping(reactions)
 
 	def testBind21(self):
 		out_list = bind21(self.complexes['C1'], self.complexes['I3'])
@@ -1061,8 +1080,10 @@ class Branch3WayTests(unittest.TestCase):
 		
 		res_list.sort()
 		exp_list.sort()
-		print exp_list
-		print res_list
+		print "exp: ",exp_list
+		print_products(exp_list)
+		print "res: ",res_list
+		print_products(res_list)
 
 		assert res_list == exp_list
 		
@@ -1117,6 +1138,8 @@ class Branch3WayTests(unittest.TestCase):
 		# with the new code, more reactions are produced that have stranger products. I'm too lazy to code them
 		# all in right now, so we'll just check for regression here.
 		exp_rxn = ReactionPathway('branch_3way', [self.complexes['IABC']], [self.complexes['I'], self.complexes['ABC']])		
+		print res_list
+		print_products(res_list)
 		assert exp_rxn in res_list		
 		
 		structs_list = \
