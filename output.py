@@ -110,7 +110,7 @@ def output_pil(enumerator, filename, output_condensed = False, output_rates = Tr
 	def write_complex(output_file,complex):
 		params = ""
 		if complex.concentration is not None:
-			params = "[%g %sM] " % utils.format_si(complex.concentration)
+			params = "[@ %g %sM] " % utils.format_si(complex.concentration)
 		output_file.write("structure " + params + str(complex) + " = ")
 		names = map(lambda strand: strand.name, complex.strands)
 		strands_string = " + ".join(names)
@@ -489,13 +489,13 @@ def output_sbml(enumerator,filename, output_condensed = False):
 		for resting_state in complexes:
 			# is_initial = any(c in enumerator.initial_complexes for c in resting_state.complexes)
 			initial_concentration = sum((c.concentration if c.concentration is not None else 0.0) for c in resting_state.complexes)
-			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial).10f"/>' \
+			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial)g"/>' \
 				% {"name": resting_state.name, "id": id(resting_state), "initial": initial_concentration })
 	else:
 		for complex in complexes:
 			# is_initial = (complex in enumerator.initial_complexes)
 			initial_concentration = complex.concentration if complex.concentration is not None else 0.0
-			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial).10f"/>' \
+			out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial)g"/>' \
 				% {"name": complex.name, "id": id(complex), "initial": initial_concentration })
 	
 	out += ['</listOfSpecies>','<listOfReactions>']

@@ -192,13 +192,20 @@ class Enumerator(object):
 		old_release_cutoff_1_1 = reactions.RELEASE_CUTOFF_1_1
 		old_release_cutoff_1_N = reactions.RELEASE_CUTOFF_1_N
 		if (hasattr(self,'RELEASE_CUTOFF')):
+			# print "self.RELEASE_CUTOFF: %d" % self.RELEASE_CUTOFF 
 			reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF
 			reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF
+
 		if (hasattr(self,'RELEASE_CUTOFF_1_1')):
+			# print "self.RELEASE_CUTOFF_1_1: %d" % self.RELEASE_CUTOFF_1_1
 			reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF_1_1
+
 		if (hasattr(self,'RELEASE_CUTOFF_1_N')):
+			# print "self.RELEASE_CUTOFF_1_N: %d" % self.RELEASE_CUTOFF_1_N
 			reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF_1_N
 
+		print "Release cutoff 1-1: %d nt" % reactions.RELEASE_CUTOFF_1_1
+		print "Release cutoff 1-n: %d nt" % reactions.RELEASE_CUTOFF_1_N
 
 		# Will be called once enumeration halts, either because it's finished or
 		# because too many complexes/reactions have been enumerated
@@ -714,10 +721,10 @@ def main(argv):
 		help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
 
 
-	parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', default=reactions.RELEASE_CUTOFF_1_1, type=int, \
-		help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %(default)s)")
-	parser.add_argument('--release-cutoff-1-n', action='store', dest='RELEASE_CUTOFF_1_N', default=reactions.RELEASE_CUTOFF_1_1, type=int, \
-		help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction. (default: %(default)s)")
+	parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', type=int, \
+		help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %d)" % reactions.RELEASE_CUTOFF_1_1)
+	parser.add_argument('--release-cutoff-1-n', action='store', dest='RELEASE_CUTOFF_1_N', type=int, \
+		help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction. (default: %d)" % reactions.RELEASE_CUTOFF_1_N)
 	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
 
