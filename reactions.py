@@ -18,7 +18,8 @@ def get_auto_name():
 	auto_name += 1
 	return str(auto_name)
 
-RELEASE_CUTOFF = 6
+RELEASE_CUTOFF_1_1 = 6
+RELEASE_CUTOFF_1_N = 6
 """
 Gives the maximum length of a duplex in nucleotides that should be considered 
 reversibly bound; that is, helices longer than RELEASE_CUTOFF will never be
@@ -780,8 +781,11 @@ def open(reactant):
 	A dissociation can happen to any helix under the threshold length		
 	"""
 
+	# remember the larger release cutoff; don't enumerate any reactions
+	# for helices longer than this
+	MAX_RELEASE_CUTOFF = max(RELEASE_CUTOFF_1_1, RELEASE_CUTOFF_1_N)
+
 	reactions = []
-	
 	
 	structure = reactant.structure
 	strands = reactant.strands
@@ -865,7 +869,7 @@ def open(reactant):
 			helix_startB[1] -= 1
 			
 			# If the helix is short enough, we have a reaction	
-			if (helix_length <= RELEASE_CUTOFF):
+			if (helix_length <= MAX_RELEASE_CUTOFF):
 
 
 				release_reactant = Complex(get_auto_name(), reactant.strands[:], 
@@ -886,6 +890,13 @@ def open(reactant):
 	output = []
 	for product_set,length in reactions:
 		reaction = ReactionPathway('open', [reactant], sorted(product_set))
+		
+		# discard reactions where the release cutoff is greater than the threshold
+		if len(reaction.products) == 1 and length > RELEASE_CUTOFF_1_1:
+			continue
+		elif len(reaction.products) > 1 and length > RELEASE_CUTOFF_1_N:
+			continue
+
 		reaction._const = opening_rate(length)
 		output.append(reaction)
 	

@@ -189,15 +189,22 @@ class Enumerator(object):
 		"""
 
 		# handle release cutoff
-		old_release_cutoff = reactions.RELEASE_CUTOFF
+		old_release_cutoff_1_1 = reactions.RELEASE_CUTOFF_1_1
+		old_release_cutoff_1_N = reactions.RELEASE_CUTOFF_1_N
 		if (hasattr(self,'RELEASE_CUTOFF')):
-			reactions.RELEASE_CUTOFF = self.RELEASE_CUTOFF
+			reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF
+			reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF
+		if (hasattr(self,'RELEASE_CUTOFF_1_1')):
+			reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF_1_1
+		if (hasattr(self,'RELEASE_CUTOFF_1_N')):
+			reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF_1_N
 
 
 		# Will be called once enumeration halts, either because it's finished or
 		# because too many complexes/reactions have been enumerated
 		def finish(premature=False):
-			reactions.RELEASE_CUTOFF = old_release_cutoff
+			reactions.RELEASE_CUTOFF_1_1 = old_release_cutoff_1_1
+			reactions.RELEASE_CUTOFF_1_N = old_release_cutoff_1_N
 
 			# copy E and T into #complexes
 			self._complexes += (self._E)
@@ -686,7 +693,7 @@ def main(argv):
 		", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()) + \
 		". (default: guess from the extension of --infile)")
 	parser.add_argument('-o', action='store', dest='output_format', default='', \
-		help="Write the output file using this format; one or more (comma-separated) of :" + \
+		help="Write the output file using this format; one or more (comma-separated) of: " + \
 		", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()) + \
 		". (default: guess from the extension of --outfile)")
 
@@ -705,8 +712,15 @@ def main(argv):
 		help="Maximum number of complexes that may be enumerated before the enumerator halts. (default: %(default)s)")
 	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
 		help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
-	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=reactions.RELEASE_CUTOFF, type=int, \
-		help="Maximum number of bases that will be released spontaneously in an `open` reaction. (default: %(default)s)")
+
+
+	parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', default=reactions.RELEASE_CUTOFF_1_1, type=int, \
+		help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %(default)s)")
+	parser.add_argument('--release-cutoff-1-n', action='store', dest='RELEASE_CUTOFF_1_N', default=reactions.RELEASE_CUTOFF_1_1, type=int, \
+		help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction. (default: %(default)s)")
+	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
+		help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
+
 	parser.add_argument('--bfs-ish', action='store_true', dest='bfs', \
 		help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
 	parser.add_argument('--ignore-branch-3way', action='store_true', dest='ignore_branch_3way', \
@@ -760,7 +774,13 @@ def main(argv):
 		enum.MAX_COMPLEX_SIZE = cl_opts.MAX_COMPLEX_SIZE
 
 	if cl_opts.RELEASE_CUTOFF is not None:
-		reactions.RELEASE_CUTOFF = cl_opts.RELEASE_CUTOFF
+		enum.RELEASE_CUTOFF = cl_opts.RELEASE_CUTOFF
+
+	if cl_opts.RELEASE_CUTOFF_1_1 is not None:
+		enum.RELEASE_CUTOFF_1_1 = cl_opts.RELEASE_CUTOFF_1_1
+
+	if cl_opts.RELEASE_CUTOFF_1_N is not None:
+		enum.RELEASE_CUTOFF_1_N = cl_opts.RELEASE_CUTOFF_1_N
 
 	enum.DFS = not cl_opts.bfs
 	enum.interactive = cl_opts.interactive
