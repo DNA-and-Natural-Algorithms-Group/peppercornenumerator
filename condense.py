@@ -89,6 +89,9 @@ def tuple_sum(iterable):
     """
     return reduce(operator.concat, tuple(iterable), tuple())
 
+def tuple_sum_sort(iterable):
+    return tuple_sort(tuple_sum(iterable))
+
 def tuple_sort(tup):
     return tuple(sorted(tup))
 
@@ -96,7 +99,8 @@ def cartesian_product(iterable):
     """
     Gives the cartesian product of the passed `iterable`
     """
-    return map(tuple_sort, it.product(*iterable))
+    # return map(tuple_sort, it.product(*iterable))
+    return [tuple_sort(x) for x in it.product(*iterable)]
 
 def cartesian_sum(iterable):
     """
@@ -111,7 +115,8 @@ def cartesian_sum(iterable):
 
         X [+] Y = { (tuple_sum_{a in p} a) : p in X x Y }
     """
-    return map(tuple_sum,it.product(*iterable))
+    # return map(tuple_sum,it.product(*iterable))
+    return [tuple_sort(tuple_sum(x)) for x in cartesian_product(iterable)]
 
 
 def get_reactions_consuming(complexes,reactions):
@@ -303,9 +308,13 @@ def condense_graph(enumerator, compute_rates=True):
 
         # add transition rates for each reaction to T
         for r in reactions:
+            # r : a -> b
+            # T_{b,a} = rate(r : a -> b)
             a = r.reactants[0]
             b = r.products[0]
             T[complex_indices[b]][complex_indices[a]] = r.rate()
+
+        T0 = np.copy(T)
 
         # compute diagonal elements of T
         T_diag = np.sum(T, axis=0) # sum over columns
@@ -314,13 +323,20 @@ def condense_graph(enumerator, compute_rates=True):
 
         # calculate eigenvalues
         (w,v) = np.linalg.eig(T)
+        # w is array of eigenvalues
+        # v is array of eigenvectors, where column v[:,i] is eigenvector corresponding to the eigenvalue w[i].
 
         # find eigenvector corresponding to eigenvalue zero
         epsilon = 1e-14
         try:
-            s = next(v[i,:] for (i, x) in enumerate(w) if abs(x) < epsilon) # semi-arbitrary choice of epsilon based on what seemed to work with numpy
+            s = next(v[:,i] for (i, x) in enumerate(w) if abs(x) < epsilon) # semi-arbitrary choice of epsilon based on what seemed to work with numpy
         except(StopIteration):
             raise Exception("Unable to find stationary distribution for resting state. No eigenvector with eigenvalue less than epsilon = %e for transition matrix; Markov chain may be periodic, or epsilon may be too high." % epsilon)
+
+        # check that the stationary distribution is good
+        assert (s >= 0).all() or (s <= 0).all()
+        s = np.abs(s)
+        assert abs(np.sum(s) - 1) < 1e-1
 
         # return dict mapping complexes to stationary probabilities
         return { c: s[i] for (c,i) in complex_indices.iteritems() }
@@ -382,6 +398,9 @@ def condense_graph(enumerator, compute_rates=True):
 
         # calculate the fundamental matrix (N = (I_L - Q)^-1)
         N = np.linalg.inv(np.eye(L) - Q)
+
+        # make sure all elements of fundamental matrix are >= 0
+        assert (N >= 0).all()
 
         # calculate the absorption matrix (B = NR)
         B = np.dot(N,R)
@@ -475,11 +494,11 @@ def condense_graph(enumerator, compute_rates=True):
 
             # Compute the fates of each of the outgoing reactions by summing each element above
             # This is a list, with each element corresponding to the frozenset of fates for one reaction.
-            reaction_fates = [ map(tuple_sum,combination) for combination in reaction_fate_combinations ]
+            reaction_fates = [ sorted(map(tuple_sum_sort,combination)) for combination in reaction_fate_combinations ]
 
             # note that these two are equivalent; the intermediate reaction_fate_combinations is only 
             # calculated for the sake of the rates
-            assert reaction_fates == [ cartesian_sum(map(get_fates,r.products)) for r in outgoing_reactions ]
+            assert reaction_fates == [ sorted(cartesian_sum(map(get_fates,r.products))) for r in outgoing_reactions ]
             
 
             if compute_rates:
@@ -609,13 +628,16 @@ def condense_graph(enumerator, compute_rates=True):
                         # probability that the products of this detailed reaction decay into fates 
                         # that yield the condensed reaction
                         product_probability = reaction_decay_probabilities[(r, products)]
+                        assert product_probability >= 0
 
                         # probability that the resting states comprising the reactants of the condensed reaction will be in the right
                         # configuration to perform the detailed reaction
                         reactant_probabilities = times(stationary_distributions[resting_states[frozenset(SCC_containing[a])]][a] for a in r.reactants)
-                        
+                        assert reactant_probabilities >= 0
+
                         # rate of the detailed reaction
                         k = r.rate()
+                        assert k >= 0
 
                         # overall contribution of detailed reaction r to rate of the condensed reaction ^r = 
                         # P(reactants of ^r are present as reactants of r) * k_r * P(products of r decay to products of ^r)
