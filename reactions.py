@@ -26,9 +26,17 @@ reversibly bound; that is, helices longer than RELEASE_CUTOFF will never be
 unbound by the `open` reaction function.
 """
 
+REJECT_REMOTE = False
+"""
+If True, discards 3-way and 4-way remote toehold branch migration reactions
+"""
+
+
 # If true, 3 way branch migrations are always greedy
 UNZIP = True
-# UNZIP = False
+"""
+If True, 3-way branch migrations obey "Maximum helix at a time" semantics
+"""
 
 class ReactionPathway(object):
 	"""
@@ -1479,7 +1487,11 @@ def branch_3way(reactant):
 
 				# calculate reaction constant
 				reaction._const = branch_3way_remote_rate(length, before, after)
-				# reaction._const = branch_3way_rate(length)
+
+				# skip remote toehold reactions if directed
+				if REJECT_REMOTE:
+					if not (not after.is_open and after.stems==1 and after.bases==0):
+						continue
 
 				reactions.append(reaction)
 				
@@ -1825,6 +1837,13 @@ def branch_4way(reactant):
 
 				# calculate reaction constant
 				reaction._const = branch_4way_remote_rate(length, before, after)
+
+				# skip remote toehold reactions if directed
+				if REJECT_REMOTE:
+					if not (not after.is_open and after.stems==1 and after.bases==0 and 
+						not before.is_open and before.stems==1 and before.bases==0):
+						continue
+
 
 				reactions.append(reaction)
 
