@@ -3,13 +3,13 @@
 # not interested in rate constants here, just the pathway enumeration.
 # (may want to look at kinetics from figure S5, for example with rate constants)
 
-length X1 = 7
-length X2 = 4
-length Y1 = 7
-length Y2 = 4
-length a = 5
-length b = 7
-length c = 5
+#length X1 = 7
+#length X2 = 4
+#length Y1 = 7
+#length Y2 = 4
+#length a = 5
+#length b = 7
+#length c = 5
 
 hairpin = X1 X2 b( c y* ) a* Y1*
 robot = a b( c( + ) ) X2* X1*
