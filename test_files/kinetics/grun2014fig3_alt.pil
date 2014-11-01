@@ -27,4 +27,4 @@ n4 = 9*( 8*( 4*( 3* 2* 1* ))) 5
 # ../../enumerator.py grun2014fig3_alt.pil 
 # more grun2014fig3_alt-enum.pil
 
-
+# status as of 10/31/2014:  doesn't enumerate some bimolecular reactions
