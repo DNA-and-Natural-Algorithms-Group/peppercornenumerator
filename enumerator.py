@@ -180,6 +180,40 @@ class Enumerator(object):
 		self._transient_complexes = []
 		self._reactions = []
 
+
+	def set_reaction_options(self):
+		# handle release cutoff
+		self.old = {}
+		self.old['release_cutoff_1_1'] = reactions.RELEASE_CUTOFF_1_1
+		self.old['release_cutoff_1_N'] = reactions.RELEASE_CUTOFF_1_N
+		self.old['unzip'] = reactions.UNZIP
+		self.old['reject_remote'] = reactions.REJECT_REMOTE
+		if (hasattr(self,'RELEASE_CUTOFF')):
+			reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF
+			reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF
+
+		if (hasattr(self,'RELEASE_CUTOFF_1_1')):
+			reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF_1_1
+
+		if (hasattr(self,'RELEASE_CUTOFF_1_N')):
+			reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF_1_N
+
+		if (hasattr(self, 'UNZIP')):
+			reactions.UNZIP = self.UNZIP
+			if reactions.UNZIP:
+				print "Using max-helix semantics for 3-way branch migration"
+
+		if (hasattr(self, 'REJECT_REMOTE')):
+			reactions.REJECT_REMOTE = self.REJECT_REMOTE
+			if reactions.REJECT_REMOTE:
+				print "Ignoring remote toehold-mediated branch migration"
+
+	def reset_reaction_options(self):
+		reactions.RELEASE_CUTOFF_1_1 = self.old['release_cutoff_1_1']
+		reactions.RELEASE_CUTOFF_1_N = self.old['release_cutoff_1_N']
+		reactions.UNZIP = self.old['unzip']
+		reactions.REJECT_REMOTE = self.old['reject_remote']
+
 	def enumerate(self):
 		"""
 		Generates the reaction graph consisting of all complexes reachable from
@@ -188,16 +222,15 @@ class Enumerator(object):
 		class.
 		"""
 
-		# handle release cutoff
-		old_release_cutoff = reactions.RELEASE_CUTOFF
-		if (hasattr(self,'RELEASE_CUTOFF')):
-			reactions.RELEASE_CUTOFF = self.RELEASE_CUTOFF
 
+		self.set_reaction_options()
+		print "Release cutoff 1-1: %d nt" % reactions.RELEASE_CUTOFF_1_1
+		print "Release cutoff 1-n: %d nt" % reactions.RELEASE_CUTOFF_1_N
 
 		# Will be called once enumeration halts, either because it's finished or
 		# because too many complexes/reactions have been enumerated
 		def finish(premature=False):
-			reactions.RELEASE_CUTOFF = old_release_cutoff
+			self.reset_reaction_options()
 
 			# copy E and T into #complexes
 			self._complexes += (self._E)
@@ -680,13 +713,13 @@ def main(argv):
 		help="Path to the input file (same as listing the input filename after all arguments)")
 	parser.add_argument('--outfile', action='store', dest='output_filename', default=None, \
 		help="Path to the output file (default: use the input filename, + '-enum', then add " +\
-			"an extension based on the ")
+			"an extension based on the output type)")
 	parser.add_argument('-i', action='store', dest='input_format', default=None, \
 		help="Parse the input file using this format; one of: " + \
 		", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()) + \
 		". (default: guess from the extension of --infile)")
 	parser.add_argument('-o', action='store', dest='output_format', default='', \
-		help="Write the output file using this format; one or more (comma-separated) of :" + \
+		help="Write the output file using this format; one or more (comma-separated) of: " + \
 		", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()) + \
 		". (default: guess from the extension of --outfile)")
 
@@ -705,8 +738,21 @@ def main(argv):
 		help="Maximum number of complexes that may be enumerated before the enumerator halts. (default: %(default)s)")
 	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
 		help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
-	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=reactions.RELEASE_CUTOFF, type=int, \
-		help="Maximum number of bases that will be released spontaneously in an `open` reaction. (default: %(default)s)")
+
+
+	parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', type=int, \
+		help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %d)" % reactions.RELEASE_CUTOFF_1_1)
+	parser.add_argument('--release-cutoff-1-n', action='store', dest='RELEASE_CUTOFF_1_N', type=int, \
+		help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction. (default: %d)" % reactions.RELEASE_CUTOFF_1_N)
+	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
+		help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
+
+	parser.add_argument('--reject-remote', action='store_true', dest='REJECT_REMOTE', default=False, \
+		help="Discard remote toehold mediated 3-way and 4-way branch migration reactions. (default: %(default)s)")
+	parser.add_argument('--no-max-helix', action='store_false', dest='UNZIP', default=True, \
+		help="Don't apply 'max helix at a time' semantics to 3-way branch migration reactions. (default: False)")
+
+
 	parser.add_argument('--bfs-ish', action='store_true', dest='bfs', \
 		help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
 	parser.add_argument('--ignore-branch-3way', action='store_true', dest='ignore_branch_3way', \
@@ -737,6 +783,7 @@ def main(argv):
 			print "Guessing input format from input filename: %s" % cl_opts.input_format
 
 	# Attempt to load an input parser to generate an enumerator object
+	cl_opts.input_format = cl_opts.input_format.lower()
 	if (cl_opts.input_format in input.text_input_functions):
 		print "Reading input file : %s" % cl_opts.input_filename
 		enum = input.text_input_functions[cl_opts.input_format](cl_opts.input_filename)
@@ -760,7 +807,20 @@ def main(argv):
 		enum.MAX_COMPLEX_SIZE = cl_opts.MAX_COMPLEX_SIZE
 
 	if cl_opts.RELEASE_CUTOFF is not None:
-		reactions.RELEASE_CUTOFF = cl_opts.RELEASE_CUTOFF
+		enum.RELEASE_CUTOFF = cl_opts.RELEASE_CUTOFF
+
+	if cl_opts.RELEASE_CUTOFF_1_1 is not None:
+		enum.RELEASE_CUTOFF_1_1 = cl_opts.RELEASE_CUTOFF_1_1
+
+	if cl_opts.RELEASE_CUTOFF_1_N is not None:
+		enum.RELEASE_CUTOFF_1_N = cl_opts.RELEASE_CUTOFF_1_N
+
+	if cl_opts.REJECT_REMOTE is not None:
+		enum.REJECT_REMOTE = cl_opts.REJECT_REMOTE
+
+	if cl_opts.UNZIP is not None:
+		enum.UNZIP = cl_opts.UNZIP
+
 
 	enum.DFS = not cl_opts.bfs
 	enum.interactive = cl_opts.interactive
@@ -806,7 +866,7 @@ def main(argv):
 
 	# More robustly/conveniently guess the output filename(s)
 	output_filename = cl_opts.output_filename
-	output_formats = [of.strip() for of in cl_opts.output_format.split(",")]
+	output_formats = [of.strip().lower() for of in cl_opts.output_format.split(",")]
 
 	# if there were multiple output formats requested
 	if(len(output_formats) > 1):

@@ -1,0 +1,26 @@
+# Figure 3 of Grun et al 2014 (The Peppercorn Paper)
+#
+# Domain representation for catalytic formation of 3-arm junction, exactly as shown in figure 2 of
+# Yin, Choi, Calvert, Pierce, "Progamming Biomolecular Self-Assembly Pathways", Nature (2008)
+#
+# (Figure 3 Grun et al uses numbered domains instead of alphabetical)
+#
+# In the experiments of Yin et al, every domain is 6nt.  
+# That is the default for Peppercorn toeholds, but all those ^'s are ugly, so we'll list them anyway.
+
+length a = 6
+length b = 6
+length c = 6
+length x = 6
+length y = 6
+length z = 6
+
+I = y* b* x* a*
+A = a x( b( y( z* c* )))
+B = b y( c( z( x* a* )))
+C = c z( a( x( y* b* )))
+
+# ../../enumerator.py grun2014fig3.pil 
+# more grun2014fig3-enum.pil
+
+# status as of 10/31/2014:  doesn't enumerate some bimolecular reactions

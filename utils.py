@@ -58,10 +58,11 @@ def parse_parameters(parameters):
 	if len(parameters) > 1:
 		targets, conditions = parameters
 
-		# split conditions into comma-separated list
+		# split conditions into comma-separated list, discard whitespace
 		conditions = conditions.split(",")
 		for condition in conditions:
-			
+			condition = condition.strip()
+
 			# try to parse a concentration
 			concentration = parse_concentration(condition)
 			if concentration is not None:
@@ -78,8 +79,6 @@ def parse_concentration(condition):
 
 	if parts != None:
 		conc, unit = parts.groups()
-		# units = { 'p':1e-12, 'n':1e-9, 'u':1e-6, 'm':1e-3, 'c':1e-2, 'd':1e-1, '':1.0 }
-		# base = units[unit]
 		base = si_prefix_to_exp[unit]
 		concentration = float(conc) * base
 		return concentration

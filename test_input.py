@@ -640,7 +640,18 @@ class InputKernel(unittest.TestCase):
 
 		# Complexes 
 		complexes = { 
-			'2' : Complex('2', [strands['2_3']], [[None, None, None]])
+			'2' : Complex('2', [strands['2_3']], [[None, None, None]]),
+			'3' : Complex('2', [strands['2_3']], [[None, None, None]]),
+			'4' : Complex('2', [strands['2_3']], [[None, None, None]]),
+			'5' : Complex('2', [strands['2_3']], [[None, None, None]])
 		}
 		complexes['2'].concentration = 5e-7
-		assert complexes['2'].concentration == enumerator.complexes[0].concentration
+		complexes['3'].concentration = 5e-7
+		complexes['4'].concentration = 5e-7
+		complexes['5'].concentration = 7e-13
+
+		out_domains, out_strands, out_complexes = index_parts(enumerator)
+		assert complexes['2'].concentration == out_complexes['2'].concentration
+		assert complexes['3'].concentration == out_complexes['3'].concentration
+		assert complexes['4'].concentration == out_complexes['4'].concentration
+		assert complexes['5'].concentration == out_complexes['5'].concentration
