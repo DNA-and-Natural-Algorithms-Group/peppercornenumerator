@@ -1070,12 +1070,21 @@ def branch_3way(reactant):
 			displacing_domain = strand.domains[domain_index]
 			displacing_loc = (strand_index, domain_index)
 
+			# # search both directions around the loop for a bound domain that
+			# # is complementary (and therefore can be bound to)
+			# bound_doms = find_on_loop(reactant, displacing_loc, -1, \
+			# 	lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2) + \
+			# find_on_loop(reactant, displacing_loc, +1, \
+			# 	lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2)
+
+
 			# search both directions around the loop for a bound domain that
 			# has the same sequence (and therefore can be displaced)
 			bound_doms = find_on_loop(reactant, displacing_loc, -1, \
 				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2) + \
 			find_on_loop(reactant, displacing_loc, +1, \
 				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2)
+
 			# bound_doms = find_on_loop(reactant, displacing_loc, -1, \
 			# 	lambda dom, struct, loc: struct is not None and dom == displacing_domain) + \
 			# find_on_loop(reactant, displacing_loc, +1, \
@@ -1530,6 +1539,8 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
 	        b1  b2
 
 
+	return start_locs, bound_locs, before, after
+
 	"""
 	def triple(loc):
 		return (reactant.get_domain(loc),reactant.get_structure(loc),loc)
@@ -1544,17 +1555,19 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
 			ddomain += direction
 			bdomain -= direction
 
-			# if ddomain is still on strand 
+			# if ddomain is still on dstrand 
 			if ((ddomain < len(reactant.strands[dstrand].domains) and ddomain >= 0) and 
 
-				# and bdomain is still on strand 
-				(bdomain < len(reactant.strands[dstrand].domains) and bdomain >= 0) and 
+				# and bdomain is still on bstrand 
+				(bdomain < len(reactant.strands[bstrand].domains) and bdomain >= 0) and 
 
 				# and ddomain hasn't passed bound_loc 
-				(cmp((dstrand, ddomain), bound_loc) == -direction ) and 
+				# (cmp((dstrand, ddomain), bound_loc) == -direction ) and 
+				(cmp((dstrand, ddomain), bound_loc) == cmp(start_loc, bound_loc) ) and 
 
 				# and bdomain hasn't passed start_loc
-				(cmp((bstrand, bdomain), start_loc) == +direction ) and 
+				# (cmp((bstrand, bdomain), start_loc) == +direction ) and 
+				(cmp((bstrand, bdomain), start_loc) == cmp(bound_loc, start_loc) ) and 
 
 				# and filter condition still applies
 				filter( 
@@ -1567,8 +1580,8 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
 
 				# add new positions to list
 				if direction == 1:
-					start_locs[-1:] = [ triple((dstrand, ddomain)) ]
-					bound_locs[-1:] = [ triple((bstrand, bdomain)) ]
+					start_locs.append( triple((dstrand, ddomain)) )
+					bound_locs.append( triple((bstrand, bdomain)) )
 				elif direction == -1:
 					start_locs[:0] = [ triple((dstrand, ddomain)) ]
 					bound_locs[:0] = [ triple((bstrand, bdomain)) ]

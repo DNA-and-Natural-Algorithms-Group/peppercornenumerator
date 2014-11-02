@@ -16,6 +16,10 @@ from nose.tools import *
 import copy
 
 
+# to break debugger at a particular line, add this:
+# from nose.tools import set_trace; set_trace()
+
+
 def print_products(reactions):
 	for r in reactions:
 		print list(x.kernel_string() for x in r.products)
@@ -29,11 +33,49 @@ def enable_old_zipping():
 	reactions.UNZIP = True
 	reactions.LEGACY_UNZIP = True
 
-# enable_new_zipping(reactions)
+def make_loop(complex, *pairs):
+	return Loop([ complex.triple(*pair) for pair in pairs ])
+
+enable_new_zipping()
 
 class ReactionTests(unittest.TestCase):
-	def testFindOnLoop(self):
+	def setUp(self):
 		enable_new_zipping()
+
+	def testZipper(self):
+		# def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
+		# return start_locs, bound_locs, before, after
+
+		(domains, strands, complexes) = from_kernel([
+			#     0         1
+			#     0 1 2 3   0  1  2  3
+			"A1 = a(x y z + z* y* x* )"
+		])
+		A1 = complexes['A1']
+		print A1.triple(0,2)
+		print A1.triple(1,1)
+		# from nose.tools import set_trace; set_trace()
+		zipped = zipper(A1, 
+			(0, 2), 
+			(1, 1), 
+			#  z              z*
+			[A1.triple(0,3), A1.triple(1,0)], 
+			#  x*             a*              x*
+			[A1.triple(1,2), A1.triple(1,3), A1.triple(0,1)], 
+			1, 
+			lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1)
+		)
+		start_locs, bound_locs, before, after = zipped
+		print zipped
+		assert start_locs == make_loop(A1, (0,1), (0,2), (0,3) )
+		assert bound_locs == make_loop(A1, (1,2), (1,1), (1,0) )
+		assert before == make_loop(A1)
+		assert after == make_loop(A1, (1,3))
+		# assert (Loop([Domain(x), Domain(y), Domain(z)]), Loop([Domain(x*), Domain(y*), Domain(z*)]), Loop([]), Loop([Domain(a*)]))
+
+
+	def testFindOnLoop(self):
+		# enable_new_zipping()
 
 		(domains, strands, complexes) = from_kernel([
 			#     0 1 2 3  4
@@ -89,13 +131,11 @@ class ReactionTests(unittest.TestCase):
 		print expected_locs
 		assert locs == expected_locs
 
-		enable_old_zipping()
-
-
-
 
 class BindTests(unittest.TestCase):
 	def setUp(self):
+		enable_new_zipping()
+
 		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
@@ -373,10 +413,7 @@ class BindTests(unittest.TestCase):
 		# assert out_complex == exp_complex
 	
 	def testBind11A(self):
-		# enable new zipping
-		enable_new_zipping()
 		
-
 		# bind11: a ? a* ? -> a( ? ) ?
 		(domains, strands, complexes) = from_kernel([
 			# ?
@@ -400,8 +437,6 @@ class BindTests(unittest.TestCase):
 		print_products(rxns)
 		assert rxns == [ReactionPathway('bind11', [complexes['A3']], [complexes['A4']])]
 
-		# disable zipping again
-		enable_old_zipping()
 
 	def testBind21(self):
 		out_list = bind21(self.complexes['C1'], self.complexes['I3'])
@@ -922,6 +957,8 @@ class OpenTests(unittest.TestCase):
 		
 class Branch3WayTests(unittest.TestCase):
 	def setUp(self):
+		enable_new_zipping()
+
 		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
@@ -1054,7 +1091,30 @@ class Branch3WayTests(unittest.TestCase):
 		assert res_list == exp_list
 		
 	def testBranch3way3(self):
+		# strand PS : 3* 2* 1* 5 6
+		# strand OP : 1 2 3 4
+		# strand SP : 5 6
+		# strand BS : 7* 6* 5* 1 2 3
+		# strand Cat : 6 7
+		# 
+
+		# complex I4 :
+		# BS OP PS Cat
+		# (((... + (((. + )))). + ))
+		# 
+		#      BS                  OP           PS       Cat
+		# I4 = 7*( 6*( 5*( 1 2 3 + 1( 2( 3( 4 + )))) 6 + ))
+		# 
+		#       /
+		#  BS  /  OP
+		# ____/  ___/
+		# __ _______
+		#   /
+		# Cat   PS
+		# 
 		c = self.complexes['I4']
+		from nose.tools import set_trace; set_trace()
+
 		res_list = branch_3way(c)
 		
 		BS_index = c.strand_index('BS')
@@ -1078,15 +1138,40 @@ class Branch3WayTests(unittest.TestCase):
 		
 		#exp_list.append(ReactionPathway('branch_3way', [c], [o2]))
 		
+
+		# complex I5 :
+		# BS PS Cat
+		# (((((( + )))). + ))
+		# 
+		#     BS
+		#   _______ 
+		#   __ ____
+		#     / 
+		# Cat   PS
+		# 
+		# 7*( 6*( 5*( 1( 2( 3( + ) ) ) ) 6 + ) )
+
 		exp_list.append(ReactionPathway('branch_3way', [c], [self.complexes['OP'], self.complexes['I5']]))
 		
+		print "react: ",c.kernel_string()
+		#  7*  6*  5*  1 2 3   1  2  3  4   3* 2* 1* 5     6 7
+		#  7*( 6*( 5*( 1 2 3 + 1( 2( 3( 4 + )  )  )  ) 6 + ) )
 		res_list.sort()
 		exp_list.sort()
 		print "exp: ",exp_list
 		print_products(exp_list)
+		# ['7*( 6*( 5*( 1 2 3 + 1( 2( 3( 4 + ) ) ) ) ) + 6 )']
+		# ['7*( 6*( 5*( 1( 2( 3( + ) ) ) ) 6 + ) )', '1 2 3 4']
 		print "res: ",res_list
 		print_products(res_list)
-
+		# ['7*( 6*( 5*( 1 2 3 + 1( 2( 3( 4 + ) ) ) ) ) + 6 )']
+		# ['7*( 6*( 5*( 1( 2 3 + 1 2( 3( 4 + ) ) ) ) 6 + ) )']
+		# 
+		#          /
+		#    _____/ \__/
+		#    __ _______
+		#      /
+		#    
 		assert res_list == exp_list
 		
 	# Test with remote toehold
