@@ -1070,20 +1070,21 @@ def branch_3way(reactant):
 			displacing_domain = strand.domains[domain_index]
 			displacing_loc = (strand_index, domain_index)
 
+			# search both directions around the loop for a bound domain that
+			# is complementary (and therefore can be bound to)
+			def criteria(dom1, struct1, loc1, dom2, struct2, loc2):
+				return struct1 is None and struct2 is not None and dom1.can_pair(dom2)
+
+			bound_doms = (find_on_loop(reactant, displacing_loc, -1, criteria) + 
+				find_on_loop(reactant, displacing_loc, +1, criteria))
+
+
 			# # search both directions around the loop for a bound domain that
-			# # is complementary (and therefore can be bound to)
+			# # has the same sequence (and therefore can be displaced)
 			# bound_doms = find_on_loop(reactant, displacing_loc, -1, \
 			# 	lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2) + \
 			# find_on_loop(reactant, displacing_loc, +1, \
 			# 	lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2)
-
-
-			# search both directions around the loop for a bound domain that
-			# has the same sequence (and therefore can be displaced)
-			bound_doms = find_on_loop(reactant, displacing_loc, -1, \
-				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2) + \
-			find_on_loop(reactant, displacing_loc, +1, \
-				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2)
 
 			# bound_doms = find_on_loop(reactant, displacing_loc, -1, \
 			# 	lambda dom, struct, loc: struct is not None and dom == displacing_domain) + \
@@ -1093,20 +1094,20 @@ def branch_3way(reactant):
 
 			# build products
 			# [ (Loop([triple(start_loc)]), Loop([triple(bound_loc]), Loop(loop[:i]), Loop(loop[i+1:])) ]
-			for (displacing, displaced, before, after) in bound_doms:
+			for (displacing, bound, before, after) in bound_doms:
 
 				if UNZIP and LEGACY_UNZIP:
 					displacing_loc = list(displacing.locs)[0]
-					bound_loc = list(displaced.locs)[0]
+					bound_loc = list(bound.locs)[0]
 					reaction = ReactionPathway('branch_3way', [reactant], do_3way_migration_legacy(
 						reactant, 
 						displacing_loc, 
-						structure[bound_loc[0]][bound_loc[1]])
+						bound_loc)
 					)
 				else:
 					reaction = ReactionPathway('branch_3way', [reactant], do_3way_migration(
 						reactant, displacing.locs, 
-						(structure[bound_loc[0]][bound_loc[1]] for bound_loc in displaced.locs))
+						bound.locs)
 					)
 
 				# length of invading domain
@@ -1153,18 +1154,32 @@ def branch_3way(reactant):
 	return output
 
 def do_single_3way_migration(reactant, displacing_loc, new_bound_loc):
-	out_reactant_structure = copy.deepcopy(reactant.structure)
+	"""
+	displacing_loc will be bound to new_bound_loc; whatever new_bound_loc
+	was bound to will be unbound.
+	"""
+	struct = copy.deepcopy(reactant.structure)
+	displaced_loc = struct[new_bound_loc[0]][new_bound_loc[1]]
 
-	out_reactant_structure[displacing_loc[0]][displacing_loc[1]] = new_bound_loc
-	displaced_loc = out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]]
-	out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
-	out_reactant_structure[displaced_loc[0]][displaced_loc[1]] = None
+	assert struct[displacing_loc[0]][displacing_loc[1]] is None
+	assert struct[new_bound_loc[0]][new_bound_loc[1]] is not None
+	assert struct[displaced_loc[0]][displaced_loc[1]] is not None
+	assert struct[displaced_loc[0]][displaced_loc[1]] == new_bound_loc
+
+	struct[displacing_loc[0]][displacing_loc[1]] = new_bound_loc
+	struct[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
+	struct[displaced_loc[0]][displaced_loc[1]] = None
 	
-	out_reactant = Complex(get_auto_name(),reactant.strands[:], out_reactant_structure)
+	out_reactant = Complex(get_auto_name(),reactant.strands[:], struct)
 
 	return out_reactant
 
+
 def do_3way_migration(reactant, displacing_locs, bound_locs):
+	"""
+	Each location in displacing_locs will end up bound to the corresponding
+	location in bound_locs. The stuff bound to bound_locs will end up un-bound
+	"""
 	if isinstance(displacing_locs, tuple): displacing_locs = [displacing_locs]
 	if isinstance(bound_locs, tuple):	bound_locs = [bound_locs]
 

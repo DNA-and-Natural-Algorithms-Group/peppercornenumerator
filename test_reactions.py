@@ -54,7 +54,6 @@ class ReactionTests(unittest.TestCase):
 		A1 = complexes['A1']
 		print A1.triple(0,2)
 		print A1.triple(1,1)
-		# from nose.tools import set_trace; set_trace()
 		zipped = zipper(A1, 
 			(0, 2), 
 			(1, 1), 
@@ -316,6 +315,11 @@ class BindTests(unittest.TestCase):
 		out_list.sort()
 		exp_out.sort()
 		
+		print "exp", exp_out
+		print_products(exp_out)
+		print "res", out_list
+		print_products(out_list)
+
 		assert out_list == exp_out
 		
 	def test_combine_complexes_21(self):
@@ -1113,7 +1117,6 @@ class Branch3WayTests(unittest.TestCase):
 		# Cat   PS
 		# 
 		c = self.complexes['I4']
-		from nose.tools import set_trace; set_trace()
 
 		res_list = branch_3way(c)
 		
@@ -1164,14 +1167,6 @@ class Branch3WayTests(unittest.TestCase):
 		# ['7*( 6*( 5*( 1( 2( 3( + ) ) ) ) 6 + ) )', '1 2 3 4']
 		print "res: ",res_list
 		print_products(res_list)
-		# ['7*( 6*( 5*( 1 2 3 + 1( 2( 3( 4 + ) ) ) ) ) + 6 )']
-		# ['7*( 6*( 5*( 1( 2 3 + 1 2( 3( 4 + ) ) ) ) 6 + ) )']
-		# 
-		#          /
-		#    _____/ \__/
-		#    __ _______
-		#      /
-		#    
 		assert res_list == exp_list
 		
 	# Test with remote toehold
