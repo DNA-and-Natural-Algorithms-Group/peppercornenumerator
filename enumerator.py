@@ -85,6 +85,7 @@ class Enumerator(object):
 		self.FAST_REACTIONS = fast_reactions[1]
 		self.interruptible = True
 		self.interactive = False
+		self.k_slow = float("-inf")
 		
 	@property 
 	def auto_name(self):
@@ -187,6 +188,7 @@ class Enumerator(object):
 		self.old['release_cutoff_1_1'] = reactions.RELEASE_CUTOFF_1_1
 		self.old['release_cutoff_1_N'] = reactions.RELEASE_CUTOFF_1_N
 		self.old['unzip'] = reactions.UNZIP
+		self.old['legacy_unzip'] = reactions.LEGACY_UNZIP
 		self.old['reject_remote'] = reactions.REJECT_REMOTE
 		if (hasattr(self,'RELEASE_CUTOFF')):
 			reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF
@@ -201,7 +203,14 @@ class Enumerator(object):
 		if (hasattr(self, 'UNZIP')):
 			reactions.UNZIP = self.UNZIP
 			if reactions.UNZIP:
-				print "Using max-helix semantics for 3-way branch migration"
+				print "Using max-helix semantics"
+
+		if (hasattr(self, 'LEGACY_UNZIP')):
+			reactions.LEGACY_UNZIP = self.LEGACY_UNZIP
+			if reactions.LEGACY_UNZIP:
+				print "Using legacy unzipping mode"
+			if not reactions.UNZIP:
+				print "Warning: legacy unzip mode will have no effect, since max helix semantics are disabled"
 
 		if (hasattr(self, 'REJECT_REMOTE')):
 			reactions.REJECT_REMOTE = self.REJECT_REMOTE
@@ -212,6 +221,7 @@ class Enumerator(object):
 		reactions.RELEASE_CUTOFF_1_1 = self.old['release_cutoff_1_1']
 		reactions.RELEASE_CUTOFF_1_N = self.old['release_cutoff_1_N']
 		reactions.UNZIP = self.old['unzip']
+		reactions.LEGACY_UNZIP = self.old['legacy_unzip']
 		reactions.REJECT_REMOTE = self.old['reject_remote']
 
 	def enumerate(self):
@@ -473,8 +483,9 @@ class Enumerator(object):
 		reactions = []
 
 		# Do unimolecular reactions
-		for reaction in self.FAST_REACTIONS:
-			reactions += (reaction(complex))
+		for move in self.FAST_REACTIONS:
+			move_reactions = move(complex) 
+			reactions += (r for r in move_reactions if r.rate() > self.k_slow)
 		return reactions
 
 	def get_new_products(self, reactions):
@@ -739,7 +750,6 @@ def main(argv):
 	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
 		help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
 
-
 	parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', type=int, \
 		help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %d)" % reactions.RELEASE_CUTOFF_1_1)
 	parser.add_argument('--release-cutoff-1-n', action='store', dest='RELEASE_CUTOFF_1_N', type=int, \
@@ -747,11 +757,15 @@ def main(argv):
 	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
 
+	parser.add_argument('--k-slow', action='store', dest='k_slow', default=float("-inf"), type=float, \
+		help="Unimolecular reactions slower than this rate will be discarded (default: %f)")
+
 	parser.add_argument('--reject-remote', action='store_true', dest='REJECT_REMOTE', default=False, \
 		help="Discard remote toehold mediated 3-way and 4-way branch migration reactions. (default: %(default)s)")
 	parser.add_argument('--no-max-helix', action='store_false', dest='UNZIP', default=True, \
 		help="Don't apply 'max helix at a time' semantics to 3-way branch migration reactions. (default: False)")
-
+	parser.add_argument('--legacy-unzip', action='store_true', dest='LEGACY_UNZIP', default=False, \
+		help="Apply legacy 'UNZIP=True' behavior; no effect with --no-max-helix (default: %(default)s)")
 
 	parser.add_argument('--bfs-ish', action='store_true', dest='bfs', \
 		help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
@@ -797,6 +811,9 @@ def main(argv):
 		print c.kernel_string()
 
 	# Transfer options to enumerator object
+	if cl_opts.k_slow is not None:
+		enum.k_slow = cl_opts.k_slow
+
 	if cl_opts.MAX_REACTION_COUNT is not None:
 		enum.MAX_REACTION_COUNT = cl_opts.MAX_REACTION_COUNT
 
@@ -821,6 +838,8 @@ def main(argv):
 	if cl_opts.UNZIP is not None:
 		enum.UNZIP = cl_opts.UNZIP
 
+	if cl_opts.LEGACY_UNZIP is not None:
+		enum.LEGACY_UNZIP = cl_opts.LEGACY_UNZIP
 
 	enum.DFS = not cl_opts.bfs
 	enum.interactive = cl_opts.interactive

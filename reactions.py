@@ -685,6 +685,16 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 	
 	return new_complex
 
+def do_single_open(reactant, loc):
+	new_struct = copy.deepcopy(reactant.structure)
+	loc1 = loc
+	loc2 = new_struct[loc1[0]][loc1[1]]
+	new_struct[loc1[0]][loc1[1]] = None
+	new_struct[loc2[0]][loc2[1]] = None
+	out = Complex(get_auto_name(), reactant.strands[:], new_struct)
+	return out
+
+
 def open(reactant):
 	"""
 	Returns a list of reaction product sets that can be produced by the
@@ -704,7 +714,34 @@ def open(reactant):
 	structure = reactant.structure
 	strands = reactant.strands
 	
-	
+	if not UNZIP:
+		# We iterate through all the domains
+		for (strand_index, strand) in enumerate(reactant.strands):
+			for (domain_index, domain) in enumerate(strand.domains):
+
+				# The bound domain must be... bound
+				if (structure[strand_index][domain_index] is None):
+					continue
+
+				bound_domain = strand.domains[domain_index]
+				bound_loc = (strand_index, domain_index)
+
+				# search both directions around the loop for a bound domain that
+				# is complementary (and therefore can be bound to)
+				def criteria(dom1, struct1, loc1, dom2, struct2, loc2):
+					return struct1 is not None and struct2 is not None and dom1.can_pair(dom2)
+
+				bound_doms = (find_on_loop(reactant, displacing_loc, -1, criteria) + 
+					find_on_loop(reactant, displacing_loc, +1, criteria))	
+
+				for (displacing, bound, before, after) in bound_doms:
+					displacing_loc = list(displacing.locs)[0]
+					bound_loc = list(bound.locs)[0]
+					release_reactant = do_single_open(reaction, displacing_loc)
+					product_set = find_releases(release_reactant)
+					reaction = ReactionPathway('open', [reactant], sorted(product_set))
+
+
 	# We loop through all stands, domains
 	for (strand_index, strand) in enumerate(strands):
 		for (domain_index, domain) in enumerate(strand.domains):
@@ -1111,7 +1148,7 @@ def branch_3way(reactant):
 					)
 
 				# length of invading domain
-				length = len(displacing_domain)
+				length = len(displacing)
 
 				# calculate reaction constant
 				reaction._const = branch_3way_remote_rate(length, before, after)
