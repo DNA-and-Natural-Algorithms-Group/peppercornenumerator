@@ -28,3 +28,4 @@ n4 = 9*( 8*( 4*( 3* 2* 1* ))) 5
 # more grun2014fig3_alt-enum.pil
 
 # status as of 10/31/2014:  doesn't enumerate some bimolecular reactions
+# this is because, in fact, hairpin hybridization is reversible and thus is transient in the low concentration limit

@@ -1,7 +1,9 @@
-# Figure 3 of Grun et al 2014 (The Peppercorn Paper)
+# Figure 3 of Grun et al 2014 (The Peppercorn Paper) 
+# -- modified to have irreversible hairpin-opening steps
 #
 # Domain representation for catalytic formation of 3-arm junction, exactly as shown in figure 2 of
 # Yin, Choi, Calvert, Pierce, "Progamming Biomolecular Self-Assembly Pathways", Nature (2008)
+# but with additional 1nt domains that lock the hairping-opening steps
 #
 # (Figure 3 Grun et al uses numbered domains instead of alphabetical, and is somewhat different)
 #
@@ -14,14 +16,16 @@ length c = 6
 length x = 6
 length y = 6
 length z = 6
+length r = 1
+length s = 1
+length t = 1
 
-I = y* b* x* a*
-A = a x( b( y( z* c* )))
-B = b y( c( z( x* a* )))
-C = c z( a( x( y* b* )))
+I = t* y* b* x* a*
+A = a x( b( y( t r* z* c* )))
+B = b y( c( z( r s* x* a* )))
+C = c z( a( x( s t* y* b* )))
 
-# ../../enumerator.py grun2014fig3.pil 
-# more grun2014fig3-enum.pil
+# ../../enumerator.py grun2014fig3_irrev.pil 
+# more grun2014fig3_irrev-enum.pil
 
 # status as of 10/31/2014:  doesn't enumerate some bimolecular reactions
-# this is because, in fact, hairpin hybridization is reversible and thus is transient in the low concentration limit
