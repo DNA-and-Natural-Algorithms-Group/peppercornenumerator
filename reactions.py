@@ -360,9 +360,9 @@ def bind11(reactant):
 			# has the same sequence (and therefore can be displaced)
 			locs = find_on_loop(reactant, loc1, -1, \
 				# lambda dom, struct, loc: struct is None and dom.can_pair(d1)) + \
-				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1)) + \
+				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct1 is None and struct2 is None and dom2.can_pair(dom1)) + \
 			find_on_loop(reactant, loc1, +1, \
-				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1))
+				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct1 is None and struct2 is None and dom2.can_pair(dom1))
 
 			# build products
 			for (loc1s, loc2s, before, after) in locs:

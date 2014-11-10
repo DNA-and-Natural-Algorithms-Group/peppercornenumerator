@@ -295,7 +295,20 @@ class BindTests(unittest.TestCase):
 		assert out_list == exp_out
 		
 		# Test complicated
-		
+		# 
+		# Reactant: 
+		# 
+		# complex c :
+		# BS       OP     PS     Cat
+		# (((... + .((. + )).). + ))
+		#	   
+		#        /
+		#   BS  /  OP
+		#  ____/ \__/
+		#  __ ______
+		#    /  
+		# Cat  PS
+		# 
 		c = self.complexes['I4'].clone()
 		BS_index = c.strand_index('BS')
 		OP_index = c.strand_index('OP')
@@ -309,11 +322,34 @@ class BindTests(unittest.TestCase):
 		c1.structure[PS_index][2] = (BS_index, 3)
 		c1.structure[BS_index][3] = (PS_index, 2)
 		
-		out_list = bind11(c)
+
+		# Expected products:
+		# 
+		# complex I4 :
+		# BS OP PS Cat
+		# (((... + (((. + )))). + ))
+		# 
+		#       /
+		#  BS  /  OP
+		# ____/  ___/
+		# __ _______
+		#   /
+		# Cat   PS
+		# 
+		# complex c1 :
+		# BS OP PS Cat
+		# ((((.. + .((. + )))). + ))
+		# 
+		#  BS   /  OP
+		# _____/ \__/
+		# __ _______
+		#   /
+		# Cat   PS
 		exp_out = [ReactionPathway('bind11', [c], [self.complexes['I4']]), ReactionPathway('bind11', [c], [c1])]
+		out_list = bind11(c)
 		
-		out_list.sort()
 		exp_out.sort()
+		out_list.sort()
 		
 		print "exp", exp_out
 		print_products(exp_out)

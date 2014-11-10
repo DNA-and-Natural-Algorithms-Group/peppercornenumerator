@@ -828,7 +828,7 @@ class Complex(object):
 				target_domain = self.get_domain(target)
 				
 				if (target is not None and self.structure[target[0]][target[1]] != (strand_index,domain_index)):
-					raise Exception("In complex %s, incoherent structure at (%d, %d) and (%d, %d)" % (self.name, strand_index, domain_index, target[0], target[1]))
+					raise Exception("In complex %s, incoherent structure at (%d, %d) -> (%d, %d)" % (self.name, strand_index, domain_index, target[0], target[1]))
 
 				if (target_domain is not None):
 					if(not source_domain.can_pair(target_domain)):
