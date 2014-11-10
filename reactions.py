@@ -34,12 +34,12 @@ If True, discards 3-way and 4-way remote toehold branch migration reactions
 
 # If true, 3 way branch migrations are always greedy
 UNZIP = True
-# UNZIP = False
-LEGACY_UNZIP = True
-# LEGACY_UNZIP = False
 """
 If True, 3-way branch migrations obey "Maximum helix at a time" semantics
 """
+# UNZIP = False
+LEGACY_UNZIP = True
+# LEGACY_UNZIP = False
 
 class ReactionPathway(object):
 	"""
@@ -390,18 +390,8 @@ def bind11(reactant):
 
 	output = reactions
 
-	# remove any duplicate reactions	
-	if (len(output) == 0):
-		return output
-		
-	output.sort()
-	last = output[-1]
-	for i in range(len(output) - 2, -1, -1):
-		if last == output[i]:
-			del output[i]
-		else:
-			last = output[i]
-
+	# remove any duplicate reactions
+	output = sorted(list(set(output)))
 	return output
 
 def do_single_bind11(reactant, loc1, loc2):
@@ -689,6 +679,7 @@ def do_single_open(reactant, loc):
 	new_struct = copy.deepcopy(reactant.structure)
 	loc1 = loc
 	loc2 = new_struct[loc1[0]][loc1[1]]
+	assert new_struct[loc2[0]][loc2[1]] == loc1
 	new_struct[loc1[0]][loc1[1]] = None
 	new_struct[loc2[0]][loc2[1]] = None
 	out = Complex(get_auto_name(), reactant.strands[:], new_struct)
@@ -726,20 +717,24 @@ def open(reactant):
 				bound_domain = strand.domains[domain_index]
 				bound_loc = (strand_index, domain_index)
 
-				# search both directions around the loop for a bound domain that
-				# is complementary (and therefore can be bound to)
-				def criteria(dom1, struct1, loc1, dom2, struct2, loc2):
-					return struct1 is not None and struct2 is not None and dom1.can_pair(dom2)
+				release_reactant = do_single_open(reactant, bound_loc)
+				product_set = find_releases(release_reactant)
+				reactions.append((product_set, len(bound_domain)))
 
-				bound_doms = (find_on_loop(reactant, displacing_loc, -1, criteria) + 
-					find_on_loop(reactant, displacing_loc, +1, criteria))	
+				# # search both directions around the loop for a bound domain that
+				# # is complementary (and therefore can be bound to)
+				# def criteria(dom1, struct1, loc1, dom2, struct2, loc2):
+				# 	return struct1 == loc2 and struct2 == loc1 and dom1.can_pair(dom2)
 
-				for (displacing, bound, before, after) in bound_doms:
-					displacing_loc = list(displacing.locs)[0]
-					bound_loc = list(bound.locs)[0]
-					release_reactant = do_single_open(reaction, displacing_loc)
-					product_set = find_releases(release_reactant)
-					reaction = ReactionPathway('open', [reactant], sorted(product_set))
+				# bound_doms = (find_on_loop(reactant, bound_loc, -1, criteria) + 
+				# 	find_on_loop(reactant, bound_loc, +1, criteria))	
+
+				# for (displacing, bound, before, after) in bound_doms:
+				# 	displacing_loc = list(displacing.locs)[0]
+				# 	bound_loc = list(bound.locs)[0]
+				# 	release_reactant = do_single_open(reaction, displacing_loc)
+				# 	product_set = find_releases(release_reactant)
+				# 	reaction = ReactionPathway('open', [reactant], sorted(product_set))
 
 
 	# We loop through all stands, domains
@@ -851,6 +846,8 @@ def open(reactant):
 		reaction._const = opening_rate(length)
 		output.append(reaction)
 	
+	output = sorted(list(set(output)))
+
 	return output
 	
 	
@@ -1177,17 +1174,8 @@ def branch_3way(reactant):
 	output = reactions
 
 	# Remove any duplicate reactions
-	if (len(output) == 0):
-		return output
-		
-	output.sort()
-	last = output[-1]
-	for i in range(len(output) - 2, -1, -1):
-		if last == output[i]:
-			del output[i]
-		else:
-			last = output[i]
-	
+	output = sorted(list(set(output)))
+
 	return output
 
 def do_single_3way_migration(reactant, displacing_loc, new_bound_loc):
@@ -1776,17 +1764,8 @@ def branch_4way(reactant):
 	output = reactions
 	
 	# remove any duplicate reactions	
-	if (len(output) == 0):
-		return output
-		
-	output.sort()
-	last = output[-1]
-	for i in range(len(output) - 2, -1, -1):
-		if last == output[i]:
-			del output[i]
-		else:
-			last = output[i]
-	
+	output = sorted(list(set(output)))
+
 	return output
 
 def do_single_4way_migration(reactant, loc1, loc2, loc3, loc4):

@@ -20,9 +20,19 @@ import copy
 # from nose.tools import set_trace; set_trace()
 
 
+def print_rxns(reactions):
+	print "-> ", reactions
+	print_products(reactions)	
+
 def print_products(reactions):
 	for r in reactions:
 		print list(x.kernel_string() for x in r.products)
+
+def disable_zipping():
+	reactions.UNZIP = False
+
+def enable_zipping():
+	reactions.UNZIP = True
 
 def enable_new_zipping():
 	reactions.UNZIP = True
@@ -32,6 +42,19 @@ def enable_old_zipping():
 	# return
 	reactions.UNZIP = True
 	reactions.LEGACY_UNZIP = True
+
+old_release_cutoff_1_1 = None
+old_release_cutoff_1_n = None
+
+def set_release_cutoff(r_1_1, r_1_n):
+	old_release_cutoff_1_1 = reactions.RELEASE_CUTOFF_1_1
+	old_release_cutoff_1_n = reactions.RELEASE_CUTOFF_1_N
+	reactions.RELEASE_CUTOFF_1_1 = r_1_1
+	reactions.RELEASE_CUTOFF_1_N = r_1_n
+
+def restore_release_cutoff():
+	reactions.RELEASE_CUTOFF_1_1 = old_release_cutoff_1_1
+	reactions.RELEASE_CUTOFF_1_N = old_release_cutoff_1_n
 
 def make_loop(complex, *pairs):
 	return Loop([ complex.triple(*pair) for pair in pairs ])
@@ -995,6 +1018,61 @@ class OpenTests(unittest.TestCase):
 		exp_list = [ReactionPathway('open', [complex], sorted([Complex('C1', [S3], [[None, None]]), Complex('C2', [S1, S2], [[None, (1, 0)], [(0, 1)]])]))]
 		assert res_list == exp_list
 		
+
+	def testOpenA(self):
+		# open:  ? a( ? ) ? -> ? a ? a* ?
+		(domains, strands, complexes) = from_kernel([
+			"A1 = x() a^( x )   x()",
+			"A2 = x() a^  x a^* x()",
+
+			"A3 = x a^( b^( y )   )   z",
+			"A4 = x a^  b^  y b^* a^* z"
+		])
+		# from nose.tools import set_trace; set_trace()
+
+
+		# No zipping possible
+		rxns = reactions.open(complexes['A1'])
+		print_rxns(rxns)
+		assert rxns == [ReactionPathway('open', [complexes['A1']], [complexes['A2']])]
+
+
+		# Zipping possible
+		set_release_cutoff(13, 13)
+		rxns = reactions.open(complexes['A3'])
+		print_rxns(rxns)
+		assert rxns == [ReactionPathway('open', [complexes['A3']], [complexes['A4']])]
+		restore_release_cutoff()
+
+	def testOpenB(self):
+		# open:  ? a( ? ) ? -> ? a ? a* ?
+		(domains, strands, complexes) = from_kernel([
+			"A1 = x a^( y )   z",
+			"A2 = x a^  y a^* z",
+
+			"A3 = x a^( b^( y )   )   z",
+			"A4 = x a^  b^( y )   a^* z",
+			"A5 = x a^( b^  y b^* )   z"
+		])
+		
+		# enable single domain semantics
+		disable_zipping()
+		set_release_cutoff(7,7)
+
+		# No zipping possible
+		rxns = reactions.open(complexes['A1'])
+		print_rxns(rxns)
+		assert rxns == [ReactionPathway('open', [complexes['A1']], [complexes['A2']])]
+
+
+		# Zipping possible
+		rxns = reactions.open(complexes['A3'])
+		print_rxns(rxns)
+		assert set(rxns) == set([ReactionPathway('open', [complexes['A3']], [complexes['A4']]) , ReactionPathway('open', [complexes['A3']], [complexes['A5']]) ])
+		
+		enable_zipping()
+		restore_release_cutoff()
+
 class Branch3WayTests(unittest.TestCase):
 	def setUp(self):
 		enable_new_zipping()
