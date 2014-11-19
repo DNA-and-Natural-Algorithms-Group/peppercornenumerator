@@ -15,6 +15,12 @@ LONG_DOMAIN_LENGTH = 12
 
 import re
 
+def wrap(x, m):
+	"""
+	Mathematical modulo; wraps x so that 0 <= wrap(x,m) < m. x can be negative.
+	"""
+	return (x % m + m) % m
+
 def natural_sort(l): 
 	"""
 	Sorts a collection in the order humans would expect. Implementation from
@@ -521,7 +527,8 @@ class Complex(object):
 		perms = [tuple(strands[x:] + strands[:x]) for x in range(len(strands))] # calculate all circular permutations
 		min_perm = min(range(len(strands)),key=lambda i : perms[i]) # select lexicographically minimum permutation
 		self._rotate_strands_n(min_perm) # rotate until we're in that form
-		
+		self._rotations = -min_perm
+
 		# Holds a unique hash identifying this complex (computed lazily by self.__hash__)
 		self._hash = None
 
@@ -613,6 +620,14 @@ class Complex(object):
 		"""
 		if(loc != None):
 			return self._strands[loc[0]]._domains[loc[1]]
+		return None
+
+	def get_strand(self,loc):
+		"""
+		Returns the strand at the given index in this complex
+		"""
+		if(loc != None):
+			return self._strands[loc]
 		return None
 	
 	def get_structure(self, loc):
@@ -816,6 +831,10 @@ class Complex(object):
 		out._rotate_strands()
 		return out
 	
+	def rotate_location(self, loc, n=None):
+		if n is None: n = self._rotations
+		return ( wrap(loc[0]+n, len(self._strands)), loc[1] )
+
 	def check_structure(self):
 		"""
 		Determines whether the structure includes pairs only between complementary domains. 

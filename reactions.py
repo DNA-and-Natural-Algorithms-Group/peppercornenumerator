@@ -61,12 +61,16 @@ class ReactionPathway(object):
 		self._const = 1
 
 		for x in self._reactants:
-			if x is Complex:
+			if isinstance(x,Complex):
 				assert x.check_structure()
+				assert x.check_pseudoknots()
+				assert x.check_connected()
 
 		for x in self._products:
-			if x is Complex:
+			if isinstance(x,Complex):
 				assert x.check_structure() 
+				assert x.check_pseudoknots()
+				assert x.check_connected()
 		
 	def __repr__(self):
 		return self.full_string()
@@ -441,15 +445,39 @@ def bind21(reactant1, reactant2):
 			# If it can pair, this is one possible reaction (this kind of
 			# reaction cannot possibly produce a pseudoknotted structure)
 			if (dom1.can_pair(dom2)):
-				reactions.append((combine_complexes_21(
+
+				# combine the two complexes into one, but do not perform
+				# the association
+				reactions.append(combine_complexes_21(
 									 reactant1, (strand_num1, dom_num1), 
-								     reactant2, (strand_num2, dom_num2)),len(dom1)))
+								     reactant2, (strand_num2, dom_num2)))
+
 									 
 	output = []
-	for complex, length in reactions:
+	for complex, location1, location2 in reactions:
+
+		assert complex.triple(*location1) is not None  
+		assert complex.triple(*location2) is not None
+
+		# build "before" and "after" loop structures
+		out = find_on_loop(complex, location1, 1, 
+			lambda dom1, struct1, loc1, dom2, struct2, loc2: loc1 == location1 and loc2 == location2 )
+
+		[(loc1s, loc2s, before, after)] = out
+
+		# zipper for max-helix semantics
+		if UNZIP and not LEGACY_UNZIP:
+			(loc1s, loc2s, before, after) = zipper(complex, location1, location2, before.parts, after.parts, 1, 
+				lambda dom1, struct1, loc1, dom2, struct2, loc2: struct1 is None and struct2 is None and dom1.can_pair(dom2))
+
+		product = do_bind11(complex, loc1s.locs, loc2s.locs)
+
 		reaction = ReactionPathway('bind21', [reactant1, reactant2], 
-								      [complex])
+								      [product])
+
+		length = len(loc1s)
 		reaction._const = bimolecular_binding_rate(length)
+
 		output.append(reaction)
 	
 	return output
@@ -549,6 +577,10 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 	
 	Returns the new complex.
 	"""
+
+	# Remember locations on original complexes
+	loc1 = location1
+	loc2 = location2
 	
 	# First we need to find the external strand breaks where we will be
 	# splitting the complexes
@@ -661,19 +693,29 @@ def combine_complexes_21(complex1, location1, complex2, location2):
 	else:
 		location2 = (location2[0] + s3_strand_offset, location2[1])
 	
-	
-	new_structure[location1[0]][location1[1]] = location2
-	new_structure[location2[0]][location2[1]] = location1
-#	try:
-#		new_structure[location1[0]][location1[1]] = location2
-#		new_structure[location2[0]][location2[1]] = location1
-#	except IndexError:
-#		print "Agh!"
-#		raise Exception()
+	# # do single bind11
+	# new_structure[location1[0]][location1[1]] = location2
+	# new_structure[location2[0]][location2[1]] = location1
 		
+	# remember strands participating in binding
+	strand1 = complex1.get_strand(loc1[0])
+	strand2 = complex2.get_strand(loc2[0])
+
+	# make new complex
 	new_complex = Complex(get_auto_name(), new_strands, new_structure)
-	
-	return new_complex
+
+	# strands may be re-ordered in new complex, so we need to back
+	# out where the new strands ended up
+	# new_strands = new_complex.strands
+	# for index, strand in enumerate(new_strands):
+	# 	if strand == strand1: location1 = (index, location1[1])
+	# 	if strand == strand2: location2 = (index, location2[1])
+	location1 = new_complex.rotate_location(location1)
+	location2 = new_complex.rotate_location(location2)
+
+	return new_complex, location1, location2
+
+
 
 def do_single_open(reactant, loc):
 	new_struct = copy.deepcopy(reactant.structure)
@@ -1069,18 +1111,6 @@ def domains_adjacent(loc1, loc2):
 	each location should be a (strand_index, domain_index) pair
 	"""
 	return (loc1[0] == loc2[0]) and (abs(loc1[0] - loc2[0]) == 1)
-
-
-def wrap(x, m):
-	return (x % m + m) % m
-
-assert wrap(0,3) == 0
-assert wrap(2,3) == 2
-assert wrap(3,3) == 0
-assert wrap(4,3) == 1
-assert wrap(-1,3) == 2
-assert wrap(-2,3) == 1
-
 
 def branch_3way(reactant):
 	"""

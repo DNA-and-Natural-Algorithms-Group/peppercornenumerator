@@ -381,54 +381,107 @@ class BindTests(unittest.TestCase):
 
 		assert out_list == exp_out
 		
-	def test_combine_complexes_21(self):
-		PS_index = self.complexes['C1'].strand_index('PS')
-		BS_index = self.complexes['I3'].strand_index('BS')
+	def testCombineComplexes21_1(self):
+
+		# complex C1 : 
+		# PS OP
+		# (((.. + ))).
+		#  
+		# PS   /
+		#  ___/ 
+		#  ___
+		# /
+		#   OP
+
+		# complex I3 :
+		# BS Cat
+		# ((.... + ))
+		#  
+		#       /
+		#  BS  /
+		#     /
+		#  __/
+		#  __
+		#   
+		#   Cat
+
+		PS_index = self.complexes['C1'].strand_index('PS') # 1
+		BS_index = self.complexes['I3'].strand_index('BS') # 0
 		
-		out_complex = combine_complexes_21(self.complexes['C1'], (PS_index, 3),
+
+		# complex I4:
+		# PS Cat BS OP
+		# 
+		#    PS  /  Cat
+		#    ___/ __
+		#    ___  __
+		#   /    /
+		#  OP   /  BS 
+		#      /
+		#     /
+
+		out_complex, out_loc1, out_loc2 = combine_complexes_21(self.complexes['C1'], (PS_index, 3),
 										   self.complexes['I3'], (BS_index, 2))
-		
-		exp_complex = Complex('I4', [self.strands['PS'], self.strands['Cat'], self.strands['BS'], self.strands['OP']], [[(3, 2), (3, 1), (3, 0), (2, 2), None], [(2, 1), (2, 0)], [(1, 1), (1, 0), (0, 3), None, None, None], [(0, 2), (0, 1), (0, 0), None]])
-		
+		exp_complex = Complex('I4', [self.strands['PS'], self.strands['Cat'], self.strands['BS'], self.strands['OP']], 
+			[[(3, 2), (3, 1), (3, 0), None, None], [(2, 1), (2, 0)], [(1, 1), (1, 0), None, None, None, None], [(0, 2), (0, 1), (0, 0), None]])
+		#                             ^^^^                                            ^^^^
+		exp_locs = ( exp_complex.rotate_location((0, 3)), exp_complex.rotate_location((2, 2)) )
+
+		# in older versions of code, combine_complexes_21 would actually perform the bind11 between (0,3) and (2,2)
+		# exp_complex = Complex('I4', [self.strands['PS'], self.strands['Cat'], self.strands['BS'], self.strands['OP']], 
+		# 	[[(3, 2), (3, 1), (3, 0), (2, 2), None], [(2, 1), (2, 0)], [(1, 1), (1, 0), (0, 3), None, None, None], [(0, 2), (0, 1), (0, 0), None]])
 		
 		assert exp_complex == out_complex
-		
+		assert exp_locs == (out_loc1, out_loc2)
+
+	def testCombineComplexes21_2(self):
+
 		BS_index = self.complexes['W'].strand_index('BS')
 		
-		out_complex = combine_complexes_21(self.complexes['W'], (BS_index, 0),
+		out_complex, out_loc1, out_loc2 = combine_complexes_21(self.complexes['W'], (BS_index, 0),
 										   self.complexes['Cat'], (0, 1))
-										
-		exp_complex = Complex('C', [self.strands['BS'], self.strands['PS'], self.strands['Cat']], [[(2, 1), (1, 4), (1, 3), (1, 2), (1, 1), (1, 0)], [(0, 5), (0, 4), (0, 3), (0, 2), (0, 1)], [None, (0, 0)]])
+
+		exp_complex = Complex('C', [self.strands['BS'], self.strands['PS'], self.strands['Cat']], 
+			[[None, (1, 4), (1, 3), (1, 2), (1, 1), (1, 0)], [(0, 5), (0, 4), (0, 3), (0, 2), (0, 1)], [None, None]])
+		#     ^^^^                                                                                            ^^^^
+		exp_locs = ( exp_complex.rotate_location((0, 0)), exp_complex.rotate_location((2, 1)) )
+
+		# in older versions of code, combine_complexes_21 would actually perform the bind11 between (0,0) and (2,1)
+		# exp_complex = Complex('C', [self.strands['BS'], self.strands['PS'], self.strands['Cat']], 
+		# 	[[(2, 1), (1, 4), (1, 3), (1, 2), (1, 1), (1, 0)], [(0, 5), (0, 4), (0, 3), (0, 2), (0, 1)], [None, (0, 0)]])
 		
 		assert exp_complex == out_complex
-		
+		assert exp_locs == (out_loc1, out_loc2)
+
+	def testCombineComplexes21_3(self):
+
 		s1 = Strand('A', [self.domains['1'], self.domains['2']])
 		s2 = Strand('B', [self.domains['2*'], self.domains['3']])
 		
 		c1 = Complex('A', [s1], [[None, None]])
 		c2 = Complex('B', [s2], [[None, None]])
 		
-		out_complex = combine_complexes_21(c2, (0, 0), c1, (0, 1))
+		out_complex, out_loc1, out_loc2  = combine_complexes_21(c2, (0, 0), c1, (0, 1))
 		
-		exp_complex = Complex('AB', [s1, s2], [[None, (1, 0)], [(0, 1), None]])
-		
-		print "Output: "
-		print out_complex
-		print out_complex.strands
-		print out_complex.structure
-		print "Expected: "
-		print exp_complex
-		print exp_complex.strands
-		print exp_complex.structure		
-		
+		exp_complex = Complex('AB', [s1, s2], [[None, None], [None, None]])		
+		exp_locs = ( (1, 0), (0, 1) )
+
 		assert out_complex == exp_complex
+		assert exp_locs == (out_loc1, out_loc2)
+
 		
 	def test_combine_complexes_21_seesaw(self):
 		self.seesaw_enum = input_enum('test_files/examples/seesaw/seesaw.enum')
 		(domains,strands,complexes) = self.index_parts(self.seesaw_enum)
 		
-		exp_complex = Complex('complex',[strands['S2_T_S3'],strands['S2_T_S3'],strands['T_S3_T']],[[None,(2,2),(2,1)],[None,(2,0),None],[(1,1),(0,2),(0,1)]])
-		out_complex = combine_complexes_21(complexes['Waste'], (1,0), complexes['Fuel'], (0,1))
+		out_complex, out_loc1, out_loc2  = combine_complexes_21(complexes['Waste'], (1,0), complexes['Fuel'], (0,1))
+		exp_complex = Complex('complex',[strands['S2_T_S3'],strands['S2_T_S3'],strands['T_S3_T']],
+			[[None,(2,2),(2,1)],[None,None,None],[None,(0,2),(0,1)]])
+		#                             ^^^^        ^^^^
+		exp_locs = ( exp_complex.rotate_location((2,0)), exp_complex.rotate_location((1,1)) )
+
+		# exp_complex = Complex('complex',[strands['S2_T_S3'],strands['S2_T_S3'],strands['T_S3_T']],
+		# 	[[None,(2,2),(2,1)],[None,(2,0),None],[(1,1),(0,2),(0,1)]])
 		
 		print "Waste: "
 		print
@@ -453,7 +506,8 @@ class BindTests(unittest.TestCase):
 		print exp_complex.structure		
 		
 		assert out_complex == exp_complex
-		
+		assert exp_locs == (out_loc1, out_loc2)
+
 	def test_combine_complexes_21_seesaw_2(self):
 		pass
 		# example is incorrect (invalid structure)
@@ -489,15 +543,13 @@ class BindTests(unittest.TestCase):
 		])
 		# No zipping possible
 		rxns = reactions.bind11(complexes['A1'])
-		print "-> : ", rxns
-		print_products(rxns)
+		print_rxns(rxns)
 		assert rxns == [ReactionPathway('bind11', [complexes['A1']], [complexes['A2']])]
 
 
 		# Zipping possible
 		rxns = reactions.bind11(complexes['A3'])
-		print "-> : ", rxns
-		print_products(rxns)
+		print_rxns(rxns)
 		assert rxns == [ReactionPathway('bind11', [complexes['A3']], [complexes['A4']])]
 
 
@@ -512,6 +564,32 @@ class BindTests(unittest.TestCase):
 		
 		assert out_list == [exp_pathway]
 		
+	def testBind21A(self):
+
+		# bind11: a ? a* ? -> a( ? ) ?
+		(domains, strands, complexes) = from_kernel([
+			# ?
+			"A1 = w() a x()",
+			"A2 = y() a* z()",
+			"A3 = w() a( x() + y() ) z()"
+
+			# ?
+			# "A3 = x() a  b  x() b* a* x()",
+			# "A4 = x() a( b( x() )  )  x()"
+		])
+		# No zipping possible
+		# from nose.tools import set_trace; set_trace()
+		rxns = reactions.bind21(complexes['A1'], complexes['A2'])
+		print_rxns(rxns)
+		assert rxns == [ReactionPathway('bind21', [complexes['A1'], complexes['A2']], [complexes['A3']])]
+
+
+		# # Zipping possible
+		# rxns = reactions.bind11(complexes['A3'])
+		# print_rxns(rxns)
+		# assert rxns == [ReactionPathway('bind11', [complexes['A3']], [complexes['A4']])]
+
+
 class OpenTests(unittest.TestCase):
 	def setUp(self):
 		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')

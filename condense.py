@@ -326,7 +326,7 @@ def condense_graph(enumerator, compute_rates=True):
         # w is array of eigenvalues
         # v is array of eigenvectors, where column v[:,i] is eigenvector corresponding to the eigenvalue w[i].
 
-        # find eigenvector corresponding to eigenvalue zero
+        # find eigenvector corresponding to eigenvalue zero (or nearly 0)
         epsilon = 1e-14
         try:
             s = next(v[:,i] for (i, x) in enumerate(w) if abs(x) < epsilon) # semi-arbitrary choice of epsilon based on what seemed to work with numpy
@@ -334,9 +334,9 @@ def condense_graph(enumerator, compute_rates=True):
             raise Exception("Unable to find stationary distribution for resting state. No eigenvector with eigenvalue less than epsilon = %e for transition matrix; Markov chain may be periodic, or epsilon may be too high." % epsilon)
 
         # check that the stationary distribution is good
-        assert (s >= 0).all() or (s <= 0).all()
-        s = np.abs(s)
-        assert abs(np.sum(s) - 1) < 1e-1
+        assert (s >= 0).all() or (s <= 0).all(), "Stationary distribution of resting state complex should not be an eigenvector of mixed sign."
+        s = s / np.sum(s)
+        assert abs(np.sum(s) - 1) < epsilon, "Stationary distribution of resting state complex should sum to 1 after normalization"
 
         # return dict mapping complexes to stationary probabilities
         return { c: s[i] for (c,i) in complex_indices.iteritems() }
