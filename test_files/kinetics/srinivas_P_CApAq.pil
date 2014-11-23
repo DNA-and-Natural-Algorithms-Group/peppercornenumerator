@@ -1,0 +1,14 @@
+
+length hI = 15
+length sI = 7
+length mI = 15
+length sX = 7
+length mX = 15
+length fX = 7
+length hY = 15
+flux_strand = hI sI mI
+produce_gate = sX mX fX( hY( + sX mX fX( hI( + sI* ))))
+output_strand = sX mX fX hI
+intermediate = sX mX fX( hY( + hI( sI( mI + )) fX* ))
+
+# ../../enumerator.py srinivas_P_CApAq.pil --release-cutoff 8 -c

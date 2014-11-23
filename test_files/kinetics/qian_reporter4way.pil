@@ -1,0 +1,26 @@
+# reversible 4-way reporter for surface CRNs, as designed and experimentally measured by Lulu Qian and Wei Li (11.7.2014)
+
+# 3-way initiated 4-way branch migration and strand displacement
+length T1 = 6
+length T2 = 6
+length B = 15
+length X = 15
+length s = 10  # actually, this is 6, but Peppercorn in that case allows it to pop open, which introduces problems.
+length h = 4
+signal4 = B X( T2*( + )) T1
+reporter4 = T1* s( h ) B*( T1*( + ))
+
+# compare to standard 3-way toehold-mediated strand displacement
+length TT = 6
+length BB = 20
+signal3 = BB TT
+reporter3 = TT* BB*( TT*( + ))
+
+# compare to associative toehold configuration (not expected to be modeled well)
+length Tt1 = 6
+length Tt2 = 6
+length Bb = 15
+length Xx = 15
+signalA = Bb Xx( Tt2*( + )) Tt1 
+reporterA = Tt1* Bb*( Tt1*( + ))
+# signalA is exactly the same as signal4, but unique domains to avoid considering crosstalk

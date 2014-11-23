@@ -1,0 +1,8 @@
+
+# ../../enumerator.py thachuk_diet.pil --release-cutoff 12
+
+#inputA = A3 t A2 t A1 h
+#inputB = B3 t B2 t B1 h
+gate1  = B2( X2( t( X1( t* A2*( t*( A3*( t*(+)))) Y2 t + )))) t*
+
+# whoa, problems... incomplete...
