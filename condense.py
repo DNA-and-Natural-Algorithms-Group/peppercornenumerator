@@ -50,12 +50,6 @@ class SetOfFates(object):
         return "SetOfFates([ " + ", ".join(["(" + ", ".join(map(repr,inner)) + ")" for inner in self.states]) + " ])"
         #return 'SetOfFates('+repr(self.states)+")"
 
-def is_fast(reaction):
-    """
-    Current heuristic to determine if reaction is fast: unimolecular in reactants
-    """
-    return reaction.arity == (1,1) or reaction.arity == (1,2)
-
 def is_outgoing(reaction,SCC_set):
     """
     Determines if the passed ReactionPathway leads out of the passed SCC
@@ -198,7 +192,7 @@ def tarjans(complexes,reactions,reactions_consuming):
     return SCCs
 
 
-def condense_graph(enumerator, compute_rates=True):
+def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
     """
     Condenses the reaction graph for the given `enumerator`.
 
@@ -409,6 +403,13 @@ def condense_graph(enumerator, compute_rates=True):
         return { (c, r):B[i,j] for (c,i) in complex_indices.iteritems() for (r,j) in exit_indices.iteritems()  }
 
     # Define helper functions
+    def is_fast(reaction):
+        """
+        Current heuristic to determine if reaction is fast: unimolecular in reactants
+        AND rate constant > k_fast
+        """
+        return (reaction.arity == (1,1) or reaction.arity == (1,2)) and reaction.rate() > k_fast
+
     def get_fates(complex):
         """
         Returns the set of possible fates for this complex, calling 

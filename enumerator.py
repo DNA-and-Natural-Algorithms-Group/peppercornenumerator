@@ -945,12 +945,19 @@ def main(argv):
 	for (output_format, output_filename) in outputs:
 
 		# Attempt to load an output generator to serialize the enumerator object to an output file
+		mode = None
 		if (output_format in output.text_output_functions):
-			print "Writing text output to file : %s" % output_filename
-			output.text_output_functions[output_format](enum, output_filename,output_condensed=condensed)
+			print "Writing text output to file : %s as %s" % (output_filename, output_format)
+			mode = output.text_output_functions[output_format]
 		elif (output_format in output.graph_output_functions):
-			print "Writing graph output to file : %s" % output_filename
-			output.graph_output_functions[output_format](enum, output_filename,output_condensed=condensed)
+			print "Writing graph output to file : %s as %s" % (output_filename, output_format)
+			mode = output.graph_output_functions[output_format]
+		
+		if mode is not None:
+			mode(enum, output_filename,
+				output_condensed = condensed, condense_options = { 
+					'k_fast': enum.k_fast, 
+					'compute_rates': cl_opts.compute_rates  })
 		else:
 			utils.error("Unrecognized output format '%s'. Exiting." % output_format)
 
