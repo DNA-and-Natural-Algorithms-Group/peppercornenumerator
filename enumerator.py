@@ -189,6 +189,7 @@ class Enumerator(object):
 		self.old['release_cutoff_1_1'] = reactions.RELEASE_CUTOFF_1_1
 		self.old['release_cutoff_1_N'] = reactions.RELEASE_CUTOFF_1_N
 		self.old['unzip'] = reactions.UNZIP
+		self.old['legacy_unzip'] = reactions.LEGACY_UNZIP
 		self.old['reject_remote'] = reactions.REJECT_REMOTE
 		if (hasattr(self,'RELEASE_CUTOFF')):
 			reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF
@@ -205,6 +206,13 @@ class Enumerator(object):
 			if reactions.UNZIP:
 				print "Using max-helix semantics"
 
+		if (hasattr(self, 'LEGACY_UNZIP')):
+			reactions.LEGACY_UNZIP = self.LEGACY_UNZIP
+			if reactions.LEGACY_UNZIP:
+				print "Using legacy unzipping mode"
+			if not reactions.UNZIP:
+				print "Warning: legacy unzip mode will have no effect, since max helix semantics are disabled"
+
 		if (hasattr(self, 'REJECT_REMOTE')):
 			reactions.REJECT_REMOTE = self.REJECT_REMOTE
 			if reactions.REJECT_REMOTE:
@@ -214,6 +222,7 @@ class Enumerator(object):
 		reactions.RELEASE_CUTOFF_1_1 = self.old['release_cutoff_1_1']
 		reactions.RELEASE_CUTOFF_1_N = self.old['release_cutoff_1_N']
 		reactions.UNZIP = self.old['unzip']
+		reactions.LEGACY_UNZIP = self.old['legacy_unzip']
 		reactions.REJECT_REMOTE = self.old['reject_remote']
 
 	def enumerate(self):
@@ -783,9 +792,9 @@ def main(argv):
 	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
 
-	parser.add_argument('--k-slow', action='store', dest='k_slow', default=float("-inf"), type=float, \
+	parser.add_argument('--k-slow', action='store', dest='k_slow', default=0, type=float, \
 		help="Unimolecular reactions slower than this rate will be discarded (default: %f)")
-	parser.add_argument('--k-fast', action='store', dest='k_fast', default=float("-inf"), type=float, \
+	parser.add_argument('--k-fast', action='store', dest='k_fast', default=0, type=float, \
 		help="Unimolecular reactions slower than this rate will be marked as slow (default: %f)")
 
 	parser.add_argument('--reject-remote', action='store_true', dest='REJECT_REMOTE', default=False, \
@@ -844,6 +853,7 @@ def main(argv):
 	if cl_opts.k_fast is not None:
 		enum.k_fast = cl_opts.k_fast
 
+
 	if cl_opts.MAX_REACTION_COUNT is not None:
 		enum.MAX_REACTION_COUNT = cl_opts.MAX_REACTION_COUNT
 
@@ -867,6 +877,9 @@ def main(argv):
 
 	if cl_opts.UNZIP is not None:
 		enum.UNZIP = cl_opts.UNZIP
+
+	if cl_opts.LEGACY_UNZIP is not None:
+		enum.LEGACY_UNZIP = cl_opts.LEGACY_UNZIP
 
 	enum.DFS = not cl_opts.bfs
 	enum.interactive = cl_opts.interactive

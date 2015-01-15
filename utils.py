@@ -15,6 +15,12 @@ LONG_DOMAIN_LENGTH = 12
 
 import re
 
+def wrap(x, m):
+	"""
+	Mathematical modulo; wraps x so that 0 <= wrap(x,m) < m. x can be negative.
+	"""
+	return (x % m + m) % m
+
 def natural_sort(l): 
 	"""
 	Sorts a collection in the order humans would expect. Implementation from
@@ -215,6 +221,22 @@ class Loop(object):
 
 
 	@property
+	def locs(self):
+		return (part[2] if part is not None else None for part in self._parts)
+
+	@property
+	def domains(self):
+		return (part[0] if part is not None else None for part in self._parts)
+
+	@property
+	def structures(self):
+		return (part[1] if part is not None else None for part in self._parts)
+
+	@property
+	def structs(self):
+		return self.structures
+
+	@property
 	def parts(self):
 		"""
 		Gives the list of (dom, struct, loc) tuples associated with this loop
@@ -241,6 +263,18 @@ class Loop(object):
 		True if the loop is an open loop, else false
 		"""
 		return self._is_open
+
+	def __str__(self):
+		return "Loop(%s)" % list(self.domains)
+
+	def __repr__(self):
+		return str(self)
+
+	def __len__(self):
+		return sum(len(dom) for dom in self.domains)
+
+	def __eq__(self, other):
+		return self._parts == other._parts
 
 class Domain(object):
 	"""
@@ -493,7 +527,8 @@ class Complex(object):
 		perms = [tuple(strands[x:] + strands[:x]) for x in range(len(strands))] # calculate all circular permutations
 		min_perm = min(range(len(strands)),key=lambda i : perms[i]) # select lexicographically minimum permutation
 		self._rotate_strands_n(min_perm) # rotate until we're in that form
-		
+		self._rotations = -min_perm
+
 		# Holds a unique hash identifying this complex (computed lazily by self.__hash__)
 		self._hash = None
 
@@ -586,6 +621,14 @@ class Complex(object):
 		if(loc != None):
 			return self._strands[loc[0]]._domains[loc[1]]
 		return None
+
+	def get_strand(self,loc):
+		"""
+		Returns the strand at the given index in this complex
+		"""
+		if(loc != None):
+			return self._strands[loc]
+		return None
 	
 	def get_structure(self, loc):
 		"""
@@ -595,6 +638,9 @@ class Complex(object):
 		if(loc != None):
 			return self.structure[loc[0]][loc[1]]
 		return None
+
+	def triple(self,*loc):
+		return (self.get_domain(loc),self.get_structure(loc),loc)
 
 	def strand_index(self, strand_name):
 		"""
@@ -785,6 +831,10 @@ class Complex(object):
 		out._rotate_strands()
 		return out
 	
+	def rotate_location(self, loc, n=None):
+		if n is None: n = self._rotations
+		return ( wrap(loc[0]+n, len(self._strands)), loc[1] )
+
 	def check_structure(self):
 		"""
 		Determines whether the structure includes pairs only between complementary domains. 
@@ -797,7 +847,7 @@ class Complex(object):
 				target_domain = self.get_domain(target)
 				
 				if (target is not None and self.structure[target[0]][target[1]] != (strand_index,domain_index)):
-					raise Exception("In complex %s, incoherent structure at (%d, %d) and (%d, %d)" % (self.name, strand_index, domain_index, target[0], target[1]))
+					raise Exception("In complex %s, incoherent structure at (%d, %d) -> (%d, %d)" % (self.name, strand_index, domain_index, target[0], target[1]))
 
 				if (target_domain is not None):
 					if(not source_domain.can_pair(target_domain)):

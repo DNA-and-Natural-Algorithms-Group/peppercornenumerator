@@ -12,6 +12,14 @@ import copy
 import input
 
 class MiscTests(unittest.TestCase):
+	def testWrap(self):
+		assert wrap(0,3) == 0
+		assert wrap(2,3) == 2
+		assert wrap(3,3) == 0
+		assert wrap(4,3) == 1
+		assert wrap(-1,3) == 2
+		assert wrap(-2,3) == 1
+
 	def testNaturalSort(self):
 		assert natural_sort(['c10','b','c2','c1','a']) == ['a','b','c1','c2','c10']
 		
@@ -367,6 +375,25 @@ class ComplexTests(unittest.TestCase):
 		c38 = Complex('38',[strands['a1'],strands['b1'],strands['a1']],parse_dot_paren('(((+)))(+)..'))
 		assert c16 == c38
 	
+	def testRotateLocation(self):
+		i1 = self.complexes['I1']
+		c3 = Complex('C3', [self.strands['SP'], self.strands['Cat'], self.strands['BS']], [[(2, 2), (2, 1)], [None, (2, 0)], [(1, 1), (0, 1), (0, 0), None, None, None]])
+		assert c3.strands == [self.strands['BS'], self.strands['SP'], self.strands['Cat']]
+		assert c3.structure == [[(2, 1), (1, 1), (1, 0), None, None, None], [(0, 2), (0, 1)], [None, (0, 0)]]
+		assert c3 == self.complexes['I1']
+		assert c3._rotations == -2
+
+
+		assert c3.rotate_location((2,1)) == (0,1)
+		assert c3.rotate_location((0,0)) == (1,0)
+		assert c3.rotate_location((1,0)) == (2,0)
+
+		# assert c3.strands == [self.strands['Cat'], self.strands['BS'], self.strands['SP']]
+		# assert c3.structure == 
+		# c4 = self.complexes['Cat'].rotate_strands()
+		# assert c4.strands == [self.strands['Cat']]
+		# assert c4.structure == [[None, None]]
+
 	def testDotParenString(self):
 		str = self.complexes['I1'].dot_paren_string()
 		assert str == "(((...+))+.)"
