@@ -1178,7 +1178,8 @@ def branch_3way(reactant):
 				length = len(displacing)
 
 				# calculate reaction constant
-				reaction._const = branch_3way_remote_rate(length, before, after)
+				# reaction._const = branch_3way_remote_rate(length, before, after)
+				reaction._const = branch_3way_remote_rate(length, after, before)
 
 				# skip remote toehold reactions if directed
 				if REJECT_REMOTE:

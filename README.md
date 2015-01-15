@@ -8,7 +8,7 @@ This package predicts the set of possible reactions between a set of initial nuc
 
 This document describes basic usage of the software, automatic generation of API documentation, and running of unit tests. API documentation is found in the `docs` subdirectory.
 
-This package is written for Python 2.7; Python must be installed and in the user's `path` in order to run the program. 
+This package is written for Python 2.7; Python must be installed and in the user's `PATH` in order to run the program. In addition, Kernel parsing requires the `pyparsing` library, and condensed reaction rate calculations requires `numpy`; these dependencies are optional---if you do not use the kernel notation or require condensed reaction rates, you may run the program without them.
 
 Usage
 -----
