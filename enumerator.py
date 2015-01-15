@@ -85,6 +85,8 @@ class Enumerator(object):
 		self.FAST_REACTIONS = fast_reactions[1]
 		self.interruptible = True
 		self.interactive = False
+		self.k_slow = 0 # float("-inf")
+		self.k_fast = 0 # float("-inf")
 		
 	@property 
 	def auto_name(self):
@@ -201,7 +203,7 @@ class Enumerator(object):
 		if (hasattr(self, 'UNZIP')):
 			reactions.UNZIP = self.UNZIP
 			if reactions.UNZIP:
-				print "Using max-helix semantics for 3-way branch migration"
+				print "Using max-helix semantics"
 
 		if (hasattr(self, 'REJECT_REMOTE')):
 			reactions.REJECT_REMOTE = self.REJECT_REMOTE
@@ -382,6 +384,20 @@ class Enumerator(object):
 			print
 			utils.wait_for_input()
 
+	# def partition_reactions(self, reactions):
+	# 	too_slow = []
+	# 	slow = []
+	# 	fast = []
+
+	# 	for r in self.reactions:
+	# 		if r.rate() < self.k_slow: too_slow.append(r)
+	# 		elif self.k_slow < r.rate() < self.k_fast: slow.append(r)
+	# 		elif self.k_fast < r.rate(): fast.append(r)
+	# 		else:
+	# 			raise Exception("Unable to classify reaction as fast (k > %(k_fast)d) or slow (%(k_slow)d > k > %(k_fast)d)" % { k_slow: self.k_slow, k_fast: self.k_fast })
+
+	# 	return (too_slow, slow, fast)
+
 	def process_neighborhood(self, source):
 		"""
 		Takes a single complex, generates the 'neighborhood' of complexes
@@ -396,6 +412,9 @@ class Enumerator(object):
 		# neighborhood
 		N_reactions = []
 
+		# N_reactions_fast = []
+		# N_reactions_slow = []
+
 		self._F = [source]
 
 		try:
@@ -407,12 +426,18 @@ class Enumerator(object):
 				element = self._F.pop()
 				reactions = self.get_fast_reactions(element)
 
+				# # Partition reactions into too slow (discard), slow, and fast
+				# reactions_too_slow, reactions_slow, reactions_fast = self.partition_reactions(reactions)
+
 				# Add new products to F
 				new_products = self.get_new_products(reactions)
+				# new_products = self.get_new_products(reactions_fast)
 				self._F += (new_products)
 
 				# Add new reactions to N_reactions
 				N_reactions += (reactions)
+				# N_reactions_fast += reactions_fast
+				# N_reactions_slow += reactions_slow
 				self._N.append(element)
 
 				# Display new reactions in interactive mode
@@ -423,6 +448,7 @@ class Enumerator(object):
 			# Now segment the neighborhood into transient and resting states
 			# by finding the strongly connected components
 			segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions)
+			# segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions_fast)
 
 			# Resting state complexes are added to S
 			self._S += (segmented_neighborhood['resting_state_complexes'])
@@ -433,7 +459,12 @@ class Enumerator(object):
 			# Resting states are added to the list
 			self._resting_states += (segmented_neighborhood['resting_states'])
 
+			# # Filter slow reactions to only include those whose reactants are resting set complexes
+			# S = set(self._S)
+			# N_reactions_slow = [r for r in N_reactions_slow if all(x in S for x in r.reactants)]
+
 			# Reactions from this neighborhood are added to the list
+			# N_reactions = N_reactions_fast # + N_reactions_slow
 			self._reactions += (N_reactions)
 
 			# Reset neighborhood
@@ -450,15 +481,20 @@ class Enumerator(object):
 
 		reactions = []
 
-		# Do unimolecular reactions
-		for function in slow_reactions[1]:
-			reactions += (function(complex))
+		# Do unimolecular reactions that are always slow
+		for move in slow_reactions[1]:
+			reactions += (move(complex))
+
+		# Do unimolecular reactions that are sometimes slow
+		for move in self.FAST_REACTIONS:
+			move_reactions = move(complex) 
+			reactions += (r for r in move_reactions if self.k_fast > r.rate() > self.k_slow)
 
 		# Do bimolecular reactions
-		for function in slow_reactions[2]:
-			reactions += (function(complex, complex))
+		for move in slow_reactions[2]:
+			reactions += (move(complex, complex))
 			for complex2 in self._E:
-				reactions += (function(complex, complex2))
+				reactions += (move(complex, complex2))
 
 		return reactions
 
@@ -473,8 +509,9 @@ class Enumerator(object):
 		reactions = []
 
 		# Do unimolecular reactions
-		for reaction in self.FAST_REACTIONS:
-			reactions += (reaction(complex))
+		for move in self.FAST_REACTIONS:
+			move_reactions = move(complex) 
+			reactions += (r for r in move_reactions if r.rate() > self.k_slow)
 		return reactions
 
 	def get_new_products(self, reactions):
@@ -739,7 +776,6 @@ def main(argv):
 	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
 		help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
 
-
 	parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', type=int, \
 		help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %d)" % reactions.RELEASE_CUTOFF_1_1)
 	parser.add_argument('--release-cutoff-1-n', action='store', dest='RELEASE_CUTOFF_1_N', type=int, \
@@ -747,11 +783,17 @@ def main(argv):
 	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
 
+	parser.add_argument('--k-slow', action='store', dest='k_slow', default=float("-inf"), type=float, \
+		help="Unimolecular reactions slower than this rate will be discarded (default: %f)")
+	parser.add_argument('--k-fast', action='store', dest='k_fast', default=float("-inf"), type=float, \
+		help="Unimolecular reactions slower than this rate will be marked as slow (default: %f)")
+
 	parser.add_argument('--reject-remote', action='store_true', dest='REJECT_REMOTE', default=False, \
 		help="Discard remote toehold mediated 3-way and 4-way branch migration reactions. (default: %(default)s)")
 	parser.add_argument('--no-max-helix', action='store_false', dest='UNZIP', default=True, \
 		help="Don't apply 'max helix at a time' semantics to 3-way branch migration reactions. (default: False)")
-
+	parser.add_argument('--legacy-unzip', action='store_true', dest='LEGACY_UNZIP', default=False, \
+		help="Apply legacy 'UNZIP=True' behavior; no effect with --no-max-helix (default: %(default)s)")
 
 	parser.add_argument('--bfs-ish', action='store_true', dest='bfs', \
 		help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
@@ -797,6 +839,11 @@ def main(argv):
 		print c.kernel_string()
 
 	# Transfer options to enumerator object
+	if cl_opts.k_slow is not None:
+		enum.k_slow = cl_opts.k_slow
+	if cl_opts.k_fast is not None:
+		enum.k_fast = cl_opts.k_fast
+
 	if cl_opts.MAX_REACTION_COUNT is not None:
 		enum.MAX_REACTION_COUNT = cl_opts.MAX_REACTION_COUNT
 
@@ -820,7 +867,6 @@ def main(argv):
 
 	if cl_opts.UNZIP is not None:
 		enum.UNZIP = cl_opts.UNZIP
-
 
 	enum.DFS = not cl_opts.bfs
 	enum.interactive = cl_opts.interactive
@@ -899,12 +945,19 @@ def main(argv):
 	for (output_format, output_filename) in outputs:
 
 		# Attempt to load an output generator to serialize the enumerator object to an output file
+		mode = None
 		if (output_format in output.text_output_functions):
-			print "Writing text output to file : %s" % output_filename
-			output.text_output_functions[output_format](enum, output_filename,output_condensed=condensed)
+			print "Writing text output to file : %s as %s" % (output_filename, output_format)
+			mode = output.text_output_functions[output_format]
 		elif (output_format in output.graph_output_functions):
-			print "Writing graph output to file : %s" % output_filename
-			output.graph_output_functions[output_format](enum, output_filename,output_condensed=condensed)
+			print "Writing graph output to file : %s as %s" % (output_filename, output_format)
+			mode = output.graph_output_functions[output_format]
+		
+		if mode is not None:
+			mode(enum, output_filename,
+				output_condensed = condensed, condense_options = { 
+					'k_fast': enum.k_fast, 
+					'compute_rates': cl_opts.compute_rates  })
 		else:
 			utils.error("Unrecognized output format '%s'. Exiting." % output_format)
 

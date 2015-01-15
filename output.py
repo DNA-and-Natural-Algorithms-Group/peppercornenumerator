@@ -16,7 +16,7 @@ from condense import condense_resting_states
 
 
 
-def output_legacy(enumerator, filename, output_condensed = False):
+def output_legacy(enumerator, filename, output_condensed = False, output_rates = False, condense_options = {}):
 	"""
 	Legacy text-based output scheme similar to that used in the original 
 	enumerator. Designed to be simultaneously parsable and human-readable.
@@ -93,7 +93,7 @@ def output_legacy(enumerator, filename, output_condensed = False):
 	if (output_condensed):
 		output_file.write("###############################\n")
 		output_file.write("\n\n# Condensed Reactions \n")
-		condensed = condense_resting_states(enumerator)
+		condensed = condense_resting_states(enumerator, **condense_options)
 		new_reactions = condensed['reactions']
 		for reaction in sorted(new_reactions):
 			write_reaction(output_file,reaction)
@@ -102,7 +102,7 @@ def output_legacy(enumerator, filename, output_condensed = False):
 
 output_legacy.supports_condensed = True		
 
-def output_pil(enumerator, filename, output_condensed = False, output_rates = True):
+def output_pil(enumerator, filename, output_condensed = False, output_rates = True, condense_options = {}):
 	"""
 	Text-based output using the Pepper Intermediate Language (PIL)
 	"""
@@ -163,7 +163,7 @@ def output_pil(enumerator, filename, output_condensed = False, output_rates = Tr
 
 	
 	if (output_condensed):
-		condensed = condense_resting_states(enumerator)
+		condensed = condense_resting_states(enumerator, **condense_options)
 
 		output_file.write("\n# Resting-state sets \n")
 		resting_states = condensed['resting_states']
@@ -186,7 +186,7 @@ def output_pil(enumerator, filename, output_condensed = False, output_rates = Tr
 	output_file.close()
 
 
-def output_json(enumerator, filename, output_condensed = False):
+def output_json(enumerator, filename, output_condensed = False, output_rates = True, condense_options = {}):
 	"""
 	JSON-based output schema intended to be easily machine parsable. Uses
 	python's JSON serialization libraries.
@@ -271,7 +271,7 @@ def output_json(enumerator, filename, output_condensed = False):
 	object_out['reactions'] = map(serializeReaction,enumerator.reactions)
 	
 	if output_condensed:
-		condensed = condense_resting_states(enumerator)
+		condensed = condense_resting_states(enumerator, **condense_options)
 		object_out['condensed_reactions'] = map(serializeReaction,condensed['reactions'])
 		
 	fout = open(filename, 'w')
@@ -280,7 +280,7 @@ def output_json(enumerator, filename, output_condensed = False):
  
 output_json.supports_condensed = True
 
-def output_graph(enumerator, filename, output_condensed=False):
+def output_graph(enumerator, filename, output_condensed = False, output_rates = False):
 	if not output_condensed:
 		output_full_graph(enumerator, filename)
 	else:
@@ -288,7 +288,7 @@ def output_graph(enumerator, filename, output_condensed=False):
 	
 output_graph.supports_condensed = True
 
-def output_dotfile(enumerator, filename, output_condensed=False):
+def output_dotfile(enumerator, filename, output_condensed = False, output_rates = False):
 	if not output_condensed:
 		output_full_dotfile(enumerator, filename)
 	else:
@@ -412,7 +412,7 @@ def output_condensed_dotfile(enumerator, filename):
 	fout.write('page="8.5,11"\n')
 	fout.write('node[width=0.25,height=0.375,fontsize=9]\n')
 	
-	condensed_graph = condense_resting_states(enumerator)
+	condensed_graph = condense_resting_states(enumerator, **condense_options)
 	
 	# We loop through all resting states, drawing them on the graph
 	for state in condensed_graph['resting_states']:
@@ -445,7 +445,7 @@ def output_condensed_graph(enumerator, filename):
 	subprocess.call(["dot", "-O", "-Teps", "%s.dot" % filename])
 	
 
-def output_sbml(enumerator,filename, output_condensed = False):
+def output_sbml(enumerator,filename, output_condensed = False, output_rates = True, condense_options = {}):
 	# # default initial concentration of all species is 100 nM
 	# initial_concentration = 10e-7 
 
@@ -474,7 +474,7 @@ def output_sbml(enumerator,filename, output_condensed = False):
 		'<listOfSpecies>']
 	
 	if(output_condensed):
-		condensed = condense_resting_states(enumerator)
+		condensed = condense_resting_states(enumerator, **condense_options)
 		complexes = condensed['resting_states']
 		reactions = condensed['reactions']
 	else:
@@ -538,7 +538,7 @@ def output_sbml(enumerator,filename, output_condensed = False):
 	fout.close()
 	
 
-def output_crn(enumerator, filename, output_condensed = False):
+def output_crn(enumerator, filename, output_condensed = False, output_rates = True, condense_options = {}):
 	output_file = open(filename, 'w')
 
 	def write_reaction(output_file,reaction):
@@ -550,7 +550,7 @@ def output_crn(enumerator, filename, output_condensed = False):
 
 	reactions = enumerator.reactions
 	if (output_condensed):
-		condensed = condense_resting_states(enumerator)
+		condensed = condense_resting_states(enumerator, **condense_options)
 		reactions = condensed['reactions']
 
 	for reaction in sorted(reactions): #utils.natural_sort(reactions):
@@ -558,7 +558,7 @@ def output_crn(enumerator, filename, output_condensed = False):
 
 	output_file.close()
 
-def output_k(enumerator, filename, output_condensed = False):
+def output_k(enumerator, filename, output_condensed = False, output_rates = True, condense_options = {}):
 	output_file = open(filename, 'w')
 
 	def write_reaction(output_file,reaction,reversible=True):
@@ -575,7 +575,7 @@ def output_k(enumerator, filename, output_condensed = False):
 
 	reactions = enumerator.reactions
 	if (output_condensed):
-		condensed = condense_resting_states(enumerator)
+		condensed = condense_resting_states(enumerator, **condense_options)
 		reactions = condensed['reactions']
 
 	for reaction in sorted(reactions): #utils.natural_sort(reactions):
@@ -586,7 +586,7 @@ def output_k(enumerator, filename, output_condensed = False):
 # warning: I tried to name this output_test_case, but nosetests kept trying to 
 # run it as a test because magic. 
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-modules
-def output_case(enumerator, filename, output_condensed = False):
+def output_case(enumerator, filename, output_condensed = False, condense_options = {}):
 	def tab(x):
 		return "\t" * x
 
@@ -642,7 +642,7 @@ def output_case(enumerator, filename, output_condensed = False):
 
 
 	if(output_condensed):
-		condensed = condense_resting_states(enumerator)
+		condensed = condense_resting_states(enumerator, **condense_options)
 		
 		# Resting states
 		of.write(tab(1) + "# Resting states \n")
