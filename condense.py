@@ -322,12 +322,12 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
 
         # find eigenvector corresponding to eigenvalue zero (or nearly 0)
         epsilon = 1e-5
-        try:
-            s = next(v[:,i] for (i, x) in enumerate(w) if abs(x) < epsilon) # semi-arbitrary choice of epsilon based on what seemed to work with numpy
-        except(StopIteration):
-            raise Exception(("Unable to find stationary distribution for resting state. " +
-                         "No eigenvector with eigenvalue less than epsilon = %e for transition matrix; " +
-                         "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") % (epsilon, str(w)))
+        i = np.argmin(np.abs(w))
+        if abs(w[i]) > epsilon:
+            print (("Warning: bad stationary distribution for resting state transition matrix. " +
+                "Eigenvalue found %f has magnitude greater than epsilon = %f. " + 
+                "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") % (w(i), epsilon, str(w)))
+        s = v[:,i]
 
         # check that the stationary distribution is good
         assert (s >= 0).all() or (s <= 0).all(), "Stationary distribution of resting state complex should not be an eigenvector of mixed sign."
