@@ -15,6 +15,26 @@ LONG_DOMAIN_LENGTH = 12
 
 import re
 
+class colors:
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    GREEN = '\033[92m'
+    BLUE = '\033[94m'
+    PINK = '\033[95m'
+    CYAN = '\033[96m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    colors = [RED, YELLOW, GREEN, CYAN, BLUE, PINK]
+    @staticmethod
+    def legend(keys=None):
+		if keys is None:
+			l = enumerate(colors.colors)
+		else:
+			l = zip(keys, colors.colors)
+		return "\n".join([(c+str(i)+colors.ENDC) for i,c in l])
+
+
 def wrap(x, m):
 	"""
 	Mathematical modulo; wraps x so that 0 <= wrap(x,m) < m. x can be negative.
@@ -264,11 +284,17 @@ class Loop(object):
 		"""
 		return self._is_open
 
+	def __contains__(self, item):
+		if isinstance(item, Domain):
+			return item in self.domains
+		elif isinstance(item, tuple):
+			return item in self.locs
+
 	def __str__(self):
-		return "Loop(%s)" % list(self.domains)
+		return ' '.join([(str(s) if s is not None else '+') for s in self.domains])
 
 	def __repr__(self):
-		return str(self)
+		return "Loop(%s)" % list(self.domains)
 
 	def __len__(self):
 		return sum(len(dom) for dom in self.domains)
@@ -920,6 +946,30 @@ class Complex(object):
 
 		return " + ".join(parts)
 
+	def kernel_string_loop(self, *loops):
+		parts = []
+		for strand_num, strand in enumerate(self.strands):
+			sparts = []
+			for dom_num, dom in enumerate(strand.domains):
+				color = ""
+				for i, loop in enumerate(loops):
+					if (strand_num, dom_num) in loop: 
+						color = colors.colors[i]
+
+				if self.structure[strand_num][dom_num] is None:
+					s = str(dom)
+				elif self.structure[strand_num][dom_num] > (strand_num, dom_num):
+					s = str(dom) + "("
+				else:
+					s = ")"
+				
+				if color != "": s = color + s + colors.ENDC
+				sparts.append(s)
+			
+			parts.append(" ".join(sparts))
+
+		return " + ".join(parts) + "\n\n" + colors.legend(loops)
+
 	def dot_paren_string(self):
 		"""
 		Returns the segment-wise dot paren representation of this complex.
@@ -976,7 +1026,7 @@ class RestingState(object):
 		complexes.sort()
 		self._complexes = complexes
 		self._name = name
-		self._canonical = find(lambda s: not str(s).isdigit(),sorted(complexes),str(complexes[0]))
+		self._canonical = find(lambda s: not str(s).isdigit(),sorted(complexes),complexes[0])
 		self._hash = None
 		
 	@property
@@ -1007,6 +1057,9 @@ class RestingState(object):
 		See ``canonical_name``.
 		"""
 		return self._canonical
+
+	def kernel_string(self):
+		return self.canonical.kernel_string()
 
 	def __hash__(self):
 		if self._hash == None:

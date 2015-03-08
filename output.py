@@ -186,6 +186,80 @@ def output_pil(enumerator, filename, output_condensed = False, output_rates = Tr
 	output_file.close()
 
 
+def output_kernel(enumerator, filename, output_condensed = False, output_rates = True, condense_options = {}):
+	"""
+	Text-based output using the Pepper Intermediate Language (PIL)
+	"""
+	
+	def write_complex(output_file,complex):
+		params = ""
+		if complex.concentration is not None:
+			params = "[@ %g %sM] " % utils.format_si(complex.concentration)
+		output_file.write(str(complex) + params + " = " + complex.kernel_string() + "\n")
+	
+	def write_reaction(output_file,reaction):
+		if output_rates:
+			rate_units = "/M" * (reaction.arity[0]-1) + "/s"
+			rate_const = "[%f %s]" % (reaction.rate(), rate_units) 
+		else: rate_const = ""
+		reac_string_list = [rate_const,reaction.kernel_string()]
+		reac_string = ' '.join(reac_string_list)
+		output_file.write(reac_string + "\n")
+		
+	complexes = enumerator.complexes
+	transient_complexes = enumerator.transient_complexes
+	resting_complexes = enumerator.resting_complexes
+	reactions = enumerator.reactions
+	resting_states = enumerator.resting_states
+	
+	output_file = open(filename, 'w')
+	output_file.write("###### Enumerated Output ######\n")
+	output_file.write("\n# Domains \n")
+	
+	def seq(dom):
+		if(dom.sequence != None):
+			return dom.sequence
+		else:
+			return "N" * len(dom)
+	
+	for domain in utils.natural_sort(enumerator.domains):
+		if(not domain.is_complement):
+			output_file.write("sequence " + domain.name + " = " + seq(domain) + " : " + str(domain.length) + "\n")
+	
+	output_file.write("\n# Strands \n")
+	for strand in utils.natural_sort(enumerator.strands):
+		output_file.write("strand " + strand.name + " = " + \
+						" ".join(map(lambda dom: dom.name, strand.domains)) + "\n")
+	
+	output_file.write("\n# Resting-state Complexes \n")
+	for complex in utils.natural_sort(resting_complexes):
+		write_complex(output_file,complex)
+
+	
+	if (output_condensed):
+		condensed = condense_resting_states(enumerator, **condense_options)
+
+		output_file.write("\n# Resting-state sets \n")
+		resting_states = condensed['resting_states']
+		for resting_state in utils.natural_sort(resting_states):
+			output_file.write("# state " + str(resting_state) + " = { " + " ".join(map(str,resting_state.complexes)) + " }\n")
+
+		output_file.write("\n# Condensed Reactions \n")
+		new_reactions = condensed['reactions']
+		for reaction in sorted(new_reactions):
+			write_reaction(output_file,reaction)
+	else:	
+		output_file.write("\n# Transient Complexes \n")
+		for complex in utils.natural_sort(transient_complexes):
+			write_complex(output_file,complex)
+		output_file.write("\n# Detailed Reactions \n")
+		for reaction in sorted(reactions): #utils.natural_sort(reactions):
+			write_reaction(output_file,reaction)
+		
+			
+	output_file.close()
+
+
 def output_json(enumerator, filename, output_condensed = False, output_rates = True, condense_options = {}):
 	"""
 	JSON-based output schema intended to be easily machine parsable. Uses
@@ -679,6 +753,7 @@ text_output_functions = {
 	# 'standard': output_legacy,
 	'legacy': output_legacy,
 	'pil': output_pil,
+	'kernel': output_kernel,
 	'json': output_json,
 	'enjs': output_json,
 	'sbml': output_sbml,

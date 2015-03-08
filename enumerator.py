@@ -771,18 +771,18 @@ def main(argv):
 
 	parser.add_argument('-c', action='store_true', dest='condensed', default=False, \
 		help="Condense reactions into only resting complexes (default: %(default)s)")
-	parser.add_argument('-r', action='store_true', dest='compute_rates', default=True, \
+	parser.add_argument('-r', action='store_true', dest='compute_rates', default=False, \
 		help="Compute reaction rates (default: %(default)s)")
 	parser.add_argument('-d', action='store_true', dest='dry_run', default=False, \
 		help="Dry run---read input, write output; do not enumerate any reactions. (default: %(default)s)")
 	parser.add_argument('-s', action='store_true', dest='interactive', default=False, \
 		help="Interactive---display new reactions after each step. (default: %(default)s)")
 
-	parser.add_argument('--max-complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=MAX_COMPLEX_SIZE, type=int, \
+	parser.add_argument('--max-complex-size', '--complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=MAX_COMPLEX_SIZE, type=int, \
 		help="Maximum number of strands allowed in a complex (used to prevent polymerization) (default: %(default)s)")
-	parser.add_argument('--max-complex-count', action='store', dest='MAX_COMPLEX_COUNT', default=MAX_COMPLEX_COUNT, type=int, \
+	parser.add_argument('--max-complex-count', '--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=MAX_COMPLEX_COUNT, type=int, \
 		help="Maximum number of complexes that may be enumerated before the enumerator halts. (default: %(default)s)")
-	parser.add_argument('--max-reaction-count', action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
+	parser.add_argument('--max-reaction-count', '--max-reactions' action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
 		help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
 
 	parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', type=int, \
@@ -968,7 +968,7 @@ def main(argv):
 		
 		if mode is not None:
 			mode(enum, output_filename,
-				output_condensed = condensed, condense_options = { 
+				output_condensed = condensed, output_rates=cl_opts.compute_rates, condense_options = { 
 					'k_fast': enum.k_fast, 
 					'compute_rates': cl_opts.compute_rates  })
 		else:
