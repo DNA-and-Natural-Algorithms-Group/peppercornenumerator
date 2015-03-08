@@ -792,10 +792,10 @@ def main(argv):
 	parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int, \
 		help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
 
-	parser.add_argument('--k-slow', action='store', dest='k_slow', default=0, type=float, \
-		help="Unimolecular reactions slower than this rate will be discarded (default: %f)")
-	parser.add_argument('--k-fast', action='store', dest='k_fast', default=0, type=float, \
-		help="Unimolecular reactions slower than this rate will be marked as slow (default: %f)")
+	parser.add_argument('--k-slow', action='store', dest='k_slow', default=0.0, type=float, \
+		help="Unimolecular reactions slower than this rate will be discarded (default: %(default)f)")
+	parser.add_argument('--k-fast', action='store', dest='k_fast', default=0.0, type=float, \
+		help="Unimolecular reactions slower than this rate will be marked as slow (default: %(default)f)")
 
 	parser.add_argument('--reject-remote', action='store_true', dest='REJECT_REMOTE', default=False, \
 		help="Discard remote toehold mediated 3-way and 4-way branch migration reactions. (default: %(default)s)")
