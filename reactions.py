@@ -1178,12 +1178,15 @@ def branch_3way(reactant):
 				length = len(displacing)
 
 				# calculate reaction constant
-				# reaction._const = branch_3way_remote_rate(length, before, after)
-				reaction._const = branch_3way_remote_rate(length, after, before)
+				(after, before) = (before, after)
+				reaction._const = branch_3way_remote_rate(length, before, after)
+				# reaction._const = branch_3way_remote_rate(length, after, before)
 
 				# skip remote toehold reactions if directed
 				if REJECT_REMOTE:
 					if not (not after.is_open and after.stems==1 and after.bases==0):
+						# print "Rejecting... " + reaction.kernel_string()
+						# import pdb; pdb.set_trace()
 						continue
 
 				reactions.append(reaction)
