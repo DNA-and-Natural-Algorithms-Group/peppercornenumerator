@@ -1,0 +1,26 @@
+# ss-ss remote toeholds from Genot et al 2011, figure 3 -- unimolecular step (we assume the 14-bp toehold doesn't dissociate)
+# buffer: TE + 12.5 mM Mg at 25 C and pH 8.0 (paper does not mention carrier DNA)
+
+length tail = 15
+length branch = 22
+length toe = 14
+length n7 = 7
+length n17 = 17
+length n20 = 20
+length n23 = 23
+length m8 = 8
+length m17 = 17
+length m20 = 20
+length m23 = 23
+
+remote_n7m8 = tail branch( + branch n7 toe( + ) m8 )
+remote_n17m17 = tail branch( + branch n17 toe( + ) m17 )
+remote_n20m20 = tail branch( + branch n20 toe( + ) m20 )
+remote_n23m23 = tail branch( + branch n23 toe( + ) m23 )
+remote_n17m0 =  tail branch( + branch n17 toe( + ) )
+remote_n0m17 =  tail branch( + branch toe( + ) m17 )
+
+# ../../enumerator.py genot2011fig3.pil 
+
+# except for n0m17 (which was too slow to measure experimentally), Peppercorn rates are within 15 of published values.
+# mostly, Peppercorn is too slow...

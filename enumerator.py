@@ -782,7 +782,7 @@ def main(argv):
 		help="Maximum number of strands allowed in a complex (used to prevent polymerization) (default: %(default)s)")
 	parser.add_argument('--max-complex-count', '--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=MAX_COMPLEX_COUNT, type=int, \
 		help="Maximum number of complexes that may be enumerated before the enumerator halts. (default: %(default)s)")
-	parser.add_argument('--max-reaction-count', '--max-reactions' action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
+	parser.add_argument('--max-reaction-count', '--max-reactions', action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int, \
 		help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
 
 	parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', type=int, \
