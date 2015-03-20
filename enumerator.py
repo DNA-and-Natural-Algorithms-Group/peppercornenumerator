@@ -21,6 +21,8 @@ MAX_COMPLEX_SIZE = 6
 MAX_REACTION_COUNT = 1000
 MAX_COMPLEX_COUNT = 200
 
+# There should be better control of this limit -- only set it when necessary (Erik Winfree based on Chris Thachuk's advice...)
+sys.setrecursionlimit(20000)
 
 
 fast_reactions = {

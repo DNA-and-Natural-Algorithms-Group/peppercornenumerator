@@ -1,0 +1,20 @@
+# 2 base clamps.  This description allows fuel2 to be invaded from either side.  
+# One side is depicted in figure 2b of the paper.
+
+length 0d = 5
+length 1a = 10
+length 1b = 5
+length 2a = 1
+length 2b = 1
+length 2c = 8
+length 2d = 5
+length 3a = 1
+length 3b = 1
+length 3c = 13
+
+fuel1 = 1a( 1b( 2a( 2b( 2c 2d + )))) 0d*
+fuel2 = 2a( 2b( 2c( 2d( 3a( 3b( 3c + )))))) 1b*
+FlRep = 3a( 3b( 3c( + ))) 2d*
+
+# this runs without -c, but it takes a very long time... when run with -c, ... it also seems to work!
+# ../../enumerator.py --no-max-helix --max-complex-size 4 --max-complex-count 200000 --max-reaction-count 200000 SLD_translator_leak.pil -r
