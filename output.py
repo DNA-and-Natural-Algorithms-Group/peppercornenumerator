@@ -204,7 +204,12 @@ def output_kernel(enumerator, filename, output_condensed = False, output_rates =
 		else: rate_const = ""
 		reac_string_list = [rate_const,reaction.kernel_string()]
 		reac_string = ' '.join(reac_string_list)
-		output_file.write(reac_string + "\n")
+
+		reactants = map(str,reaction.reactants)
+		products = map(str,reaction.products)
+		prefix = " ".join(["# ",str(reaction)," + ".join(reactants),"->"," + ".join(products)])
+
+		output_file.write(prefix + "\n" + reac_string + "\n")
 		
 	complexes = enumerator.complexes
 	transient_complexes = enumerator.transient_complexes
