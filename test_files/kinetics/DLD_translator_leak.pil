@@ -17,16 +17,24 @@ length 5a = 2
 
 fuel1 = 1b( 2a( 2b( 3a( 3b 3c 3d + )))) 1a*
 fuel2 = 2b( 3a( 3b( 3c( 3d( 4a( 4b 4c + )))))) 2a*
-FlRep = 3c( 3d( 4a( 4b( 4c( 5a( + )))))) 3b* 3a*
+
+# uncomment the complex below if you want to see the reporter interact with any slow leak intermediate
+# FlRep = 3c( 3d( 4a( 4b( 4c( 5a( + )))))) 3b* 3a*
 
 # uncomment the strand below if you want to trigger the reporter directly
-#S1 = 3a 3b 3c 3d 4a 4b 4c
+# S1 = 3a 3b 3c 3d 4a 4b 4c
+
+# uncomment the (end result of leak) structure below if you want to see where it occurs
+FF2 = 1b( 2a( 2b( 3a( 3b( 3c( 3d + 4a* )))) 2a* + 2b( 3a( 3b 3c 3d 4a 4b 4c + )))) 1a*
 
 
 # this runs with or without -c, but there is no condensed reaction because in the low-concentration limit, there is no reaction
 # ../../enumerator.py --no-max-helix --max-complex-size 6 --max-complex-count 200000 --max-reaction-count 200000 DLD_translator_leak.pil -c -r
 
-# this runs without -c, but crashes with -c
-# ../../enumerator.py --no-max-helix --max-complex-size 6 --max-complex-count 200000 --max-reaction-count 200000 DLD_translator_leak.pil -r --k-fast 0.0002
+# this runs with or without -c, but there is no condensed reaction here either... k_fast = 0.0002 does not catch the intended intermediate?  oops, no, it doesn't.
+# ../../enumerator.py --no-max-helix --max-complex-size 6 --max-complex-count 200000 --max-reaction-count 200000 DLD_translator_leak.pil -r --k-fast 0.0002 -c
+
+# FF2 changes to FF1.5 with rate 0.000935  ... that's what we want to catch as a "slow" unimolecular reaction
+# ../../enumerator.py --no-max-helix --max-complex-size 6 --max-complex-count 200000 --max-reaction-count 400000 DLD_translator_leak.pil -r --k-fast 0.001 -c
 
 

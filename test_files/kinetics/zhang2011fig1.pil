@@ -1,4 +1,4 @@
-# cooperative hybridization
+# Figure 1 of David Yu Zhang, "Cooperative hybridization of oligonucleotides", JACS, 2012
 
 length 1 = 8
 length 2 = 18
@@ -12,5 +12,7 @@ complex_D1 = 2( 3( + 4* ) ) 1*
 # this does fine with and without -c, but no net reaction occurs, but that's correct for the low-concentration limit
 # ../../enumerator.py --release-cutoff 8 zhang2011fig1.pil -r 
 
-# this should create some additional resting state complexes, but it doesn't.  even increasing k-fast doesn't have an effect.
+# this creates some additional resting state complexes, and thus enables the desired multistep pathway for cooperative hybridization.
 # ../../enumerator.py --release-cutoff 8 zhang2011fig1.pil -r --k-fast 0.01
+# works fine with or without -c
+
