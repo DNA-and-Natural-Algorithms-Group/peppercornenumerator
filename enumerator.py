@@ -371,6 +371,14 @@ class Enumerator(object):
 				print 
 				print "Interrupted; gracefully exiting..."
 				finish(premature=True)
+			except RuntimeError as e:
+				import traceback
+				print
+				print e
+				print traceback.format_exc()
+				print
+				print "Runtime error; gracefully exiting..."
+				finish(premature=True)
 		else:
 			do_enumerate() 
 
@@ -522,7 +530,8 @@ class Enumerator(object):
 		# Do unimolecular reactions
 		for move in self.FAST_REACTIONS:
 			move_reactions = move(complex) 
-			reactions += (r for r in move_reactions if r.rate() > self.k_slow)
+			# reactions += (r for r in move_reactions if r.rate() > self.k_slow)
+			reactions += (r for r in move_reactions if r.rate() > self.k_fast)
 		return reactions
 
 	def get_new_products(self, reactions):
