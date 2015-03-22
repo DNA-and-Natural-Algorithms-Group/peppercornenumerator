@@ -129,7 +129,7 @@ def get_reactions_producing(complexes,reactions):
 
 
 
-def tarjans(complexes,reactions,reactions_consuming):
+def tarjans(complexes,reactions,reactions_consuming, is_fast):
     """
     Implementation of tarjans algorithm which segments SCCs of fast reactions
     """
@@ -145,7 +145,7 @@ def tarjans(complexes,reactions,reactions_consuming):
         S.append(complex)
         
         for reaction in reactions_consuming[complex]:
-            if reaction.arity == (1,1):
+            if (reaction.arity == (1,1)) and is_fast(reaction):
             # if is_fast(reaction):
                 # print '<rxn>' + repr(reaction) + '</rxn>'
                 for product in reaction.products:
@@ -558,7 +558,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
     reactions_consuming = get_reactions_consuming(enumerator.complexes,enumerator.reactions) 
     
     # Compute list of SCCs
-    SCCs = tarjans(enumerator.complexes,enumerator.reactions,reactions_consuming)
+    SCCs = tarjans(enumerator.complexes,enumerator.reactions,reactions_consuming, is_fast)
     
     # Map each complex to the SCC which contains the complex (each complex 
     # should be in 1 SCC)
@@ -645,6 +645,10 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                         # overall contribution of detailed reaction r to rate of the condensed reaction ^r = 
                         # P(reactants of ^r are present as reactants of r) * k_r * P(products of r decay to products of ^r)
                         reaction_rate += reactant_probabilities * k * product_probability
+
+                        if isinstance(reaction_rate, complex):
+                            if reaction_rate.imag > 0:
+                                logging.warn("Reaction %s has a complex rate: %f + %fj" % (reaction, reaction_rate.real, reaction_rate.imag))
 
                     reaction._const = reaction_rate
                 condensed_reactions.add(reaction)
