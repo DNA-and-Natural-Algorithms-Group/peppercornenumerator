@@ -1,0 +1,55 @@
+# test the effect of breaking toeholds and branch migration domains into subdomains
+
+length t  = 5
+length t1 = 2
+length t2 = 3
+length b  = 25
+length b1 = 12
+length b2 = 1
+length b3 = 12
+
+inputHH    = t b
+reporterHH = b( + ) t*
+
+inputDH    = t1 t2 b
+reporterDH = b( + ) t2* t1*
+
+inputHD    = t b1 b2 b3
+reporterHD = b1( b2( b3( + ))) t*
+
+inputDD    = t1 t2 b1 b2 b3
+reporterDD = b1( b2( b3( + ))) t2* t1*
+
+# ../../enumerator.py TMSD_domain_helix.pil -c -r
+#   kinetic [570686.399729 /M/s] reporterHH + inputHH -> 65 + 64 
+#   kinetic [570686.399729 /M/s] reporterDH + inputDH -> 65 + 90 
+#   kinetic [570686.399729 /M/s] reporterHD + inputHD -> 25 + 41 
+#   kinetic [570686.399729 /M/s] reporterDD + inputDD -> 25 + 24 
+
+# ../../enumerator.py --no-max-helix TMSD_domain_helix.pil -c -r --max-complex-count 1000 --max-reaction-count 10000
+#   kinetic [570686.399729 /M/s] reporterHH + inputHH -> 12357 + 12359 
+#   kinetic [22365.153621 /M/s] reporterDH + inputDH -> 12357 + 12878 
+#   kinetic [585163.033638 /M/s] reporterHD + inputHD -> 132 + 9939 
+#   kinetic [23275.239723 /M/s] reporterDD + inputDD -> 132 + 154 
+
+# now, with only the DH case uncommented
+# ../../enumerator.py --no-max-helix TMSD_domain_helix.pil -r
+
+# grep " 17" TMSD_domain_helix-enum.pil 
+# grep " 18" TMSD_domain_helix-enum.pil 
+# grep " 19" TMSD_domain_helix-enum.pil 
+#   structure 17 = b + b*_t2*_t1* + t1_t2_b : (+).(+)..
+#   structure 18 = b + b*_t2*_t1* + t1_t2_b : (+)(.+.).
+#   structure 19 = b + b*_t2*_t1* + t1_t2_b : (+)((+)).
+#   kinetic [600000.000000 /M/s] reporterDH + inputDH -> 17 
+#   kinetic [900000.000000 /M/s] reporterDH + inputDH -> 18 
+#   kinetic [47644.669800 /s] 17 -> reporterDH + inputDH 
+#   kinetic [4052.179166 /s] 18 -> reporterDH + inputDH 
+#   kinetic [21.712184 /s] 19 -> reporterDH + inputDH       (* this shouldn't happen *)
+#   kinetic [4052.179166 /s] 19 -> 17 
+#   kinetic [333333.333333 /s] 17 -> 19 
+#   kinetic [500000.000000 /s] 18 -> 19 
+#   kinetic [47644.669800 /s] 19 -> 18 
+#   kinetic [0.028775 /s] 17 -> 40 + 51 
+#   kinetic [13.333333 /s] 18 -> 40 + 39 
+#   kinetic [13.333333 /s] 19 -> 40 + 41 

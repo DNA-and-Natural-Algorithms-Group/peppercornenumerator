@@ -1,0 +1,16 @@
+# This specification allows leak initiated only from the 'left' side
+# of fuel2 (like figure2b in the paper).
+
+length 0 = 5
+length 1a = 10
+length 1b = 5
+length 2a = 1
+length 2b = 1
+length 2c = 13
+length 3a = 1
+length 3b = 1
+length 3c = 13
+
+fuel1 = 1a( 1b( 2a( 2b( 2c + )))) 0*
+fuel2 = 2a( 2b( 2c( 3a( 3b( 3c + ))))) 1b*
+

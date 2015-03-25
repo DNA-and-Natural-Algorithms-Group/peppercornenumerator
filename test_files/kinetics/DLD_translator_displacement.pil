@@ -1,0 +1,27 @@
+
+### Experiment A -- Add an invader to toehold-mediated 3-way displace 3c 3d 4a 4b 4c 5a
+
+# DLD_translator_displacement.pil
+
+length 1a = 5
+length 1b = 10
+length 2a = 5
+length 2b = 10
+length 3a = 2
+length 3b = 3
+length 3c = 9
+length 3d = 1
+length 4a = 2
+length 4b = 11
+length 4c = 2
+length 5a = 2
+
+#fuel1 = 1b( 2a( 2b( 3a( 3b 3c 3d + )))) 1a*
+#fuel2 = 2b( 3a( 3b( 3c( 3d( 4a( 4b 4c + )))))) 2a*
+S1 = 3a 3b 3c 3d 4a 4b 4c
+FlRep = 3c( 3d( 4a( 4b( 4c( 5a( + )))))) 3b* 3a*
+
+# ../../enumerator.py --no-max-helix --max-complex-size 3 --max-complex-count 200000 --max-reaction-count 200000 DLD_translator_displacement.pil -c -r
+
+# In the enumerated output, we find that the strand is indeed displaced
+# structure 385 = 3c_3d_4a_4b_4c_5a : ......
