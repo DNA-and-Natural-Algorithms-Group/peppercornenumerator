@@ -27,4 +27,6 @@ fuel2 = 2b( 3a( 3b( 3c( 4a( 4b + ))))) 2a*
 
 # this doesn't condense, but it completes successfully, and it appears to find the expected slow leak structure (with an outgoing rate 0.000935)
 # ../../enumerator.py --no-max-helix --max-complex-size 8 --max-complex-count 200000 --max-reaction-count 200000 DLD_translator_leak_simple.pil -r --k-fast 0.001 --release-cutoff-1-1 2
-
+#     kinetic [0.000003 /M/s] fuel1 + fuel2 -> 8158 
+#     kinetic [0.000467 /s] 8158 -> fuel1 + fuel2 
+#     kinetic [0.000480 /M/s] 8158 + 8158 -> fuel1 + 8158 + fuel2 

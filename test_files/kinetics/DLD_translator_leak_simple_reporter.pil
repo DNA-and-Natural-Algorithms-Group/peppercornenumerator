@@ -1,0 +1,35 @@
+### Experiment B - Fuel1 and Fuel2 interact to produce a slow intermediate that could react downstream.
+
+# DLD_translator_leak_simple.pil
+
+length 1a = 5
+length 1b = 10
+length 2a = 5
+length 2b = 10
+length 3a = 2
+length 3b = 12
+length 3c = 1
+length 4a = 2
+length 4b = 13
+
+length 3x = 5
+length 3y = 10
+length 4 = 15
+length 5a = 2
+
+# fuel1 = 1b( 2a( 2b( 3a( 3b 3c + )))) 1a*
+# fuel2 = 2b( 3a( 3b( 3c( 4a( 4b + ))))) 2a*
+
+# uncomment the (end result of leak) structure below if you want to see where it occurs
+# FF2 = 1b( 2a( 2b( 3a( 3b( 3c( + 4a* )))) 2a* + 2b( 3a( 3b 3c 4a 4b + )))) 1a*
+
+# this is the FF2 analog, but to match domains for the reporter, we re-label it
+# S1 = 3b 3c 4a 4b
+S1 = 3x 3y 4
+
+FlRep = 3y( 4( 5a( + ))) 3x*
+
+# This gets the basic reporter rate constant, according to Peppercorn: 
+# ../../enumerator.py --no-max-helix --max-complex-size 6 --max-complex-count 200000 --max-reaction-count 200000 DLD_translator_leak_simple_reporter.pil -c -r
+#    kinetic [570560.736555 /M/s] S1 + FlRep -> 67 + 56 
+#    kinetic [104.017352 /M/s] 67 + 56 -> S1 + FlRep 

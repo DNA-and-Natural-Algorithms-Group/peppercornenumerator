@@ -1,0 +1,37 @@
+### Experiment B - Fuel1 and Fuel2 interact to toehold-mediated 3-way displace 3c 3d 4a 4b 4c 5a
+
+# DLD_translator_leak.pil
+
+length 1a = 5
+length 1b = 10
+length 2a = 5
+length 2b = 10
+length 3a = 2
+length 3b = 3
+length 3c = 9
+length 3d = 1
+length 4a = 2
+length 4b = 11
+length 4c = 2
+length 5a = 2
+
+fuel1 = 1b( 2a( 2b( 3a( 3b 3c 3d + )))) 1a*
+# fuel2 = 2b( 3a( 3b( 3c( 3d( 4a( 4b 4c + )))))) 2a*
+
+# uncomment the complex below if you want to see the reporter interact with any slow leak intermediate
+FlRep = 3c( 3d( 4a( 4b( 4c( 5a( + )))))) 3b* 3a*
+
+# uncomment the strand below if you want to trigger the reporter directly.  this is an analog of FF2.
+# S1 = 3a 3b 3c 3d 4a 4b 4c
+
+# uncomment the (end result of leak) structure below if you want to see where it occurs
+# FF2 = 1b( 2a( 2b( 3a( 3b( 3c( 3d + 4a* )))) 2a* + 2b( 3a( 3b 3c 3d 4a 4b 4c + )))) 1a*
+
+
+# this runs with or without -c, and gets a fine result: no reactions
+# ../../enumerator.py --no-max-helix --max-complex-size 6 --max-complex-count 200000 --max-reaction-count 200000 DLD_translator_leak_reporter_fuel1.pil -c -r
+
+# this should check for third-order reactions... also no reactions found
+# ../../enumerator.py --no-max-helix --max-complex-size 6 --max-complex-count 200000 --max-reaction-count 200000 DLD_translator_leak_reporter_fuel2.pil -c -r --k-fast 0.001
+
+

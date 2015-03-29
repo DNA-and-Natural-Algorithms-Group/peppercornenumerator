@@ -396,10 +396,12 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         N = np.linalg.inv(np.eye(L) - Q)
 
         # make sure all elements of fundamental matrix are >= 0
-        assert (N >= 0).all()
+        assert (N >= 0).all()   # --- commented out by EW (temporarily)
 
         # calculate the absorption matrix (B = NR)
         B = np.dot(N,R)
+
+        assert (B >= 0).all()   # --- added by EW as a weaker surrugate for the above, when necessary
 
         # return dict mapping tuples of (incoming complex, outgoing reaction) to exit probabilities
         return { (c, r):B[i,j] for (c,i) in complex_indices.iteritems() for (r,j) in exit_indices.iteritems()  }
