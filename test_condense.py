@@ -16,6 +16,14 @@ def rsort(lst):
 def pluck(dct,lst):
     return [dct[key] for key in lst]
 
+def is_fast(reaction):
+    """
+    Current heuristic to determine if reaction is fast: unimolecular in reactants
+    AND rate constant > k_fast
+    """
+    k_fast = 0.0
+    return (reaction.arity == (1,1) or reaction.arity == (1,2)) and reaction.rate() > k_fast
+
 def print_dict(d,key_format=str,value_format=str):
     print '{'
     for key in d:
@@ -181,7 +189,7 @@ class CondenseTests(unittest.TestCase):
         
         SCCs = [self.neighborhood_abcd,self.neighborhood_e]
         
-        assert rsort(tarjans(tarjans_complexes,tarjans_reactions,reactions_consuming_abcd_e)) == rsort(SCCs)
+        assert rsort(tarjans(tarjans_complexes,tarjans_reactions,reactions_consuming_abcd_e, is_fast)) == rsort(SCCs)
 
     def testTarjans2(self):
         reactions = pluck(self.reactions,['A->B','B->A','B->C','C->B','C->D','D->C','D->A'])
@@ -189,7 +197,7 @@ class CondenseTests(unittest.TestCase):
         reactions_consuming = get_reactions_consuming(complexes,reactions)
         SCCs = [complexes]
 
-        assert rsort(tarjans(complexes, reactions, reactions_consuming)) == rsort(SCCs)
+        assert rsort(tarjans(complexes, reactions, reactions_consuming, is_fast)) == rsort(SCCs)
 
     def testTarjans3(self):
         reactions = pluck(self.reactions,['A->B','B->A','B->C','C->B','C->D','D->C','D->A', 'A->E', 'E->A', 'E->F', 'F->D'])
@@ -203,7 +211,7 @@ class CondenseTests(unittest.TestCase):
         reactions_consuming = get_reactions_consuming(complexes,reactions)
         SCCs = [complexes]
 
-        assert rsort(tarjans(complexes, reactions, reactions_consuming)) == rsort(SCCs)
+        assert rsort(tarjans(complexes, reactions, reactions_consuming, is_fast)) == rsort(SCCs)
 
     def testIsOutgoing(self):
         assert is_outgoing(self.reactions['D->E'],set(self.neighborhood_abcd))
