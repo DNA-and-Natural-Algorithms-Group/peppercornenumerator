@@ -747,6 +747,7 @@ def open(reactant):
 	structure = reactant.structure
 	strands = reactant.strands
 	
+	# for no-max-helix mode:
 	if not UNZIP:
 		# We iterate through all the domains
 		for (strand_index, strand) in enumerate(reactant.strands):
@@ -778,102 +779,103 @@ def open(reactant):
 				# 	product_set = find_releases(release_reactant)
 				# 	reaction = ReactionPathway('open', [reactant], sorted(product_set))
 
+	# for max-helix mode:
+	else:
+		# We loop through all stands, domains
+		for (strand_index, strand) in enumerate(strands):
+			for (domain_index, domain) in enumerate(strand.domains):
+				# If the domain is unpaired, skip it
+				if (structure[strand_index][domain_index] == None):
+					continue
+				
+				# A: Strand/domain position on "top" strand - CG 5/21 
+				helix_startA = [strand_index, domain_index]
+				
+				# B: Strand/domain position on "bottom" strand - CG 5/21 
+				helix_startB = list(structure[strand_index][domain_index])
+			
+				# If the domain is bound to an earlier domain, then we have
+				# already considered it, so skip it
+				if (helix_startB < helix_startA):
+					continue
+				
+				helix_endA = helix_startA[:]
+				helix_endB = helix_startB[:]
+							
+				helix_length = domain.length
+				
+				# Now iterate through the whole helix to find the other end
+				# of this one
+				# (The helix ends at the first strand break from either direction)
+				while True:
+					
+					# Strands run in opposite directions, so A must be incremented 
+					# and B decremented in order that both pointers move "right" 
+					# along the helix- CG 5/21
+					helix_endA[1] += 1
+					helix_endB[1] -= 1
+					
+					# If one of the strands has broken, the helix has ended
+					if (helix_endA[1] >= strands[helix_endA[0]].length):
+						break
+					elif (helix_endB[1] < 0):
+						break
+					
+					
+					# If these domains aren't bound to each other, the helix
+					# has ended
+					if (tuple(helix_endA) != structure[helix_endB[0]][helix_endB[1]]):
+						break
+					
+					# Add the current domain to the current helix
+					helix_length += strands[helix_endA[0]].domains[helix_endA[1]]\
+										   .length
+					
+				# We must also iterate in the other direction
+				while True:
+					
+					# Now we move 
+					helix_startA[1] -= 1
+					helix_startB[1] += 1
 
-	# We loop through all stands, domains
-	for (strand_index, strand) in enumerate(strands):
-		for (domain_index, domain) in enumerate(strand.domains):
-			# If the domain is unpaired, skip it
-			if (structure[strand_index][domain_index] == None):
-				continue
-			
-			# A: Strand/domain position on "top" strand - CG 5/21 
-			helix_startA = [strand_index, domain_index]
-			
-			# B: Strand/domain position on "bottom" strand - CG 5/21 
-			helix_startB = list(structure[strand_index][domain_index])
-		
-			# If the domain is bound to an earlier domain, then we have
-			# already considered it, so skip it
-			if (helix_startB < helix_startA):
-				continue
-			
-			helix_endA = helix_startA[:]
-			helix_endB = helix_startB[:]
-						
-			helix_length = domain.length
-			
-			# Now iterate through the whole helix to find the other end
-			# of this one
-			# (The helix ends at the first strand break from either direction)
-			while True:
+					# If one of the strands has broken, the helix has ended
+					if (helix_startA[1] < 0):
+						break
+					elif (helix_startB[1] >= strands[helix_startB[0]].length):
+						break
+					
+					# If these domains aren't bound to each other, the helix
+					# has ended
+					if (tuple(helix_startA) != structure[helix_startB[0]][helix_startB[1]]):
+						break
+					
+					# Add the current domain to the current helix
+					helix_length += strands[helix_startA[0]].domains[helix_startA[1]]\
+										   .length
+					
 				
-				# Strands run in opposite directions, so A must be incremented 
-				# and B decremented in order that both pointers move "right" 
-				# along the helix- CG 5/21
-				helix_endA[1] += 1
-				helix_endB[1] -= 1
+				# Move start location to the first domain in the helix
+				helix_startA[1] += 1
+				helix_startB[1] -= 1
 				
-				# If one of the strands has broken, the helix has ended
-				if (helix_endA[1] >= strands[helix_endA[0]].length):
-					break
-				elif (helix_endB[1] < 0):
-					break
-				
-				
-				# If these domains aren't bound to each other, the helix
-				# has ended
-				if (tuple(helix_endA) != structure[helix_endB[0]][helix_endB[1]]):
-					break
-				
-				# Add the current domain to the current helix
-				helix_length += strands[helix_endA[0]].domains[helix_endA[1]]\
-									   .length
-				
-			# We must also iterate in the other direction
-			while True:
-				
-				# Now we move 
-				helix_startA[1] -= 1
-				helix_startB[1] += 1
-
-				# If one of the strands has broken, the helix has ended
-				if (helix_startA[1] < 0):
-					break
-				elif (helix_startB[1] >= strands[helix_startB[0]].length):
-					break
-				
-				# If these domains aren't bound to each other, the helix
-				# has ended
-				if (tuple(helix_startA) != structure[helix_startB[0]][helix_startB[1]]):
-					break
-				
-				# Add the current domain to the current helix
-				helix_length += strands[helix_startA[0]].domains[helix_startA[1]]\
-									   .length
-				
-			
-			# Move start location to the first domain in the helix
-			helix_startA[1] += 1
-			helix_startB[1] -= 1
-			
-			# If the helix is short enough, we have a reaction	
-			if (helix_length <= MAX_RELEASE_CUTOFF):
+				# If the helix is short enough, we have a reaction	
+				if (helix_length <= MAX_RELEASE_CUTOFF):
 
 
-				release_reactant = Complex(get_auto_name(), reactant.strands[:], 
-					copy.deepcopy(reactant.structure))
-				
-				# Delete all the pairs in the released helix
-				for dom in range(helix_startA[1], helix_endA[1]):
-					bound_loc = reactant.structure[helix_startA[0]][dom]
-					release_reactant.structure[helix_startA[0]][dom] = None
-					release_reactant.structure[bound_loc[0]][bound_loc[1]] = None
-		
-		
-				product_set = find_releases(release_reactant)
-				
-				
-				reactions.append((product_set, helix_length))
+					release_reactant = Complex(get_auto_name(), reactant.strands[:], 
+						copy.deepcopy(reactant.structure))
+					
+					# Delete all the pairs in the released helix
+					for dom in range(helix_startA[1], helix_endA[1]):
+						bound_loc = reactant.structure[helix_startA[0]][dom]
+						release_reactant.structure[helix_startA[0]][dom] = None
+						release_reactant.structure[bound_loc[0]][bound_loc[1]] = None
+			
+			
+					product_set = find_releases(release_reactant)
+					
+					
+					reactions.append((product_set, helix_length))
 		
 	output = []
 	for product_set,length in reactions:

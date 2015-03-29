@@ -1151,6 +1151,29 @@ class OpenTests(unittest.TestCase):
 		enable_zipping()
 		restore_release_cutoff()
 
+
+	def testOpenNoMaxHelix(self):
+		# open:  ? a( ? ) ? -> ? a ? a* ?
+		(domains, strands, complexes) = from_kernel([
+			# "A1 = a^( b^( ) )",
+			"A1 = a^( b^( ) )",
+			"A2 = a^( b^ b^* )",
+			"A3 = a^ b^( ) a^*"
+		])
+		
+		# enable single domain semantics
+		disable_zipping()
+		set_release_cutoff(10,10)
+
+		# Zipping possible
+		rxns = reactions.open(complexes['A1'])
+		print_rxns(rxns)
+		assert set(rxns) == set([ReactionPathway('open', [complexes['A1']], [complexes['A2']]), ReactionPathway('open', [complexes['A1']], [complexes['A3']])])		
+		enable_zipping()
+		restore_release_cutoff()
+
+
+
 class Branch3WayTests(unittest.TestCase):
 	def setUp(self):
 		enable_new_zipping()
