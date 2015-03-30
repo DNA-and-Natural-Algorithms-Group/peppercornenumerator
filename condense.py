@@ -324,7 +324,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         epsilon = 1e-5
         i = np.argmin(np.abs(w))
         if abs(w[i]) > epsilon:
-            print (("Warning: bad stationary distribution for resting state transition matrix. " +
+            logging.warn(("Bad stationary distribution for resting state transition matrix. " +
                 "Eigenvalue found %f has magnitude greater than epsilon = %f. " + 
                 "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") % (w(i), epsilon, str(w)))
         s = v[:,i]
@@ -650,7 +650,9 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
 
                         if isinstance(reaction_rate, complex):
                             if reaction_rate.imag > 0:
-                                logging.warn("Reaction %s has a complex rate: %f + %fj" % (reaction, reaction_rate.real, reaction_rate.imag))
+                                logging.warn(("Detailed reaction %s contributes a complex rate of %f + %fj " + 
+                                    " to condensed reaction %s.") 
+                                % (r, reaction_rate.real, reaction_rate.imag, reaction))
 
                     reaction._const = reaction_rate
                 condensed_reactions.add(reaction)

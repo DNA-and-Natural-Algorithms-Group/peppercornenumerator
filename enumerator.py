@@ -206,19 +206,19 @@ class Enumerator(object):
 		if (hasattr(self, 'UNZIP')):
 			reactions.UNZIP = self.UNZIP
 			if reactions.UNZIP:
-				print "Using max-helix semantics"
+				logging.info("Using max-helix semantics")
 
 		if (hasattr(self, 'LEGACY_UNZIP')):
 			reactions.LEGACY_UNZIP = self.LEGACY_UNZIP
 			if reactions.LEGACY_UNZIP:
-				print "Using legacy unzipping mode"
+				logging.info("Using legacy unzipping mode")
 			if not reactions.UNZIP:
-				print "Warning: legacy unzip mode will have no effect, since max helix semantics are disabled"
+				logging.debug("Note: legacy unzip mode will have no effect, since max helix semantics are disabled")
 
 		if (hasattr(self, 'REJECT_REMOTE')):
 			reactions.REJECT_REMOTE = self.REJECT_REMOTE
 			if reactions.REJECT_REMOTE:
-				print "Ignoring remote toehold-mediated branch migration"
+				logging.info("Ignoring remote toehold-mediated branch migration")
 
 	def reset_reaction_options(self):
 		reactions.RELEASE_CUTOFF_1_1 = self.old['release_cutoff_1_1']
@@ -237,8 +237,8 @@ class Enumerator(object):
 
 
 		self.set_reaction_options()
-		print "Release cutoff 1-1: %d nt" % reactions.RELEASE_CUTOFF_1_1
-		print "Release cutoff 1-n: %d nt" % reactions.RELEASE_CUTOFF_1_N
+		logging.info("Release cutoff 1-1: %d nt" % reactions.RELEASE_CUTOFF_1_1)
+		logging.info("Release cutoff 1-n: %d nt" % reactions.RELEASE_CUTOFF_1_N)
 
 		# Will be called once enumeration halts, either because it's finished or
 		# because too many complexes/reactions have been enumerated
@@ -368,16 +368,16 @@ class Enumerator(object):
 			try:
 				do_enumerate()
 			except KeyboardInterrupt:
-				print 
-				print "Interrupted; gracefully exiting..."
+				logging.warning("Interrupted; gracefully exiting...")
 				finish(premature=True)
 			except RuntimeError as e:
 				import traceback
-				print
-				print e
-				print traceback.format_exc()
-				print
-				print "Runtime error; gracefully exiting..."
+				logging.exception(e)
+				# print
+				# print e
+				# print traceback.format_exc()
+				# print
+				logging.warning("Runtime error; gracefully exiting...")
 				finish(premature=True)
 		else:
 			do_enumerate() 
@@ -762,7 +762,7 @@ def main(argv):
 
 	# Parse command-line arguments
 	parser = argparse.ArgumentParser(description="""
-		Domain-level nucleic acid reaction enumerator. See README.{html, pdf} for usage examples.
+		Peppercorn: Domain-level nucleic acid reaction enumerator. See README.{html, pdf} for usage examples.
 		""")
 	parser.add_argument('input_filename', action='store', default=None, \
 		help="Path to the input file (same as --infile)")
@@ -779,11 +779,14 @@ def main(argv):
 		help="Write the output file using this format; one or more (comma-separated) of: " + \
 		", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()) + \
 		". (default: guess from the extension of --outfile)")
-
+	parser.add_argument('-v', action='count', dest='verbose', default=0,
+		help="Print more output (-vv for extra debugging information)")
 	parser.add_argument('-c', action='store_true', dest='condensed', default=False, \
 		help="Condense reactions into only resting complexes (default: %(default)s)")
-	parser.add_argument('-r', action='store_true', dest='compute_rates', default=False, \
+	parser.add_argument('-r', action='store_true', dest='compute_rates', default=True, \
 		help="Compute reaction rates (default: %(default)s)")
+	parser.add_argument('--no-rates', action='store_false', dest='compute_rates', \
+		help="Don't compute reaction rates")
 	parser.add_argument('-d', action='store_true', dest='dry_run', default=False, \
 		help="Dry run---read input, write output; do not enumerate any reactions. (default: %(default)s)")
 	parser.add_argument('-s', action='store_true', dest='interactive', default=False, \
@@ -827,12 +830,51 @@ def main(argv):
 		help="Enable statistical profiling")
 	cl_opts = parser.parse_args()
 
-	print "Domain-level Reaction Enumerator (v0.2.0)"
-	print "========================================="
+
+	logger = logging.getLogger()
+	if cl_opts.verbose == 1:
+		logger.setLevel(logging.INFO)
+	elif cl_opts.verbose == 2:
+		logger.setLevel(logging.DEBUG)
+	elif cl_opts.verbose >= 3:
+		logger.setLevel(logging.NOTSET)
+
+	ch = logging.StreamHandler()
+	class ColorFormatter(logging.Formatter):
+		def __init__(self, msg, use_color = True):
+			logging.Formatter.__init__(self, msg)
+			self.use_color = use_color
+			self.COLORS = {
+				'DEBUG':utils.colors.CYAN,
+				'INFO':utils.colors.BLUE,
+				'WARNING':utils.colors.YELLOW,
+				'ERROR':utils.colors.RED,
+				'Exception':utils.colors.PINK,
+			}
+			self.RESET = utils.colors.ENDC
+
+		def format(self, record):
+			levelname = record.levelname
+			if self.use_color:
+				record.levelname = self.COLORS[levelname] + levelname + self.RESET
+			return logging.Formatter.format(self, record)
+
+	formatter = ColorFormatter('%(levelname)s %(message)s', use_color=sys.stdout.isatty()) #logging.Formatter('%(levelname)s - %(message)s')
+	ch.setFormatter(formatter)
+	logger.addHandler(ch)
+
+	if cl_opts.verbose > 3: 
+		logging.warning("Verbosity greater than -vvv has no effect")
+
+	title = "Peppercorn Domain-level Reaction Enumerator"
+	version = "v0.3.0"
+	banner = (utils.colors.BOLD + title + utils.colors.ENDC + " " + utils.colors.GREEN + version + utils.colors.ENDC if sys.stdout.isatty() else  title + (" (%s)" % version) )
+	logging.info(banner)
 
 	if(cl_opts.input_filename is None):
-		print "No input file specified. Exiting."
-
+		msg = "No input file specified. Exiting."
+		logging.error(msg)
+		raise Exception(msg)
 
 	# If there was no input format given, guess from the file extension
 	if (cl_opts.input_format is None):
@@ -840,23 +882,24 @@ def main(argv):
 		cl_opts.input_format = ext.replace('.','')
 		if cl_opts.input_format is '':
 			cl_opts.input_format = "pil"
-			print "No input format; assuming %s." % cl_opts.input_format
+			logging.info("No input format; assuming %s." % cl_opts.input_format)
 		else:
-			print "Guessing input format from input filename: %s" % cl_opts.input_format
+			logging.info("Guessing input format from input filename: %s" % cl_opts.input_format)
 
 	# Attempt to load an input parser to generate an enumerator object
 	cl_opts.input_format = cl_opts.input_format.lower()
 	if (cl_opts.input_format in input.text_input_functions):
-		print "Reading input file : %s" % cl_opts.input_filename
+		logging.info("Reading input file : %s" % cl_opts.input_filename)
 		enum = input.text_input_functions[cl_opts.input_format](cl_opts.input_filename)
 	else:
-		print "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
-		raise Exception('Error!')
+		msg = "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
+		logging.error(msg)
+		raise Exception(msg)
 
 	# Print initial complexes
-	print "Initial complexes: "
+	logging.info("Initial complexes: ")
 	for c in enum.initial_complexes:
-		print c.kernel_string()
+		logging.info(c.kernel_string())
 
 	# Transfer options to enumerator object
 	if cl_opts.k_slow is not None:
@@ -906,17 +949,17 @@ def main(argv):
 
 	# Run reaction enumeration (or not)
 	if cl_opts.dry_run:
-		print "Dry run (not enumerating any reactions)... "
+		logging.info("Dry run (not enumerating any reactions)... ")
 		enum.dry_run()
-		print "Done."
+		logging.info("Done.")
 	else:
-		print "Enumerating reactions..."
+		logging.info("Enumerating reactions...")
 		if cl_opts.interactive:
-			print 
-			print "Interactive mode enabled: fast and slow reactions will be printed for each "
-			print "complex as enumerated. Press ^C at any time to terminate and write accumulated "
-			print "complexes to output."
-			print 
+			logging.info()
+			logging.info("Interactive mode enabled: fast and slow reactions will be printed for each ")
+			logging.info("complex as enumerated. Press ^C at any time to terminate and write accumulated ")
+			logging.info("complexes to output.")
+			logging.info()
 		if cl_opts.profile:
 			import statprof
 			statprof.start()
@@ -927,12 +970,12 @@ def main(argv):
 				statprof.display()
 		else:
 			enum.enumerate()
-		print "Done."
+		logging.info("Done.")
 
 	# Handle condensed reactions
 	condensed = cl_opts.condensed
 	if(condensed):
-		print "Output will be condensed to remove transient complexes."
+		logging.info("Output will be condensed to remove transient complexes.")
 
 	# More robustly/conveniently guess the output filename(s)
 	output_filename = cl_opts.output_filename
@@ -959,7 +1002,7 @@ def main(argv):
 		elif output_filename == None:
 			if len(output_formats) == 0 or output_formats[0] == '':
 				output_formats = ['pil']
-				print "No output format specified; assuming %s." % output_formats[0]
+				logging.info("No output format specified; assuming %s." % output_formats[0])
 			output_filename = os.path.splitext(cl_opts.input_filename)[0] + "-enum" + "." + output_formats[0]
 
 		# one output format
@@ -971,10 +1014,10 @@ def main(argv):
 		# Attempt to load an output generator to serialize the enumerator object to an output file
 		mode = None
 		if (output_format in output.text_output_functions):
-			print "Writing text output to file : %s as %s" % (output_filename, output_format)
+			logging.info("Writing text output to file : %s as %s" % (output_filename, output_format))
 			mode = output.text_output_functions[output_format]
 		elif (output_format in output.graph_output_functions):
-			print "Writing graph output to file : %s as %s" % (output_filename, output_format)
+			logging.info("Writing graph output to file : %s as %s" % (output_filename, output_format))
 			mode = output.graph_output_functions[output_format]
 		
 		if mode is not None:

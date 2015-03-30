@@ -26,6 +26,11 @@ class colors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     colors = [RED, YELLOW, GREEN, CYAN, BLUE, PINK]
+
+    @staticmethod
+    def color(string):
+    	pass
+
     @staticmethod
     def legend(keys=None):
 		if keys is None:
@@ -62,10 +67,10 @@ def find(f, seq, default=None):
 def warning(message):
 	# from termcolor import colored, cprint
 	# cprint("Warning: " + message, 'yellow')
-	print "Warning: " + message
+	logging.warning(message)
 
 def error(message):
-	print "Error: " + message
+	logging.error(message)
 	sys.exit(1)
 
 def wait_for_input(message="[Press Enter to continue...]"):

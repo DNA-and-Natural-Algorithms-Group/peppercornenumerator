@@ -153,6 +153,12 @@ class ReactionPathway(object):
 		"""
 		return self._const	
 
+	def simple_string(self):
+		return \
+		"  +  ".join(str(r) for r in self.reactants) + \
+		"  ->  " + \
+		"  +  ".join(str(p) for p in self.products) 		
+
 	def kernel_string(self):
 		return \
 		"  +  ".join(r.kernel_string() for r in self.reactants) + \
