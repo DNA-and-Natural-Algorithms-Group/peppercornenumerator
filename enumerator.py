@@ -320,12 +320,14 @@ class Enumerator(object):
 
 			# We first generate the states reachable by fast reactions from the
 			# initial complexes
+			logging.debug("Fast reactions from initial complexes...")
 			while len(self._B) > 0:
 				# Generate a neighborhood from `source`
 				source = self._B.pop()
 				self.process_neighborhood(source)
 
 			# Consider slow reactions between resting state complexes
+			logging.debug("Slow reactions between resting state complexes...")
 			while len(self._S) > 0:
 
 				# Find slow reactions from `element`
@@ -334,12 +336,15 @@ class Enumerator(object):
 				else:
 					element = self._S.pop(0)
 
+				logging.debug("Slow reactions from complex %s (%d remaining in S)" % (element, len(self._S)))
 				slow_reactions = self.get_slow_reactions(element)
 				self._E.append(element)
 
 				# Find the new complexes which were generated
 				self._B = self.get_new_products(slow_reactions)
 				self._reactions += (slow_reactions)
+				logging.debug("Generated %d new slow reactions" % len(slow_reactions))
+				logging.debug("Generated %d new products" % len(self._B))
 
 				# Display new reactions in interactive mode
 				self.reactions_interactive(element, slow_reactions, 'slow')
@@ -436,13 +441,17 @@ class Enumerator(object):
 
 		self._F = [source]
 
+		logging.debug("Processing neighborhood: %s" % source)
+
 		try:
 
 			# First find all of the complexes accessible through fast
 			# reactions starting with the source
 			while (len(self._F) > 0):
+
 				# Find fast reactions from `element`
 				element = self._F.pop()
+				logging.debug("Fast reactions from %s... (%d remaining in F)" % (element, len(self._F)))
 				reactions = self.get_fast_reactions(element)
 
 				# # Partition reactions into too slow (discard), slow, and fast
@@ -459,10 +468,19 @@ class Enumerator(object):
 				# N_reactions_slow += reactions_slow
 				self._N.append(element)
 
+				logging.debug("Generated %d new fast reactions" % len(reactions))
+				logging.debug("Generated %d new products" % len(new_products)) 
+
 				# Display new reactions in interactive mode
 				self.reactions_interactive(element, reactions, 'fast')
 
+		except KeyboardInterrupt:
+			logging.debug("Exiting neighborhood %s prematurely..." % source)
+
 		finally:
+
+			logging.debug("In neighborhood %s..." % source)
+			logging.debug("Segmenting %d complexes and %d reactions" % (len(self._N), len(N_reactions)))
 
 			# Now segment the neighborhood into transient and resting states
 			# by finding the strongly connected components
@@ -488,6 +506,14 @@ class Enumerator(object):
 
 			# Reset neighborhood
 			self._N = []
+			logging.debug("Generated %d new fast reactions" % len(N_reactions))
+			logging.debug("Generated %d new products (%d transients, %d resting complexes)" % 
+				(len(self._N), 
+					len(segmented_neighborhood['transient_state_complexes']), 
+					len(segmented_neighborhood['resting_state_complexes'])) )
+			logging.debug("Generated %d resting states" % len(segmented_neighborhood['resting_states']))
+			logging.debug("Done processing neighborhood: %s" % source)
+
 
 	def get_slow_reactions(self, complex):
 		"""
@@ -507,7 +533,16 @@ class Enumerator(object):
 		# Do unimolecular reactions that are sometimes slow
 		for move in self.FAST_REACTIONS:
 			move_reactions = move(complex) 
-			reactions += (r for r in move_reactions if self.k_fast > r.rate() > self.k_slow)
+			for r in move_reactions:
+				rate = r.rate()
+				if self.k_fast > rate > self.k_slow:
+					reactions.append(r)
+				elif rate <= self.k_slow:
+					logging.debug('Reaction %s too slow (%d); discarding.' % (r, rate))
+				elif rate > self.k_fast:
+					logging.debug('Slow reaction %s too fast (%d); will be marked as fast' % (r, rate))
+
+			# reactions += (r for r in move_reactions if self.k_fast > r.rate() > self.k_slow)
 
 		# Do bimolecular reactions
 		for move in slow_reactions[2]:
@@ -532,6 +567,13 @@ class Enumerator(object):
 			move_reactions = move(complex) 
 			# reactions += (r for r in move_reactions if r.rate() > self.k_slow)
 			reactions += (r for r in move_reactions if r.rate() > self.k_fast)
+			for r in move_reactions:
+				rate = r.rate()
+				if rate > self.k_slow:
+					reactions.append(r)
+				elif rate <= self.k_slow:
+					logging.debug('Reaction %s too slow (%d); discarding.' % (r, rate))
+					
 		return reactions
 
 	def get_new_products(self, reactions):
