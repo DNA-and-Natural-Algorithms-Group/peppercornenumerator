@@ -21,12 +21,33 @@ import copy
 
 
 def print_rxns(reactions):
-	print "-> ", reactions
-	print_products(reactions)	
+	for reaction in reactions:
+		print  "    ", reaction.simple_string()
+		print_products([reaction])	
 
 def print_products(reactions):
 	for r in reactions:
-		print list(x.kernel_string() for x in r.products)
+		for x in r.products:
+			print "     | ", str(x), ' = ', x.kernel_string()
+
+def assert_reaction(reactants, move, product_sets):
+	(rdomains, rstrands, rcomplexes) = from_kernel(reactants)
+	rcomplexes = rcomplexes.values()
+	expected_rxns = []
+	for products in product_sets:
+		(pdomains, pstrands, pcomplexes) = from_kernel(products)
+		pcomplexes = pcomplexes.values()
+		expected_rxns += [ReactionPathway(move.__name__, rcomplexes, pcomplexes)]
+
+	rxns = move(*rcomplexes)
+
+	print "Expected ", str(reactants), move.__name__, " : "
+	print_rxns(expected_rxns)
+	print "Actual ", str(reactants), " : "
+	print_rxns(rxns)
+
+	assert set(rxns) == set(expected_rxns)
+	
 
 def disable_zipping():
 	reactions.UNZIP = False
@@ -531,27 +552,46 @@ class BindTests(unittest.TestCase):
 	
 	def testBind11A(self):
 		
+		# # bind11: a ? a* ? -> a( ? ) ?
+		# (domains, strands, complexes) = from_kernel([
+		# 	# ?
+		# 	"A1 = x() a x() a* x()",
+		# 	"A2 = x() a( x() ) x()",
+
+		# 	# ?
+		# 	"A3 = x() a  b  x() b* a* x()",
+		# 	"A4 = x() a( b( x() )  )  x()"
+		# ])
+		# # No zipping possible
+		# rxns = reactions.bind11(complexes['A1'])
+		# print_rxns(rxns)
+		# assert rxns == [ReactionPathway('bind11', [complexes['A1']], [complexes['A2']])]
+
+
+		# # Zipping possible
+		# rxns = reactions.bind11(complexes['A3'])
+		# print_rxns(rxns)
+		# assert rxns == [ReactionPathway('bind11', [complexes['A3']], [complexes['A4']])]
+
 		# bind11: a ? a* ? -> a( ? ) ?
-		(domains, strands, complexes) = from_kernel([
-			# ?
-			"A1 = x() a x() a* x()",
-			"A2 = x() a( x() ) x()",
 
-			# ?
-			"A3 = x() a  b  x() b* a* x()",
-			"A4 = x() a( b( x() )  )  x()"
-		])
 		# No zipping possible
-		rxns = reactions.bind11(complexes['A1'])
-		print_rxns(rxns)
-		assert rxns == [ReactionPathway('bind11', [complexes['A1']], [complexes['A2']])]
-
+		assert_reaction( 
+				["A1 = x() a x() a* x()"],
+			reactions.bind11,
+			[
+				["A2 = x() a( x() ) x()"]
+			]
+		)
 
 		# Zipping possible
-		rxns = reactions.bind11(complexes['A3'])
-		print_rxns(rxns)
-		assert rxns == [ReactionPathway('bind11', [complexes['A3']], [complexes['A4']])]
-
+		assert_reaction( 
+				["A3 = x() a  b  x() b* a* x()"],
+			reactions.bind11,
+			[
+				["A4 = x() a( b( x() )  )  x()"]
+			]
+		)		
 
 	def testBind21(self):
 		out_list = bind21(self.complexes['C1'], self.complexes['I3'])
@@ -566,23 +606,32 @@ class BindTests(unittest.TestCase):
 		
 	def testBind21A(self):
 
-		# bind11: a ? a* ? -> a( ? ) ?
-		(domains, strands, complexes) = from_kernel([
-			# ?
-			"A1 = w() a x()",
-			"A2 = y() a* z()",
-			"A3 = w() a( x() + y() ) z()"
+		# # bind11: a ? a* ? -> a( ? ) ?
+		# (domains, strands, complexes) = from_kernel([
+		# 	# ?
+		# 	"A1 = w() a x()",
+		# 	"A2 = y() a* z()",
+		# 	"A3 = w() a( x() + y() ) z()"
 
-			# ?
-			# "A3 = x() a  b  x() b* a* x()",
-			# "A4 = x() a( b( x() )  )  x()"
-		])
+		# 	# ?
+		# 	# "A3 = x() a  b  x() b* a* x()",
+		# 	# "A4 = x() a( b( x() )  )  x()"
+		# ])
+		# # No zipping possible
+		# # from nose.tools import set_trace; set_trace()
+		# rxns = reactions.bind21(complexes['A1'], complexes['A2'])
+		# print_rxns(rxns)
+		# assert rxns == [ReactionPathway('bind21', [complexes['A1'], complexes['A2']], [complexes['A3']])]
+
 		# No zipping possible
-		# from nose.tools import set_trace; set_trace()
-		rxns = reactions.bind21(complexes['A1'], complexes['A2'])
-		print_rxns(rxns)
-		assert rxns == [ReactionPathway('bind21', [complexes['A1'], complexes['A2']], [complexes['A3']])]
-
+		assert_reaction( 
+				["A1 = w() a x()", 
+				 "A2 = y() a* z()"],
+			reactions.bind21,
+			[
+				["A3 = w() a( x() + y() ) z()"]
+			]
+		)
 
 		# # Zipping possible
 		# rxns = reactions.bind11(complexes['A3'])
