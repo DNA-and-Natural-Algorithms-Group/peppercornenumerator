@@ -533,16 +533,7 @@ class Enumerator(object):
 		# Do unimolecular reactions that are sometimes slow
 		for move in self.FAST_REACTIONS:
 			move_reactions = move(complex) 
-			for r in move_reactions:
-				rate = r.rate()
-				if self.k_fast > rate > self.k_slow:
-					reactions.append(r)
-				elif rate <= self.k_slow:
-					logging.debug('Reaction %s too slow (%d); discarding.' % (r, rate))
-				elif rate > self.k_fast:
-					logging.debug('Slow reaction %s too fast (%d); will be marked as fast' % (r, rate))
-
-			# reactions += (r for r in move_reactions if self.k_fast > r.rate() > self.k_slow)
+			reactions += (r for r in move_reactions if self.k_fast > r.rate() > self.k_slow)
 
 		# Do bimolecular reactions
 		for move in slow_reactions[2]:
@@ -567,12 +558,6 @@ class Enumerator(object):
 			move_reactions = move(complex) 
 			# reactions += (r for r in move_reactions if r.rate() > self.k_slow)
 			reactions += (r for r in move_reactions if r.rate() > self.k_fast)
-			for r in move_reactions:
-				rate = r.rate()
-				if rate > self.k_slow:
-					reactions.append(r)
-				elif rate <= self.k_slow:
-					logging.debug('Reaction %s too slow (%d); discarding.' % (r, rate))
 					
 		return reactions
 
