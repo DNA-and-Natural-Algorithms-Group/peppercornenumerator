@@ -412,7 +412,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         Current heuristic to determine if reaction is fast: unimolecular in reactants
         AND rate constant > k_fast
         """
-        return (reaction.arity == (1,1) or reaction.arity == (1,2)) and reaction.rate() > k_fast
+        # return (reaction.arity == (1,1) or reaction.arity == (1,2)) and reaction.rate() > k_fast
+        return (reaction.arity[0] == 1) and reaction.rate() > k_fast
 
     def get_fates(complex):
         """
