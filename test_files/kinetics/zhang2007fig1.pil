@@ -1,0 +1,18 @@
+# Figure 1 of David Yu Zhang et al, "Engineering entropy-driven reactions and networks catalyzed by DNA"
+
+length 1 = 10
+length 2 = 24
+length 3 = 4
+length 4 = 16
+length 5 = 6
+length 6 = 16
+
+F = 2 3 4
+C = 4 5
+S = 1 2( + 6 3( 4( + 5* )))
+W = 2( 3( 4( + 5* )))
+SB = 6 3 4
+OB = 1 2
+
+I3 = 1 2( + 4( 5( + )) 3* )
+
