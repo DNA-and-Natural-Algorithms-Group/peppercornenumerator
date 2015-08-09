@@ -123,7 +123,7 @@ def output_pil(enumerator, filename, output_condensed = False, output_rates = Tr
 
 		if output_rates:
 			rate_units = "/M" * (reaction.arity[0]-1) + "/s"
-			rate_const = "[%f %s]" % (reaction.rate(), rate_units) 
+			rate_const = "[%12.8g %s]" % (reaction.rate(), rate_units) 
 		else: rate_const = ""
 
 		reac_string_list = ["kinetic",rate_const," + ".join(reactants),"->"," + ".join(products),"\n"]

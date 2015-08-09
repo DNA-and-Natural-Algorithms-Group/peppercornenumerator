@@ -1,6 +1,7 @@
 # 2 base clamps.  This description allows fuel2 to be invaded from either side.  
 # One side is depicted in figure 2b of the paper.
 
+length 0abc = 10
 length 0d = 5
 length 1a = 10
 length 1b = 5
@@ -17,4 +18,20 @@ fuel2 = 2a( 2b( 2c( 2d( 3a( 3b( 3c + )))))) 1b*
 FlRep = 3a( 3b( 3c( + ))) 2d*
 
 # this runs without -c, but it takes a very long time... when run with -c, ... it also seems to work!
-# ../../enumerator.py --no-max-helix --max-complex-size 4 --max-complex-count 200000 --max-reaction-count 200000 SLD_translator_leak.pil -r
+# ../../enumerator.py --no-max-helix --max-complex-size 4 --max-complex-count 200000 --max-reaction-count 200000 SLD_translator_leak.pil -r -c
+
+
+
+###
+# for desired pathway rates, uncomment the species below
+
+#X = 0abc 0d 1a 1b 
+#flux = 1a 1b 2a 2b 2c 2d
+#Y = 2a 2b 2c 2d 3a 3b 3c
+#Output = 3a 3b 3c
+
+# all three fuels can be enumerated together, using the default max-helix semantics:
+# ../../enumerator.py SLD_translator_leak.pil -r -c
+
+# each intended reaction can be enumerated separately, by commenting out 2 of the 3 fuels:
+# ../../enumerator.py --no-max-helix --max-complex-size 4 --max-complex-count 200000 --max-reaction-count 200000 SLD_translator_leak.pil -r -c
