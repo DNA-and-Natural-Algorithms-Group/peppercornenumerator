@@ -1,7 +1,8 @@
 
 # must be run in this directory, because the link to enumerator.py is hard-coded.
 
-# you can turn on & off the three comparison runs by editing the flags here
+# you can turn on & off the three comparison runs by editing the flags here, then invoke as
+# python run_tests.py
 
 # Zhang & Winfree 2009, figures 3B and 4B, toehold-mediated strand displacement and toehold exchange, respectively
 # TE + 12.5 mM Mg++, pH 8.0, 25 C

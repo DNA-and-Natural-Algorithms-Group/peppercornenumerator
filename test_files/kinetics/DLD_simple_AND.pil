@@ -1,0 +1,62 @@
+# A bimolecular DLD AND gate (maybe)
+
+length a1 = 6
+length a2 = 6
+length a3 = 6
+length b1 = 6
+length b2 = 6
+length b3 = 6
+length c1 = 6
+length c2 = 6
+length c3 = 6
+length d1 = 6
+length d2 = 6
+length d3 = 6
+length x1 = 6
+length x2 = 6
+length x3 = 6
+length y1 = 6
+length y2 = 6
+length y3 = 6
+
+
+# Input strands
+input1 = a1 a2 a3 b1 b2 b3
+input2 = c1 c2 c3 d1 d2 d3
+
+# AND gate
+andGate = a2( a3( b1( b2( b3( c1( c2( c3( d1( d2( + d3* ) ) ) ) ) + ) ) ) ) ) a1*
+
+# Translator gates
+transBC2CX = b2( b3( c1( c2( c3( x1 x2 x3 + ) ) ) ) ) b1*
+transCX2XY = c2( c3( x1( x2( x3( y1 y2 y3 + ) ) ) ) ) c1*
+
+# Various waste products and intermediates
+andGateI1 = a2 a3 b1 b2 b3 c1( c2( c3( d1( d2( + d3* ) ) ) ) )
+andGateI2 = a2( a3( b1( b2( b3( c1 c2 c3 d1 d2 + ) ) ) ) ) a1*
+andGateI3 = a2 a3 b1 b2 b3 c1 c2 c3 d1 d2
+#andGateI4 = b2 b3 @60 c1 c2 c3 x1 x2 x3
+#andGateI5 = c2 c3 @60 x1 x2 x3 y1 y2 y3
+andGateI4 = b2 b3 c1 c2 c3 x1 x2 x3
+andGateI5 = c2 c3 x1 x2 x3 y1 y2 y3
+input1waste = a1( a2( a3( b1( b2( b3( + ) ) ) ) ) )
+input2waste = c1( c2( c3( d1( d2( d3( + ) ) ) ) ) )
+andGateWaste1 = a2 a3 b1( b2( b3( c1( c2( c3( d1 d2 + ) ) ) ) ) )
+andGateWaste2 = b2 b3 c1( c2( c3( x1( x2( x3( + ) ) ) ) ) )
+
+# andGateI5 is also known as the output strand....
+
+# Command (on Thachuk's computer):
+#  ./enumerator.py --max-complex-size 4 --max-complex-count 10000 --max-reaction-count 10000 --release-cutoff-1-1 5 ~/f/src/dsd-leakless/notes/dld-simple-and.pil
+
+# The following is the desired behavior.  Without condensing, you can see that all the detailed rates are in a reasonable range. 
+# But the release cutoff artificially prevents toehold-sized domains from opening intramolecularly.
+#  ../../enumerator.py DLD_simple_AND.pil --release-cutoff-1-1 5 -c
+
+# Here we see that only one super-slow (5x10^-10 /M/s) bimolecular reaction occurs (ignoreing complexes larger than 4):
+#  ../../enumerator.py DLD_simple_AND.pil --max-complex-size 4 --max-complex-count 10000 --max-reaction-count 10000 -c
+
+# This would be the most satisfying run, but it results in a singular matrix during condensation.  If k-slow worked, perhaps this could be avoided.
+# Of course, setting release cutoff 1-1 to 5 (as above) yields an easy and unproblematical enumeration.
+#  ../../enumerator.py DLD_simple_AND.pil --no-max-helix --max-complex-size 6 --max-complex-count 100000 --max-reaction-count 100000 --release-cutoff-1-n 6 --release-cutoff-1-1 6 -c
+
