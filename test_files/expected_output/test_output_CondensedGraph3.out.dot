@@ -1,0 +1,14 @@
+digraph G {
+size="7,10"
+page="8.5,11"
+node[width=0.25,height=0.375,fontsize=9]
+C2 [label="C2"]
+C1 [label="C1"]
+6109 [label="6109"]
+6108 [label="6108"]
+R_0 [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];
+C1 -> R_0
+C2 -> R_0
+R_0 -> 6108
+R_0 -> 6109
+}

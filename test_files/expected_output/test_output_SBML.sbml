@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml level="2" version="3" xmlns="http://www.sbml.org/sbml/level2/version3">
+	<model name="test_files/test_output/test_output_SBML.sbml">
+		<listOfCompartments>
+			<compartment id="reaction"/>
+		</listOfCompartments>
+		<listOfSpecies>
+			<species compartment="reaction" id="s_Cat" name="Cat"/>
+			<species compartment="reaction" id="s_C1" name="C1"/>
+			<species compartment="reaction" id="s_C2" name="C2"/>
+			<species compartment="reaction" id="s_12641" name="12641"/>
+			<species compartment="reaction" id="s_12640" name="12640"/>
+			<species compartment="reaction" id="s_12654" name="12654"/>
+			<species compartment="reaction" id="s_12659" name="12659"/>
+			<species compartment="reaction" id="s_12634" name="12634"/>
+			<species compartment="reaction" id="s_12638" name="12638"/>
+			<species compartment="reaction" id="s_12663" name="12663"/>
+			<species compartment="reaction" id="s_12655" name="12655"/>
+			<species compartment="reaction" id="s_12645" name="12645"/>
+			<species compartment="reaction" id="s_12656" name="12656"/>
+			<species compartment="reaction" id="s_12653" name="12653"/>
+		</listOfSpecies>
+		<listOfReactions>
+			<reaction id="r_0">
+				<listOfReactants>
+					<speciesReference species="C2"/>
+					<speciesReference species="Cat"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12634"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_1">
+				<listOfReactants>
+					<speciesReference species="12634"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="C2"/>
+					<speciesReference species="Cat"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_2">
+				<listOfReactants>
+					<speciesReference species="12634"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12638"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_3">
+				<listOfReactants>
+					<speciesReference species="12638"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12640"/>
+					<speciesReference species="12641"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_4">
+				<listOfReactants>
+					<speciesReference species="12638"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12634"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_5">
+				<listOfReactants>
+					<speciesReference species="12640"/>
+					<speciesReference species="C1"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12645"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_6">
+				<listOfReactants>
+					<speciesReference species="12640"/>
+					<speciesReference species="12641"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12638"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_7">
+				<listOfReactants>
+					<speciesReference species="12645"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12640"/>
+					<speciesReference species="C1"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_8">
+				<listOfReactants>
+					<speciesReference species="12645"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12655"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_9">
+				<listOfReactants>
+					<speciesReference species="12645"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12653"/>
+					<speciesReference species="12654"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_10">
+				<listOfReactants>
+					<speciesReference species="12653"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12656"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_11">
+				<listOfReactants>
+					<speciesReference species="12656"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12659"/>
+					<speciesReference species="Cat"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_12">
+				<listOfReactants>
+					<speciesReference species="12656"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12653"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_13">
+				<listOfReactants>
+					<speciesReference species="12655"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12663"/>
+					<speciesReference species="Cat"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_14">
+				<listOfReactants>
+					<speciesReference species="12655"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12645"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_15">
+				<listOfReactants>
+					<speciesReference species="12655"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12656"/>
+					<speciesReference species="12654"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_16">
+				<listOfReactants>
+					<speciesReference species="12663"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12659"/>
+					<speciesReference species="12654"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_17">
+				<listOfReactants>
+					<speciesReference species="12659"/>
+					<speciesReference species="Cat"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="12656"/>
+				</listOfProducts>
+			</reaction>
+		</listOfReactions>
+	</model>
+</sbml>

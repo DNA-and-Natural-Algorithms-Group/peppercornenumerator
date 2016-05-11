@@ -1,0 +1,40 @@
+###### Enumerated Output ######
+
+
+# Domains 
+sequence a = : 6
+sequence b = : 12
+
+
+# End-state Complexes 
+C1
+a b + b*
+.(+)
+
+11512
+a b + b* a*
+((+))
+
+11513
+b*
+.
+
+C2
+b* a*
+..
+
+###############################
+
+
+# Fast (Transition) Complexes 
+11507
+a b + b* + b* a*
+((+)+.)
+
+###############################
+
+
+# Reactions 
+C1 + C2 -> 11507 
+11507 -> 11512 + 11513 
+11507 -> C1 + C2 

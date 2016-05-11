@@ -1,0 +1,60 @@
+###### Enumerated Output ######
+
+# Domains 
+sequence a = NNNNNN : 6
+sequence b = NNNNNN : 6
+sequence c = NNNNNN : 6
+sequence x = NNNNNN : 6
+sequence y = NNNNNN : 6
+sequence z = NNNNNN : 6
+
+# Strands 
+strand A = a x b y z* c* y* b* x*
+strand B = b y c z x* a* z* c* y*
+strand C = c z a x y* b* x* a* z*
+strand I = y* b* x* a*
+
+# Resting-state Complexes 
+structure 12101 = A + I : ((((.....+))))
+structure 12110 = A + B + I : ((((((((.+)))).....+))))
+structure 12136 = A + B + C : ((((((((.+))))((((.+)))))))).
+structure A = A : .(((..)))
+structure B = B : .(((..)))
+structure C = C : .(((..)))
+structure I = I : ....
+
+# Transient Complexes 
+structure 12095 = A + I : ((((..)))+...)
+structure 12103 = B + I : ((((..)))+.)..
+structure 12104 = A + B + I : ((((...(.+)(((..)))+))))
+structure 12115 = B + I : ((((..)).+))..
+structure 12117 = A + B + A + I : ((((((((.+)))).(...+)(((..)))+))))
+structure 12121 = A + B + A + I : ((((((((.+))))((...+))((..)).+))))
+structure 12123 = A + C + I : ((((.(...+)(((..)))+))))
+structure 12124 = A + B + C + I : ((((((((.+))))...(.+)(((..)))+))))
+structure 12130 = A + B + C + I : ((((((((.+))))((((.+)))).....+))))
+structure 12141 = A + C + I : ((((((...+))((..)).+))))
+
+# Detailed Reactions 
+kinetic A + 12110 -> 12117 
+kinetic A + I -> 12095 
+kinetic 12110 + C -> 12124 
+kinetic 12101 + B -> 12104 
+kinetic 12101 + C -> 12123 
+kinetic B + I -> 12103 
+kinetic 12117 -> 12121 
+kinetic 12121 -> 12117 
+kinetic 12124 -> 12130 
+kinetic 12130 -> 12136 + I 
+kinetic 12104 -> 12110 
+kinetic 12123 -> 12141 
+kinetic 12141 -> 12123 
+kinetic 12095 -> 12101 
+kinetic 12103 -> 12115 
+kinetic 12115 -> 12103 
+kinetic 12117 -> A + 12110 
+kinetic 12124 -> 12110 + C 
+kinetic 12104 -> 12101 + B 
+kinetic 12123 -> 12101 + C 
+kinetic 12095 -> A + I 
+kinetic 12103 -> B + I 

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml level="2" version="3" xmlns="http://www.sbml.org/sbml/level2/version3">
+	<model name="test_files/test_output/test_output_SBMLCondensed.sbml">
+		<listOfCompartments>
+			<compartment id="reaction"/>
+		</listOfCompartments>
+		<listOfSpecies>
+			<species compartment="reaction" id="s_13446" name="13446"/>
+			<species compartment="reaction" id="s_13444" name="13444"/>
+			<species compartment="reaction" id="s_13447" name="13447"/>
+			<species compartment="reaction" id="s_13443" name="13443"/>
+			<species compartment="reaction" id="s_13449" name="13449"/>
+			<species compartment="reaction" id="s_13448" name="13448"/>
+			<species compartment="reaction" id="s_13445" name="13445"/>
+		</listOfSpecies>
+		<listOfReactions>
+			<reaction id="r_0">
+				<listOfReactants>
+					<speciesReference species="13447"/>
+					<speciesReference species="13446"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="13445"/>
+					<speciesReference species="13443"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_1">
+				<listOfReactants>
+					<speciesReference species="13445"/>
+					<speciesReference species="13443"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="13447"/>
+					<speciesReference species="13446"/>
+				</listOfProducts>
+			</reaction>
+			<reaction id="r_2">
+				<listOfReactants>
+					<speciesReference species="13447"/>
+					<speciesReference species="13444"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="13449"/>
+					<speciesReference species="13443"/>
+					<speciesReference species="13448"/>
+				</listOfProducts>
+			</reaction>
+		</listOfReactions>
+	</model>
+</sbml>
