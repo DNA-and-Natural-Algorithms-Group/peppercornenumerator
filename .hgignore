@@ -7,6 +7,7 @@ syntax: glob
 ./cover/
 ./notes/
 cprofile
+./tests/files/expected_output/
 *.pyc
 *.pyo
 *.sublime-project
