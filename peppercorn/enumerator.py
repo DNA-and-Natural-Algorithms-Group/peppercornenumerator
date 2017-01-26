@@ -192,7 +192,7 @@ class Enumerator(object):
 
 	def set_reaction_options(self):
 		# handle release cutoff
-		self.old = {}; print 'rc1', reactions.RELEASE_CUTOFF_1_1
+		self.old = {}
 		self.old['release_cutoff_1_1'] = reactions.RELEASE_CUTOFF_1_1
 		self.old['release_cutoff_1_N'] = reactions.RELEASE_CUTOFF_1_N
 		self.old['unzip'] = reactions.UNZIP
@@ -241,7 +241,7 @@ class Enumerator(object):
 		"""
 
 
-		self.set_reaction_options(); print 'rc', reactions.RELEASE_CUTOFF_1_1
+		self.set_reaction_options()
 		logging.info("Release cutoff 1-1: %d nt" % reactions.RELEASE_CUTOFF_1_1)
 		logging.info("Release cutoff 1-n: %d nt" % reactions.RELEASE_CUTOFF_1_N)
 
