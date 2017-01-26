@@ -1,0 +1,25 @@
+###### Enumerated Output ######
+
+# Domains 
+sequence a = NNNNNN : 6
+sequence b = NNNNNNNNNNNN : 12
+
+# Strands 
+strand S1 = a b
+strand S2 = b*
+strand S3 = b* a*
+
+# Resting-state Complexes 
+structure 3702 = S1 + S3 : ((+))
+structure 3703 = S2 : .
+structure C1 = S1 + S2 : .(+)
+structure C2 = S3 : ..
+
+# Resting-state sets 
+# state 3702 = { 3702 }
+# state 3703 = { 3703 }
+# state C1 = { C1 }
+# state C2 = { C2 }
+
+# Condensed Reactions 
+kinetic [   1709105.2 /M/s] C1 + C2 -> 3702 + 3703 

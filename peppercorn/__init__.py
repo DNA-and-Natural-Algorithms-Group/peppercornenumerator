@@ -2,7 +2,7 @@
 #  __init__.py
 #  EnumeratorProject
 #
-#  Created by Karthik Sarma on 6/18/10.
-#
+__version__ = "0.4.0"
 
-__all__  = ["utils", "reactions","condense", "enumerator", "input", "output"]
+from peppercorn.enumerator import Enumerator
+

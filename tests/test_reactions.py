@@ -5,11 +5,11 @@
 #  Created by Karthik Sarma on 5/19/10.
 #
 
-from utils import *
-import reactions
-from reactions import *
-from input import input_enum, from_kernel
-from enumerator import Enumerator
+from peppercorn.utils import *
+import peppercorn.reactions as reactions
+from peppercorn.reactions import *
+from peppercorn.input import input_enum, from_kernel
+from peppercorn.enumerator import Enumerator
 
 import unittest
 from nose.tools import *
@@ -64,8 +64,8 @@ def enable_old_zipping():
 	reactions.UNZIP = True
 	reactions.LEGACY_UNZIP = True
 
-old_release_cutoff_1_1 = None
-old_release_cutoff_1_n = None
+old_release_cutoff_1_1 = reactions.RELEASE_CUTOFF_1_1
+old_release_cutoff_1_n = reactions.RELEASE_CUTOFF_1_N
 
 def set_release_cutoff(r_1_1, r_1_n):
 	old_release_cutoff_1_1 = reactions.RELEASE_CUTOFF_1_1
@@ -179,7 +179,7 @@ class BindTests(unittest.TestCase):
 	def setUp(self):
 		enable_new_zipping()
 
-		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('tests/files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -193,7 +193,7 @@ class BindTests(unittest.TestCase):
 		for complex in self.SLC_enumerator.initial_complexes:
 			self.complexes[complex.name] = complex
 	
-		self.three_arm_enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
+		self.three_arm_enumerator = input_enum('tests/files/test_input_standard_3arm_junction.in')
 	
 		
 		for complex in self.three_arm_enumerator.initial_complexes:
@@ -492,7 +492,7 @@ class BindTests(unittest.TestCase):
 
 		
 	def test_combine_complexes_21_seesaw(self):
-		self.seesaw_enum = input_enum('test_files/examples/seesaw/seesaw.enum')
+		self.seesaw_enum = input_enum('tests/files/examples/seesaw/seesaw.enum')
 		(domains,strands,complexes) = self.index_parts(self.seesaw_enum)
 		
 		out_complex, out_loc1, out_loc2  = combine_complexes_21(complexes['Waste'], (1,0), complexes['Fuel'], (0,1))
@@ -533,7 +533,7 @@ class BindTests(unittest.TestCase):
 		pass
 		# example is incorrect (invalid structure)
 
-		# self.seesaw_enum = input_enum('test_files/examples/seesaw/seesaw2.enum')
+		# self.seesaw_enum = input_enum('tests/files/examples/seesaw/seesaw2.enum')
 		# (domains,strands,complexes) = self.index_parts(self.seesaw_enum)
 		# out_complex = reactions.combine_complexes_21(complexes["C1"], (0,3), complexes["C2"], (0,1))
 		# exp_complex = complexes['C3']
@@ -641,7 +641,7 @@ class BindTests(unittest.TestCase):
 
 class OpenTests(unittest.TestCase):
 	def setUp(self):
-		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('tests/files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -1227,7 +1227,7 @@ class Branch3WayTests(unittest.TestCase):
 	def setUp(self):
 		enable_new_zipping()
 
-		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('tests/files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -1459,7 +1459,7 @@ class Branch3WayTests(unittest.TestCase):
 
 
 
-		enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
+		enumerator = input_enum('tests/files/test_input_standard_3arm_junction.in')
 		
 		self.domains = {}
 		self.strands = {}
@@ -1497,7 +1497,7 @@ class Branch3WayTests(unittest.TestCase):
 
 	def testBranch3way5(self):
 		
-		enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
+		enumerator = input_enum('tests/files/test_input_standard_3arm_junction.in')
 		
 		self.domains = {}
 		self.strands = {}
@@ -1522,7 +1522,7 @@ class Branch3WayTests(unittest.TestCase):
 		assert res_list == exp_list
 
 	def testBranch3way6(self):
-		enumerator = input_enum('test_files/test_input_standard_remote.in')
+		enumerator = input_enum('tests/files/test_input_standard_remote.in')
 		
 		self.domains = {}
 		self.strands = {}
@@ -1601,7 +1601,7 @@ class Branch3WayTests(unittest.TestCase):
 
 class Branch4WayTests(unittest.TestCase):
 	def setUp(self):
-		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('tests/files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -1752,7 +1752,7 @@ class Branch4WayTests(unittest.TestCase):
 
 class ReactionPathwayTests(unittest.TestCase):
 	def setUp(self):
-		self.SLC_enumerator = input_enum('test_files/test_input_standard_SLC.in')
+		self.SLC_enumerator = input_enum('tests/files/test_input_standard_SLC.in')
 		self.domains = {}
 		self.strands = {}
 		self.complexes = {}		
@@ -1832,4 +1832,6 @@ class ReactionPathwayTests(unittest.TestCase):
 		
 		assert rp1 == rp3
 		
-		
+if __name__ == '__main__' :
+  unittest.main()
+

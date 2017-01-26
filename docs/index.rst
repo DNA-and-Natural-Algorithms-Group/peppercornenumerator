@@ -23,30 +23,30 @@ Architecture
 
 Utilities
 =========
-.. automodule:: utils
+.. automodule:: peppercorn.utils
    :members:
 
 Reactions
 =========
-.. automodule:: reactions
+.. automodule:: peppercorn.reactions
    :members:
 
 Enumerator
 ==========
-.. automodule:: enumerator
+.. automodule:: peppercorn.enumerator
    :members:
 
 Input and Output
 ================
-.. automodule:: output
+.. automodule:: peppercorn.output
    :members:   
    
-.. automodule:: input
+.. automodule:: peppercorn.input
    :members:
 
 Condensation
 ============
-.. automodule:: condense
+.. automodule:: peppercorn.condense
    :members:      
 
 Indices and tables

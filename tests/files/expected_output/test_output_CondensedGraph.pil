@@ -1,0 +1,40 @@
+###### Enumerated Output ######
+
+# Domains 
+sequence 1 = NNNNNN : 6
+sequence 2 = NNNNNN : 6
+sequence 3 = NNNNNN : 6
+sequence 4 = NNNNNNNNNNNN : 12
+sequence 5 = NNNNNN : 6
+sequence 6 = NNNNNNNNNNNN : 12
+sequence 7 = NNNNNN : 6
+
+# Strands 
+strand BS = 7* 6* 5* 1 2 3
+strand Cat = 6 7
+strand OP = 1 2 3 4
+strand PS = 3* 2* 1* 5 6
+strand SP = 5 6
+
+# Resting-state Complexes 
+structure 3333 = BS + Cat : ((....+))
+structure 3334 = SP : ..
+structure 3349 = OP : ....
+structure 3354 = BS + PS : .(((((+)))))
+structure C1 = OP + PS : (((.+)))..
+structure C2 = BS + SP : .((...+))
+structure Cat = Cat : ..
+
+# Resting-state sets 
+# state 3333 = { 3333 }
+# state 3334 = { 3334 }
+# state 3349 = { 3349 }
+# state 3354 = { 3354 }
+# state C1 = { C1 }
+# state C2 = { C2 }
+# state Cat = { Cat }
+
+# Condensed Reactions 
+kinetic [   1667015.4 /M/s] 3333 + C1 -> 3354 + Cat + 3349 
+kinetic [   876687.69 /M/s] 3333 + 3334 -> C2 + Cat 
+kinetic [   876687.69 /M/s] C2 + Cat -> 3333 + 3334 

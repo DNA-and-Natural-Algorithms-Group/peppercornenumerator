@@ -8,13 +8,18 @@
 
 import os
 import sys
-import utils
-from utils import RestingState
-import reactions
 import logging
-import itertools
 import argparse
-import reactions
+import itertools
+
+import peppercorn
+import peppercorn.utils as utils
+import peppercorn.input as input
+import peppercorn.output as output
+import peppercorn.reactions as reactions
+
+from peppercorn.utils import RestingState
+from peppercorn.input import text_input_functions, load_input_functions
 
 # These are sanity checks to prevent infinite looping
 MAX_COMPLEX_SIZE = 6
@@ -187,7 +192,7 @@ class Enumerator(object):
 
 	def set_reaction_options(self):
 		# handle release cutoff
-		self.old = {}
+		self.old = {}; print 'rc1', reactions.RELEASE_CUTOFF_1_1
 		self.old['release_cutoff_1_1'] = reactions.RELEASE_CUTOFF_1_1
 		self.old['release_cutoff_1_N'] = reactions.RELEASE_CUTOFF_1_N
 		self.old['unzip'] = reactions.UNZIP
@@ -236,7 +241,7 @@ class Enumerator(object):
 		"""
 
 
-		self.set_reaction_options()
+		self.set_reaction_options(); print 'rc', reactions.RELEASE_CUTOFF_1_1
 		logging.info("Release cutoff 1-1: %d nt" % reactions.RELEASE_CUTOFF_1_1)
 		logging.info("Release cutoff 1-n: %d nt" % reactions.RELEASE_CUTOFF_1_N)
 
@@ -784,9 +789,7 @@ class Enumerator(object):
 			# Add the SCC to the list of SCCs
 			self._SCC_stack.append(scc)
 
-def main(argv):
-	import input, output
-
+def main():
 	# Parse command-line arguments
 	parser = argparse.ArgumentParser(description="""
 		Peppercorn: Domain-level nucleic acid reaction enumerator. See README.{html, pdf} for usage examples.
@@ -800,7 +803,7 @@ def main(argv):
 			"an extension based on the output type)")
 	parser.add_argument('-i', action='store', dest='input_format', default=None, \
 		help="Parse the input file using this format; one of: " + \
-		", ".join(input.text_input_functions.keys() + input.load_input_functions.keys()) + \
+		", ".join(text_input_functions.keys() + load_input_functions.keys()) + \
 		". (default: guess from the extension of --infile)")
 	parser.add_argument('-o', action='store', dest='output_format', default='', \
 		help="Write the output file using this format; one or more (comma-separated) of: " + \
@@ -915,9 +918,9 @@ def main(argv):
 
 	# Attempt to load an input parser to generate an enumerator object
 	cl_opts.input_format = cl_opts.input_format.lower()
-	if (cl_opts.input_format in input.text_input_functions):
+	if (cl_opts.input_format in text_input_functions):
 		logging.info("Reading input file : %s" % cl_opts.input_filename)
-		enum = input.text_input_functions[cl_opts.input_format](cl_opts.input_filename)
+		enum = text_input_functions[cl_opts.input_format](cl_opts.input_filename)
 	else:
 		msg = "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
 		logging.error(msg)
@@ -1057,4 +1060,5 @@ def main(argv):
 
 
 if __name__ == '__main__':
-	sys.exit(main(sys.argv))
+    main()
+

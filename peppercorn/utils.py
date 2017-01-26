@@ -13,8 +13,6 @@ from math import log10
 SHORT_DOMAIN_LENGTH = 6
 LONG_DOMAIN_LENGTH = 12
 
-import re
-
 class colors:
     RED = '\033[91m'
     YELLOW = '\033[93m'

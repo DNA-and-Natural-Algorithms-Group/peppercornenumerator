@@ -6,10 +6,10 @@
 #
 
 import unittest
-from utils import *
 from nose.tools import *
 import copy
-import input
+from peppercorn.utils import *
+import peppercorn.input as input
 
 class MiscTests(unittest.TestCase):
 	def testWrap(self):
@@ -325,12 +325,12 @@ class ComplexTests(unittest.TestCase):
 
 	
 	def testAvailableDomains2(self):
-		from input import input_enum
+		from peppercorn.input import input_enum
 
 		# Example from 3-arm junction
 
 		
-		three_arm_nodal_enum = input_enum('test_files/examples/3-arm-junction.enum')
+		three_arm_nodal_enum = input_enum('tests/files/examples/3-arm-junction.enum')
 		enum = three_arm_nodal_enum
 		
 		domains = {}
@@ -367,8 +367,8 @@ class ComplexTests(unittest.TestCase):
 		assert c4.structure == [[None, None]]
 	
 	def testRotateStrands2(self):
-		from input import input_enum
-		self.biggate_enum = input_enum('test_files/examples/sarma2010/biggate.in');
+		from peppercorn.input import input_enum
+		self.biggate_enum = input_enum('tests/files/examples/sarma2010/biggate.in');
 		(domains,strands,complexes) = index_parts(self.biggate_enum)
 	
 		c16 = Complex('16',[strands['a1'],strands['a1'],strands['b1']],parse_dot_paren('(..+(((+))))'))
@@ -466,3 +466,7 @@ class RestingStateTests(unittest.TestCase):
 			self.rs.complexes = []
 		
 		assert_raises(AttributeError, assnComplex, self)
+
+if __name__ == '__main__' :
+  unittest.main()
+

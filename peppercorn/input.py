@@ -5,14 +5,15 @@
 #  Created by Karthik Sarma on 6/26/10.
 #
 
+
+import re
 import logging
 import json
-import utils
-from utils import *
-from enumerator import Enumerator
-from reactions import ReactionPathway, get_auto_name
-import reactions
-import re
+
+import peppercorn
+import peppercorn.utils as utils
+import peppercorn.reactions as reactions
+from peppercorn.reactions import ReactionPathway, get_auto_name
 
 def input_enum(filename):
 	"""
@@ -75,9 +76,9 @@ def input_enum(filename):
 				domain_sequence = None
 			
 			# Create the new domains
-			new_dom = Domain(domain_name, domain_length, 
+			new_dom = utils.Domain(domain_name, domain_length, 
 							 sequence=domain_sequence)
-			new_dom_comp = Domain(domain_name, domain_length, 
+			new_dom_comp = utils.Domain(domain_name, domain_length, 
 								  sequence=domain_sequence,
 								  is_complement=True)
 			
@@ -114,7 +115,7 @@ def input_enum(filename):
 			if len(strand_doms) == 0:
 				logging.warn("0-length strand encountered in input line %d")			
 				
-			new_strand = Strand(strand_name, strand_doms)
+			new_strand = utils.Strand(strand_name, strand_doms)
 			strands[strand_name] = new_strand
 			
 		# This is the beginning of a complex	
@@ -153,7 +154,7 @@ def input_enum(filename):
 			structure_line = fin.readline()
 			structure_line = structure_line.strip()
 			
-			complex_structure = parse_dot_paren(structure_line)
+			complex_structure = utils.parse_dot_paren(structure_line)
 			
 			
 			struct_length = sum(map(len,complex_structure))
@@ -163,7 +164,7 @@ def input_enum(filename):
 								% {"name":complex_name,"doms":domains_length,"struct_length":struct_length, "struct":structure_line})
 				raise Exception()
 			
-			complex = Complex(complex_name, complex_strands, complex_structure)
+			complex = utils.Complex(complex_name, complex_strands, complex_structure)
 			complex.check_structure()
 			complexes[complex_name] = complex			
 			
@@ -178,7 +179,7 @@ def input_enum(filename):
 	strands = strands.values()
 	complexes = complexes.values()
 	
-	enumerator = Enumerator(domains, strands, complexes)
+	enumerator = peppercorn.Enumerator(domains, strands, complexes)
 	return enumerator
 
 
@@ -258,8 +259,8 @@ def auto_domain(name, polarity, domains):
 
 		sequence = 'N' * utils.resolve_length(length)
 
-		new_dom = Domain(identity, length, sequence=sequence)
-		new_dom_comp = Domain(identity, length,
+		new_dom = utils.Domain(identity, length, sequence=sequence)
+		new_dom_comp = utils.Domain(identity, length,
 							  is_complement=True, sequence=sequence)
 		domains[identity] = new_dom
 		domains[identity+'*'] = new_dom_comp
@@ -295,7 +296,7 @@ def auto_strand(doms, strands, structures_to_strands):
 			warning("Auto-generated strand name %s already taken by a strand with different structure. Auto-generated strand will be named %s." % (initial_auto_name, auto_name))
 
 		# generate new strand object
-		strand = Strand(auto_name, doms)
+		strand = utils.Strand(auto_name, doms)
 		strands[auto_name] = strand
 		structures_to_strands[tuple(doms)] = strand
 		return strand
@@ -306,7 +307,7 @@ def auto_complex(strands, structure, complexes, name=None):
 	"""
 	if name is None:
 		name = get_auto_name()
-	complex = Complex(name, strands, structure)
+	complex = utils.Complex(name, strands, structure)
 	complexes[complex.name] = complex
 	return complex
 
@@ -400,7 +401,7 @@ def from_kernel(lines):
 
 def enum_from_kernel(lines):
 	(domains, strands, complexes) = from_kernel(lines)
-	return Enumerator(domains, strands, complexes)
+	return peppercorn.Enumerator(domains, strands, complexes)
 
 def input_pil(filename):
 	"""
@@ -452,9 +453,9 @@ def input_pil(filename):
 			domain_sequence = "N" * domain_length
 
 			# Create the new domains
-			new_dom = Domain(domain_name, domain_length, 
+			new_dom = utils.Domain(domain_name, domain_length, 
 							 sequence=domain_sequence)
-			new_dom_comp = Domain(domain_name, domain_length, 
+			new_dom_comp = utils.Domain(domain_name, domain_length, 
 								  sequence=domain_sequence,
 								  is_complement=True)
 			
@@ -490,9 +491,9 @@ def input_pil(filename):
 			domain_length = len(domain_sequence);
 			
 			# Create the new domains
-			new_dom = Domain(domain_name, domain_length, 
+			new_dom = utils.Domain(domain_name, domain_length, 
 							 sequence=domain_sequence)
-			new_dom_comp = Domain(domain_name, domain_length, 
+			new_dom_comp = utils.Domain(domain_name, domain_length, 
 								  sequence=domain_sequence,
 								  is_complement=True)
 			
@@ -551,9 +552,9 @@ def input_pil(filename):
 			domain_length = len(sequence)
 
 			# Create the new domains
-			new_dom = Domain(domain_name, domain_length, 
+			new_dom = utils.Domain(domain_name, domain_length, 
 							 sequence=domain_sequence)
-			new_dom_comp = Domain(domain_name, domain_length, 
+			new_dom_comp = utils.Domain(domain_name, domain_length, 
 								  sequence=domain_sequence,
 								  is_complement=True)
 			
@@ -581,9 +582,9 @@ def input_pil(filename):
 
 
 			for target_domain_name in target_domain_names:
-				new_dom = Domain(target_domain_name, len(source_domain), 
+				new_dom = utils.Domain(target_domain_name, len(source_domain), 
 							 sequence=source_domain.sequence)
-				new_dom_comp = Domain(target_domain_name, len(source_domain), 
+				new_dom_comp = utils.Domain(target_domain_name, len(source_domain), 
 									  sequence=source_domain.sequence,
 									  is_complement=True)
 
@@ -629,7 +630,7 @@ def input_pil(filename):
 			if len(strand_doms) == 0:
 				logging.warn("0-length strand encountered in input line %d")			
 				
-			new_strand = Strand(strand_name, strand_doms)
+			new_strand = utils.Strand(strand_name, strand_doms)
 			strands[strand_name] = new_strand
 			
 		# This is the beginning of a complex	
@@ -689,12 +690,12 @@ def input_pil(filename):
 
 			# parse dot-paren structure, then do some horrible magic to guess 
 			# if it's basewise or segmentwise... 
-			complex_structure = parse_dot_paren(structure_line)
+			complex_structure = utils.parse_dot_paren(structure_line)
 			struct_length = sum(map(len,complex_structure))
 			domains_length = sum(map(len,complex_strands)) #sum([ len(d) for c in complex_strands for d in c.domains ])
 						
 			if(struct_length > domains_length):
-				complex_structure = parse_basewise_dot_paren(structure_line, complex_strands)						
+				complex_structure = utils.parse_basewise_dot_paren(structure_line, complex_strands)						
 				struct_length = sum(map(len,complex_structure))
 				if(struct_length != domains_length):
 					logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was '%(struct)s')"
@@ -707,7 +708,7 @@ def input_pil(filename):
 								% {"name":complex_name,"doms":domains_length,"struct_length":struct_length, "struct":structure_line})
 				raise Exception()
 			
-			complex = Complex(complex_name, complex_strands, complex_structure)
+			complex = utils.Complex(complex_name, complex_strands, complex_structure)
 			complex.check_structure()
 
 			# apply parameters
@@ -735,7 +736,7 @@ def input_pil(filename):
 	strands = strands.values()
 	complexes = complexes.values()
 	
-	enumerator = Enumerator(domains, strands, complexes)
+	enumerator = peppercorn.Enumerator(domains, strands, complexes)
 	return enumerator
 
 			
@@ -754,7 +755,7 @@ def load_json(filename):
 			saved_domain['sequence'] = None
 		if (saved_domain['is_complement']):
 			saved_domain['name'] = saved_domain['name'][:-1]
-		new_dom = Domain(saved_domain['name'], saved_domain['length'], is_complement=saved_domain['is_complement'], sequence=saved_domain['sequence'])
+		new_dom = utils.Domain(saved_domain['name'], saved_domain['length'], is_complement=saved_domain['is_complement'], sequence=saved_domain['sequence'])
 		domains[new_dom.name] = new_dom
 	
 	saved_strands = saved['strands']
@@ -765,7 +766,7 @@ def load_json(filename):
 		for domain in saved_strand['domains']:
 			doms.append(domains[domain])
 		
-		new_strand = Strand(saved_strand['name'], doms)
+		new_strand = utils.Strand(saved_strand['name'], doms)
 		strands[saved_strand['name']] = new_strand
 	
 	complexes = {}
@@ -785,7 +786,7 @@ def load_json(filename):
 				else:
 					new_strand.append(tuple(tup))
 			new_structure.append(new_strand)
-		new_complex = Complex(saved_complex['name'], c_strands, new_structure)
+		new_complex = utils.Complex(saved_complex['name'], c_strands, new_structure)
 		resting_complexes[saved_complex['name']] = new_complex
 		complexes[saved_complex['name']] = new_complex
 	
@@ -805,7 +806,7 @@ def load_json(filename):
 				else:
 					new_strand.append(tuple(tup))
 			new_structure.append(new_strand)
-		new_complex = Complex(saved_complex['name'], c_strands, new_structure)
+		new_complex = utils.Complex(saved_complex['name'], c_strands, new_structure)
 		transient_complexes[saved_complex['name']] = new_complex
 		complexes[saved_complex['name']] = new_complex
 	
@@ -830,7 +831,7 @@ def load_json(filename):
 		comps = []
 		for complex in resting_state['complexes']:
 			comps.append(complexes[complex])
-		resting_states.append(RestingState(resting_state['name'], comps))
+		resting_states.append(utils.RestingState(resting_state['name'], comps))
 
 	initial_complexes = {}
 	for saved_complex in saved['initial_complexes']:
@@ -846,11 +847,11 @@ def load_json(filename):
 				else:
 					new_strand.append(tuple(tup))
 			new_structure.append(new_strand)
-		new_complex = Complex(saved_complex['name'], c_strands, new_structure)
+		new_complex = utils.Complex(saved_complex['name'], c_strands, new_structure)
 		initial_complexes[saved_complex['name']] = new_complex
 		
 			
-	enumerator = Enumerator(domains.values(), strands.values(), initial_complexes.values())
+	enumerator = peppercorn.Enumerator(domains.values(), strands.values(), initial_complexes.values())
 	enumerator._complexes = complexes.values()
 	enumerator._resting_states = resting_states
 	enumerator._transient_complexes = transient_complexes.values()
@@ -863,10 +864,10 @@ def load_json(filename):
 
 
 text_input_functions = {
-						'enum': input_enum,
-						'pil': input_pil
-					  }
-					  
+    'enum': input_enum,
+    'pil': input_pil
+    }
+
 load_input_functions = {
-						 'json': load_json
-					   }
+    'json': load_json
+    }

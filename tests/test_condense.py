@@ -1,11 +1,11 @@
 import unittest
 # from nose.tools import *
 
-import input
-from utils import Complex, Domain, Strand, index_parts
-from reactions import ReactionPathway
+import peppercorn.input as input
+from peppercorn.utils import Complex, Domain, Strand, index_parts
+from peppercorn.reactions import ReactionPathway
 
-from condense import *
+from peppercorn.condense import *
 
 # ----------------------------------------------------------------------------
 # Utils
@@ -513,7 +513,7 @@ class CondenseTests(unittest.TestCase):
 
         # import pdb; pdb.set_trace() 
 
-        self.bounded_dendrimer = input.input_enum('test_files/examples/bounded-dendrimer.enum')
+        self.bounded_dendrimer = input.input_enum('tests/files/examples/bounded-dendrimer.enum')
         
         self.bounded_dendrimer.MAX_COMPLEX_SIZE = 10
         self.bounded_dendrimer.MAX_REACTION_COUNT = 1000
@@ -528,7 +528,7 @@ class CondenseTests(unittest.TestCase):
 
         # import pdb; pdb.set_trace() 
 
-        self.fate_example = input.input_pil('test_files/examples/fate-example.pil')
+        self.fate_example = input.input_pil('tests/files/examples/fate-example.pil')
         
         self.fate_example.MAX_COMPLEX_SIZE = 10
         self.fate_example.MAX_REACTION_COUNT = 1000
@@ -542,7 +542,7 @@ class CondenseTests(unittest.TestCase):
 
     def testCondenseGraph6(self):
 
-        self.fate_example = input.input_pil('test_files/examples/fate-example.pil')
+        self.fate_example = input.input_pil('tests/files/examples/fate-example.pil')
 
         self.fate_example.MAX_COMPLEX_SIZE = 10
         self.fate_example.MAX_REACTION_COUNT = 1000
@@ -700,6 +700,6 @@ class CondenseTests(unittest.TestCase):
         # assert False
 
 
-
-
+if __name__ == '__main__' :
+  unittest.main()
 

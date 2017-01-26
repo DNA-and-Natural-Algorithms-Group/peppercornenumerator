@@ -1,0 +1,29 @@
+###### Enumerated Output ######
+
+# Domains 
+sequence a = NNNNNN : 6
+sequence b = NNNNNN : 6
+sequence c = NNNNNN : 6
+sequence x = NNNNNN : 6
+sequence y = NNNNNN : 6
+sequence z = NNNNNN : 6
+
+# Strands 
+strand A = a x b y z* c* y* b* x*
+strand B = b y c z x* a* z* c* y*
+strand C = c z a x y* b* x* a* z*
+strand I = y* b* x* a*
+
+# Resting-state Complexes 
+structure A = A : .(((..)))
+structure B = B : .(((..)))
+structure C = C : .(((..)))
+structure I = I : ....
+
+# Resting-state sets 
+# state A = { A }
+# state B = { B }
+# state C = { C }
+# state I = { I }
+
+# Condensed Reactions 

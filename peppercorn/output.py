@@ -6,13 +6,14 @@
 #
 
 import copy
-import utils
-from reactions import ReactionPathway, auto_name
-import reactions
 import json
 import subprocess
 import collections
-from condense import condense_resting_states
+
+import peppercorn.utils as utils
+import peppercorn.reactions as reactions
+from peppercorn.reactions import ReactionPathway, auto_name
+from peppercorn.condense import condense_resting_states
 
 
 

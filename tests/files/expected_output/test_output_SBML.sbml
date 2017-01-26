@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml level="2" version="3" xmlns="http://www.sbml.org/sbml/level2/version3">
+	<model name="tests/files/expected_output/test_output_SBML.sbml">
+		<listOfUnitDefinitions>
+			<unitDefinition id="per_second">
+				<listOfUnits>
+					<unit exponent="-1" kind="second"/>
+					 
+				</listOfUnits>
+			</unitDefinition>
+			<unitDefinition id="litre_per_mole_per_second">
+				<listOfUnits>
+					<unit exponent="-1" kind="mole"/>
+					<unit exponent="1" kind="litre"/>
+					<unit exponent="-1" kind="second"/>
+				</listOfUnits>
+			</unitDefinition>
+		</listOfUnitDefinitions>
+		<listOfCompartments>
+			<compartment id="reaction" size="1e-3"/>
+		</listOfCompartments>
+		<listOfSpecies>
+			<species compartment="reaction" id="s_Cat" initialConcentration="0" name="Cat"/>
+			<species compartment="reaction" id="s_C1" initialConcentration="0" name="C1"/>
+			<species compartment="reaction" id="s_C2" initialConcentration="0" name="C2"/>
+			<species compartment="reaction" id="s_6776" initialConcentration="0" name="6776"/>
+			<species compartment="reaction" id="s_6775" initialConcentration="0" name="6775"/>
+			<species compartment="reaction" id="s_6791" initialConcentration="0" name="6791"/>
+			<species compartment="reaction" id="s_6796" initialConcentration="0" name="6796"/>
+			<species compartment="reaction" id="s_6769" initialConcentration="0" name="6769"/>
+			<species compartment="reaction" id="s_6773" initialConcentration="0" name="6773"/>
+			<species compartment="reaction" id="s_6800" initialConcentration="0" name="6800"/>
+			<species compartment="reaction" id="s_6792" initialConcentration="0" name="6792"/>
+			<species compartment="reaction" id="s_6781" initialConcentration="0" name="6781"/>
+			<species compartment="reaction" id="s_6793" initialConcentration="0" name="6793"/>
+			<species compartment="reaction" id="s_6790" initialConcentration="0" name="6790"/>
+		</listOfSpecies>
+		<listOfReactions>
+			<reaction id="r_0" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_C2"/>
+					<speciesReference species="s_Cat"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6769"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_C2</ci>
+							<ci>s_Cat</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="litre_per_mole_per_second" value="1800000.0000000000"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_1" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6769"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_C2"/>
+					<speciesReference species="s_Cat"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6769</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="1.4772969858"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_2" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6769"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6773"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6769</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="27.7777777778"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_3" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6773"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6775"/>
+					<speciesReference species="s_6776"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6773</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="1.4772969858"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_4" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6773"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6769"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6773</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="27.7777777778"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_5" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6775"/>
+					<speciesReference species="s_C1"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6781"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6775</ci>
+							<ci>s_C1</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="litre_per_mole_per_second" value="1800000.0000000000"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_6" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6775"/>
+					<speciesReference species="s_6776"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6773"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6775</ci>
+							<ci>s_6776</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="litre_per_mole_per_second" value="1800000.0000000000"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_7" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6781"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6775"/>
+					<speciesReference species="s_C1"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6781</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="1.4772969858"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_8" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6781"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6792"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6781</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="27.7777777778"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_9" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6781"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6790"/>
+					<speciesReference species="s_6791"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6781</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="18.5185185185"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_10" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6790"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6793"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6790</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="27.7777777778"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_11" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6793"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6796"/>
+					<speciesReference species="s_Cat"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6793</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="1.4772969858"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_12" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6793"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6790"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6793</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="27.7777777778"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_13" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6792"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6800"/>
+					<speciesReference species="s_Cat"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6792</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="1.4772969858"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_14" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6792"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6781"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6792</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="27.7777777778"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_15" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6792"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6793"/>
+					<speciesReference species="s_6791"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6792</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="18.5185185185"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_16" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6800"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6796"/>
+					<speciesReference species="s_6791"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6800</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="per_second" value="18.5185185185"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+			<reaction id="r_17" reversible="false">
+				<listOfReactants>
+					<speciesReference species="s_6796"/>
+					<speciesReference species="s_Cat"/>
+				</listOfReactants>
+				<listOfProducts>
+					<speciesReference species="s_6793"/>
+				</listOfProducts>
+				<kineticLaw>
+					<math xmlns="http://www.w3.org/1998/Math/MathML">
+						<apply>
+							<times/>
+							<ci>k</ci>
+							<ci>s_6796</ci>
+							<ci>s_Cat</ci>
+						</apply>
+					</math>
+					<listOfParameters>
+						<parameter id="k" units="litre_per_mole_per_second" value="1800000.0000000000"/>
+					</listOfParameters>
+				</kineticLaw>
+			</reaction>
+		</listOfReactions>
+	</model>
+</sbml>

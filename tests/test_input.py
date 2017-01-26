@@ -6,15 +6,16 @@
 #  Copyright (c) 2011 __MyCompanyName__. All rights reserved.
 #
 
-import unittest
-from utils import *
-from input import *
-from nose.tools import *
 import copy
+import unittest
+from nose.tools import *
+
+from peppercorn.utils import *
+from peppercorn.input import *
 
 class InputStandardTests(unittest.TestCase):
 	def testStandard_SLC(self):
-		enumerator = input_enum('test_files/test_input_standard_SLC.in')
+		enumerator = input_enum('tests/files/test_input_standard_SLC.in')
 		
 		d1 = Domain('1', 'short')
 		d1c = Domain('1', 'short', True)
@@ -78,7 +79,7 @@ class InputStandardTests(unittest.TestCase):
 		assert (enum_complexes == complexes)
 
 	def testStandard_3arm_junction(self):
-		enumerator = input_enum('test_files/test_input_standard_3arm_junction.in')
+		enumerator = input_enum('tests/files/test_input_standard_3arm_junction.in')
 		
 		da = Domain('a', 6)		
 		db = Domain('b', 6)
@@ -135,7 +136,7 @@ class InputStandardTests(unittest.TestCase):
 		assert (enum_complexes == complexes)
 	
 	def testPil(self):
-		enumerator = input_pil('test_files/test_input_pil.pil')
+		enumerator = input_pil('tests/files/test_input_pil.pil')
 		
 		# domains
 		da = Domain('a', 6, sequence="CTACTC")		
@@ -199,11 +200,11 @@ class InputStandardTests(unittest.TestCase):
 		assert (tuple(enum_complexes) == tuple(complexes))
 
 	def testPil_venkataraman2007(self):
-		enumerator = input_pil('test_files/examples/venkataraman2007/venkataraman2007.pil')
+		enumerator = input_pil('tests/files/examples/venkataraman2007/venkataraman2007.pil')
 		
 
 	def testPil_3arm_junction(self):
-		enumerator = input_pil('test_files/test_input_pil_3arm_junction.pil')
+		enumerator = input_pil('tests/files/test_input_pil_3arm_junction.pil')
 		
 		da = Domain('a', 6, sequence="CTACTC")		
 		db = Domain('b', 6, sequence="TCCTCA")
@@ -263,30 +264,30 @@ class InputStandardTests(unittest.TestCase):
 	def testErrors(self):
 		
 		def testDuplicateDomain():
-			enum = input_enum('test_files/test_input_errors/test_input_duplicate_domain.in')
+			enum = input_enum('tests/files/test_input_errors/test_input_duplicate_domain.in')
 		assert_raises(Exception, testDuplicateDomain)
 		
 		def testDuplicateStrand():
-			enum = input_enum('test_files/test_input_errors/test_input_duplicate_strand.in')	
+			enum = input_enum('tests/files/test_input_errors/test_input_duplicate_strand.in')	
 		assert_raises(Exception, testDuplicateStrand)
 		
 		def testDuplicateComplex():
-			enum = input_enum('test_files/test_input_errors/test_input_duplicate_complex.in')	
+			enum = input_enum('tests/files/test_input_errors/test_input_duplicate_complex.in')	
 		assert_raises(Exception, testDuplicateComplex)
 
 		def testMissingDomain():
-			enum = input_enum('test_files/test_input_errors/test_input_missing_domain.in')	
+			enum = input_enum('tests/files/test_input_errors/test_input_missing_domain.in')	
 		assert_raises(Exception, testMissingDomain)
 
 		def testMissingStrand():
-			enum = input_enum('test_files/test_input_errors/test_input_missing_strand.in')	
+			enum = input_enum('tests/files/test_input_errors/test_input_missing_strand.in')	
 		assert_raises(Exception, testMissingStrand)
 		
 		def testComplexError():
-			enum = input_enum('test_files/test_input_errors/test_input_size_mismatch.in')
+			enum = input_enum('tests/files/test_input_errors/test_input_size_mismatch.in')
 		assert_raises(Exception, testComplexError)
 		
-		enum = input_enum('test_files/test_input_errors/test_input_warnings.in')	
+		enum = input_enum('tests/files/test_input_errors/test_input_warnings.in')	
 		assert (enum != None)
 			
 	
@@ -371,7 +372,7 @@ class InputKernel(unittest.TestCase):
 		assert complexes == kcomplexes
 
 	def test_kernel_1(self):
-		enumerator = input_pil('test_files/test_input_kernel_1.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_1.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -396,7 +397,7 @@ class InputKernel(unittest.TestCase):
 		
 
 	def test_kernel_2(self):
-		enumerator = input_pil('test_files/test_input_kernel_2.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_2.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -422,7 +423,7 @@ class InputKernel(unittest.TestCase):
 
 
 	def test_kernel_3(self):
-		enumerator = input_pil('test_files/test_input_kernel_3.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_3.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -450,7 +451,7 @@ class InputKernel(unittest.TestCase):
 
 
 	def test_kernel_4(self):
-		enumerator = input_pil('test_files/test_input_kernel_4.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_4.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -485,7 +486,7 @@ class InputKernel(unittest.TestCase):
 
 
 	def test_kernel_5(self):
-		enumerator = input_pil('test_files/test_input_kernel_5.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_5.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -512,7 +513,7 @@ class InputKernel(unittest.TestCase):
 
 
 	def test_kernel_6(self):
-		enumerator = input_pil('test_files/test_input_kernel_6.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_6.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -547,7 +548,7 @@ class InputKernel(unittest.TestCase):
 
 
 	def test_kernel_7(self):
-		enumerator = input_pil('test_files/test_input_kernel_7.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_7.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -583,7 +584,7 @@ class InputKernel(unittest.TestCase):
 
 
 	def test_kernel_8(self):
-		enumerator = input_pil('test_files/test_input_kernel_8.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_8.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -620,7 +621,7 @@ class InputKernel(unittest.TestCase):
 		assert set(complexes.values()) == set(enumerator.complexes)
 
 	def test_kernel_9(self):
-		enumerator = input_pil('test_files/test_input_kernel_9.pil')
+		enumerator = input_pil('tests/files/test_input_kernel_9.pil')
 		enumerator.dry_run()
 
 		# Domains 
@@ -655,3 +656,8 @@ class InputKernel(unittest.TestCase):
 		assert complexes['3'].concentration == out_complexes['3'].concentration
 		assert complexes['4'].concentration == out_complexes['4'].concentration
 		assert complexes['5'].concentration == out_complexes['5'].concentration
+
+
+if __name__ == '__main__' :
+  unittest.main()
+

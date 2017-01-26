@@ -6,8 +6,8 @@
 #  Modifications by Casey Grun and Erik Winfree 8/15/2014.
 
 import copy
-import utils
-from utils import *
+import peppercorn.utils as utils
+from peppercorn.utils import *
 
 auto_name = 0
 def get_auto_name():
