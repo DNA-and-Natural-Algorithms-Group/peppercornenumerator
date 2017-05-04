@@ -16,7 +16,7 @@
 <h2 id="overview">Overview</h2>
 <p>This package predicts the set of possible reactions between a set of initial nucleic acid complexes. Complexes are comprised of strands, which are subdivided into &quot;domains&quot;---contiguous regions of nucleotide bases which participate in Watson-Crick hybridization. The enumerator only considers reactions between complexes with complementary domains. At this point, only unpseudoknotted intermediate complexes are considered.</p>
 <p>This document describes basic usage of the software, automatic generation of API documentation, and running of unit tests. API documentation is found in the <code>docs</code> subdirectory.</p>
-<p>This package is written for Python 2.7; Python must be installed and in the user's <code>path</code> in order to run the program.</p>
+<p>This package is written for Python 2.7; Python must be installed and in the user's <code>PATH</code> in order to run the program. In addition, Kernel parsing requires the <code>pyparsing</code> library, and condensed reaction rate calculations requires <code>numpy</code>; these dependencies are optional---if you do not use the kernel notation or require condensed reaction rates, you may run the program without them.</p>
 <h2 id="usage">Usage</h2>
 <pre><code>positional arguments:
   input_filename        Path to the input file (same as --infile)

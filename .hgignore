@@ -7,10 +7,7 @@ syntax: glob
 ./cover/
 ./notes/
 cprofile
-./test_files/test_output/
-docs/_build/
-./tmp-run.pil
-./tmp-run-enum.pil
+./tests/files/expected_output/
 *.pyc
 *.pyo
 *.sublime-project
