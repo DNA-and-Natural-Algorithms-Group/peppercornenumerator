@@ -21,6 +21,8 @@ import peppercorn.reactions as reactions
 from peppercorn.utils import RestingState
 from peppercorn.input import text_input_functions, load_input_functions
 
+version = __import__('peppercorn').__version__
+
 # These are sanity checks to prevent infinite looping
 MAX_COMPLEX_SIZE = 6
 MAX_REACTION_COUNT = 1000
@@ -897,7 +899,6 @@ def main():
 		logging.warning("Verbosity greater than -vvv has no effect")
 
 	title = "Peppercorn Domain-level Reaction Enumerator"
-	version = "v0.3.0"
 	banner = (utils.colors.BOLD + title + utils.colors.ENDC + " " + utils.colors.GREEN + version + utils.colors.ENDC if sys.stdout.isatty() else  title + (" (%s)" % version) )
 	logging.info(banner)
 

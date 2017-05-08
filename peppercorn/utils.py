@@ -5,9 +5,10 @@
 #  Created by Karthik Sarma on 4/18/10.
 #  Modifications by Casey Grun and Erik Winfree 8/15/2014.#
 
-import copy
 import re
 import sys
+import copy
+import logging
 from math import log10
 
 SHORT_DOMAIN_LENGTH = 6
