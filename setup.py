@@ -9,10 +9,10 @@ with open('README.md') as f:
 with open('LICENSE') as f:
   license = f.read()
 
-version = __import__('peppercorn').__version__
+version = __import__('peppercornenumerator').__version__
 
 setup(
-    name='peppercorn',
+    name='peppercornenumerator',
     version=version,
     description='Domain-level nucleic acid reaction enumerator)',
     long_description=readme,
@@ -22,7 +22,7 @@ setup(
     license=license,
     test_suite='tests',
     install_requires=['argparse>=1.2.1', 'nose', 'pyparsing', 'numpy'],
-    packages=['peppercorn'],
+    packages=['peppercornenumerator'],
     scripts=['scripts/peppercorn']
 )
 

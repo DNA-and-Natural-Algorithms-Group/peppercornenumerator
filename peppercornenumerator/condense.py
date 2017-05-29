@@ -4,8 +4,8 @@ import collections
 import logging
 import numpy as np
 
-from peppercorn.reactions import get_auto_name,ReactionPathway
-from peppercorn.utils import Complex, Domain, Strand, RestingState
+from peppercornenumerator.reactions import get_auto_name,ReactionPathway
+from peppercornenumerator.utils import Complex, Domain, Strand, RestingState
 
 class SetOfFates(object):
     """

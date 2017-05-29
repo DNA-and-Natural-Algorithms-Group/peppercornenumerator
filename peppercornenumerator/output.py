@@ -10,10 +10,10 @@ import json
 import subprocess
 import collections
 
-import peppercorn.utils as utils
-import peppercorn.reactions as reactions
-from peppercorn.reactions import ReactionPathway, auto_name
-from peppercorn.condense import condense_resting_states
+import peppercornenumerator.utils as utils
+import peppercornenumerator.reactions as reactions
+from peppercornenumerator.reactions import ReactionPathway, auto_name
+from peppercornenumerator.condense import condense_resting_states
 
 
 

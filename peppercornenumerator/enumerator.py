@@ -12,16 +12,16 @@ import logging
 import argparse
 import itertools
 
-import peppercorn
-import peppercorn.utils as utils
-import peppercorn.input as input
-import peppercorn.output as output
-import peppercorn.reactions as reactions
+import peppercornenumerator 
+import peppercornenumerator.utils as utils
+import peppercornenumerator.input as input
+import peppercornenumerator.output as output
+import peppercornenumerator.reactions as reactions
 
-from peppercorn.utils import RestingState
-from peppercorn.input import text_input_functions, load_input_functions
+from peppercornenumerator.utils import RestingState
+from peppercornenumerator.input import text_input_functions, load_input_functions
 
-version = __import__('peppercorn').__version__
+version = __import__('peppercornenumerator').__version__
 
 # These are sanity checks to prevent infinite looping
 MAX_COMPLEX_SIZE = 6

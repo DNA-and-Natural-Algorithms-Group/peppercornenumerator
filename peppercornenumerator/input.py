@@ -10,10 +10,10 @@ import re
 import logging
 import json
 
-import peppercorn
-import peppercorn.utils as utils
-import peppercorn.reactions as reactions
-from peppercorn.reactions import ReactionPathway, get_auto_name
+import peppercornenumerator
+import peppercornenumerator.utils as utils
+import peppercornenumerator.reactions as reactions
+from peppercornenumerator.reactions import ReactionPathway, get_auto_name
 
 def input_enum(filename):
 	"""
@@ -179,7 +179,7 @@ def input_enum(filename):
 	strands = strands.values()
 	complexes = complexes.values()
 	
-	enumerator = peppercorn.Enumerator(domains, strands, complexes)
+	enumerator = peppercornenumerator.Enumerator(domains, strands, complexes)
 	return enumerator
 
 
@@ -401,7 +401,7 @@ def from_kernel(lines):
 
 def enum_from_kernel(lines):
 	(domains, strands, complexes) = from_kernel(lines)
-	return peppercorn.Enumerator(domains, strands, complexes)
+	return peppercornenumerator.Enumerator(domains, strands, complexes)
 
 def input_pil(filename):
 	"""
@@ -736,7 +736,7 @@ def input_pil(filename):
 	strands = strands.values()
 	complexes = complexes.values()
 	
-	enumerator = peppercorn.Enumerator(domains, strands, complexes)
+	enumerator = peppercornenumerator.Enumerator(domains, strands, complexes)
 	return enumerator
 
 			
@@ -851,7 +851,7 @@ def load_json(filename):
 		initial_complexes[saved_complex['name']] = new_complex
 		
 			
-	enumerator = peppercorn.Enumerator(domains.values(), strands.values(), initial_complexes.values())
+	enumerator = peppercornenumerator.Enumerator(domains.values(), strands.values(), initial_complexes.values())
 	enumerator._complexes = complexes.values()
 	enumerator._resting_states = resting_states
 	enumerator._transient_complexes = transient_complexes.values()

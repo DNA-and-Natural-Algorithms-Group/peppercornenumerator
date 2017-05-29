@@ -1,4 +1,4 @@
-# peppercorn -- domain-level reaction enumerator
+# peppercornenumerator -- domain-level reaction enumerator
 
 This package predicts the set of possible reactions between a set of initial
 nucleic acid complexes. Complexes are comprised of strands, which are

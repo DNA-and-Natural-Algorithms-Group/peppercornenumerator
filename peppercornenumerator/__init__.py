@@ -4,5 +4,5 @@
 #
 __version__ = "v0.4.0"
 
-from peppercorn.enumerator import Enumerator
+from peppercornenumerator.enumerator import Enumerator
 
