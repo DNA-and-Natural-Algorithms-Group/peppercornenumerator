@@ -4,10 +4,10 @@
 from setuptools import setup, find_packages
 
 with open('README.md') as f:
-  readme = f.read()
+    readme = f.read()
 
 with open('LICENSE') as f:
-  license = f.read()
+    license = f.read()
 
 version = __import__('peppercornenumerator').__version__
 
@@ -18,11 +18,10 @@ setup(
     long_description=readme,
     author='Karthik Sarma, Casey Grun, and Erik Winfree',
     author_email='winfree@caltech.edu',
-    #url='http://www.dna.caltech.edu/peppercorn/',
+    # url='http://www.dna.caltech.edu/peppercorn/',
     license=license,
     test_suite='tests',
     install_requires=['argparse>=1.2.1', 'nose', 'pyparsing', 'numpy'],
     packages=['peppercornenumerator'],
     scripts=['scripts/peppercorn']
 )
-
