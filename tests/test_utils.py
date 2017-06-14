@@ -8,8 +8,8 @@
 import unittest
 from nose.tools import *
 import copy
-from peppercorn.utils import *
-import peppercorn.input as input
+from peppercornenumerator.utils import *
+import peppercornenumerator.input as input
 
 class MiscTests(unittest.TestCase):
 	def testWrap(self):
@@ -325,7 +325,7 @@ class ComplexTests(unittest.TestCase):
 
 	
 	def testAvailableDomains2(self):
-		from peppercorn.input import input_enum
+		from peppercornenumerator.input import input_enum
 
 		# Example from 3-arm junction
 
@@ -367,7 +367,7 @@ class ComplexTests(unittest.TestCase):
 		assert c4.structure == [[None, None]]
 	
 	def testRotateStrands2(self):
-		from peppercorn.input import input_enum
+		from peppercornenumerator.input import input_enum
 		self.biggate_enum = input_enum('tests/files/examples/sarma2010/biggate.in');
 		(domains,strands,complexes) = index_parts(self.biggate_enum)
 	

@@ -1,11 +1,11 @@
 import unittest
 # from nose.tools import *
 
-import peppercorn.input as input
-from peppercorn.utils import Complex, Domain, Strand, index_parts
-from peppercorn.reactions import ReactionPathway
+import peppercornenumerator.input as input
+from peppercornenumerator.utils import Complex, Domain, Strand, index_parts
+from peppercornenumerator.reactions import ReactionPathway
 
-from peppercorn.condense import *
+from peppercornenumerator.condense import *
 
 # ----------------------------------------------------------------------------
 # Utils

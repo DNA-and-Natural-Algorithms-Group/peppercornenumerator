@@ -9,10 +9,10 @@ import unittest
 import copy
 from nose.tools import *
 
-from peppercorn.utils import *
-from peppercorn.reactions import ReactionPathway
-from peppercorn.input import input_enum
-from peppercorn.enumerator import *
+from peppercornenumerator.utils import *
+from peppercornenumerator.reactions import ReactionPathway
+from peppercornenumerator.input import input_enum
+from peppercornenumerator.enumerator import *
 
 class EnumeratorTests(unittest.TestCase):
 	def setUp(self):

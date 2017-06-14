@@ -10,10 +10,10 @@ from nose.tools import *
 import copy
 import filecmp
 
-from peppercorn.utils import *
-from peppercorn.enumerator import *
-from peppercorn.input import *
-from peppercorn.output import *
+from peppercornenumerator.utils import *
+from peppercornenumerator.enumerator import *
+from peppercornenumerator.input import *
+from peppercornenumerator.output import *
 
 class OutputTests(unittest.TestCase):
 	# Disable output tests until all other functionality is working!

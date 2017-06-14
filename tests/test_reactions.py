@@ -5,11 +5,11 @@
 #  Created by Karthik Sarma on 5/19/10.
 #
 
-from peppercorn.utils import *
-import peppercorn.reactions as reactions
-from peppercorn.reactions import *
-from peppercorn.input import input_enum, from_kernel
-from peppercorn.enumerator import Enumerator
+from peppercornenumerator.utils import *
+import peppercornenumerator.reactions as reactions
+from peppercornenumerator.reactions import *
+from peppercornenumerator.input import input_enum, from_kernel
+from peppercornenumerator.enumerator import Enumerator
 
 import unittest
 from nose.tools import *

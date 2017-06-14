@@ -10,8 +10,8 @@ import copy
 import unittest
 from nose.tools import *
 
-from peppercorn.utils import *
-from peppercorn.input import *
+from peppercornenumerator.utils import *
+from peppercornenumerator.input import *
 
 class InputStandardTests(unittest.TestCase):
 	def testStandard_SLC(self):
