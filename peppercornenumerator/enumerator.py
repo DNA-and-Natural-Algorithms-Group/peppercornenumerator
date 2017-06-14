@@ -33,9 +33,8 @@ MAX_COMPLEX_COUNT = 200
 sys.setrecursionlimit(20000)
 
 
-fast_reactions = {
-    1: [reactions.bind11, reactions.open, reactions.branch_3way, reactions.branch_4way]
-}
+fast_reactions = {1: [reactions.bind11, reactions.open,
+                      reactions.branch_3way, reactions.branch_4way]}
 """
 Dictionary of reaction functions considered *fast* for a given "arity".
 Keys are arities (e.g. 1 = unimolecular, 2 = bimolecular, 3 = trimolecular,
@@ -277,9 +276,9 @@ class Enumerator(object):
 
                 new_reactions = []
                 for reaction in self.reactions:
-                    reaction_ok = all((product in complexes) for product in reaction.products) and \
-                        all((reactant in complexes)
-                            for reactant in reaction.reactants)
+                    reaction_ok = all(
+                        (product in complexes) for product in reaction.products) and all(
+                        (reactant in complexes) for reactant in reaction.reactants)
 
                     # reaction_ok = True
                     # for product in reaction.products:
@@ -348,8 +347,10 @@ class Enumerator(object):
                 else:
                     element = self._S.pop(0)
 
-                logging.debug("Slow reactions from complex %s (%d remaining in S)" % (
-                    element, len(self._S)))
+                logging.debug(
+                    "Slow reactions from complex %s (%d remaining in S)" %
+                    (element, len(
+                        self._S)))
                 slow_reactions = self.get_slow_reactions(element)
                 self._E.append(element)
 
@@ -465,8 +466,10 @@ class Enumerator(object):
 
                 # Find fast reactions from `element`
                 element = self._F.pop()
-                logging.debug("Fast reactions from %s... (%d remaining in F)" % (
-                    element, len(self._F)))
+                logging.debug(
+                    "Fast reactions from %s... (%d remaining in F)" %
+                    (element, len(
+                        self._F)))
                 reactions = self.get_fast_reactions(element)
 
                 # # Partition reactions into too slow (discard), slow, and fast
@@ -525,11 +528,12 @@ class Enumerator(object):
             # Reset neighborhood
             self._N = []
             logging.debug("Generated %d new fast reactions" % len(N_reactions))
-            logging.debug("Generated %d new products (%d transients, %d resting complexes)" %
-                          (len(self._N),
-                           len(
-                              segmented_neighborhood['transient_state_complexes']),
-                              len(segmented_neighborhood['resting_state_complexes'])))
+            logging.debug(
+                "Generated %d new products (%d transients, %d resting complexes)" %
+                (len(
+                    self._N), len(
+                    segmented_neighborhood['transient_state_complexes']), len(
+                    segmented_neighborhood['resting_state_complexes'])))
             logging.debug("Generated %d resting states" %
                           len(segmented_neighborhood['resting_states']))
             logging.debug("Done processing neighborhood: %s" % source)
@@ -607,8 +611,11 @@ class Enumerator(object):
             for (i, product) in enumerate(reaction.products):
 
                 if (len(product.strands) > self.MAX_COMPLEX_SIZE):
-                    logging.warning("Complex %(name)s (%(strands)d strands) too large, ignoring!" % {
-                                    "name": product.name, "strands": len(product.strands)})
+                    logging.warning(
+                        "Complex %(name)s (%(strands)d strands) too large, ignoring!" % {
+                            "name": product.name,
+                            "strands": len(
+                                product.strands)})
                     complex_size_ok = False
                     break
 
@@ -817,64 +824,171 @@ def main():
 		""")
     parser.add_argument('input_filename', action='store', default=None,
                         help="Path to the input file (same as --infile)")
-    parser.add_argument('--infile', action='store', dest='infile', default=None,
-                        help="Path to the input file (same as listing the input filename after all arguments)")
-    parser.add_argument('--outfile', action='store', dest='output_filename', default=None,
-                        help="Path to the output file (default: use the input filename, + '-enum', then add " +
-                        "an extension based on the output type)")
-    parser.add_argument('-i', action='store', dest='input_format', default=None,
-                        help="Parse the input file using this format; one of: " +
-                        ", ".join(text_input_functions.keys() + load_input_functions.keys()) +
-                        ". (default: guess from the extension of --infile)")
-    parser.add_argument('-o', action='store', dest='output_format', default='',
-                        help="Write the output file using this format; one or more (comma-separated) of: " +
-                        ", ".join(output.text_output_functions.keys() + output.graph_output_functions.keys()) +
-                        ". (default: guess from the extension of --outfile)")
-    parser.add_argument('-v', action='count', dest='verbose', default=0,
-                        help="Print more output (-vv for extra debugging information)")
-    parser.add_argument('-c', action='store_true', dest='condensed', default=False,
-                        help="Condense reactions into only resting complexes (default: %(default)s)")
-    parser.add_argument('-r', action='store_true', dest='compute_rates', default=True,
-                        help="Compute reaction rates (default: %(default)s)")
-    parser.add_argument('--no-rates', action='store_false', dest='compute_rates',
-                        help="Don't compute reaction rates")
-    parser.add_argument('-d', action='store_true', dest='dry_run', default=False,
-                        help="Dry run---read input, write output; do not enumerate any reactions. (default: %(default)s)")
-    parser.add_argument('-s', action='store_true', dest='interactive', default=False,
-                        help="Interactive---display new reactions after each step. (default: %(default)s)")
+    parser.add_argument(
+        '--infile',
+        action='store',
+        dest='infile',
+        default=None,
+        help="Path to the input file (same as listing the input filename after all arguments)")
+    parser.add_argument(
+        '--outfile',
+        action='store',
+        dest='output_filename',
+        default=None,
+        help="Path to the output file (default: use the input filename, + '-enum', then add " +
+        "an extension based on the output type)")
+    parser.add_argument(
+        '-i',
+        action='store',
+        dest='input_format',
+        default=None,
+        help="Parse the input file using this format; one of: " +
+        ", ".join(
+            text_input_functions.keys() +
+            load_input_functions.keys()) +
+        ". (default: guess from the extension of --infile)")
+    parser.add_argument(
+        '-o',
+        action='store',
+        dest='output_format',
+        default='',
+        help="Write the output file using this format; one or more (comma-separated) of: " +
+        ", ".join(
+            output.text_output_functions.keys() +
+            output.graph_output_functions.keys()) +
+        ". (default: guess from the extension of --outfile)")
+    parser.add_argument(
+        '-v',
+        action='count',
+        dest='verbose',
+        default=0,
+        help="Print more output (-vv for extra debugging information)")
+    parser.add_argument(
+        '-c',
+        action='store_true',
+        dest='condensed',
+        default=False,
+        help="Condense reactions into only resting complexes (default: %(default)s)")
+    parser.add_argument(
+        '-r',
+        action='store_true',
+        dest='compute_rates',
+        default=True,
+        help="Compute reaction rates (default: %(default)s)")
+    parser.add_argument(
+        '--no-rates',
+        action='store_false',
+        dest='compute_rates',
+        help="Don't compute reaction rates")
+    parser.add_argument(
+        '-d',
+        action='store_true',
+        dest='dry_run',
+        default=False,
+        help="Dry run---read input, write output; do not enumerate any reactions. (default: %(default)s)")
+    parser.add_argument(
+        '-s',
+        action='store_true',
+        dest='interactive',
+        default=False,
+        help="Interactive---display new reactions after each step. (default: %(default)s)")
 
-    parser.add_argument('--max-complex-size', '--complex-size', action='store', dest='MAX_COMPLEX_SIZE', default=MAX_COMPLEX_SIZE, type=int,
-                        help="Maximum number of strands allowed in a complex (used to prevent polymerization) (default: %(default)s)")
-    parser.add_argument('--max-complex-count', '--max-complexes', action='store', dest='MAX_COMPLEX_COUNT', default=MAX_COMPLEX_COUNT, type=int,
-                        help="Maximum number of complexes that may be enumerated before the enumerator halts. (default: %(default)s)")
-    parser.add_argument('--max-reaction-count', '--max-reactions', action='store', dest='MAX_REACTION_COUNT', default=MAX_REACTION_COUNT, type=int,
-                        help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
+    parser.add_argument(
+        '--max-complex-size',
+        '--complex-size',
+        action='store',
+        dest='MAX_COMPLEX_SIZE',
+        default=MAX_COMPLEX_SIZE,
+        type=int,
+        help="Maximum number of strands allowed in a complex (used to prevent polymerization) (default: %(default)s)")
+    parser.add_argument(
+        '--max-complex-count',
+        '--max-complexes',
+        action='store',
+        dest='MAX_COMPLEX_COUNT',
+        default=MAX_COMPLEX_COUNT,
+        type=int,
+        help="Maximum number of complexes that may be enumerated before the enumerator halts. (default: %(default)s)")
+    parser.add_argument(
+        '--max-reaction-count',
+        '--max-reactions',
+        action='store',
+        dest='MAX_REACTION_COUNT',
+        default=MAX_REACTION_COUNT,
+        type=int,
+        help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
 
-    parser.add_argument('--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', type=int,
-                        help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %d)" % reactions.RELEASE_CUTOFF_1_1)
-    parser.add_argument('--release-cutoff-1-n', action='store', dest='RELEASE_CUTOFF_1_N', type=int,
-                        help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction. (default: %d)" % reactions.RELEASE_CUTOFF_1_N)
-    parser.add_argument('--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int,
-                        help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
+    parser.add_argument(
+        '--release-cutoff-1-1',
+        action='store',
+        dest='RELEASE_CUTOFF_1_1',
+        type=int,
+        help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %d)" %
+        reactions.RELEASE_CUTOFF_1_1)
+    parser.add_argument(
+        '--release-cutoff-1-n',
+        action='store',
+        dest='RELEASE_CUTOFF_1_N',
+        type=int,
+        help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction. (default: %d)" %
+        reactions.RELEASE_CUTOFF_1_N)
+    parser.add_argument(
+        '--release-cutoff',
+        action='store',
+        dest='RELEASE_CUTOFF',
+        default=None,
+        type=int,
+        help="Maximum number of bases that will be released spontaneously in an `open` reaction, for either 1-1 or 1-n reactions (equivalent to setting --release-cutoff-1-1 and --release-cutoff-1-n to the same value)")
 
-    parser.add_argument('--k-slow', action='store', dest='k_slow', default=0.0, type=float,
-                        help="Unimolecular reactions slower than this rate will be discarded (default: %(default)f)")
-    parser.add_argument('--k-fast', action='store', dest='k_fast', default=0.0, type=float,
-                        help="Unimolecular reactions slower than this rate will be marked as slow (default: %(default)f)")
+    parser.add_argument(
+        '--k-slow',
+        action='store',
+        dest='k_slow',
+        default=0.0,
+        type=float,
+        help="Unimolecular reactions slower than this rate will be discarded (default: %(default)f)")
+    parser.add_argument(
+        '--k-fast',
+        action='store',
+        dest='k_fast',
+        default=0.0,
+        type=float,
+        help="Unimolecular reactions slower than this rate will be marked as slow (default: %(default)f)")
 
-    parser.add_argument('--reject-remote', action='store_true', dest='REJECT_REMOTE', default=False,
-                        help="Discard remote toehold mediated 3-way and 4-way branch migration reactions. (default: %(default)s)")
-    parser.add_argument('--no-max-helix', action='store_false', dest='UNZIP', default=True,
-                        help="Don't apply 'max helix at a time' semantics to 3-way branch migration reactions. (default: False)")
-    parser.add_argument('--legacy-unzip', action='store_true', dest='LEGACY_UNZIP', default=False,
-                        help="Apply legacy 'UNZIP=True' behavior; no effect with --no-max-helix (default: %(default)s)")
+    parser.add_argument(
+        '--reject-remote',
+        action='store_true',
+        dest='REJECT_REMOTE',
+        default=False,
+        help="Discard remote toehold mediated 3-way and 4-way branch migration reactions. (default: %(default)s)")
+    parser.add_argument(
+        '--no-max-helix',
+        action='store_false',
+        dest='UNZIP',
+        default=True,
+        help="Don't apply 'max helix at a time' semantics to 3-way branch migration reactions. (default: False)")
+    parser.add_argument(
+        '--legacy-unzip',
+        action='store_true',
+        dest='LEGACY_UNZIP',
+        default=False,
+        help="Apply legacy 'UNZIP=True' behavior; no effect with --no-max-helix (default: %(default)s)")
 
-    parser.add_argument('--bfs-ish', action='store_true', dest='bfs',
-                        help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
-    parser.add_argument('--ignore-branch-3way', action='store_true', dest='ignore_branch_3way',
-                        help="Ignore 3-way branch migration events during enumeration.  (default: %(default)s)")
-    parser.add_argument('--ignore-branch-4way', action='store_true', dest='ignore_branch_4way',
-                        help="Ignore 4-way branch migration events during enumeration.  (default: %(default)s)")
+    parser.add_argument(
+        '--bfs-ish',
+        action='store_true',
+        dest='bfs',
+        help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
+    parser.add_argument(
+        '--ignore-branch-3way',
+        action='store_true',
+        dest='ignore_branch_3way',
+        help="Ignore 3-way branch migration events during enumeration.  (default: %(default)s)")
+    parser.add_argument(
+        '--ignore-branch-4way',
+        action='store_true',
+        dest='ignore_branch_4way',
+        help="Ignore 4-way branch migration events during enumeration.  (default: %(default)s)")
 
     parser.add_argument('--profile', action='store_true', dest='profile',
                         help="Enable statistical profiling")
@@ -920,8 +1034,15 @@ def main():
         logging.warning("Verbosity greater than -vvv has no effect")
 
     title = "Peppercorn Domain-level Reaction Enumerator"
-    banner = (utils.colors.BOLD + title + utils.colors.ENDC + " " + utils.colors.GREEN +
-              version + utils.colors.ENDC if sys.stdout.isatty() else title + (" (%s)" % version))
+    banner = (utils.colors.BOLD +
+              title +
+              utils.colors.ENDC +
+              " " +
+              utils.colors.GREEN +
+              version +
+              utils.colors.ENDC if sys.stdout.isatty() else title +
+              (" (%s)" %
+               version))
     logging.info(banner)
 
     if(cl_opts.input_filename is None):
@@ -1064,7 +1185,8 @@ def main():
             if len(output_formats) == 0 or output_formats[0] == '':
                 output_formats = ['pil']
                 logging.info(
-                    "No output format specified; assuming %s." % output_formats[0])
+                    "No output format specified; assuming %s." %
+                    output_formats[0])
             output_filename = os.path.splitext(cl_opts.input_filename)[
                 0] + "-enum" + "." + output_formats[0]
 
@@ -1087,10 +1209,14 @@ def main():
             mode = output.graph_output_functions[output_format]
 
         if mode is not None:
-            mode(enum, output_filename,
-                 output_condensed=condensed, output_rates=cl_opts.compute_rates, condense_options={
-                     'k_fast': enum.k_fast,
-                     'compute_rates': cl_opts.compute_rates})
+            mode(
+                enum,
+                output_filename,
+                output_condensed=condensed,
+                output_rates=cl_opts.compute_rates,
+                condense_options={
+                    'k_fast': enum.k_fast,
+                    'compute_rates': cl_opts.compute_rates})
         else:
             utils.error("Unrecognized output format '%s'. Exiting." %
                         output_format)

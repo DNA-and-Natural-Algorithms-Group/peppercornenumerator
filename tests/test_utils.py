@@ -83,7 +83,7 @@ class LoopTests(unittest.TestCase):
 
         assert loop.bases == domain_length * 3
         assert loop.stems == 1
-        assert loop.is_open == True
+        assert loop.is_open
 
 
 class DomainTests(unittest.TestCase):
@@ -195,24 +195,47 @@ def setUpSLC(self):
     self.domains['7*'] = Domain('7', 'short', True)
 
     self.strands = {}
-    self.strands['PS'] = Strand('PS', [self.domains['3*'], self.domains['2*'],
-                                       self.domains['1*'], self.domains['5'], self.domains['6']])
-    self.strands['OP'] = Strand(
-        'OP', [self.domains['1'], self.domains['2'], self.domains['3'], self.domains['4']])
+    self.strands['PS'] = Strand('PS',
+                                [self.domains['3*'],
+                                 self.domains['2*'],
+                                    self.domains['1*'],
+                                    self.domains['5'],
+                                    self.domains['6']])
+    self.strands['OP'] = Strand('OP',
+                                [self.domains['1'],
+                                 self.domains['2'],
+                                 self.domains['3'],
+                                 self.domains['4']])
     self.strands['SP'] = Strand('SP', [self.domains['5'], self.domains['6']])
-    self.strands['BS'] = Strand('BS', [self.domains['7*'], self.domains['6*'],
-                                       self.domains['5*'], self.domains['1'], self.domains['2'], self.domains['3']])
+    self.strands['BS'] = Strand('BS',
+                                [self.domains['7*'],
+                                 self.domains['6*'],
+                                    self.domains['5*'],
+                                    self.domains['1'],
+                                    self.domains['2'],
+                                    self.domains['3']])
     self.strands['Cat'] = Strand('Cat', [self.domains['6'], self.domains['7']])
 
     self.complexes = {}
     self.complexes['C1'] = Complex('C1', [self.strands['PS'], self.strands['OP']], [
                                    [(1, 2), (1, 1), (1, 0), None, None], [(0, 2), (0, 1), (0, 0), None]])
-    self.complexes['I1'] = Complex('I1', [self.strands['SP'], self.strands['Cat'], self.strands['BS']], [
-                                   [(2, 2), (2, 1)], [None, (2, 0)], [(1, 1), (0, 1), (0, 0), None, None, None]])
+    self.complexes['I1'] = Complex(
+        'I1', [
+            self.strands['SP'], self.strands['Cat'], self.strands['BS']], [
+            [
+                (2, 2), (2, 1)], [
+                    None, (2, 0)], [
+                        (1, 1), (0, 1), (0, 0), None, None, None]])
     self.complexes['Cat'] = Complex(
         'Cat', [self.strands['Cat']], [[None, None]])
-    self.complexes['I4'] = Complex('I4', [self.strands['BS'], self.strands['OP'], self.strands['PS'], self.strands['Cat']], [
-                                   [(3, 1), (3, 0), (2, 3), None, None, None], [(2, 2), (2, 1), (2, 0), None], [(1, 2), (1, 1), (1, 0), (0, 2), None], [(0, 1), (0, 0)]])
+    self.complexes['I4'] = Complex(
+        'I4', [
+            self.strands['BS'], self.strands['OP'], self.strands['PS'], self.strands['Cat']], [
+            [
+                (3, 1), (3, 0), (2, 3), None, None, None], [
+                    (2, 2), (2, 1), (2, 0), None], [
+                        (1, 2), (1, 1), (1, 0), (0, 2), None], [
+                            (0, 1), (0, 0)]])
     self.complexes['I3'] = Complex('I3', [self.strands['BS'], self.strands['Cat']], [
                                    [(1, 1), (1, 0), None, None, None, None], [(0, 1), (0, 0)]])
 
@@ -223,20 +246,36 @@ class StrandTests(unittest.TestCase):
 
     def testEq(self):
         assert not self.strands['PS'] == self.strands['OP']
-        PSfake = Strand('PS', [self.domains['3*'], self.domains['2'],
-                               self.domains['1*'], self.domains['5'], self.domains['6']])
+        PSfake = Strand('PS',
+                        [self.domains['3*'],
+                         self.domains['2'],
+                            self.domains['1*'],
+                            self.domains['5'],
+                            self.domains['6']])
         assert not self.strands['PS'] == PSfake
-        PS = Strand('PS', [self.domains['3*'], self.domains['2*'],
-                           self.domains['1*'], self.domains['5'], self.domains['6']])
+        PS = Strand('PS',
+                    [self.domains['3*'],
+                     self.domains['2*'],
+                        self.domains['1*'],
+                        self.domains['5'],
+                        self.domains['6']])
         assert self.strands['PS'] == PS
 
     def testHash(self):
         assert not hash(self.strands['PS']) == hash(self.strands['OP'])
-        PSfake = Strand('PS', [self.domains['3*'], self.domains['2'],
-                               self.domains['1*'], self.domains['5'], self.domains['6']])
+        PSfake = Strand('PS',
+                        [self.domains['3*'],
+                         self.domains['2'],
+                            self.domains['1*'],
+                            self.domains['5'],
+                            self.domains['6']])
         assert not hash(self.strands['PS']) == hash(PSfake)
-        PS = Strand('PS', [self.domains['3*'], self.domains['2*'],
-                           self.domains['1*'], self.domains['5'], self.domains['6']])
+        PS = Strand('PS',
+                    [self.domains['3*'],
+                     self.domains['2*'],
+                        self.domains['1*'],
+                        self.domains['5'],
+                        self.domains['6']])
         assert hash(self.strands['PS']) == hash(PS)
 
     def testName(self):
@@ -248,7 +287,11 @@ class StrandTests(unittest.TestCase):
 
     def testDomains(self):
         assert self.strands['PS'].domains == [
-            self.domains['3*'], self.domains['2*'], self.domains['1*'], self.domains['5'], self.domains['6']]
+            self.domains['3*'],
+            self.domains['2*'],
+            self.domains['1*'],
+            self.domains['5'],
+            self.domains['6']]
 
         def assnDoms(self):
             self.strands['PS'].domains = []
@@ -287,7 +330,10 @@ class ComplexTests(unittest.TestCase):
         assert self.complexes['Cat'].strands == [self.strands['Cat']]
         assert self.complexes['Cat'].structure == [[None, None]]
         assert self.complexes['I4'].strands == [
-            self.strands['BS'], self.strands['OP'], self.strands['PS'], self.strands['Cat']]
+            self.strands['BS'],
+            self.strands['OP'],
+            self.strands['PS'],
+            self.strands['Cat']]
 
     def testEq(self):
         assert not self.complexes['C1'] == self.complexes['I1']
@@ -466,8 +512,12 @@ class ComplexTests(unittest.TestCase):
     def testCheckStructure(self):
         # 0                 1                 2                 3
         # 4
-        s1 = Strand('S1', [self.domains['1'], self.domains['2'],
-                           self.domains['3'], self.domains['1*'], self.domains['2*']])
+        s1 = Strand('S1',
+                    [self.domains['1'],
+                     self.domains['2'],
+                        self.domains['3'],
+                        self.domains['1*'],
+                        self.domains['2*']])
         c1 = Complex('C1', [s1], [(0, 4), (0, 3), None, (0, 1), (0, 0)])
 
         def checkStruct1():
@@ -488,12 +538,15 @@ class ComplexTests(unittest.TestCase):
 class RestingStateTests(unittest.TestCase):
     def setUp(self):
         setUpSLC(self)
-        self.rs = RestingState(
-            'RS1', [self.complexes['C1'], self.complexes['Cat'], self.complexes['I1']])
-        self.rs1 = RestingState('RS2', [self.complexes['C1'],
-                                        Complex(
-                                            '123', self.complexes['Cat'].strands, self.complexes['Cat'].structure),
-                                        Complex('456', self.complexes['I1'].strands, self.complexes['I1'].structure)])
+        self.rs = RestingState('RS1',
+                               [self.complexes['C1'],
+                                self.complexes['Cat'],
+                                self.complexes['I1']])
+        self.rs1 = RestingState(
+            'RS2', [
+                self.complexes['C1'], Complex(
+                    '123', self.complexes['Cat'].strands, self.complexes['Cat'].structure), Complex(
+                    '456', self.complexes['I1'].strands, self.complexes['I1'].structure)])
 
     def testConstructor(self):
         assert self.rs._name == 'RS1'

@@ -109,8 +109,8 @@ def parse_parameters(parameters):
     return params
 
 
-exp_to_si_prefix = {9: 'G', 6: 'M', 3: 'k', 0: '',
-                    -3: 'm', -6: 'u', -9: 'n', -12: 'p', -15: 'f', -18: 'a', -21: 'z'}
+exp_to_si_prefix = {9: 'G', 6: 'M', 3: 'k', 0: '', -3: 'm', -
+                    6: 'u', -9: 'n', -12: 'p', -15: 'f', -18: 'a', -21: 'z'}
 
 si_prefix_to_exp = dict((pre, 10**exp)
                         for (exp, pre) in exp_to_si_prefix.iteritems())
@@ -118,7 +118,8 @@ si_prefix_to_exp = dict((pre, 10**exp)
 
 def parse_concentration(condition):
     parts = re.match(
-        r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*(p|n|u|m|d|)M", condition)
+        r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*(p|n|u|m|d|)M",
+        condition)
 
     if parts is not None:
         conc, unit = parts.groups()
@@ -148,8 +149,8 @@ def resolve_length(length):
 
 def parse_basewise_dot_paren(structure_line, strands):
     parts = [x.strip() for x in structure_line.split("+")]
-    assert len(parts) == len(strands), "Structure '%s' has %d parts, but corresponds to %d strands" % \
-        (structure_line, len(parts), len(strands))
+    assert len(parts) == len(strands), "Structure '%s' has %d parts, but corresponds to %d strands" % (
+        structure_line, len(parts), len(strands))
 
     segment_struct = ["" for s in strands]
     for (i, s) in enumerate(strands):
@@ -902,13 +903,15 @@ class Complex(object):
 
                 if (target is not None and self.structure[target[0]][target[1]] != (
                         strand_index, domain_index)):
-                    raise Exception("In complex %s, incoherent structure at (%d, %d) -> (%d, %d)" % (
-                        self.name, strand_index, domain_index, target[0], target[1]))
+                    raise Exception(
+                        "In complex %s, incoherent structure at (%d, %d) -> (%d, %d)" %
+                        (self.name, strand_index, domain_index, target[0], target[1]))
 
                 if (target_domain is not None):
                     if(not source_domain.can_pair(target_domain)):
-                        raise Exception("In complex %s, domain %s is paired with domain %s, but the domains are not complementary." %
-                                        (self.name, source_domain.name, target_domain.name))
+                        raise Exception(
+                            "In complex %s, domain %s is paired with domain %s, but the domains are not complementary." %
+                            (self.name, source_domain.name, target_domain.name))
 
         return self.check_pseudoknots()
 
@@ -923,8 +926,8 @@ class Complex(object):
                 if target is not None:
                     if len(stack) > 0:
                         if target > stack[-1]:
-                            raise Exception("In complex %s, pseudoknot encountered; inner pair %s crosses outer pair %s." %
-                                            (self.name, [(strand_index, domain_index), target], [self.get_structure(stack[-1]), stack[-1]]))
+                            raise Exception("In complex %s, pseudoknot encountered; inner pair %s crosses outer pair %s." % (
+                                self.name, [(strand_index, domain_index), target], [self.get_structure(stack[-1]), stack[-1]]))
                         elif (strand_index, domain_index) == stack[-1]:
                             stack.pop()
                     if target > (strand_index, domain_index):
@@ -959,7 +962,8 @@ class Complex(object):
                     subs += 1
         if subs > 1:
             raise Exception(
-                "In complex %s, complex disconnected into %d parts" % (self.name, subs))
+                "In complex %s, complex disconnected into %d parts" %
+                (self.name, subs))
             return False
         return True
 
@@ -1015,8 +1019,8 @@ class Complex(object):
                     out.append('.')
                 else:
                     (b_strand, b_domain) = el
-                    if ((b_strand > strand_num) or
-                            ((b_strand == strand_num) and (b_domain > dom_num))):
+                    if ((b_strand > strand_num) or (
+                            (b_strand == strand_num) and (b_domain > dom_num))):
                         out.append('(')
                     else:
                         out.append(')')
@@ -1037,13 +1041,13 @@ class Complex(object):
                         '.' * len(self.strands[strand_num].domains[dom_num]))
                 else:
                     (b_strand, b_domain) = el
-                    if ((b_strand > strand_num) or
-                            ((b_strand == strand_num) and (b_domain > dom_num))):
+                    if ((b_strand > strand_num) or (
+                            (b_strand == strand_num) and (b_domain > dom_num))):
                         out.append(
                             '(' * len(self.strands[strand_num].domains[dom_num]))
                     else:
-                        out.append(
-                            ')' * len(self.strands[strand_num].domains[dom_num]))
+                        out.append(')' *
+                                   len(self.strands[strand_num].domains[dom_num]))
             if strand_num != (len(self.structure) - 1):
                 out.append('+')
 

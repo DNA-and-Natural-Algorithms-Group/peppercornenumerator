@@ -70,8 +70,14 @@ class InputStandardTests(unittest.TestCase):
                      (1, 1), (1, 0), (0, 0), None, None, None]])
         I3 = Complex('I3', [BS, Cat], [
                      [(1, 1), (1, 0), None, None, None, None], [(0, 1), (0, 0)]])
-        I4 = Complex('I4', [BS, OP, PS, Cat], [[(3, 1), (3, 0), (2, 3), None, None, None], [
-                     (2, 2), (2, 1), (2, 0), None], [(1, 2), (1, 1), (1, 0), (0, 2), None], [(0, 1), (0, 0)]])
+        I4 = Complex(
+            'I4', [
+                BS, OP, PS, Cat], [
+                [
+                    (3, 1), (3, 0), (2, 3), None, None, None], [
+                    (2, 2), (2, 1), (2, 0), None], [
+                        (1, 2), (1, 1), (1, 0), (0, 2), None], [
+                            (0, 1), (0, 0)]])
         I5 = Complex('I5', [BS, PS, Cat], [[(2, 1), (2, 0), (1, 3), (1, 2), (1, 1), (1, 0)], [
                      (0, 5), (0, 4), (0, 3), (0, 2), None], [(0, 1), (0, 0)]])
         I6 = Complex('I6', [BS, PS, Cat], [[(2, 1), (1, 4), (1, 3), (1, 2), (1, 1), (1, 0)], [
@@ -135,12 +141,28 @@ class InputStandardTests(unittest.TestCase):
 
         IA = Complex('IA', [I, A], [[(1, 3), (1, 2), (1, 1), (1, 0)], [
                      (0, 3), (0, 2), (0, 1), (0, 0), None, None, None, None, None]])
-        IAB = Complex('IAB', [I, A, B], [[(1, 3), (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (0, 0), (
-            2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), None, None, None, None, None]])
-        IABC = Complex('IABC', [I, A, B, C], [[(1, 3), (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (0, 0), (2, 3), (2, 2), (2, 1), (2, 0), None], [
-                       (1, 7), (1, 6), (1, 5), (1, 4), (3, 3), (3, 2), (3, 1), (3, 0), None], [(2, 7), (2, 6), (2, 5), (2, 4), None, None, None, None, None]])
-        ABC = Complex('ABC', [A, B, C], [[(2, 7), (2, 6), (2, 5), (2, 4), (1, 3), (1, 2), (1, 1), (1, 0), None], [
-                      (0, 7), (0, 6), (0, 5), (0, 4), (2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), (0, 3), (0, 2), (0, 1), (0, 0), None]])
+        IAB = Complex(
+            'IAB', [
+                I, A, B], [
+                [
+                    (1, 3), (1, 2), (1, 1), (1, 0)], [
+                    (0, 3), (0, 2), (0, 1), (0, 0), (2, 3), (2, 2), (2, 1), (2, 0), None], [
+                        (1, 7), (1, 6), (1, 5), (1, 4), None, None, None, None, None]])
+        IABC = Complex(
+            'IABC', [
+                I, A, B, C], [
+                [
+                    (1, 3), (1, 2), (1, 1), (1, 0)], [
+                    (0, 3), (0, 2), (0, 1), (0, 0), (2, 3), (2, 2), (2, 1), (2, 0), None], [
+                        (1, 7), (1, 6), (1, 5), (1, 4), (3, 3), (3, 2), (3, 1), (3, 0), None], [
+                            (2, 7), (2, 6), (2, 5), (2, 4), None, None, None, None, None]])
+        ABC = Complex(
+            'ABC', [
+                A, B, C], [
+                [
+                    (2, 7), (2, 6), (2, 5), (2, 4), (1, 3), (1, 2), (1, 1), (1, 0), None], [
+                    (0, 7), (0, 6), (0, 5), (0, 4), (2, 3), (2, 2), (2, 1), (2, 0), None], [
+                        (1, 7), (1, 6), (1, 5), (1, 4), (0, 3), (0, 2), (0, 1), (0, 0), None]])
 
         enum_complexes = enumerator.initial_complexes[:]
         complexes = [IC, AC, BC, CC, IA, IAB, IABC, ABC]
@@ -266,12 +288,28 @@ class InputStandardTests(unittest.TestCase):
 
         IA = Complex('IA', [I, A], [[(1, 3), (1, 2), (1, 1), (1, 0)], [
                      (0, 3), (0, 2), (0, 1), (0, 0), None, None, None, None, None]])
-        IAB = Complex('IAB', [I, A, B], [[(1, 3), (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (0, 0), (
-            2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), None, None, None, None, None]])
-        IABC = Complex('IABC', [I, A, B, C], [[(1, 3), (1, 2), (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 1), (0, 0), (2, 3), (2, 2), (2, 1), (2, 0), None], [
-                       (1, 7), (1, 6), (1, 5), (1, 4), (3, 3), (3, 2), (3, 1), (3, 0), None], [(2, 7), (2, 6), (2, 5), (2, 4), None, None, None, None, None]])
-        ABC = Complex('ABC', [A, B, C], [[(2, 7), (2, 6), (2, 5), (2, 4), (1, 3), (1, 2), (1, 1), (1, 0), None], [
-                      (0, 7), (0, 6), (0, 5), (0, 4), (2, 3), (2, 2), (2, 1), (2, 0), None], [(1, 7), (1, 6), (1, 5), (1, 4), (0, 3), (0, 2), (0, 1), (0, 0), None]])
+        IAB = Complex(
+            'IAB', [
+                I, A, B], [
+                [
+                    (1, 3), (1, 2), (1, 1), (1, 0)], [
+                    (0, 3), (0, 2), (0, 1), (0, 0), (2, 3), (2, 2), (2, 1), (2, 0), None], [
+                        (1, 7), (1, 6), (1, 5), (1, 4), None, None, None, None, None]])
+        IABC = Complex(
+            'IABC', [
+                I, A, B, C], [
+                [
+                    (1, 3), (1, 2), (1, 1), (1, 0)], [
+                    (0, 3), (0, 2), (0, 1), (0, 0), (2, 3), (2, 2), (2, 1), (2, 0), None], [
+                        (1, 7), (1, 6), (1, 5), (1, 4), (3, 3), (3, 2), (3, 1), (3, 0), None], [
+                            (2, 7), (2, 6), (2, 5), (2, 4), None, None, None, None, None]])
+        ABC = Complex(
+            'ABC', [
+                A, B, C], [
+                [
+                    (2, 7), (2, 6), (2, 5), (2, 4), (1, 3), (1, 2), (1, 1), (1, 0), None], [
+                    (0, 7), (0, 6), (0, 5), (0, 4), (2, 3), (2, 2), (2, 1), (2, 0), None], [
+                        (1, 7), (1, 6), (1, 5), (1, 4), (0, 3), (0, 2), (0, 1), (0, 0), None]])
 
         enum_complexes = enumerator.initial_complexes[:]
         complexes = [IC, AC, BC, CC, IA, IAB, IABC, ABC]
@@ -389,16 +427,26 @@ class InputKernel(unittest.TestCase):
         assert set(domains.values()) == set(kdomains.values())
 
         # Strands
-        strands = {
-            'a_b_c': Strand('a_b_c', [domains['a'], domains['b'], domains['c']]),
-            'd_b*_e_a*_f': Strand('d_b*_e_a*_f', [domains['d'], domains['b*'], domains['e'], domains['a*'], domains['f']])
-        }
+        strands = {'a_b_c': Strand('a_b_c',
+                                   [domains['a'],
+                                    domains['b'],
+                                    domains['c']]),
+                   'd_b*_e_a*_f': Strand('d_b*_e_a*_f',
+                                         [domains['d'],
+                                          domains['b*'],
+                                          domains['e'],
+                                          domains['a*'],
+                                          domains['f']])}
         assert set(strands.values()) == set(kstrands.values())
 
         # Complexes
         complexes = {
-            'FancyComplexName': Complex('FancyComplexName', [strands['a_b_c'], strands['d_b*_e_a*_f']], [[(1, 3), (1, 1), None], [None, (0, 1), None, (0, 0), None]])
-        }
+            'FancyComplexName': Complex(
+                'FancyComplexName', [
+                    strands['a_b_c'], strands['d_b*_e_a*_f']], [
+                    [
+                        (1, 3), (1, 1), None], [
+                        None, (0, 1), None, (0, 0), None]])}
         assert complexes == kcomplexes
 
     def test_kernel_1(self):
@@ -563,9 +611,8 @@ class InputKernel(unittest.TestCase):
         assert set(strands.values()) == set(enumerator.strands)
 
         # Complexes
-        complexes = {
-            '1': Complex('1', [strands['a_b_c*_d'], strands['e_c_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
-        }
+        complexes = {'1': Complex('1', [strands['a_b_c*_d'], strands['e_c_f_a']], [
+            [None, None, (1, 1), None], [None, (0, 2), None, None]])}
         assert set(complexes.values()) == set(enumerator.complexes)
 
     def test_kernel_7(self):
@@ -590,17 +637,28 @@ class InputKernel(unittest.TestCase):
         assert set(domains.values()) == set(enumerator.domains)
 
         # Strands
-        strands = {
-            'a_b_c*_d': Strand('a_b_c*_d', [domains['a'], domains['b'], domains['c*'], domains['d']]),
-            'e_c_f_a': Strand('e_c_f_a', [domains['e'], domains['c'], domains['f'], domains['a']]),
-            's': Strand('s', [domains['a'], domains['b'], domains['c'], domains['d'], domains['e'], domains['f']])
-        }
+        strands = {'a_b_c*_d': Strand('a_b_c*_d',
+                                      [domains['a'],
+                                       domains['b'],
+                                       domains['c*'],
+                                       domains['d']]),
+                   'e_c_f_a': Strand('e_c_f_a',
+                                     [domains['e'],
+                                      domains['c'],
+                                      domains['f'],
+                                      domains['a']]),
+                   's': Strand('s',
+                               [domains['a'],
+                                domains['b'],
+                                domains['c'],
+                                domains['d'],
+                                domains['e'],
+                                domains['f']])}
         assert set(strands.values()) == set(enumerator.strands)
 
         # Complexes
-        complexes = {
-            '1': Complex('1', [strands['a_b_c*_d'], strands['e_c_f_a']], [[None, None, (1, 1), None], [None, (0, 2), None, None]])
-        }
+        complexes = {'1': Complex('1', [strands['a_b_c*_d'], strands['e_c_f_a']], [
+            [None, None, (1, 1), None], [None, (0, 2), None, None]])}
         assert set(complexes.values()) == set(enumerator.complexes)
 
     def test_kernel_8(self):
@@ -625,19 +683,39 @@ class InputKernel(unittest.TestCase):
         assert set(domains.values()) == set(enumerator.domains)
 
         # Strands
-        strands = {
-            '2_3': Strand('2_3', [domains['2'], domains['3']]),
-            '3*_a*': Strand('3*_a*', [domains['3*'], domains['a*']]),
-            'a*_b*_c_b_a_2*_t*': Strand('a*_b*_c_b_a_2*_t*', [domains['a*'], domains['b*'], domains['c'], domains['b'], domains['a'], domains['2*'], domains['t*']]),
-            't_2_3': Strand('t_2_3', [domains['t'], domains['2'], domains['3']])
-        }
+        strands = {'2_3': Strand('2_3',
+                                 [domains['2'],
+                                  domains['3']]),
+                   '3*_a*': Strand('3*_a*',
+                                   [domains['3*'],
+                                    domains['a*']]),
+                   'a*_b*_c_b_a_2*_t*': Strand('a*_b*_c_b_a_2*_t*',
+                                               [domains['a*'],
+                                                domains['b*'],
+                                                domains['c'],
+                                                domains['b'],
+                                                domains['a'],
+                                                domains['2*'],
+                                                domains['t*']]),
+                   't_2_3': Strand('t_2_3',
+                                   [domains['t'],
+                                    domains['2'],
+                                    domains['3']])}
         assert set(strands.values()) == set(enumerator.strands)
 
         # Complexes
         complexes = {
-            '1': Complex('1', [strands['t_2_3']], [[None, None, None]]),
-            '2': Complex('2', [strands['2_3'], strands['3*_a*'], strands['a*_b*_c_b_a_2*_t*']], [[(2, 5), (1, 0)], [(0, 1), None], [(2, 4), (2, 3), None, (2, 1), (2, 0), (0, 0), None]])
-        }
+            '1': Complex(
+                '1', [
+                    strands['t_2_3']], [
+                    [
+                        None, None, None]]), '2': Complex(
+                '2', [
+                    strands['2_3'], strands['3*_a*'], strands['a*_b*_c_b_a_2*_t*']], [
+                    [
+                        (2, 5), (1, 0)], [
+                        (0, 1), None], [
+                        (2, 4), (2, 3), None, (2, 1), (2, 0), (0, 0), None]])}
         assert set(complexes.values()) == set(enumerator.complexes)
 
     def test_kernel_9(self):

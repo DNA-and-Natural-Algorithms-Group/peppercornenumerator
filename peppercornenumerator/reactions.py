@@ -506,15 +506,36 @@ def bind21(reactant1, reactant2):
         assert complex.triple(*location2) is not None
 
         # build "before" and "after" loop structures
-        out = find_on_loop(complex, location1, 1,
-                           lambda dom1, struct1, loc1, dom2, struct2, loc2: loc1 == location1 and loc2 == location2)
+        out = find_on_loop(
+            complex,
+            location1,
+            1,
+            lambda dom1,
+            struct1,
+            loc1,
+            dom2,
+            struct2,
+            loc2: loc1 == location1 and loc2 == location2)
 
         [(loc1s, loc2s, before, after)] = out
 
         # zipper for max-helix semantics
         if UNZIP and not LEGACY_UNZIP:
-            (loc1s, loc2s, before, after) = zipper(complex, location1, location2, before.parts, after.parts, 1,
-                                                   lambda dom1, struct1, loc1, dom2, struct2, loc2: struct1 is None and struct2 is None and dom1.can_pair(dom2))
+            (loc1s,
+             loc2s,
+             before,
+             after) = zipper(complex,
+                             location1,
+                             location2,
+                             before.parts,
+                             after.parts,
+                             1,
+                             lambda dom1,
+                             struct1,
+                             loc1,
+                             dom2,
+                             struct2,
+                             loc2: struct1 is None and struct2 is None and dom1.can_pair(dom2))
 
         product = do_bind11(complex, loc1s.locs, loc2s.locs)
 
@@ -871,8 +892,8 @@ def open(reactant):
                         break
 
                     # Add the current domain to the current helix
-                    helix_length += strands[helix_endA[0]].domains[helix_endA[1]]\
-                        .length
+                    helix_length += strands[helix_endA[0]
+                                            ].domains[helix_endA[1]] .length
 
                 # We must also iterate in the other direction
                 while True:
@@ -894,8 +915,8 @@ def open(reactant):
                         break
 
                     # Add the current domain to the current helix
-                    helix_length += strands[helix_startA[0]].domains[helix_startA[1]]\
-                        .length
+                    helix_length += strands[helix_startA[0]
+                                            ].domains[helix_startA[1]] .length
 
                 # Move start location to the first domain in the helix
                 helix_startA[1] += 1
@@ -904,8 +925,11 @@ def open(reactant):
                 # If the helix is short enough, we have a reaction
                 if (helix_length <= MAX_RELEASE_CUTOFF):
 
-                    release_reactant = Complex(get_auto_name(), reactant.strands[:],
-                                               copy.deepcopy(reactant.structure))
+                    release_reactant = Complex(
+                        get_auto_name(),
+                        reactant.strands[:],
+                        copy.deepcopy(
+                            reactant.structure))
 
                     # Delete all the pairs in the released helix
                     for dom in range(helix_startA[1], helix_endA[1]):
@@ -1208,16 +1232,13 @@ def branch_3way(reactant):
                 if UNZIP and LEGACY_UNZIP:
                     displacing_loc = list(displacing.locs)[0]
                     bound_loc = list(bound.locs)[0]
-                    reaction = ReactionPathway('branch_3way', [reactant], do_3way_migration_legacy(
-                        reactant,
-                        displacing_loc,
-                        bound_loc)
-                    )
+                    reaction = ReactionPathway(
+                        'branch_3way', [reactant], do_3way_migration_legacy(
+                            reactant, displacing_loc, bound_loc))
                 else:
-                    reaction = ReactionPathway('branch_3way', [reactant], do_3way_migration(
-                        reactant, displacing.locs,
-                        bound.locs)
-                    )
+                    reaction = ReactionPathway(
+                        'branch_3way', [reactant], do_3way_migration(
+                            reactant, displacing.locs, bound.locs))
 
                 # length of invading domain
                 length = len(displacing)
@@ -1327,11 +1348,13 @@ def do_3way_migration_legacy(reactant, displacing_loc, new_bound_loc):
         ddomain = displacing_loc[1]
         bstrand = new_bound_loc[0]
         bdomain = new_bound_loc[1]
-        if (ddomain + 1 < len(out_reactant.strands[dstrand].domains)) and \
-                (out_reactant.structure[dstrand][ddomain + 1] is None) and \
-                (bdomain - 1 >= 0) and \
-                (out_reactant.structure[bstrand][bdomain - 1] is not None) and \
-                (out_reactant.strands[bstrand].domains[bdomain - 1].can_pair(out_reactant.strands[dstrand].domains[ddomain + 1])):
+        if (ddomain +
+            1 < len(out_reactant.strands[dstrand].domains)) and (out_reactant.structure[dstrand][ddomain +
+                                                                                                 1] is None) and (bdomain -
+                                                                                                                  1 >= 0) and (out_reactant.structure[bstrand][bdomain -
+                                                                                                                                                               1] is not None) and (out_reactant.strands[bstrand].domains[bdomain -
+                                                                                                                                                                                                                          1].can_pair(out_reactant.strands[dstrand].domains[ddomain +
+                                                                                                                                                                                                                                                                            1])):
 
             return do_3way_migration_legacy(
                 out_reactant, (dstrand, ddomain + 1), (bstrand, bdomain - 1))

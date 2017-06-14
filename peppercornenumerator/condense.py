@@ -348,9 +348,13 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         epsilon = 1e-5
         i = np.argmin(np.abs(w))
         if abs(w[i]) > epsilon:
-            logging.warn(("Bad stationary distribution for resting state transition matrix. " +
-                          "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
-                          "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") % (w(i), epsilon, str(w)))
+            logging.warn(
+                ("Bad stationary distribution for resting state transition matrix. " +
+                 "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
+                 "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
+                (w(i),
+                 epsilon,
+                 str(w)))
         s = v[:, i]
 
         # check that the stationary distribution is good
@@ -498,8 +502,10 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         if(scc_set in processed_SCCs):
             return
 
-        outgoing_reactions = [r for c in scc for r in reactions_consuming[c] if (
-            is_fast(r) and is_outgoing(r, scc_set))]
+        outgoing_reactions = [
+            r for c in scc for r in reactions_consuming[c] if (
+                is_fast(r) and is_outgoing(
+                    r, scc_set))]
 
         # Remember that we've processed this neighborhood
         processed_SCCs.add(scc_set)
@@ -585,8 +591,10 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                             if (c, fate) not in decay_probabilities:
                                 decay_probabilities[(c, fate)] = 0
 
-                            decay_probabilities[(c, fate)] += exit_probabilities[scc_set][(
-                                c, r)] * reaction_decay_probabilities[(r, fate)]
+                            decay_probabilities[(c,
+                                fate)] += exit_probabilities[scc_set][(c,
+                                    r)] * reaction_decay_probabilities[(r,
+                                                                                                                            fate)]
 
             # The set of fates for the complexes in this SCC is the union of
             # the fates for all outgoing reactions.
@@ -651,13 +659,15 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         # each reactant xn)
         for (i, f_xn) in enumerate(reactant_fates):
             if(not f_xn.is_singleton()):
-                logging.error("Cannot condense reaction %r: reactant %s has multiple fates: F(%s) = %s"
-                              % (reaction, str(reaction.reactants[i]), str(reaction.reactants[i]), str(f_xn)))
+                logging.error(
+                    "Cannot condense reaction %r: reactant %s has multiple fates: F(%s) = %s" %
+                    (reaction, str( reaction.reactants[i]), str(
+                        reaction.reactants[i]), str(f_xn)))
                 raise Exception()
 
         # Now, we'll take all of the combinations of reactants and products
-        new_reactant_product_combinations = it.product(new_reactant_combinations,
-                                                       new_product_combinations)
+        new_reactant_product_combinations = it.product(
+            new_reactant_combinations, new_product_combinations)
 
         # And generate new reactions with each combination which is not trivial
         # (reactants == products)
@@ -706,9 +716,10 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
 
                         if isinstance(reaction_rate, complex):
                             if reaction_rate.imag > 0:
-                                logging.warn(("Detailed reaction %s contributes a complex rate of %f + %fj " +
-                                              " to condensed reaction %s.")
-                                             % (r, reaction_rate.real, reaction_rate.imag, reaction))
+                                logging.warn(
+                                    ("Detailed reaction %s contributes a complex rate of %f + %fj " +
+                                     " to condensed reaction %s.") %
+                                    (r, reaction_rate.real, reaction_rate.imag, reaction))
 
                     reaction._const = reaction_rate
                 condensed_reactions.add(reaction)
@@ -719,10 +730,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         'resting_state_targets': complex_fates,
         'condensed_reactions': list(condensed_reactions),
         'reactions': list(condensed_reactions),
-        'complexes_to_resting_states': dict((c, rs) for rs in resting_states for c in rs)
-    }
-
-    # return (resting_states,complex_fates,condensed_reactions)
+        'complexes_to_resting_states': dict((c, rs) for rs in resting_states for c in rs)}
 
 
 condense_resting_states = condense_graph

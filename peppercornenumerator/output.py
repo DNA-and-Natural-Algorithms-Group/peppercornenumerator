@@ -133,8 +133,13 @@ def output_pil(enumerator, filename, output_condensed=False,
         else:
             rate_const = ""
 
-        reac_string_list = ["kinetic", rate_const,
-                            " + ".join(reactants), "->", " + ".join(products), "\n"]
+        reac_string_list = [
+            "kinetic",
+            rate_const,
+            " + ".join(reactants),
+            "->",
+            " + ".join(products),
+            "\n"]
         reac_string = ' '.join(reac_string_list)
         output_file.write(reac_string)
 
@@ -161,8 +166,11 @@ def output_pil(enumerator, filename, output_condensed=False,
 
     output_file.write("\n# Strands \n")
     for strand in utils.natural_sort(enumerator.strands):
-        output_file.write("strand " + strand.name + " = " +
-                          " ".join(map(lambda dom: dom.name, strand.domains)) + "\n")
+        output_file.write("strand " +
+                          strand.name +
+                          " = " +
+                          " ".join(map(lambda dom: dom.name, strand.domains)) +
+                          "\n")
 
     output_file.write("\n# Resting-state Complexes \n")
     for complex in utils.natural_sort(resting_complexes):
@@ -174,8 +182,11 @@ def output_pil(enumerator, filename, output_condensed=False,
         output_file.write("\n# Resting-state sets \n")
         resting_states = condensed['resting_states']
         for resting_state in utils.natural_sort(resting_states):
-            output_file.write("# state " + str(resting_state) +
-                              " = { " + " ".join(map(str, resting_state.complexes)) + " }\n")
+            output_file.write("# state " +
+                              str(resting_state) +
+                              " = { " +
+                              " ".join(map(str, resting_state.complexes)) +
+                              " }\n")
 
         output_file.write("\n# Condensed Reactions \n")
         new_reactions = condensed['reactions']
@@ -244,8 +255,11 @@ def output_kernel(enumerator, filename, output_condensed=False,
 
     output_file.write("\n# Strands \n")
     for strand in utils.natural_sort(enumerator.strands):
-        output_file.write("strand " + strand.name + " = " +
-                          " ".join(map(lambda dom: dom.name, strand.domains)) + "\n")
+        output_file.write("strand " +
+                          strand.name +
+                          " = " +
+                          " ".join(map(lambda dom: dom.name, strand.domains)) +
+                          "\n")
 
     output_file.write("\n# Resting-state Complexes \n")
     for complex in utils.natural_sort(resting_complexes):
@@ -257,8 +271,11 @@ def output_kernel(enumerator, filename, output_condensed=False,
         output_file.write("\n# Resting-state sets \n")
         resting_states = condensed['resting_states']
         for resting_state in utils.natural_sort(resting_states):
-            output_file.write("# state " + str(resting_state) +
-                              " = { " + " ".join(map(str, resting_state.complexes)) + " }\n")
+            output_file.write("# state " +
+                              str(resting_state) +
+                              " = { " +
+                              " ".join(map(str, resting_state.complexes)) +
+                              " }\n")
 
         output_file.write("\n# Condensed Reactions \n")
         new_reactions = condensed['reactions']
@@ -459,11 +476,12 @@ def output_full_dotfile(enumerator, filename):
             extra_params = ""
             if complex._resting:
                 extra_params = ",style=filled,color=gold1"
-            fout.write('%s [label="%s: %s"%s];\n' % (str(complex),
-                                                     str(complex),
-                                                     complex.dot_paren_string(),
-                                                     extra_params
-                                                     ))
+            fout.write(
+                '%s [label="%s: %s"%s];\n' %
+                (str(complex),
+                 str(complex),
+                    complex.dot_paren_string(),
+                    extra_params))
         fout.write("}\n")
 
     # We now draw the reactions. If there is one product and one reagent, then
@@ -479,8 +497,9 @@ def output_full_dotfile(enumerator, filename):
             reaction_color = "red"
             if len(reaction.reactants) == 1:
                 reaction_color = "blue"
-            fout.write('%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=%s];\n' %
-                       (reaction_label, reaction_color))
+            fout.write(
+                '%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=%s];\n' %
+                (reaction_label, reaction_color))
 
             # We now make all the edges needed
             for reagent in reaction.reactants:
@@ -524,7 +543,8 @@ def output_condensed_dotfile(enumerator, filename):
     for (i, reaction) in enumerate(condensed_graph['reactions']):
         reaction_label = "R_%d" % i
         fout.write(
-            '%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];\n' % reaction_label)
+            '%s [label="",shape=circle,height=0.12,width=0.12,fontsize=1,style=filled,color=red];\n' %
+            reaction_label)
 
         for reagent in reaction.reactants:
             fout.write("%s -> %s\n" % (str(reagent), reaction_label))
@@ -556,27 +576,29 @@ def output_sbml(enumerator, filename, output_condensed=False,
 
     import xml.dom.minidom
     header = '<?xml version="1.0" encoding="UTF-8"?>'
-    out = [header,
-           '<sbml level="2" version="3" xmlns="http://www.sbml.org/sbml/level2/version3">',
-           '<model name="%s">' % filename,
-           '<listOfUnitDefinitions>',
-           '<unitDefinition id="per_second">',
-           '<listOfUnits>',
-           '<unit kind="second" exponent="-1"/>',
-           ' </listOfUnits>',
-           '</unitDefinition>',
-           '<unitDefinition id="litre_per_mole_per_second">',
-           '<listOfUnits>',
-           '<unit kind="mole"   exponent="-1"/>',
-           '<unit kind="litre"  exponent="1"/>',
-           '<unit kind="second" exponent="-1"/>',
-           '</listOfUnits>',
-           '</unitDefinition>',
-           '</listOfUnitDefinitions>',
-           '<listOfCompartments>',
-           '<compartment id="reaction" size="1e-3" />',
-           '</listOfCompartments>',
-           '<listOfSpecies>']
+    out = [
+        header,
+        '<sbml level="2" version="3" xmlns="http://www.sbml.org/sbml/level2/version3">',
+        '<model name="%s">' %
+        filename,
+        '<listOfUnitDefinitions>',
+        '<unitDefinition id="per_second">',
+        '<listOfUnits>',
+        '<unit kind="second" exponent="-1"/>',
+        ' </listOfUnits>',
+        '</unitDefinition>',
+        '<unitDefinition id="litre_per_mole_per_second">',
+        '<listOfUnits>',
+        '<unit kind="mole"   exponent="-1"/>',
+        '<unit kind="litre"  exponent="1"/>',
+        '<unit kind="second" exponent="-1"/>',
+        '</listOfUnits>',
+        '</unitDefinition>',
+        '</listOfUnitDefinitions>',
+        '<listOfCompartments>',
+        '<compartment id="reaction" size="1e-3" />',
+        '</listOfCompartments>',
+        '<listOfSpecies>']
 
     if(output_condensed):
         condensed = condense_resting_states(enumerator, **condense_options)
@@ -595,14 +617,22 @@ def output_sbml(enumerator, filename, output_condensed=False,
             # is_initial = any(c in enumerator.initial_complexes for c in resting_state.complexes)
             initial_concentration = sum(
                 (c.concentration if c.concentration is not None else 0.0) for c in resting_state.complexes)
-            out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial)g"/>'
-                       % {"name": resting_state.name, "id": id(resting_state), "initial": initial_concentration})
+            out.append(
+                '<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial)g"/>' %
+                {
+                    "name": resting_state.name,
+                    "id": id(resting_state),
+                    "initial": initial_concentration})
     else:
         for complex in complexes:
             # is_initial = (complex in enumerator.initial_complexes)
             initial_concentration = complex.concentration if complex.concentration is not None else 0.0
-            out.append('<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial)g"/>'
-                       % {"name": complex.name, "id": id(complex), "initial": initial_concentration})
+            out.append(
+                '<species compartment="reaction" id="%(id)s" name="%(name)s" initialConcentration="%(initial)g"/>' %
+                {
+                    "name": complex.name,
+                    "id": id(complex),
+                    "initial": initial_concentration})
 
     out += ['</listOfSpecies>', '<listOfReactions>']
 
@@ -672,10 +702,24 @@ def output_k(enumerator, filename, output_condensed=False,
     output_file = open(filename, 'w')
 
     def write_reaction(output_file, reaction, reversible=True):
-        reactants = sorted([str(count) + '*' + str(x) if count > 1 else str(x)
-                            for (x, count) in collections.Counter(sorted(reaction.reactants)).iteritems()])
-        products = sorted([str(count) + '*' + str(x) if count > 1 else str(x)
-                           for (x, count) in collections.Counter(sorted(reaction.products)).iteritems()])
+        reactants = sorted(
+            [
+                str(count) +
+                '*' +
+                str(x) if count > 1 else str(x) for (
+                    x,
+                    count) in collections.Counter(
+                    sorted(
+                        reaction.reactants)).iteritems()])
+        products = sorted(
+            [
+                str(count) +
+                '*' +
+                str(x) if count > 1 else str(x) for (
+                    x,
+                    count) in collections.Counter(
+                    sorted(
+                        reaction.products)).iteritems()])
 
         if reversible:
             arrow = '<->'
@@ -714,8 +758,14 @@ def output_case(enumerator, filename, output_condensed=False,
     lines = []
     for domain in utils.natural_sort(enumerator.domains):
         #  name, length, is_complement=False, sequence=None
-        lines.append(tab(2) + "'%s' : Domain('%s', %d, is_complement=%s, sequence='%s')"
-                     % (domain.name, domain.identity, domain.length, domain.is_complement, domain.sequence))
+        lines.append(
+            tab(2) +
+            "'%s' : Domain('%s', %d, is_complement=%s, sequence='%s')" %
+            (domain.name,
+             domain.identity,
+             domain.length,
+             domain.is_complement,
+             domain.sequence))
 
     of.write(",\n".join(lines) + "\n")
     of.write(tab(1) + "}\n")
@@ -730,7 +780,8 @@ def output_case(enumerator, filename, output_condensed=False,
     for strand in utils.natural_sort(enumerator.strands):
         doms = ", ".join("domains['%s']" % dom.name for dom in strand.domains)
         lines.append(
-            tab(2) + "'%s' : Strand('%s', [%s])" % (strand.name, strand.name, doms))
+            tab(2) + "'%s' : Strand('%s', [%s])" %
+            (strand.name, strand.name, doms))
     of.write(",\n".join(lines) + "\n")
     of.write(tab(1) + "}\n")
     of.write(
@@ -749,7 +800,8 @@ def output_case(enumerator, filename, output_condensed=False,
     of.write(",\n".join(lines) + "\n")
     of.write(tab(1) + "}\n")
     of.write(
-        tab(1) + "assert set(complexes.values()) == set(enumerator.complexes)\n\n")
+        tab(1) +
+        "assert set(complexes.values()) == set(enumerator.complexes)\n\n")
 
     # Reactions
     of.write(tab(1) + "# Reactions \n")
@@ -760,8 +812,9 @@ def output_case(enumerator, filename, output_condensed=False,
             "complexes['%s']" % complex.name for complex in reaction.reactants)
         products = ", ".join(
             "complexes['%s']" % complex.name for complex in reaction.products)
-        lines.append(tab(
-            2) + "ReactionPathway('%s', [%s], [%s])" % (reaction.name, reactants, products))
+        lines.append(
+            tab(2) + "ReactionPathway('%s', [%s], [%s])" %
+            (reaction.name, reactants, products))
     of.write(",\n".join(lines) + "\n")
     of.write(tab(1) + "}\n")
     of.write(tab(1) + "assert set(reactions) == set(enumerator.reactions)\n\n")
@@ -777,12 +830,14 @@ def output_case(enumerator, filename, output_condensed=False,
             complexes = ", ".join(
                 "complexes['%s']" % complex.name for complex in rs.complexes)
             lines.append(
-                tab(2) + "'%s' : RestingState('%s', [%s])" % (rs.name, rs.name, complexes))
+                tab(2) + "'%s' : RestingState('%s', [%s])" %
+                (rs.name, rs.name, complexes))
 
         of.write(",\n".join(lines) + "\n")
         of.write(tab(1) + "}\n")
-        of.write(tab(
-            1) + "assert set(resting_states.values()) == set(condensed['resting_states'])\n\n")
+        of.write(
+            tab(1) +
+            "assert set(resting_states.values()) == set(condensed['resting_states'])\n\n")
 
         # Condensed reactions
         of.write(tab(1) + "# Condensed Reactions \n")
@@ -790,15 +845,19 @@ def output_case(enumerator, filename, output_condensed=False,
         lines = []
         for reaction in utils.natural_sort(condensed['reactions']):
             reactants = ", ".join(
-                "resting_states['%s']" % species.name for species in reaction.reactants)
+                "resting_states['%s']" %
+                species.name for species in reaction.reactants)
             products = ", ".join(
-                "resting_states['%s']" % species.name for species in reaction.products)
-            lines.append(tab(
-                2) + "ReactionPathway('%s', [%s], [%s])" % (reaction.name, reactants, products))
+                "resting_states['%s']" %
+                species.name for species in reaction.products)
+            lines.append(
+                tab(2) + "ReactionPathway('%s', [%s], [%s])" %
+                (reaction.name, reactants, products))
         of.write(",\n".join(lines) + "\n")
         of.write(tab(1) + "}\n")
         of.write(
-            tab(1) + "assert set(condensed_reactions) == set(condensed['reactions'])\n\n")
+            tab(1) +
+            "assert set(condensed_reactions) == set(condensed['reactions'])\n\n")
 
     of.close()
 

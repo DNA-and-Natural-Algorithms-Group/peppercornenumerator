@@ -53,13 +53,15 @@ def input_enum(filename):
 
             domain_name = parts[1]
             if domain_name in domains:
-                logging.error("Duplicate domain name encountered in input line %d"
-                              % line_counter)
+                logging.error(
+                    "Duplicate domain name encountered in input line %d" %
+                    line_counter)
                 raise Exception()
 
             if not re.match(r'\w+$', domain_name):
-                logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
-                             % (domain_name, line_counter))
+                logging.warn(
+                    "Non-alphanumeric domain name %s encountered in input line %d" %
+                    (domain_name, line_counter))
 
             # The domain length could be either short or long or it could be
             # an exact number
@@ -96,19 +98,22 @@ def input_enum(filename):
 
             strand_name = parts[1]
             if strand_name in strands:
-                logging.error("Duplicate strand name encountered in input line %d"
-                              % line_counter)
+                logging.error(
+                    "Duplicate strand name encountered in input line %d" %
+                    line_counter)
                 raise Exception()
 
             if not re.match(r'\w+$', strand_name):
-                logging.warn("Non-alphanumeric strand name %s encountered in input line %d"
-                             % (strand_name, line_counter))
+                logging.warn(
+                    "Non-alphanumeric strand name %s encountered in input line %d" %
+                    (strand_name, line_counter))
 
             strand_doms = []
             for domain_name in parts[3:]:
-                if not domain_name in domains:
-                    logging.error("Invalid domain name %s encountered in input line %d"
-                                  % (domain_name, line_counter))
+                if domain_name not in domains:
+                    logging.error(
+                        "Invalid domain name %s encountered in input line %d" %
+                        (domain_name, line_counter))
                     raise Exception()
 
                 strand_doms.append(domains[domain_name])
@@ -130,13 +135,15 @@ def input_enum(filename):
 
             complex_name = parts[1]
             if complex_name in complexes:
-                logging.error("Duplicate complex name encountered in input line %d"
-                              % line_counter)
+                logging.error(
+                    "Duplicate complex name encountered in input line %d" %
+                    line_counter)
                 raise Exception()
 
             if not re.match(r'\w+$', complex_name):
-                logging.warn("Non-alphanumeric complex name %s encountered in input line %d"
-                             % (complex_name, line_counter))
+                logging.warn(
+                    "Non-alphanumeric complex name %s encountered in input line %d" %
+                    (complex_name, line_counter))
 
             complex_strands = []
 
@@ -144,9 +151,10 @@ def input_enum(filename):
             strands_line = strands_line.strip()
             strands_line_parts = strands_line.split()
             for strand_name in strands_line_parts:
-                if not strand_name in strands:
-                    logging.error("Invalid strand name %s encountered in input line %d"
-                                  % (strand_name, line_counter))
+                if strand_name not in strands:
+                    logging.error(
+                        "Invalid strand name %s encountered in input line %d" %
+                        (strand_name, line_counter))
                     raise Exception()
                 else:
                     complex_strands.append(strands[strand_name])
@@ -159,8 +167,12 @@ def input_enum(filename):
             struct_length = sum(map(len, complex_structure))
             domains_length = sum(map(len, complex_strands))
             if(struct_length != domains_length):
-                logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was %(struct)s)"
-                              % {"name": complex_name, "doms": domains_length, "struct_length": struct_length, "struct": structure_line})
+                logging.error(
+                    "Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was %(struct)s)" % {
+                        "name": complex_name,
+                        "doms": domains_length,
+                        "struct_length": struct_length,
+                        "struct": structure_line})
                 raise Exception()
 
             complex = utils.Complex(
@@ -297,8 +309,9 @@ def auto_strand(doms, strands, structures_to_strands):
             auto_name = auto_name % index
 
             # TODO: warn about this
-            warning("Auto-generated strand name %s already taken by a strand with different structure. Auto-generated strand will be named %s." %
-                    (initial_auto_name, auto_name))
+            warning(
+                "Auto-generated strand name %s already taken by a strand with different structure. Auto-generated strand will be named %s." %
+                (initial_auto_name, auto_name))
 
         # generate new strand object
         strand = utils.Strand(auto_name, doms)
@@ -453,13 +466,15 @@ def input_pil(filename):
 
             domain_name, domain_length = parts.groups()
             if domain_name in domains:
-                logging.error("Duplicate domain name encountered in input line %d"
-                              % line_counter)
+                logging.error(
+                    "Duplicate domain name encountered in input line %d" %
+                    line_counter)
                 raise Exception()
 
             if not re.match(r'[\w-]+$', domain_name):
-                logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
-                             % (domain_name, line_counter))
+                logging.warn(
+                    "Non-alphanumeric domain name %s encountered in input line %d" %
+                    (domain_name, line_counter))
 
             domain_length = int(domain_length)
             domain_sequence = "N" * domain_length
@@ -491,13 +506,15 @@ def input_pil(filename):
 
             domain_name, domain_sequence, length = parts.groups()
             if domain_name in domains:
-                logging.error("Duplicate domain name encountered in input line %d"
-                              % line_counter)
+                logging.error(
+                    "Duplicate domain name encountered in input line %d" %
+                    line_counter)
                 raise Exception()
 
             if not re.match(r'[\w-]+$', domain_name):
-                logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
-                             % (domain_name, line_counter))
+                logging.warn(
+                    "Non-alphanumeric domain name %s encountered in input line %d" %
+                    (domain_name, line_counter))
 
             # The sequence specification
             # domain_sequence = parts[1]
@@ -529,13 +546,15 @@ def input_pil(filename):
 
             # domain name
             if domain_name in domains:
-                logging.error("Duplicate domain name encountered in input line %d"
-                              % line_counter)
+                logging.error(
+                    "Duplicate domain name encountered in input line %d" %
+                    line_counter)
                 raise Exception()
 
             if not re.match(r'[\w-]+$', domain_name):
-                logging.warn("Non-alphanumeric domain name %s encountered in input line %d"
-                             % (domain_name, line_counter))
+                logging.warn(
+                    "Non-alphanumeric domain name %s encountered in input line %d" %
+                    (domain_name, line_counter))
 
             # subsequences
             sequence = ""
@@ -545,9 +564,10 @@ def input_pil(filename):
                     continue
 
                 # make sure each subsequence is defined
-                if not sequence_name in domains:
-                    logging.error("Unknown domain name '%s' in super-sequence on input line %d"
-                                  % (sequence_name, line_counter))
+                if sequence_name not in domains:
+                    logging.error(
+                        "Unknown domain name '%s' in super-sequence on input line %d" %
+                        (sequence_name, line_counter))
                     logging.error(line)
                     raise Exception()
 
@@ -557,8 +577,9 @@ def input_pil(filename):
             # check for correctness
             if length:
                 if int(length) != len(sequence):
-                    logging.error("Sequence length for super-sequence %s is %d, not equal to expected value %d on input line %d"
-                                  % (domain_name, len(sequence), length, line_counter))
+                    logging.error(
+                        "Sequence length for super-sequence %s is %d, not equal to expected value %d on input line %d" %
+                        (domain_name, len(sequence), length, line_counter))
                     raise Exception()
 
             # The sequence specification
@@ -578,17 +599,19 @@ def input_pil(filename):
         elif line.startswith("equal"):
             parts = line.split()
             if len(parts) < 3:
-                logging.error("'equal' statement does not specify at least 2 domains on input line %d"
-                              % line_counter)
+                logging.error(
+                    "'equal' statement does not specify at least 2 domains on input line %d" %
+                    line_counter)
                 logging.error(line)
                 raise Exception()
 
             source_domain_name = parts[1]
             target_domain_names = parts[2:]
 
-            if not source_domain_name in domains:
-                logging.error("Unknown domain name '%s' in 'equals' statement on input line %d"
-                              % (source_domain_name, line_counter))
+            if source_domain_name not in domains:
+                logging.error(
+                    "Unknown domain name '%s' in 'equals' statement on input line %d" %
+                    (source_domain_name, line_counter))
                 logging.error(line)
                 raise Exception()
 
@@ -597,9 +620,11 @@ def input_pil(filename):
             for target_domain_name in target_domain_names:
                 new_dom = utils.Domain(target_domain_name, len(source_domain),
                                        sequence=source_domain.sequence)
-                new_dom_comp = utils.Domain(target_domain_name, len(source_domain),
-                                            sequence=source_domain.sequence,
-                                            is_complement=True)
+                new_dom_comp = utils.Domain(
+                    target_domain_name,
+                    len(source_domain),
+                    sequence=source_domain.sequence,
+                    is_complement=True)
 
                 domains[target_domain_name] = new_dom
                 domains["%s*" % target_domain_name] = new_dom_comp
@@ -621,19 +646,22 @@ def input_pil(filename):
             strand_name, strand_dom_names, length = parts.groups()
 
             if strand_name in strands:
-                logging.error("Duplicate strand name encountered in input line %d"
-                              % line_counter)
+                logging.error(
+                    "Duplicate strand name encountered in input line %d" %
+                    line_counter)
                 raise Exception()
 
             if not re.match(r'\w+$', strand_name):
-                logging.warn("Non-alphanumeric strand name %s encountered in input line %d"
-                             % (strand_name, line_counter))
+                logging.warn(
+                    "Non-alphanumeric strand name %s encountered in input line %d" %
+                    (strand_name, line_counter))
 
             strand_doms = []
             for domain_name in filter(None, strand_dom_names.split()):
-                if not domain_name in domains:
-                    logging.error("Invalid domain name %s encountered in input line %d"
-                                  % (domain_name, line_counter))
+                if domain_name not in domains:
+                    logging.error(
+                        "Invalid domain name %s encountered in input line %d" %
+                        (domain_name, line_counter))
                     logging.error(line)
                     print domains
                     raise Exception()
@@ -654,7 +682,8 @@ def input_pil(filename):
             # structure    [  1nt  ]      name      =   s1 s2 s3 + s4         :
             # ....((+))...((..))....
             parts = re.match(
-                r"structure\s+(\[[^\]]+\])?\s*([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)", line)
+                r"structure\s+(\[[^\]]+\])?\s*([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)",
+                line)
 
             if parts is None:
 
@@ -685,23 +714,26 @@ def input_pil(filename):
 
             # check for duplicate complex name
             if complex_name in complexes:
-                logging.error("Duplicate complex name encountered in input line %d"
-                              % line_counter)
+                logging.error(
+                    "Duplicate complex name encountered in input line %d" %
+                    line_counter)
                 raise Exception()
 
             # check for non-alphanumeric complex name
             if not re.match(r'\w+$', complex_name):
-                logging.warn("Non-alphanumeric complex name %s encountered in input line %d"
-                             % (complex_name, line_counter))
+                logging.warn(
+                    "Non-alphanumeric complex name %s encountered in input line %d" %
+                    (complex_name, line_counter))
 
             # get strand names, allowing optional '+' characters
             complex_strands = []
             strands_line_parts = [
                 name for name in strands_line.split() if name != "+"]
             for strand_name in strands_line_parts:
-                if not strand_name in strands:
-                    logging.error("Invalid strand name %s encountered in input line %d"
-                                  % (strand_name, line_counter))
+                if strand_name not in strands:
+                    logging.error(
+                        "Invalid strand name %s encountered in input line %d" %
+                        (strand_name, line_counter))
                     raise Exception()
                 else:
                     complex_strands.append(strands[strand_name])
@@ -718,14 +750,22 @@ def input_pil(filename):
                     structure_line, complex_strands)
                 struct_length = sum(map(len, complex_structure))
                 if(struct_length != domains_length):
-                    logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was '%(struct)s')"
-                                  % {"name": complex_name, "doms": domains_length, "struct_length": struct_length, "struct": structure_line})
+                    logging.error(
+                        "Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was '%(struct)s')" % {
+                            "name": complex_name,
+                            "doms": domains_length,
+                            "struct_length": struct_length,
+                            "struct": structure_line})
                     raise Exception()
 
             elif(struct_length != domains_length):
 
-                logging.error("Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was '%(struct)s')"
-                              % {"name": complex_name, "doms": domains_length, "struct_length": struct_length, "struct": structure_line})
+                logging.error(
+                    "Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was '%(struct)s')" % {
+                        "name": complex_name,
+                        "doms": domains_length,
+                        "struct_length": struct_length,
+                        "struct": structure_line})
                 raise Exception()
 
             complex = utils.Complex(
@@ -746,8 +786,9 @@ def input_pil(filename):
                 resolve_kernel([line], domains, strands,
                                structures_to_strands, complexes)
             except Exception as e:
-                logging.error("Unexpected characters encountered in input line %d; tried to parse as Kernel statement but got error: %s"
-                              % (line_counter, str(e)))
+                logging.error(
+                    "Unexpected characters encountered in input line %d; tried to parse as Kernel statement but got error: %s" %
+                    (line_counter, str(e)))
                 raise Exception()
 
         # line = fin.readline()
@@ -773,12 +814,15 @@ def load_json(filename):
 
     domains = {}
     for saved_domain in saved_domains:
-        if not 'sequence' in saved_domain:
+        if 'sequence' not in saved_domain:
             saved_domain['sequence'] = None
         if (saved_domain['is_complement']):
             saved_domain['name'] = saved_domain['name'][:-1]
-        new_dom = utils.Domain(saved_domain['name'], saved_domain['length'],
-                               is_complement=saved_domain['is_complement'], sequence=saved_domain['sequence'])
+        new_dom = utils.Domain(
+            saved_domain['name'],
+            saved_domain['length'],
+            is_complement=saved_domain['is_complement'],
+            sequence=saved_domain['sequence'])
         domains[new_dom.name] = new_dom
 
     saved_strands = saved['strands']

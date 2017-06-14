@@ -162,8 +162,9 @@ class CondenseTests(unittest.TestCase):
         print complexes
         print
 
-        reactions = pluck(self.reactions, [
-                          'A->B', 'B->C', 'C->D', 'D->A', 'D->E', 'E->F', 'F->G', 'G->E'])
+        reactions = pluck(
+            self.reactions, [
+                'A->B', 'B->C', 'C->D', 'D->A', 'D->E', 'E->F', 'F->G', 'G->E'])
         print reactions
         print
 
@@ -171,14 +172,28 @@ class CondenseTests(unittest.TestCase):
         reactions_consuming = get_reactions_consuming(
             enum.complexes, enum.reactions)
         expected = {
-            self.complexes['B']: [self.reactions['B->C'], ],
-            self.complexes['F']: [self.reactions['F->G'], ],
-            self.complexes['G']: [self.reactions['G->E'], ],
-            self.complexes['A']: [self.reactions['A->B'], ],
-            self.complexes['C']: [self.reactions['C->D'], ],
-            self.complexes['E']: [self.reactions['E->F'], ],
-            self.complexes['D']: [self.reactions['D->A'], self.reactions['D->E'], ]
-        }
+            self.complexes['B']: [
+                self.reactions['B->C'],
+            ],
+            self.complexes['F']: [
+                self.reactions['F->G'],
+            ],
+            self.complexes['G']: [
+                self.reactions['G->E'],
+            ],
+            self.complexes['A']: [
+                self.reactions['A->B'],
+            ],
+            self.complexes['C']: [
+                self.reactions['C->D'],
+            ],
+            self.complexes['E']: [
+                self.reactions['E->F'],
+            ],
+            self.complexes['D']: [
+                self.reactions['D->A'],
+                self.reactions['D->E'],
+            ]}
         print reactions_consuming
         assert reactions_consuming == expected
 
@@ -202,12 +217,17 @@ class CondenseTests(unittest.TestCase):
 
         SCCs = [self.neighborhood_abcd, self.neighborhood_e]
 
-        assert rsort(tarjans(tarjans_complexes, tarjans_reactions,
-                             reactions_consuming_abcd_e, is_fast)) == rsort(SCCs)
+        assert rsort(
+            tarjans(
+                tarjans_complexes,
+                tarjans_reactions,
+                reactions_consuming_abcd_e,
+                is_fast)) == rsort(SCCs)
 
     def testTarjans2(self):
         reactions = pluck(
-            self.reactions, ['A->B', 'B->A', 'B->C', 'C->B', 'C->D', 'D->C', 'D->A'])
+            self.reactions, [
+                'A->B', 'B->A', 'B->C', 'C->B', 'C->D', 'D->C', 'D->A'])
         complexes = self.neighborhood_abcd
         reactions_consuming = get_reactions_consuming(complexes, reactions)
         SCCs = [complexes]
@@ -216,15 +236,34 @@ class CondenseTests(unittest.TestCase):
                              reactions_consuming, is_fast)) == rsort(SCCs)
 
     def testTarjans3(self):
-        reactions = pluck(self.reactions, [
-                          'A->B', 'B->A', 'B->C', 'C->B', 'C->D', 'D->C', 'D->A', 'A->E', 'E->A', 'E->F', 'F->D'])
+        reactions = pluck(self.reactions,
+                          ['A->B',
+                           'B->A',
+                           'B->C',
+                           'C->B',
+                           'C->D',
+                           'D->C',
+                           'D->A',
+                           'A->E',
+                           'E->A',
+                           'E->F',
+                           'F->D'])
         complexes = pluck(self.complexes, ['A', 'B', 'C', 'D', 'E', 'F'])
         reactions_consuming = get_reactions_consuming(complexes, reactions)
         SCCs = [complexes]
 
     def testTarjans4(self):
-        reactions = pluck(self.reactions, [
-                          'A->B', 'B->A', 'B->C', 'C->B', 'D->C', 'A->D', 'D->A', 'A->E', 'E->A', 'E->C'])
+        reactions = pluck(self.reactions,
+                          ['A->B',
+                           'B->A',
+                           'B->C',
+                           'C->B',
+                           'D->C',
+                           'A->D',
+                           'D->A',
+                           'A->E',
+                           'E->A',
+                           'E->C'])
         complexes = pluck(self.complexes, ['A', 'B', 'C', 'D', 'E'])
         reactions_consuming = get_reactions_consuming(complexes, reactions)
         SCCs = [complexes]
@@ -264,8 +303,9 @@ class CondenseTests(unittest.TestCase):
     #     assert ms == expected_ms
 
     def testCondenseGraph(self):
-        reactions = pluck(self.reactions, [
-                          'A->B', 'B->C', 'C->D', 'D->A', 'D->E', 'E->F', 'F->G', 'G->E'])
+        reactions = pluck(
+            self.reactions, [
+                'A->B', 'B->C', 'C->D', 'D->A', 'D->E', 'E->F', 'F->G', 'G->E'])
         complexes = pluck(self.complexes, ['A', 'B', 'C', 'D', 'E', 'F', 'G'])
         enum = Enum(complexes, reactions)
         # dict((k,v) for (k,v) in condense_graph(enum))
@@ -295,8 +335,10 @@ class CondenseTests(unittest.TestCase):
         print
 
         print "Expected resting state targets: "
-        resting_state = (RestingState(
-            '1', [self.complexes['E'], self.complexes['F'], self.complexes['G']]),)
+        resting_state = (
+            RestingState(
+                '1', [
+                    self.complexes['E'], self.complexes['F'], self.complexes['G']]),)
         expected_resting_state_targets = {
             self.complexes['G']: SetOfFates([resting_state]),
             self.complexes['E']: SetOfFates([resting_state]),
@@ -321,8 +363,9 @@ class CondenseTests(unittest.TestCase):
         assert reactions == expected_reactions
 
     def testCondenseGraph2(self):
-        reactions = pluck(self.reactions, [
-                          'A->B', 'B->C', 'C->D', 'D->A', 'E->F', 'F->G', 'G->E', 'C+D->E'])
+        reactions = pluck(
+            self.reactions, [
+                'A->B', 'B->C', 'C->D', 'D->A', 'E->F', 'F->G', 'G->E', 'C+D->E'])
         complexes = pluck(self.complexes, ['A', 'B', 'C', 'D', 'E', 'F', 'G'])
         enum = Enum(complexes, reactions)
         out = condense_graph(enum)
@@ -335,15 +378,31 @@ class CondenseTests(unittest.TestCase):
         print str(resting_states)
         print
 
-        resting_state_A = (RestingState('3', [
-                           self.complexes['A'], self.complexes['B'], self.complexes['C'], self.complexes['D']]),)
-        resting_state_E = (RestingState(
-            '4', [self.complexes['E'], self.complexes['F'], self.complexes['G']]),)
+        resting_state_A = (RestingState('3',
+                                        [self.complexes['A'],
+                                         self.complexes['B'],
+                                            self.complexes['C'],
+                                            self.complexes['D']]),
+                           )
+        resting_state_E = (
+            RestingState(
+                '4', [
+                    self.complexes['E'], self.complexes['F'], self.complexes['G']]),)
 
-        expected_resting_states = {
-            frozenset([self.complexes['B'], self.complexes['C'], self.complexes['D'], self.complexes['A']]): RestingState('3', [self.complexes['A'], self.complexes['B'], self.complexes['C'], self.complexes['D']]),
-            frozenset([self.complexes['G'], self.complexes['E'], self.complexes['F']]): RestingState('4', [self.complexes['E'], self.complexes['F'], self.complexes['G']])
-        }
+        expected_resting_states = {frozenset([self.complexes['B'],
+                                              self.complexes['C'],
+                                              self.complexes['D'],
+                                              self.complexes['A']]): RestingState('3',
+                                                                                  [self.complexes['A'],
+                                                                                   self.complexes['B'],
+                                                                                      self.complexes['C'],
+                                                                                      self.complexes['D']]),
+                                   frozenset([self.complexes['G'],
+                                              self.complexes['E'],
+                                              self.complexes['F']]): RestingState('4',
+                                                                                  [self.complexes['E'],
+                                                                                   self.complexes['F'],
+                                                                                   self.complexes['G']])}
         assert resting_states == expected_resting_states
 
         # Resting state targets:
@@ -600,12 +659,24 @@ class CondenseTests(unittest.TestCase):
         assert set(domains.values()) == set(enumerator.domains)
 
         # Strands
-        strands = {
-            '3a': Strand('3a', [domains['3*'], domains['a*']]),
-            '23': Strand('23', [domains['2'], domains['3']]),
-            'gate': Strand('gate', [domains['a*'], domains['b*'], domains['c'], domains['b'], domains['a'], domains['2*'], domains['t*']]),
-            't23': Strand('t23', [domains['t'], domains['2'], domains['3']])
-        }
+        strands = {'3a': Strand('3a',
+                                [domains['3*'],
+                                 domains['a*']]),
+                   '23': Strand('23',
+                                [domains['2'],
+                                 domains['3']]),
+                   'gate': Strand('gate',
+                                  [domains['a*'],
+                                   domains['b*'],
+                                   domains['c'],
+                                   domains['b'],
+                                   domains['a'],
+                                   domains['2*'],
+                                   domains['t*']]),
+                   't23': Strand('t23',
+                                 [domains['t'],
+                                  domains['2'],
+                                  domains['3']])}
         assert set(strands.values()) == set(enumerator.strands)
 
         # Complexes
@@ -670,11 +741,13 @@ class CondenseTests(unittest.TestCase):
 
         # Condensed Reactions
         condensed_reactions = {
-            ReactionPathway('condensed', [resting_states['38'], resting_states['39']], [
-                            resting_states['43'], resting_states['41']]),
-            ReactionPathway('condensed', [resting_states['38'], resting_states['39']], [
-                            resting_states['42'], resting_states['40']])
-        }
+            ReactionPathway(
+                'condensed', [
+                    resting_states['38'], resting_states['39']], [
+                    resting_states['43'], resting_states['41']]), ReactionPathway(
+                'condensed', [
+                    resting_states['38'], resting_states['39']], [
+                    resting_states['42'], resting_states['40']])}
         assert set(condensed_reactions) == set(condensed['reactions'])
 
     def testCondenseGraphCRN(self):

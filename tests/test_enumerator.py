@@ -54,8 +54,22 @@ class EnumeratorTests(unittest.TestCase):
 #			self.complexes2[complex.name] = complex
 
     def testDomains(self):
-        exp_domains = [Domain('1', 'short'), Domain('1', 'short', True), Domain('2', 'short'), Domain('2', 'short', True), Domain('3', 'short'), Domain('3', 'short', True), Domain(
-            '4', 'long'), Domain('4', 'long', True), Domain('5', 'short'), Domain('5', 'short', True), Domain('6', 'long'), Domain('6', 'long', True), Domain('7', 'short'), Domain('7', 'short', True)]
+        exp_domains = [
+            Domain(
+                '1', 'short'), Domain(
+                '1', 'short', True), Domain(
+                '2', 'short'), Domain(
+                    '2', 'short', True), Domain(
+                        '3', 'short'), Domain(
+                            '3', 'short', True), Domain(
+                                '4', 'long'), Domain(
+                                    '4', 'long', True), Domain(
+                                        '5', 'short'), Domain(
+                                            '5', 'short', True), Domain(
+                                                '6', 'long'), Domain(
+                                                    '6', 'long', True), Domain(
+                                                        '7', 'short'), Domain(
+                                                            '7', 'short', True)]
         act_domains = self.SLC_enumerator.domains
 
         exp_domains.sort()
@@ -72,8 +86,30 @@ class EnumeratorTests(unittest.TestCase):
         assert_raises(AttributeError, assnDomains, self)
 
     def testStrands(self):
-        exp_strands = [Strand('PS', [self.domains['3*'], self.domains['2*'], self.domains['1*'], self.domains['5'], self.domains['6']]), Strand('OP', [self.domains['1'], self.domains['2'], self.domains['3'], self.domains['4']]), Strand(
-            'SP', [self.domains['5'], self.domains['6']]), Strand('BS', [self.domains['7*'], self.domains['6*'], self.domains['5*'], self.domains['1'], self.domains['2'], self.domains['3']]), Strand('Cat', [self.domains['6'], self.domains['7']])]
+        exp_strands = [Strand('PS',
+                              [self.domains['3*'],
+                               self.domains['2*'],
+                                  self.domains['1*'],
+                                  self.domains['5'],
+                                  self.domains['6']]),
+                       Strand('OP',
+                              [self.domains['1'],
+                               self.domains['2'],
+                               self.domains['3'],
+                               self.domains['4']]),
+                       Strand('SP',
+                              [self.domains['5'],
+                               self.domains['6']]),
+                       Strand('BS',
+                              [self.domains['7*'],
+                               self.domains['6*'],
+                               self.domains['5*'],
+                               self.domains['1'],
+                               self.domains['2'],
+                               self.domains['3']]),
+                       Strand('Cat',
+                              [self.domains['6'],
+                               self.domains['7']])]
         act_strands = self.SLC_enumerator.strands
 
         exp_strands.sort()
@@ -110,8 +146,14 @@ class EnumeratorTests(unittest.TestCase):
                      (1, 1), (1, 0), (0, 0), None, None, None]])
         I3 = Complex('I3', [BS, Cat], [
                      [(1, 1), (1, 0), None, None, None, None], [(0, 1), (0, 0)]])
-        I4 = Complex('I4', [BS, OP, PS, Cat], [[(3, 1), (3, 0), (2, 3), None, None, None], [
-                     (2, 2), (2, 1), (2, 0), None], [(1, 2), (1, 1), (1, 0), (0, 2), None], [(0, 1), (0, 0)]])
+        I4 = Complex(
+            'I4', [
+                BS, OP, PS, Cat], [
+                [
+                    (3, 1), (3, 0), (2, 3), None, None, None], [
+                    (2, 2), (2, 1), (2, 0), None], [
+                        (1, 2), (1, 1), (1, 0), (0, 2), None], [
+                            (0, 1), (0, 0)]])
         I5 = Complex('I5', [BS, PS, Cat], [[(2, 1), (2, 0), (1, 3), (1, 2), (1, 1), (1, 0)], [
                      (0, 5), (0, 4), (0, 3), (0, 2), None], [(0, 1), (0, 0)]])
         I6 = Complex('I6', [BS, PS, Cat], [[(2, 1), (1, 4), (1, 3), (1, 2), (1, 1), (1, 0)], [
@@ -137,17 +179,28 @@ class EnumeratorTests(unittest.TestCase):
         assert_raises(AttributeError, assnComplexes, self)
 
     def testSegmentNeighborhood1(self):
-        enum = Enumerator(self.SLC_enumerator._domains,
-                          self.SLC_enumerator._strands, [self.complexes['Cat']])
+        enum = Enumerator(
+            self.SLC_enumerator._domains, self.SLC_enumerator._strands, [
+                self.complexes['Cat']])
         res = enum.segment_neighborhood(enum.initial_complexes, [])
 
-        assert res == {'resting_states': [RestingState(
-            '0', enum.initial_complexes)], 'resting_state_complexes': enum.initial_complexes, 'transient_state_complexes': []}
+        assert res == {
+            'resting_states': [
+                RestingState(
+                    '0',
+                    enum.initial_complexes)],
+            'resting_state_complexes': enum.initial_complexes,
+            'transient_state_complexes': []}
 
     def testSegmentNeighborhood2(self):
         enum = self.SLC_enumerator
-        complex_set = [self.complexes['Cat'], self.complexes['C2'], self.complexes['I1'],
-                       self.complexes['I2'], self.complexes['I3'], self.complexes['SP']]
+        complex_set = [
+            self.complexes['Cat'],
+            self.complexes['C2'],
+            self.complexes['I1'],
+            self.complexes['I2'],
+            self.complexes['I3'],
+            self.complexes['SP']]
         reaction_set = []
         # multi-molecular reactions never appear in segment neighborhood arguments
         #reaction_set.append(ReactionPathway('bind21', [self.complexes['Cat'], self.complexes['C2']], [self.complexes['I1']]))
@@ -178,8 +231,11 @@ class EnumeratorTests(unittest.TestCase):
         complex_set = [self.complexes2['IABC'],
                        self.complexes2['I'], self.complexes2['ABC']]
         reaction_set = []
-        reaction_set.append(ReactionPathway('branch_3way', [self.complexes2['IABC']], [
-                            self.complexes2['I'], self.complexes2['IABC']]))
+        reaction_set.append(
+            ReactionPathway(
+                'branch_3way', [
+                    self.complexes2['IABC']], [
+                    self.complexes2['I'], self.complexes2['IABC']]))
 
         res = enum.segment_neighborhood(complex_set, reaction_set)
         exp = {
@@ -291,10 +347,16 @@ class EnumeratorTests(unittest.TestCase):
         assert exp_initial_complexes == enum.initial_complexes
 
         reaction_set = []
-        reaction_set.append(ReactionPathway(
-            'bind21', [self.complexes['Cat'], self.complexes['C2']], [self.complexes['I1']]))
-        reaction_set.append(ReactionPathway(
-            'bind21', [self.complexes['I3'], self.complexes['SP']], [self.complexes['I2']]))
+        reaction_set.append(
+            ReactionPathway(
+                'bind21', [
+                    self.complexes['Cat'], self.complexes['C2']], [
+                    self.complexes['I1']]))
+        reaction_set.append(
+            ReactionPathway(
+                'bind21', [
+                    self.complexes['I3'], self.complexes['SP']], [
+                    self.complexes['I2']]))
         reaction_set.append(ReactionPathway('open', [self.complexes['I1']], [
                             self.complexes['Cat'], self.complexes['C2']]))
         reaction_set.append(ReactionPathway('open', [self.complexes['I2']], [
@@ -319,8 +381,12 @@ class EnumeratorTests(unittest.TestCase):
 
         assert exp_resting_states == enum.resting_states
 
-        exp_complexes = sorted([self.complexes['I1'], self.complexes['I2'], self.complexes['Cat'],
-                                self.complexes['C2'], self.complexes['SP'], self.complexes['I3']])
+        exp_complexes = sorted([self.complexes['I1'],
+                                self.complexes['I2'],
+                                self.complexes['Cat'],
+                                self.complexes['C2'],
+                                self.complexes['SP'],
+                                self.complexes['I3']])
         res_complexes = sorted(enum.complexes)
 
         assert res_complexes == exp_complexes
@@ -409,9 +475,13 @@ class EnumeratorTests(unittest.TestCase):
         reaction_set.append(ReactionPathway(
             'branch_3way', [c['I7']], [c['OP'], c['I6']]))
 
-        I8 = Complex('I8', [self.strands['BS'], self.strands['OP'], self.strands['PS']],
-                     [[None, (2, 4), (2, 3), None, None, None], [(2, 2), (2, 1), (2, 0), None],
-                      [(1, 2), (1, 1), (1, 0), (0, 2), (0, 1)]])
+        I8 = Complex(
+            'I8', [
+                self.strands['BS'], self.strands['OP'], self.strands['PS']], [
+                [
+                    None, (2, 4), (2, 3), None, None, None], [
+                    (2, 2), (2, 1), (2, 0), None], [
+                        (1, 2), (1, 1), (1, 0), (0, 2), (0, 1)]])
         self.complexes['I8'] = I8
         I8._name = 'I8'
 
@@ -436,14 +506,27 @@ class EnumeratorTests(unittest.TestCase):
 
         assert exp_resting_states == res_resting_states
 
-        exp_resting_complexes = sorted([self.complexes['Cat'], self.complexes['C2'], self.complexes['SP'],
-                                        self.complexes['I3'], self.complexes['C1'], self.complexes['OP'], self.complexes['W']])
+        exp_resting_complexes = sorted(
+            [
+                self.complexes['Cat'],
+                self.complexes['C2'],
+                self.complexes['SP'],
+                self.complexes['I3'],
+                self.complexes['C1'],
+                self.complexes['OP'],
+                self.complexes['W']])
 
         assert sorted(enum.resting_complexes) == exp_resting_complexes
 
-        exp_transient_complexes = sorted([self.complexes['I1'], self.complexes['I2'],
-                                          self.complexes['I4'], self.complexes['I5'], self.complexes['I6'],
-                                          self.complexes['I7'], self.complexes['I8']])
+        exp_transient_complexes = sorted(
+            [
+                self.complexes['I1'],
+                self.complexes['I2'],
+                self.complexes['I4'],
+                self.complexes['I5'],
+                self.complexes['I6'],
+                self.complexes['I7'],
+                self.complexes['I8']])
         res_transient_complexes = sorted(enum.transient_complexes)
 
         assert res_transient_complexes == exp_transient_complexes
@@ -501,8 +584,8 @@ class EnumeratorTests(unittest.TestCase):
         print "%d Reactions" % len(polymer_enum.reactions)
         # We're not examining len(polymer_enum.complexes) because that doesn't include ._S, which *is*
         # tested for in the failure mode.
-        assert((len(polymer_enum.complexes) + len(polymer_enum._S))
-               >= polymer_enum.MAX_COMPLEX_COUNT)
+        assert((len(polymer_enum.complexes) + len(polymer_enum._S)) >=
+               polymer_enum.MAX_COMPLEX_COUNT)
 
         complexes = polymer_enum._E + polymer_enum._T + polymer_enum._S
         assert max([len(c.strands) for c in complexes]

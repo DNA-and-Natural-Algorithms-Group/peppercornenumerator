@@ -145,8 +145,17 @@ class ReactionTests(unittest.TestCase):
         ])
 
         # test outside loop
-        locs = reactions.find_on_loop(complexes['A1'], (0, 0), 1,
-                                      lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1))
+        locs = reactions.find_on_loop(
+            complexes['A1'],
+            (0,
+             0),
+            1,
+            lambda dom1,
+            struct1,
+            loc1,
+            dom2,
+            struct2,
+            loc2: struct2 is None and dom2.can_pair(dom1))
         A1 = complexes['A1']
         expected_locs = [(
             Loop([A1.triple(0, 0)]),  # x
@@ -159,8 +168,17 @@ class ReactionTests(unittest.TestCase):
         assert locs == expected_locs
 
         # test within loop with strand break, no zippering possible
-        locs = reactions.find_on_loop(complexes['A2'], (0, 1), 1,
-                                      lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1))
+        locs = reactions.find_on_loop(
+            complexes['A2'],
+            (0,
+             1),
+            1,
+            lambda dom1,
+            struct1,
+            loc1,
+            dom2,
+            struct2,
+            loc2: struct2 is None and dom2.can_pair(dom1))
         A2 = complexes['A2']
         expected_locs = [(
             Loop([A2.triple(0, 1)]),  # x
@@ -174,8 +192,17 @@ class ReactionTests(unittest.TestCase):
 
         # test within loop with strand break, zippering possible
         # from nose.tools import set_trace; set_trace()
-        locs = reactions.find_on_loop(complexes['A3'], (0, 1), 1,
-                                      lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(dom1))
+        locs = reactions.find_on_loop(
+            complexes['A3'],
+            (0,
+             1),
+            1,
+            lambda dom1,
+            struct1,
+            loc1,
+            dom2,
+            struct2,
+            loc2: struct2 is None and dom2.can_pair(dom1))
         A3 = complexes['A3']
         expected_locs = [(
             Loop([A3.triple(0, 1), A3.triple(0, 2)]),  # x y
@@ -213,8 +240,9 @@ class BindTests(unittest.TestCase):
         for complex in self.three_arm_enumerator.initial_complexes:
             self.complexes[complex.name] = complex
 
-        self.three_arm_enumerator_reduced = Enumerator(self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [
-                                                       self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
+        self.three_arm_enumerator_reduced = Enumerator(
+            self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [
+                self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
 
         self.index_parts = index_parts
 
@@ -311,8 +339,14 @@ class BindTests(unittest.TestCase):
         # ( + .(. + )..(.))
 
         s1 = Strand('s1', [self.domains['1']])
-        s2 = Strand('s2', [self.domains['5'], self.domains['2'], self.domains['6'],
-                           self.domains['3'], self.domains['4'], self.domains['3*'], self.domains['1*']])
+        s2 = Strand('s2',
+                    [self.domains['5'],
+                     self.domains['2'],
+                        self.domains['6'],
+                        self.domains['3'],
+                        self.domains['4'],
+                        self.domains['3*'],
+                        self.domains['1*']])
         s3 = Strand('s3', [self.domains['4*'],
                            self.domains['5*'], self.domains['6']])
 
@@ -402,8 +436,11 @@ class BindTests(unittest.TestCase):
         # __ _______
         #   /
         # Cat   PS
-        exp_out = [ReactionPathway(
-            'bind11', [c], [self.complexes['I4']]), ReactionPathway('bind11', [c], [c1])]
+        exp_out = [
+            ReactionPathway(
+                'bind11', [c], [
+                    self.complexes['I4']]), ReactionPathway(
+                'bind11', [c], [c1])]
         out_list = bind11(c)
 
         exp_out.sort()
@@ -454,10 +491,16 @@ class BindTests(unittest.TestCase):
         #      /
         #     /
 
-        out_complex, out_loc1, out_loc2 = combine_complexes_21(self.complexes['C1'], (PS_index, 3),
-                                                               self.complexes['I3'], (BS_index, 2))
-        exp_complex = Complex('I4', [self.strands['PS'], self.strands['Cat'], self.strands['BS'], self.strands['OP']],
-                              [[(3, 2), (3, 1), (3, 0), None, None], [(2, 1), (2, 0)], [(1, 1), (1, 0), None, None, None, None], [(0, 2), (0, 1), (0, 0), None]])
+        out_complex, out_loc1, out_loc2 = combine_complexes_21(
+            self.complexes['C1'], (PS_index, 3), self.complexes['I3'], (BS_index, 2))
+        exp_complex = Complex(
+            'I4', [
+                self.strands['PS'], self.strands['Cat'], self.strands['BS'], self.strands['OP']], [
+                [
+                    (3, 2), (3, 1), (3, 0), None, None], [
+                    (2, 1), (2, 0)], [
+                        (1, 1), (1, 0), None, None, None, None], [
+                            (0, 2), (0, 1), (0, 0), None]])
         #                             ^^^^                                            ^^^^
         exp_locs = (exp_complex.rotate_location((0, 3)),
                     exp_complex.rotate_location((2, 2)))
@@ -473,11 +516,16 @@ class BindTests(unittest.TestCase):
 
         BS_index = self.complexes['W'].strand_index('BS')
 
-        out_complex, out_loc1, out_loc2 = combine_complexes_21(self.complexes['W'], (BS_index, 0),
-                                                               self.complexes['Cat'], (0, 1))
+        out_complex, out_loc1, out_loc2 = combine_complexes_21(
+            self.complexes['W'], (BS_index, 0), self.complexes['Cat'], (0, 1))
 
-        exp_complex = Complex('C', [self.strands['BS'], self.strands['PS'], self.strands['Cat']],
-                              [[None, (1, 4), (1, 3), (1, 2), (1, 1), (1, 0)], [(0, 5), (0, 4), (0, 3), (0, 2), (0, 1)], [None, None]])
+        exp_complex = Complex(
+            'C', [
+                self.strands['BS'], self.strands['PS'], self.strands['Cat']], [
+                [
+                    None, (1, 4), (1, 3), (1, 2), (1, 1), (1, 0)], [
+                    (0, 5), (0, 4), (0, 3), (0, 2), (0, 1)], [
+                        None, None]])
         #     ^^^^                                                                                            ^^^^
         exp_locs = (exp_complex.rotate_location((0, 0)),
                     exp_complex.rotate_location((2, 1)))
@@ -513,8 +561,13 @@ class BindTests(unittest.TestCase):
 
         out_complex, out_loc1, out_loc2 = combine_complexes_21(
             complexes['Waste'], (1, 0), complexes['Fuel'], (0, 1))
-        exp_complex = Complex('complex', [strands['S2_T_S3'], strands['S2_T_S3'], strands['T_S3_T']],
-                              [[None, (2, 2), (2, 1)], [None, None, None], [None, (0, 2), (0, 1)]])
+        exp_complex = Complex(
+            'complex', [
+                strands['S2_T_S3'], strands['S2_T_S3'], strands['T_S3_T']], [
+                [
+                    None, (2, 2), (2, 1)], [
+                    None, None, None], [
+                        None, (0, 2), (0, 1)]])
         #                             ^^^^        ^^^^
         exp_locs = (exp_complex.rotate_location((2, 0)),
                     exp_complex.rotate_location((1, 1)))
@@ -613,11 +666,18 @@ class BindTests(unittest.TestCase):
     def testBind21(self):
         out_list = bind21(self.complexes['C1'], self.complexes['I3'])
 
-        exp_complex = Complex('I4', [self.strands['PS'], self.strands['Cat'], self.strands['BS'], self.strands['OP']], [
-                              [(3, 2), (3, 1), (3, 0), (2, 2), None], [(2, 1), (2, 0)], [(1, 1), (1, 0), (0, 3), None, None, None], [(0, 2), (0, 1), (0, 0), None]])
+        exp_complex = Complex(
+            'I4', [
+                self.strands['PS'], self.strands['Cat'], self.strands['BS'], self.strands['OP']], [
+                [
+                    (3, 2), (3, 1), (3, 0), (2, 2), None], [
+                    (2, 1), (2, 0)], [
+                        (1, 1), (1, 0), (0, 3), None, None, None], [
+                            (0, 2), (0, 1), (0, 0), None]])
 
         exp_pathway = ReactionPathway(
-            'bind21', [self.complexes['C1'], self.complexes['I3']], [exp_complex])
+            'bind21', [
+                self.complexes['C1'], self.complexes['I3']], [exp_complex])
 
         print out_list
 
@@ -885,8 +945,20 @@ class OpenTests(unittest.TestCase):
 
         res_list = find_releases(complex)
 
-        exp_list = [self.complexes['I3'], Complex('OP', [self.strands['OP']], [[None, None, None, None]]),
-                    Complex('PS', [self.strands['PS']], [[None, None, None, None, None]])]
+        exp_list = [self.complexes['I3'],
+                    Complex('OP',
+                            [self.strands['OP']],
+                            [[None,
+                              None,
+                              None,
+                              None]]),
+                    Complex('PS',
+                            [self.strands['PS']],
+                            [[None,
+                              None,
+                              None,
+                              None,
+                              None]])]
 
         res_list.sort()
         exp_list.sort()
@@ -958,8 +1030,14 @@ class OpenTests(unittest.TestCase):
         #          \
         # Cat   PS
 
-        complex = Complex('T1', [self.strands['BS'], self.strands['OP'], self.strands['PS'], self.strands['Cat']],
-                          [[(3, 1), (3, 0), (2, 3), None, None, None], [(2, 2), (2, 1), None, None], [None, (1, 1), (1, 0), (0, 2), None], [(0, 1), (0, 0)]])
+        complex = Complex(
+            'T1', [
+                self.strands['BS'], self.strands['OP'], self.strands['PS'], self.strands['Cat']], [
+                [
+                    (3, 1), (3, 0), (2, 3), None, None, None], [
+                    (2, 2), (2, 1), None, None], [
+                        None, (1, 1), (1, 0), (0, 2), None], [
+                            (0, 1), (0, 0)]])
 
         res_list = find_releases(complex)
 
@@ -1007,8 +1085,17 @@ class OpenTests(unittest.TestCase):
                           [None, None, None, (1, 2), None], [None, None, (0, 3), None, None, None]])
         res_list = open(complex)
 
-        exp_rp = ReactionPathway('open', [complex], [Complex('PS', [self.strands['PS']], [
-                                 [None, None, None, None, None]]), Complex('BS', [self.strands['BS']], [[None, None, None, None, None, None]])])
+        exp_rp = ReactionPathway(
+            'open', [complex], [
+                Complex(
+                    'PS', [
+                        self.strands['PS']], [
+                        [
+                            None, None, None, None, None]]), Complex(
+                    'BS', [
+                        self.strands['BS']], [
+                        [
+                            None, None, None, None, None, None]])])
 
         assert res_list == [exp_rp]
 
@@ -1050,8 +1137,11 @@ class OpenTests(unittest.TestCase):
         #   __/
         #   __  Cat
         #   ^^
-        exp_list = [ReactionPathway('open', [self.complexes['I4']], [
-                                    self.complexes['I3'], self.complexes['C1']])]
+        exp_list = [
+            ReactionPathway(
+                'open', [
+                    self.complexes['I4']], [
+                    self.complexes['I3'], self.complexes['C1']])]
 
         res_list.sort()
         exp_list.sort()
@@ -1091,8 +1181,11 @@ class OpenTests(unittest.TestCase):
         #  Cat
         #  ___
 
-        exp_list = [ReactionPathway('open', [self.complexes['I1']], [
-                                    self.complexes['C2'], self.complexes['Cat']])]
+        exp_list = [
+            ReactionPathway(
+                'open', [
+                    self.complexes['I1']], [
+                    self.complexes['C2'], self.complexes['Cat']])]
 
         res_list.sort()
         exp_list.sort()
@@ -1112,8 +1205,11 @@ class OpenTests(unittest.TestCase):
         #      BS
 
         res_list = open(self.complexes['I2'])
-        exp_list = [ReactionPathway('open', [self.complexes['I2']], [
-                                    self.complexes['I3'], self.complexes['SP']])]
+        exp_list = [
+            ReactionPathway(
+                'open', [
+                    self.complexes['I2']], [
+                    self.complexes['I3'], self.complexes['SP']])]
 
         res_list.sort()
         exp_list.sort()
@@ -1217,8 +1313,15 @@ class OpenTests(unittest.TestCase):
         # Zipping possible
         rxns = reactions.open(complexes['A3'])
         print_rxns(rxns)
-        assert set(rxns) == set([ReactionPathway('open', [complexes['A3']], [
-            complexes['A4']]), ReactionPathway('open', [complexes['A3']], [complexes['A5']])])
+        assert set(rxns) == set(
+            [
+                ReactionPathway(
+                    'open', [
+                        complexes['A3']], [
+                        complexes['A4']]), ReactionPathway(
+                    'open', [
+                        complexes['A3']], [
+                        complexes['A5']])])
 
         enable_zipping()
         restore_release_cutoff()
@@ -1239,8 +1342,15 @@ class OpenTests(unittest.TestCase):
         # Zipping possible
         rxns = reactions.open(complexes['A1'])
         print_rxns(rxns)
-        assert set(rxns) == set([ReactionPathway('open', [complexes['A1']], [
-            complexes['A2']]), ReactionPathway('open', [complexes['A1']], [complexes['A3']])])
+        assert set(rxns) == set(
+            [
+                ReactionPathway(
+                    'open', [
+                        complexes['A1']], [
+                        complexes['A2']]), ReactionPathway(
+                    'open', [
+                        complexes['A1']], [
+                        complexes['A3']])])
         enable_zipping()
         restore_release_cutoff()
 
@@ -1538,8 +1648,12 @@ class Branch3WayTests(unittest.TestCase):
         for complex in enumerator.initial_complexes:
             self.complexes[complex.name] = complex
 
-        IAbind = Complex('IAbind', [self.strands['I'], self.strands['A']], [[None, None, None, (1, 0)], [
-                         (0, 3), (1, 8), (1, 7), (1, 6), None, None, (1, 3), (1, 2), (1, 1)]])
+        IAbind = Complex(
+            'IAbind', [
+                self.strands['I'], self.strands['A']], [
+                [
+                    None, None, None, (1, 0)], [
+                    (0, 3), (1, 8), (1, 7), (1, 6), None, None, (1, 3), (1, 2), (1, 1)]])
 
         res_list = branch_3way(IAbind)
         exp_list = [ReactionPathway('branch_3way', [IAbind], [
@@ -1566,8 +1680,11 @@ class Branch3WayTests(unittest.TestCase):
             self.complexes[complex.name] = complex
 
         res_list = branch_3way(self.complexes['C1'])
-        exp_list = [ReactionPathway('branch_3way', [self.complexes['C1']], [
-                                    self.complexes['C2'], self.complexes['C3']])]
+        exp_list = [
+            ReactionPathway(
+                'branch_3way', [
+                    self.complexes['C1']], [
+                    self.complexes['C2'], self.complexes['C3']])]
 
         print res_list
         print exp_list
@@ -1661,11 +1778,23 @@ class Branch4WayTests(unittest.TestCase):
         s4 = Strand('s4', [self.domains['5'],
                            self.domains['2'], self.domains['1']])
 
-        c1 = Complex('c1', [s1, s2, s3, s4], [[(3, 2), (3, 1), (1, 0)], [
-                     (0, 2), (2, 1), (2, 0)], [(1, 2), (1, 1), (3, 0)], [(2, 2), (0, 1), (0, 0)]])
+        c1 = Complex(
+            'c1', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (3, 1), (1, 0)], [
+                    (0, 2), (2, 1), (2, 0)], [
+                        (1, 2), (1, 1), (3, 0)], [
+                            (2, 2), (0, 1), (0, 0)]])
 
-        c2 = Complex('c2', [s1, s2, s3, s4], [[(3, 2), (1, 1), (1, 0)], [
-                     (0, 2), (0, 1), (2, 0)], [(1, 2), (3, 1), (3, 0)], [(2, 2), (2, 1), (0, 0)]])
+        c2 = Complex(
+            'c2', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (1, 1), (1, 0)], [
+                    (0, 2), (0, 1), (2, 0)], [
+                        (1, 2), (3, 1), (3, 0)], [
+                            (2, 2), (2, 1), (0, 0)]])
 
         res_list = do_4way_migration(c1, (0, 1), (3, 1), (1, 1), (2, 1))
         exp_list = [c2]
@@ -1685,8 +1814,14 @@ class Branch4WayTests(unittest.TestCase):
         s4 = Strand('s4', [self.domains['5'],
                            self.domains['2'], self.domains['1']])
 
-        c2 = Complex('c2', [s1, s2, s3, s4], [[(3, 2), (1, 1), (1, 0)], [
-                     (0, 2), (0, 1), (2, 0)], [(1, 2), (3, 1), (3, 0)], [(2, 2), (2, 1), (0, 0)]])
+        c2 = Complex(
+            'c2', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (1, 1), (1, 0)], [
+                    (0, 2), (0, 1), (2, 0)], [
+                        (1, 2), (3, 1), (3, 0)], [
+                            (2, 2), (2, 1), (0, 0)]])
 
         c3 = Complex('c3', [s1, s2], [
                      [(1, 2), (1, 1), (1, 0)], [(0, 2), (0, 1), (0, 0)]])
@@ -1725,11 +1860,23 @@ class Branch4WayTests(unittest.TestCase):
         s4 = Strand('s4', [self.domains['5'],
                            self.domains['2'], self.domains['1']])
 
-        c1 = Complex('c1', [s1, s2, s3, s4], [[(3, 2), (3, 1), (1, 0)], [
-                     (0, 2), (2, 1), (2, 0)], [(1, 2), (1, 1), (3, 0)], [(2, 2), (0, 1), (0, 0)]])
+        c1 = Complex(
+            'c1', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (3, 1), (1, 0)], [
+                    (0, 2), (2, 1), (2, 0)], [
+                        (1, 2), (1, 1), (3, 0)], [
+                            (2, 2), (0, 1), (0, 0)]])
 
-        c2 = Complex('c2', [s1, s2, s3, s4], [[(3, 2), (1, 1), (1, 0)], [
-                     (0, 2), (0, 1), (2, 0)], [(1, 2), (3, 1), (3, 0)], [(2, 2), (2, 1), (0, 0)]])
+        c2 = Complex(
+            'c2', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (1, 1), (1, 0)], [
+                    (0, 2), (0, 1), (2, 0)], [
+                        (1, 2), (3, 1), (3, 0)], [
+                            (2, 2), (2, 1), (0, 0)]])
 
         res_list = branch_4way(c1)
         exp_list = [ReactionPathway('branch_4way', [c1], [c2])]
@@ -1752,11 +1899,23 @@ class Branch4WayTests(unittest.TestCase):
         s4 = Strand('s4', [self.domains['5'],
                            self.domains['2'], self.domains['1']])
 
-        c1 = Complex('c1', [s1, s2, s3, s4], [[(3, 2), (3, 1), (1, 0)], [
-                     (0, 2), (2, 1), (2, 0)], [(1, 2), (1, 1), (3, 0)], [(2, 2), (0, 1), (0, 0)]])
+        c1 = Complex(
+            'c1', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (3, 1), (1, 0)], [
+                    (0, 2), (2, 1), (2, 0)], [
+                        (1, 2), (1, 1), (3, 0)], [
+                            (2, 2), (0, 1), (0, 0)]])
 
-        c2 = Complex('c2', [s1, s2, s3, s4], [[(3, 2), (1, 1), (1, 0)], [
-                     (0, 2), (0, 1), (2, 0)], [(1, 2), (3, 1), (3, 0)], [(2, 2), (2, 1), (0, 0)]])
+        c2 = Complex(
+            'c2', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (1, 1), (1, 0)], [
+                    (0, 2), (0, 1), (2, 0)], [
+                        (1, 2), (3, 1), (3, 0)], [
+                            (2, 2), (2, 1), (0, 0)]])
 
         res_list = branch_4way(c2)
         exp_list = [ReactionPathway('branch_4way', [c2], [c1])]
@@ -1779,11 +1938,23 @@ class Branch4WayTests(unittest.TestCase):
         s4 = Strand('s4', [self.domains['5'],
                            self.domains['2'], self.domains['1']])
 
-        c1 = Complex('c1', [s1, s2, s3, s4], [[(3, 2), (3, 1), (1, 0)], [
-                     (0, 2), (2, 1), (2, 0)], [(1, 2), (1, 1), (3, 0)], [(2, 2), (0, 1), (0, 0)]])
+        c1 = Complex(
+            'c1', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (3, 1), (1, 0)], [
+                    (0, 2), (2, 1), (2, 0)], [
+                        (1, 2), (1, 1), (3, 0)], [
+                            (2, 2), (0, 1), (0, 0)]])
 
-        c2 = Complex('c2', [s1, s2, s3, s4], [[(3, 2), (1, 1), (1, 0)], [
-                     (0, 2), (0, 1), (2, 0)], [(1, 2), (3, 1), (3, 0)], [(2, 2), (2, 1), (0, 0)]])
+        c2 = Complex(
+            'c2', [
+                s1, s2, s3, s4], [
+                [
+                    (3, 2), (1, 1), (1, 0)], [
+                    (0, 2), (0, 1), (2, 0)], [
+                        (1, 2), (3, 1), (3, 0)], [
+                            (2, 2), (2, 1), (0, 0)]])
 
         c3 = Complex('c3', [s1, s2], [
                      [(1, 2), (1, 1), (1, 0)], [(0, 2), (0, 1), (0, 0)]])
@@ -1791,8 +1962,11 @@ class Branch4WayTests(unittest.TestCase):
                      [(1, 2), (1, 1), (1, 0)], [(0, 2), (0, 1), (0, 0)]])
 
         res_list = branch_4way(c2)
-        exp_list = [ReactionPathway('branch_4way', [c2], [c3, c4]), ReactionPathway(
-            'branch_4way', [c2], [c1])]
+        exp_list = [
+            ReactionPathway(
+                'branch_4way', [c2], [
+                    c3, c4]), ReactionPathway(
+                'branch_4way', [c2], [c1])]
 
         print exp_list
         print res_list
@@ -1840,10 +2014,24 @@ class ReactionPathwayTests(unittest.TestCase):
             self.complexes[complex.name] = complex
 
     def testHash(self):
-        assert hash(ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2']])) == hash(
-            ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2']]))
-        assert hash(ReactionPathway('branch_3way', [self.complexes['C1']], [self.complexes['C2']])) != hash(
-            ReactionPathway('branch_4way', [self.complexes['C2']], [self.complexes['Cat']]))
+        assert hash(
+            ReactionPathway(
+                'branch_3way', [
+                    self.complexes['C1']], [
+                    self.complexes['C2']])) == hash(
+            ReactionPathway(
+                'branch_3way', [
+                    self.complexes['C1']], [
+                    self.complexes['C2']]))
+        assert hash(
+            ReactionPathway(
+                'branch_3way', [
+                    self.complexes['C1']], [
+                    self.complexes['C2']])) != hash(
+            ReactionPathway(
+                'branch_4way', [
+                    self.complexes['C2']], [
+                    self.complexes['Cat']]))
 
     def testName(self):
         self.rp = ReactionPathway('branch_3way', [self.complexes['C1']], [
@@ -1870,8 +2058,15 @@ class ReactionPathwayTests(unittest.TestCase):
 
         assert not rp1 == rp2
 
-        rp3 = ReactionPathway('branch_3way', [Complex('C1', [self.strands['PS'], self.strands['OP']], [
-                              [(1, 2), (1, 1), (1, 0), None, None], [(0, 2), (0, 1), (0, 0), None]])], [self.complexes['C2']])
+        rp3 = ReactionPathway(
+            'branch_3way', [
+                Complex(
+                    'C1', [
+                        self.strands['PS'], self.strands['OP']], [
+                        [
+                            (1, 2), (1, 1), (1, 0), None, None], [
+                            (0, 2), (0, 1), (0, 0), None]])], [
+                                self.complexes['C2']])
 
         assert rp1 == rp3
 
@@ -1895,8 +2090,15 @@ class ReactionPathwayTests(unittest.TestCase):
                               self.complexes['C2']])
         rp2 = ReactionPathway('branch_4way', [self.complexes['C2']], [
                               self.complexes['Cat']])
-        rp3 = ReactionPathway('branch_3way', [Complex('C1', [self.strands['PS'], self.strands['OP']], [
-                              [(1, 2), (1, 1), (1, 0), None, None], [(0, 2), (0, 1), (0, 0), None]])], [self.complexes['C2']])
+        rp3 = ReactionPathway(
+            'branch_3way', [
+                Complex(
+                    'C1', [
+                        self.strands['PS'], self.strands['OP']], [
+                        [
+                            (1, 2), (1, 1), (1, 0), None, None], [
+                            (0, 2), (0, 1), (0, 0), None]])], [
+                                self.complexes['C2']])
         rp4 = ReactionPathway('branch_4way', [self.complexes['C1']], [
                               self.complexes['C2']])
         rp5 = ReactionPathway('branch_3way', [self.complexes['Cat']], [
@@ -1921,8 +2123,10 @@ class ReactionPathwayTests(unittest.TestCase):
 
         assert rp1 == rp2
 
-        rp3 = ReactionPathway('branch_3way', [self.complexes['C1'], self.complexes['Cat'], self.complexes['Cat']], [
-                              self.complexes['C2'], self.complexes['Cat'], self.complexes['Cat']])
+        rp3 = ReactionPathway(
+            'branch_3way', [
+                self.complexes['C1'], self.complexes['Cat'], self.complexes['Cat']], [
+                self.complexes['C2'], self.complexes['Cat'], self.complexes['Cat']])
         rp3.normalize()
 
         assert rp1 == rp3
