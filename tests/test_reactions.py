@@ -127,7 +127,8 @@ class ReactionTests(unittest.TestCase):
         assert bound_locs == make_loop(A1, (1, 2), (1, 1), (1, 0))
         assert before == make_loop(A1)
         assert after == make_loop(A1, (1, 3))
-        # assert (Loop([Domain(x), Domain(y), Domain(z)]), Loop([Domain(x*), Domain(y*), Domain(z*)]), Loop([]), Loop([Domain(a*)]))
+        # assert (Loop([Domain(x), Domain(y), Domain(z)]), Loop([Domain(x*),
+        # Domain(y*), Domain(z*)]), Loop([]), Loop([Domain(a*)]))
 
     def testFindOnLoop(self):
         # enable_new_zipping()

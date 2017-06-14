@@ -16,9 +16,10 @@ from peppercornenumerator.reactions import ReactionPathway, auto_name
 from peppercornenumerator.condense import condense_resting_states
 
 
-def output_legacy(enumerator, filename, output_condensed=False, output_rates=False, condense_options={}):
+def output_legacy(enumerator, filename, output_condensed=False,
+                  output_rates=False, condense_options={}):
     """
-    Legacy text-based output scheme similar to that used in the original 
+    Legacy text-based output scheme similar to that used in the original
     enumerator. Designed to be simultaneously parsable and human-readable.
     Supports output of condensed graph in addition to the full graph. Does
     not support strands.
@@ -106,7 +107,8 @@ def output_legacy(enumerator, filename, output_condensed=False, output_rates=Fal
 output_legacy.supports_condensed = True
 
 
-def output_pil(enumerator, filename, output_condensed=False, output_rates=True, condense_options={}):
+def output_pil(enumerator, filename, output_condensed=False,
+               output_rates=True, condense_options={}):
     """
     Text-based output using the Pepper Intermediate Language (PIL)
     """
@@ -147,7 +149,7 @@ def output_pil(enumerator, filename, output_condensed=False, output_rates=True, 
     output_file.write("\n# Domains \n")
 
     def seq(dom):
-        if(dom.sequence != None):
+        if(dom.sequence is not None):
             return dom.sequence
         else:
             return "N" * len(dom)
@@ -190,7 +192,8 @@ def output_pil(enumerator, filename, output_condensed=False, output_rates=True, 
     output_file.close()
 
 
-def output_kernel(enumerator, filename, output_condensed=False, output_rates=True, condense_options={}):
+def output_kernel(enumerator, filename, output_condensed=False,
+                  output_rates=True, condense_options={}):
     """
     Text-based output using the Pepper Intermediate Language (PIL)
     """
@@ -229,7 +232,7 @@ def output_kernel(enumerator, filename, output_condensed=False, output_rates=Tru
     output_file.write("\n# Domains \n")
 
     def seq(dom):
-        if(dom.sequence != None):
+        if(dom.sequence is not None):
             return dom.sequence
         else:
             return "N" * len(dom)
@@ -272,7 +275,8 @@ def output_kernel(enumerator, filename, output_condensed=False, output_rates=Tru
     output_file.close()
 
 
-def output_json(enumerator, filename, output_condensed=False, output_rates=True, condense_options={}):
+def output_json(enumerator, filename, output_condensed=False,
+                output_rates=True, condense_options={}):
     """
     JSON-based output schema intended to be easily machine parsable. Uses
     python's JSON serialization libraries.
@@ -316,7 +320,7 @@ def output_json(enumerator, filename, output_condensed=False, output_rates=True,
         # temp_domain['name'] = domain.name
         # temp_domain['length'] = domain.length
         # temp_domain['is_complement'] = domain.is_complement
-        if domain.sequence != None:
+        if domain.sequence is not None:
             temp_domain['sequence'] = domain.sequence
         return temp_domain
 
@@ -373,7 +377,8 @@ def output_json(enumerator, filename, output_condensed=False, output_rates=True,
 output_json.supports_condensed = True
 
 
-def output_graph(enumerator, filename, output_condensed=False, output_rates=False):
+def output_graph(enumerator, filename, output_condensed=False,
+                 output_rates=False):
     if not output_condensed:
         output_full_graph(enumerator, filename)
     else:
@@ -383,7 +388,8 @@ def output_graph(enumerator, filename, output_condensed=False, output_rates=Fals
 output_graph.supports_condensed = True
 
 
-def output_dotfile(enumerator, filename, output_condensed=False, output_rates=False):
+def output_dotfile(enumerator, filename,
+                   output_condensed=False, output_rates=False):
     if not output_condensed:
         output_full_dotfile(enumerator, filename)
     else:
@@ -461,7 +467,8 @@ def output_full_dotfile(enumerator, filename):
         fout.write("}\n")
 
     # We now draw the reactions. If there is one product and one reagent, then
-    # we just draw an edge between the two. Otherwise we create a reaction node.
+    # we just draw an edge between the two. Otherwise we create a reaction
+    # node.
     for (i, reaction) in enumerate(enumerator.reactions):
         if (len(reaction.products) == 1) and (len(reaction.reactants) == 1):
             fout.write("%s -> %s\n" % (str(reaction.reactants[0]),
@@ -542,7 +549,8 @@ def output_condensed_graph(enumerator, filename):
     subprocess.call(["dot", "-O", "-Teps", "%s.dot" % filename])
 
 
-def output_sbml(enumerator, filename, output_condensed=False, output_rates=True, condense_options={}):
+def output_sbml(enumerator, filename, output_condensed=False,
+                output_rates=True, condense_options={}):
     # # default initial concentration of all species is 100 nM
     # initial_concentration = 10e-7
 
@@ -636,7 +644,8 @@ def output_sbml(enumerator, filename, output_condensed=False, output_rates=True,
     fout.close()
 
 
-def output_crn(enumerator, filename, output_condensed=False, output_rates=True, condense_options={}):
+def output_crn(enumerator, filename, output_condensed=False,
+               output_rates=True, condense_options={}):
     output_file = open(filename, 'w')
 
     def write_reaction(output_file, reaction):
@@ -658,7 +667,8 @@ def output_crn(enumerator, filename, output_condensed=False, output_rates=True, 
     output_file.close()
 
 
-def output_k(enumerator, filename, output_condensed=False, output_rates=True, condense_options={}):
+def output_k(enumerator, filename, output_condensed=False,
+             output_rates=True, condense_options={}):
     output_file = open(filename, 'w')
 
     def write_reaction(output_file, reaction, reversible=True):
@@ -690,7 +700,8 @@ def output_k(enumerator, filename, output_condensed=False, output_rates=True, co
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-modules
 
 
-def output_case(enumerator, filename, output_condensed=False, condense_options={}):
+def output_case(enumerator, filename, output_condensed=False,
+                condense_options={}):
     def tab(x):
         return "\t" * x
 
@@ -708,7 +719,9 @@ def output_case(enumerator, filename, output_condensed=False, condense_options={
 
     of.write(",\n".join(lines) + "\n")
     of.write(tab(1) + "}\n")
-    of.write(tab(1) + "assert set(domains.values()) == set(enumerator.domains)\n\n")
+    of.write(
+        tab(1) +
+        "assert set(domains.values()) == set(enumerator.domains)\n\n")
 
     # Strands
     of.write(tab(1) + "# Strands \n")
@@ -720,7 +733,9 @@ def output_case(enumerator, filename, output_condensed=False, condense_options={
             tab(2) + "'%s' : Strand('%s', [%s])" % (strand.name, strand.name, doms))
     of.write(",\n".join(lines) + "\n")
     of.write(tab(1) + "}\n")
-    of.write(tab(1) + "assert set(strands.values()) == set(enumerator.strands)\n\n")
+    of.write(
+        tab(1) +
+        "assert set(strands.values()) == set(enumerator.strands)\n\n")
 
     # Complexes
     of.write(tab(1) + "# Complexes \n")

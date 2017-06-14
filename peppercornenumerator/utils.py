@@ -120,7 +120,7 @@ def parse_concentration(condition):
     parts = re.match(
         r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*(p|n|u|m|d|)M", condition)
 
-    if parts != None:
+    if parts is not None:
         conc, unit = parts.groups()
         base = si_prefix_to_exp[unit]
         concentration = float(conc) * base
@@ -138,7 +138,7 @@ def format_si(n):
 
 
 def resolve_length(length):
-    if (type(length) == type(0)):
+    if (isinstance(length, type(0))):
         return length
     elif (length == "short"):
         return SHORT_DOMAIN_LENGTH
@@ -175,7 +175,7 @@ def parse_dot_paren(structure_line):
     Example::
 
                              0,0  0,1  0,2   0,3   0,4     1,0   1,1
-             "...((+))" -> [[None,None,None,(1,0),(1,1)],[(0,4),(0,3)]] 
+             "...((+))" -> [[None,None,None,(1,0),(1,1)],[(0,4),(0,3)]]
 
     """
     complex_structure = []
@@ -215,8 +215,8 @@ def parse_dot_paren(structure_line):
 
 def index_parts(enum):
     """
-    Testing tool. Accepts an enumerator, produces a tuple 
-    (domains, strands, complexes) where each element is a dict mapping names 
+    Testing tool. Accepts an enumerator, produces a tuple
+    (domains, strands, complexes) where each element is a dict mapping names
     of those objects to the objects in the enumerator. For instance, domains
     maps the name of each domain in the enumerator to the Domain object
     """
@@ -250,7 +250,7 @@ class Loop(object):
 
         # calculate stems, bases, and is_open   #loop re-written by EW
         for step in loop:
-            if step == None:
+            if step is None:
                 is_open = True
             else:
                 (dom, struct, loc) = step
@@ -315,7 +315,8 @@ class Loop(object):
             return item in self.locs
 
     def __str__(self):
-        return ' '.join([(str(s) if s is not None else '+') for s in self.domains])
+        return ' '.join([(str(s) if s is not None else '+')
+                         for s in self.domains])
 
     def __repr__(self):
         return "Loop(%s)" % list(self.domains)
@@ -330,14 +331,14 @@ class Loop(object):
 class Domain(object):
     """
     Represents a single domain. We allow several options for specifying domain
-    properties. Domains might have an explicit integer (bp) length, or may be 
+    properties. Domains might have an explicit integer (bp) length, or may be
     designated as short or long. If the latter method is used, the code will use
     the relevant constant as the integer domain length.
     """
 
     def __init__(self, name, length, is_complement=False, sequence=None):
         """
-        Default constructor. Takes a domain name, a length (positive integer or 
+        Default constructor. Takes a domain name, a length (positive integer or
         "short" or "long"), and optionally a base sequence.
         """
         self._name = name
@@ -414,8 +415,8 @@ class Domain(object):
     @property
     def length(self):
         """
-        The length of this domain. Either uses the integer length previously 
-        specified or the constant associated with "short" and "long" domains as 
+        The length of this domain. Either uses the integer length previously
+        specified or the constant associated with "short" and "long" domains as
         appropriate.
         """
         return resolve_length(self._length)
@@ -463,7 +464,7 @@ class Strand(object):
         return (self.name == other.name) and (self.domains == other.domains)
 
     def __hash__(self):
-        if(self._hash == None):
+        if(self._hash is None):
             self._hash = hash((self.name, tuple(self.domains)))
 
         return self._hash
@@ -537,10 +538,10 @@ class Complex(object):
 
                                 Examples:
 
-                                *	``[[(0, 2) None (0, 0)]]`` indicates one strand with 3 domains 
-                                        with the first one bound to the last one, and the middle one free. 
-                                *	``[[None (1, 0) (1, 1)], [(0, 1) (0, 2) None]]`` indicates 2 
-                                        strands with 3 domains each -- the first two domains of the second 
+                                *	``[[(0, 2) None (0, 0)]]`` indicates one strand with 3 domains
+                                        with the first one bound to the last one, and the middle one free.
+                                *	``[[None (1, 0) (1, 1)], [(0, 1) (0, 2) None]]`` indicates 2
+                                        strands with 3 domains each -- the first two domains of the second
                                         strand are bound to the last two of the first.
 
                                 Lists should be in the same order as the strands in the
@@ -584,7 +585,8 @@ class Complex(object):
         self._rotate_strands_n(min_perm)  # rotate until we're in that form
         self._rotations = -min_perm
 
-        # Holds a unique hash identifying this complex (computed lazily by self.__hash__)
+        # Holds a unique hash identifying this complex (computed lazily by
+        # self.__hash__)
         self._hash = None
 
         # Store concentration
@@ -592,10 +594,10 @@ class Complex(object):
 
     def __hash__(self):
         """
-        Computes a unique hash to represent this complex. Uses the tuple of 
+        Computes a unique hash to represent this complex. Uses the tuple of
         strands and structure
         """
-        if (self._hash == None):
+        if (self._hash is None):
             strands = tuple(self._strands)
             struct = tuple([tuple(s) for s in self._structure])
             self._hash = hash((strands, struct))
@@ -638,7 +640,8 @@ class Complex(object):
         return self.name
 
     def full_string(self):
-        return "Complex(%s): %s %s" % (self.name, str(self.strands), str(self.structure))
+        return "Complex(%s): %s %s" % (
+            self.name, str(self.strands), str(self.structure))
 
     @property
     def name(self):
@@ -673,7 +676,7 @@ class Complex(object):
         """
         Returns the domain at the given (strand,domain) index in this complex (loc is a (strand,domain) tuple)
         """
-        if(loc != None):
+        if(loc is not None):
             return self._strands[loc[0]]._domains[loc[1]]
         return None
 
@@ -681,16 +684,16 @@ class Complex(object):
         """
         Returns the strand at the given index in this complex
         """
-        if(loc != None):
+        if(loc is not None):
             return self._strands[loc]
         return None
 
     def get_structure(self, loc):
         """
-        Returns a (strand index, domain index) pair indicating to which domain this location is bound, 
+        Returns a (strand index, domain index) pair indicating to which domain this location is bound,
         or None if it is unbound.
         """
-        if(loc != None):
+        if(loc is not None):
             return self.structure[loc[0]][loc[1]]
         return None
 
@@ -724,7 +727,7 @@ class Complex(object):
                 available = False
 
                 # Domains cannot be on an ext. loop if bound
-                if self.structure[strand_num][dom_num] == None:
+                if self.structure[strand_num][dom_num] is None:
                     # First we iterate 'to the left' and see if we're on an
                     # external loop in that direction.
                     checking_strand_num = strand_num
@@ -747,7 +750,7 @@ class Complex(object):
 
                         # If the current domain is unbound, then we keep moving
                         # to the left
-                        elif self.structure[checking_strand_num][checking_dom_num] == None:
+                        elif self.structure[checking_strand_num][checking_dom_num] is None:
                             checking_dom_num -= 1
 
                         # If we reach some structure, then we jump to the other
@@ -786,7 +789,7 @@ class Complex(object):
 
                         # If the current domain is unbound, then we keep moving
                         # to the right
-                        elif self.structure[checking_strand_num][checking_dom_num] == None:
+                        elif self.structure[checking_strand_num][checking_dom_num] is None:
                             checking_dom_num += 1
 
                         # If we reach some structure, then we jump to the other
@@ -824,7 +827,7 @@ class Complex(object):
         for list in self.structure:
             new_list = []
             for el in list:
-                if el == None:
+                if el is None:
                     new_list.append(None)
                 else:
                     (strand, domain) = el
@@ -855,7 +858,7 @@ class Complex(object):
             for list in old_struct:
                 new_list = []
                 for el in list:
-                    if el == None:
+                    if el is None:
                         new_list.append(None)
                     else:
                         (strand, domain) = el
@@ -888,7 +891,7 @@ class Complex(object):
 
     def check_structure(self):
         """
-        Determines whether the structure includes pairs only between complementary domains. 
+        Determines whether the structure includes pairs only between complementary domains.
         Returns True if all paired domains are complementary, raises an Exception otherwise
         """
         for (strand_index, strand_struct) in enumerate(self.structure):
@@ -897,7 +900,8 @@ class Complex(object):
                 source_domain = self.get_domain((strand_index, domain_index))
                 target_domain = self.get_domain(target)
 
-                if (target is not None and self.structure[target[0]][target[1]] != (strand_index, domain_index)):
+                if (target is not None and self.structure[target[0]][target[1]] != (
+                        strand_index, domain_index)):
                     raise Exception("In complex %s, incoherent structure at (%d, %d) -> (%d, %d)" % (
                         self.name, strand_index, domain_index, target[0], target[1]))
 
@@ -1007,7 +1011,7 @@ class Complex(object):
         out = []
         for strand_num, strand in enumerate(self.structure):
             for dom_num, el in enumerate(strand):
-                if el == None:
+                if el is None:
                     out.append('.')
                 else:
                     (b_strand, b_domain) = el
@@ -1028,7 +1032,7 @@ class Complex(object):
         out = []
         for strand_num, strand in enumerate(self.structure):
             for dom_num, el in enumerate(strand):
-                if el == None:
+                if el is None:
                     out.append(
                         '.' * len(self.strands[strand_num].domains[dom_num]))
                 else:
@@ -1080,7 +1084,7 @@ class RestingState(object):
     @property
     def canonical_name(self):
         """
-        Gives the canonical name of the resting state, chosen by the lexicographically lowest 
+        Gives the canonical name of the resting state, chosen by the lexicographically lowest
         name of a complex in the resting state.
         """
         return str(self._canonical)
@@ -1096,7 +1100,7 @@ class RestingState(object):
         return self.canonical.kernel_string()
 
     def __hash__(self):
-        if self._hash == None:
+        if self._hash is None:
             self._hash = hash(tuple(self.complexes))
         return self._hash
 

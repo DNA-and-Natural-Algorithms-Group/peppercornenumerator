@@ -215,7 +215,7 @@ def parse_kernel(line):
 
 def parse_identifier(identifier):
     """
-    Parse an identifier (e.g. `a^*`) to figure out the name, 
+    Parse an identifier (e.g. `a^*`) to figure out the name,
     polarity (+1 or -1) and the length ('long' or 'short').
 
     Returns: (name, polarity, length)
@@ -274,7 +274,7 @@ def auto_domain(name, polarity, domains):
 
 def auto_strand(doms, strands, structures_to_strands):
     """
-    Finds or automatically generates a strand from a list of 
+    Finds or automatically generates a strand from a list of
     domains.
     """
 
@@ -445,7 +445,7 @@ def input_pil(filename):
             #       "length a = 6"
             # parts:        0   1
             parts = re.match(r"length\s*([\w-]+)\s*=\s*(\d+)\s*", line)
-            if parts == None:
+            if parts is None:
                 logging.error("Invalid syntax on input line %d"
                               % line_counter)
                 logging.error(line)
@@ -483,7 +483,7 @@ def input_pil(filename):
             #                  sequence    a         =   NNNNN   :     6
             parts = re.match(
                 r"sequence\s*([\w-]+)\s*=\s*(\w+)\s*:?\s*(\d?)\s*", line)
-            if parts == None:
+            if parts is None:
                 logging.error("Invalid syntax on input line %d"
                               % line_counter)
                 logging.error(line)
@@ -519,7 +519,7 @@ def input_pil(filename):
             #                 0   1         2
             parts = re.match(
                 r"sup-sequence\s*([\w-]+)\s*=\s*((?:[\w-]+\s*)+):?(\d?)", line)
-            if parts == None:
+            if parts is None:
                 logging.error("Invalid syntax on input line %d"
                               % line_counter)
                 logging.error(line)
@@ -612,7 +612,7 @@ def input_pil(filename):
 
             parts = re.match(
                 r"strand\s*([\w-]+)\s*=\s*((?:[\w*-]+\s*)+):?(\d?)", line)
-            if parts == None:
+            if parts is None:
                 logging.error("Invalid syntax on input line %d"
                               % line_counter)
                 logging.error(line)
@@ -651,20 +651,22 @@ def input_pil(filename):
             # parse `structure` line:
             # e.g.:
             # structure A = S1 : .(((..)))
-            #                  structure    [  1nt  ]      name      =   s1 s2 s3 + s4         : ....((+))...((..))....
+            # structure    [  1nt  ]      name      =   s1 s2 s3 + s4         :
+            # ....((+))...((..))....
             parts = re.match(
                 r"structure\s+(\[[^\]]+\])?\s*([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)", line)
 
-            if parts == None:
+            if parts is None:
 
                 # parse `structure` line:
                 # e.g.:
                 # structure A = S1 : .(((..)))
-                #                  structure    name      =   s1 s2 s3 + s4         : ....((+))...((..))....
+                # structure    name      =   s1 s2 s3 + s4         :
+                # ....((+))...((..))....
                 parts = re.match(
                     r"structure\s+([\w-]+)\s*=\s*((?:[\w-]+\s*\+?\s*)+):\s*([().+\s]+)", line)
 
-                if parts == None:
+                if parts is None:
 
                     logging.error("Invalid syntax on input line %d"
                                   % line_counter)
@@ -802,7 +804,7 @@ def load_json(filename):
         for strand in saved_complex['structure']:
             new_strand = []
             for tup in strand:
-                if (tup == None):
+                if (tup is None):
                     new_strand.append(None)
                 else:
                     new_strand.append(tuple(tup))
@@ -823,7 +825,7 @@ def load_json(filename):
         for strand in saved_complex['structure']:
             new_strand = []
             for tup in strand:
-                if (tup == None):
+                if (tup is None):
                     new_strand.append(None)
                 else:
                     new_strand.append(tuple(tup))
@@ -865,7 +867,7 @@ def load_json(filename):
         for strand in saved_complex['structure']:
             new_strand = []
             for tup in strand:
-                if (tup == None):
+                if (tup is None):
                     new_strand.append(None)
                 else:
                     new_strand.append(tuple(tup))

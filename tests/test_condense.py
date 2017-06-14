@@ -25,7 +25,8 @@ def is_fast(reaction):
     AND rate constant > k_fast
     """
     k_fast = 0.0
-    return (reaction.arity == (1, 1) or reaction.arity == (1, 2)) and reaction.rate() > k_fast
+    return (reaction.arity == (1, 1) or reaction.arity ==
+            (1, 2)) and reaction.rate() > k_fast
 
 
 def print_dict(d, key_format=str, value_format=str):
@@ -40,7 +41,9 @@ def print_set(s, fmt=str):
 
 
 def print_condensed_reaction(reaction):
-    return reaction.name + ' ' + str(map(str, reaction.reactants)) + ' -> ' + str(map(str, reaction.products))
+    return reaction.name + ' ' + \
+        str(map(str, reaction.reactants)) + \
+        ' -> ' + str(map(str, reaction.products))
 
 
 def assert_dict_eq(d1, d2):
@@ -277,7 +280,10 @@ class CondenseTests(unittest.TestCase):
 
         print "Expected resting states: "
         expected_resting_states = {
-            # frozenset([self.complexes['B'], self.complexes['C'], self.complexes['D'], self.complexes['A']]): RestingState('2', [self.complexes['A'], self.complexes['B'], self.complexes['C'], self.complexes['D']]),
+            # frozenset([self.complexes['B'], self.complexes['C'],
+            # self.complexes['D'], self.complexes['A']]): RestingState('2',
+            # [self.complexes['A'], self.complexes['B'], self.complexes['C'],
+            # self.complexes['D']]),
             frozenset([self.complexes['G'], self.complexes['E'], self.complexes['F']]): RestingState('1', [self.complexes['E'], self.complexes['F'], self.complexes['G']])
         }
         print str(expected_resting_states)

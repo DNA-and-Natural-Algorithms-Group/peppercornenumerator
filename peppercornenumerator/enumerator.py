@@ -28,7 +28,8 @@ MAX_COMPLEX_SIZE = 6
 MAX_REACTION_COUNT = 1000
 MAX_COMPLEX_COUNT = 200
 
-# There should be better control of this limit -- only set it when necessary (Erik Winfree based on Chris Thachuk's advice...)
+# There should be better control of this limit -- only set it when
+# necessary (Erik Winfree based on Chris Thachuk's advice...)
 sys.setrecursionlimit(20000)
 
 
@@ -126,7 +127,7 @@ class Enumerator(object):
         List of reactions enumerated. :py:meth:`.enumerate` must be
         called before access.
         """
-        if self._reactions == None:
+        if self._reactions is None:
             raise Exception("enumerate not yet called!")
         return self._reactions[:]
 
@@ -136,7 +137,7 @@ class Enumerator(object):
         List of resting states enumerated. :py:meth:`.enumerate` must be
         called before access.
         """
-        if self._resting_states == None:
+        if self._resting_states is None:
             raise Exception("enumerate not yet called!")
         return self._resting_states[:]
 
@@ -146,7 +147,7 @@ class Enumerator(object):
         List of complexes enumerated. :py:meth:`.enumerate` must be
         called before access.
         """
-        if self._complexes == None:
+        if self._complexes is None:
             raise Exception("enumerate not yet called!")
         return self._complexes[:]
 
@@ -156,18 +157,18 @@ class Enumerator(object):
         List of complexes enumerated that are within resting states.
         :py:meth:`.enumerate` must be called before access.
         """
-        if self._resting_complexes == None:
+        if self._resting_complexes is None:
             raise Exception("enumerate not yet called!")
         return self._resting_complexes[:]
 
     @property
     def transient_complexes(self):
         """
-        List of complexes enumerated that are not within resting states (e.g. 
+        List of complexes enumerated that are not within resting states (e.g.
         complexes which are transient). :py:meth:`.enumerate` must be
         called before access.
         """
-        if self._transient_complexes == None:
+        if self._transient_complexes is None:
             raise Exception("enumerate not yet called!")
         return self._transient_complexes[:]
 
@@ -367,7 +368,8 @@ class Enumerator(object):
                 while len(self._B) > 0:
 
                     # Check whether too many complexes have been generated
-                    if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
+                    if (len(self._E) + len(self._T) +
+                            len(self._S) > self.MAX_COMPLEX_COUNT):
                         logging.error("Too many complexes enumerated!")
                         finish(premature=True)
                         return
@@ -525,7 +527,8 @@ class Enumerator(object):
             logging.debug("Generated %d new fast reactions" % len(N_reactions))
             logging.debug("Generated %d new products (%d transients, %d resting complexes)" %
                           (len(self._N),
-                           len(segmented_neighborhood['transient_state_complexes']),
+                           len(
+                              segmented_neighborhood['transient_state_complexes']),
                               len(segmented_neighborhood['resting_state_complexes'])))
             logging.debug("Generated %d resting states" %
                           len(segmented_neighborhood['resting_states']))
@@ -596,7 +599,8 @@ class Enumerator(object):
         # Loop over every reaction
         for reaction in reactions:
 
-            # This will be set to False if we bail out of the inner loop upon finding a complex that's too large
+            # This will be set to False if we bail out of the inner loop upon
+            # finding a complex that's too large
             complex_size_ok = True
 
             # Check every product of the reaction to see if it is new
@@ -615,7 +619,8 @@ class Enumerator(object):
                 # deal with it, so just update the reaction to point correctly
                 # TODO: This could benefit from a substantial speedup if _E, _S,
                 #	_T, _N, _F were implemented as sets. Other parts of the
-                #	algorithm benefit from their representation as queues though...
+                # algorithm benefit from their representation as queues
+                # though...
 
                 if product in ESTNF:
                     reaction.products[i] = ESTNF[product]
@@ -655,7 +660,8 @@ class Enumerator(object):
                 if not enumerated:
                     new_products.append(product)
 
-            # If this reaction contained a complex that was too big, ignore the whole reaction.
+            # If this reaction contained a complex that was too big, ignore the
+            # whole reaction.
             if complex_size_ok:
                 new_reactions.append(reaction)
 
@@ -1036,8 +1042,9 @@ def main():
     # if there were multiple output formats requested
     if(len(output_formats) > 1):
 
-        # if there was no output filename given, tack a new suffix on the input filename
-        if output_filename == None:
+        # if there was no output filename given, tack a new suffix on the input
+        # filename
+        if output_filename is None:
             output_prefix = os.path.splitext(
                 cl_opts.input_filename)[0] + "-enum"
         else:
@@ -1048,11 +1055,12 @@ def main():
         outputs = [(fmt, output_prefix + "." + fmt) for fmt in output_formats]
     else:
         # if there was no output format given but there was an output filename
-        if output_filename != None and len(output_formats) == 0:
+        if output_filename is not None and len(output_formats) == 0:
             output_formats = [os.path.splitext(cl_opts.input_filename)[1]]
 
-        # if there was no output filename given, tack a suffix on to the input filename
-        elif output_filename == None:
+        # if there was no output filename given, tack a suffix on to the input
+        # filename
+        elif output_filename is None:
             if len(output_formats) == 0 or output_formats[0] == '':
                 output_formats = ['pil']
                 logging.info(
@@ -1066,7 +1074,8 @@ def main():
     # Print each requested output format
     for (output_format, output_filename) in outputs:
 
-        # Attempt to load an output generator to serialize the enumerator object to an output file
+        # Attempt to load an output generator to serialize the enumerator
+        # object to an output file
         mode = None
         if (output_format in output.text_output_functions):
             logging.info("Writing text output to file : %s as %s" %

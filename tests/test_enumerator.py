@@ -508,7 +508,8 @@ class EnumeratorTests(unittest.TestCase):
         assert max([len(c.strands) for c in complexes]
                    ) <= polymer_enum.MAX_COMPLEX_SIZE
 
-        # Now we want to make sure that no reactions in the enumerator point to complexes that weren't in the list
+        # Now we want to make sure that no reactions in the enumerator point to
+        # complexes that weren't in the list
         undefined_complexes = []
 
         for reaction in polymer_enum.reactions:

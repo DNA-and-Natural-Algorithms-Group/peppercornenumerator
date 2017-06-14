@@ -6,11 +6,12 @@ import numpy as np
 
 from peppercornenumerator.reactions import get_auto_name, ReactionPathway
 from peppercornenumerator.utils import Complex, Domain, Strand, RestingState
+from functools import reduce
 
 
 class SetOfFates(object):
     """
-    Corresponds to the set of multisets that can be reached from a given 
+    Corresponds to the set of multisets that can be reached from a given
     complex. Thin wrapper around the frozenset, mostly for prettier printing.
     """
 
@@ -43,13 +44,15 @@ class SetOfFates(object):
         return sorted(list(self.states)) == sorted(list(other.states))
 
     def __str__(self):
-        return "{ " + ", ".join(["{" + ", ".join(map(str, inner)) + "}" for inner in self.states]) + " }"
+        return "{ " + ", ".join(["{" + ", ".join(map(str, inner)) +
+                                 "}" for inner in self.states]) + " }"
 
     def __len__(self):
         return len(self._states)
 
     def __repr__(self):
-        return "SetOfFates([ " + ", ".join(["(" + ", ".join(map(repr, inner)) + ")" for inner in self.states]) + " ])"
+        return "SetOfFates([ " + ", ".join(
+            ["(" + ", ".join(map(repr, inner)) + ")" for inner in self.states]) + " ])"
         # return 'SetOfFates('+repr(self.states)+")"
 
 
@@ -73,12 +76,12 @@ def times(iterable):
 def tuple_sum(iterable):
     """
     Given an iterable of tuples, concatenates each of the tuples
-    and returns one big tuple. Precisely, for some list of tuples 
+    and returns one big tuple. Precisely, for some list of tuples
     P = [p1, p2, p3 ...]::
 
-        tuple_sum(P) = p1 + p2 + p3 + ... 
+        tuple_sum(P) = p1 + p2 + p3 + ...
 
-    where + represents the concatenation of two tuples, e.g. 
+    where + represents the concatenation of two tuples, e.g.
     (a1, a2) + (a3, a4) = (a1, a2, a3, a4).
 
     Example::
@@ -107,7 +110,7 @@ def cartesian_product(iterable):
 
 def cartesian_sum(iterable):
     """
-    Takes the cartesian sum over a set of multisets (counters). We define the 
+    Takes the cartesian sum over a set of multisets (counters). We define the
     cartesian sum X [+] Y between two sets X and Y as::
 
         X [+] Y = {x + y : x is in X and y is in Y}
@@ -124,18 +127,20 @@ def cartesian_sum(iterable):
 
 def get_reactions_consuming(complexes, reactions):
     """
-    Returns a dict mapping each passed complex C to a list of reactions for which 
-    C is a reactant.  
+    Returns a dict mapping each passed complex C to a list of reactions for which
+    C is a reactant.
     """
-    return dict((c, [r for r in reactions if (c in r.reactants)]) for c in complexes)
+    return dict((c, [r for r in reactions if (c in r.reactants)])
+                for c in complexes)
 
 
 def get_reactions_producing(complexes, reactions):
     """
-    Returns a dict mapping each passed complex C to a list of reactions for which 
-    C is a product.  
+    Returns a dict mapping each passed complex C to a list of reactions for which
+    C is a product.
     """
-    return dict((c, [r for r in reactions if (c in r.products)]) for c in complexes)
+    return dict((c, [r for r in reactions if (c in r.products)])
+                for c in complexes)
 
 
 def tarjans(complexes, reactions, reactions_consuming, is_fast):
@@ -169,7 +174,8 @@ def tarjans(complexes, reactions, reactions_consuming, is_fast):
                     elif product in S:
                         complex._lowlink = min(
                             product._index, complex._lowlink)
-                # print "<ll complex='"+str(complex)+"'>"+str(complex._lowlink)+"</ll>"
+                # print "<ll
+                # complex='"+str(complex)+"'>"+str(complex._lowlink)+"</ll>"
 
         if(complex._lowlink == complex._index):
             scc = []
@@ -279,7 +285,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
     # calculate the condensed reaction rates:
 
     # For resting state SCCs:
-    # stationary_distributions[SCC] =  s^ : maps complexes to stationary probabilities
+    # stationary_distributions[SCC] =  s^ : maps complexes to stationary
+    # probabilities
     stationary_distributions = {}
 
     # For transient SCCs:
@@ -306,7 +313,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         # assign a numerical index to each complex
         complex_indices = {c: i for (i, c) in enumerate(scc_list)}
 
-        # find all reactions between complexes in this SCC (non-outgoing 1,1 reactions)
+        # find all reactions between complexes in this SCC (non-outgoing 1,1
+        # reactions)
         reactions = [r for c in scc for r in reactions_consuming[c]
                      if (r.arity == (1, 1) and not is_outgoing(r, scc_set))]
 
@@ -333,7 +341,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         # calculate eigenvalues
         (w, v) = np.linalg.eig(T)
         # w is array of eigenvalues
-        # v is array of eigenvectors, where column v[:,i] is eigenvector corresponding to the eigenvalue w[i].
+        # v is array of eigenvectors, where column v[:,i] is eigenvector
+        # corresponding to the eigenvalue w[i].
 
         # find eigenvector corresponding to eigenvalue zero (or nearly 0)
         epsilon = 1e-5
@@ -355,7 +364,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         return {c: s[i] for (c, i) in complex_indices.iteritems()}
 
     def get_exit_probabilities(scc):
-        # build set and list of elements in SCC; assign a numerical index to each complex
+        # build set and list of elements in SCC; assign a numerical index to
+        # each complex
         scc_set = frozenset(scc)
         scc_list = sorted(scc)
         complex_indices = {c: i for (i, c) in enumerate(scc_list)}
@@ -423,8 +433,10 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         # --- added by EW as a weaker surrugate for the above, when necessary
         assert (B >= 0).all()
 
-        # return dict mapping tuples of (incoming complex, outgoing reaction) to exit probabilities
-        return {(c, r): B[i, j] for (c, i) in complex_indices.iteritems() for (r, j) in exit_indices.iteritems()}
+        # return dict mapping tuples of (incoming complex, outgoing reaction)
+        # to exit probabilities
+        return {(c, r): B[i, j] for (c, i) in complex_indices.iteritems()
+                for (r, j) in exit_indices.iteritems()}
 
     # Define helper functions
     def is_fast(reaction):
@@ -432,12 +444,13 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         Current heuristic to determine if reaction is fast: unimolecular in reactants
         AND rate constant > k_fast
         """
-        # return (reaction.arity == (1,1) or reaction.arity == (1,2)) and reaction.rate() > k_fast
+        # return (reaction.arity == (1,1) or reaction.arity == (1,2)) and
+        # reaction.rate() > k_fast
         return (reaction.arity[0] == 1) and reaction.rate() > k_fast
 
     def get_fates(complex):
         """
-        Returns the set of possible fates for this complex, calling 
+        Returns the set of possible fates for this complex, calling
         compute_fates if necessary
         """
         if(complex not in complex_fates):
@@ -446,7 +459,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
 
     def get_resting_state(complex):
         """
-        Returns the resting state associated with this complex, if 
+        Returns the resting state associated with this complex, if
         one exists.
         """
         scc = SCC_containing[complex]
@@ -459,7 +472,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         if combinations is None:
             combinations = cartesian_product(map(get_fates, r.products))
 
-        for fates in (combination for combination in combinations if tuple_sum(combination) == fate):
+        for fates in (combination for combination in combinations if tuple_sum(
+                combination) == fate):
 
             # each combination (`fates`) that sums to `fate`
             # constitutes a possible way this reaction can
@@ -472,9 +486,9 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
 
     def compute_fates(scc):
         """
-        Processes a single SCC neighborhood, generating resting state multisets 
-        for each complex, and storing the mappings in the outer-scope 
-        `complex_fates` dict 
+        Processes a single SCC neighborhood, generating resting state multisets
+        for each complex, and storing the mappings in the outer-scope
+        `complex_fates` dict
         """
 
         # Convert to a set for fast lookup
@@ -518,12 +532,14 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         # Otherwise, if there are outgoing fast reactions:
         else:
 
-            # Compute all possible combinations of the fates of each product of r
+            # Compute all possible combinations of the fates of each product of
+            # r
             reaction_fate_combinations = [cartesian_product(
                 map(get_fates, r.products)) for r in outgoing_reactions]
 
             # Compute the fates of each of the outgoing reactions by summing each element above
-            # This is a list, with each element corresponding to the frozenset of fates for one reaction.
+            # This is a list, with each element corresponding to the frozenset
+            # of fates for one reaction.
             reaction_fates = [sorted(map(tuple_sum_sort, combination))
                               for combination in reaction_fate_combinations]
 
@@ -560,9 +576,11 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                             r, fate, combinations)
                         # calculate_reaction_decay_probabilities(r,fate)
 
-                        # the decay probability will be different for different complexes in the SCC
+                        # the decay probability will be different for different
+                        # complexes in the SCC
                         for c in scc:
-                            # P(x decays to F) = P(SCC exits via r | SCC was entered via c) * P(r decays to F)
+                            # P(x decays to F) = P(SCC exits via r | SCC was
+                            # entered via c) * P(r decays to F)
 
                             if (c, fate) not in decay_probabilities:
                                 decay_probabilities[(c, fate)] = 0
@@ -574,7 +592,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
             # the fates for all outgoing reactions.
 
             # Note that frozenset().union(*X) === X[0] U X[1] U X[2] ...
-            # where X[i] is a frozenset and a U b represents the union of frozensets a and b
+            # where X[i] is a frozenset and a U b represents the union of
+            # frozensets a and b
             set_of_fates = frozenset().union(*reaction_fates)
 
             for c in scc:
@@ -600,7 +619,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
     for scc in SCCs:
         compute_fates(scc)
 
-    # Map each complex to the set of multisets of resting states which it can reach
+    # Map each complex to the set of multisets of resting states which it can
+    # reach
     complex_fates = {complex: SetOfFates(
         complex_fates[complex]) for complex in complex_fates}
 
@@ -608,7 +628,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
     condensed_reactions = set()
     for reaction in enumerator.reactions:
 
-        # Filter reactions which are fast (these have been handled by the fates)
+        # Filter reactions which are fast (these have been handled by the
+        # fates)
         if(is_fast(reaction)):
             continue
 
@@ -626,7 +647,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         # combinations of resting states
         new_product_combinations = cartesian_sum(product_fates)
 
-        # make sure each reactant is a resting state (F(xn) is a singleton for each reactant xn)
+        # make sure each reactant is a resting state (F(xn) is a singleton for
+        # each reactant xn)
         for (i, f_xn) in enumerate(reactant_fates):
             if(not f_xn.is_singleton()):
                 logging.error("Cannot condense reaction %r: reactant %s has multiple fates: F(%s) = %s"
@@ -637,7 +659,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         new_reactant_product_combinations = it.product(new_reactant_combinations,
                                                        new_product_combinations)
 
-        # And generate new reactions with each combination which is not trivial (reactants == products)
+        # And generate new reactions with each combination which is not trivial
+        # (reactants == products)
         for (reactants, products) in new_reactant_product_combinations:
             reactants = tuple(sorted(reactants))
             products = tuple(sorted(products))
@@ -649,7 +672,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
 
                 if compute_rates:
 
-                    # calculate reaction rate by summing over all representative detailed reactions
+                    # calculate reaction rate by summing over all
+                    # representative detailed reactions
                     detailed_reactions_consuming = set(
                         [r for reactant in reactants for c in reactant.complexes for r in reactions_consuming[c]])
                     reaction_rate = 0.0
@@ -676,7 +700,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                         assert k >= 0
 
                         # overall contribution of detailed reaction r to rate of the condensed reaction ^r =
-                        # P(reactants of ^r are present as reactants of r) * k_r * P(products of r decay to products of ^r)
+                        # P(reactants of ^r are present as reactants of r) *
+                        # k_r * P(products of r decay to products of ^r)
                         reaction_rate += reactant_probabilities * k * product_probability
 
                         if isinstance(reaction_rate, complex):

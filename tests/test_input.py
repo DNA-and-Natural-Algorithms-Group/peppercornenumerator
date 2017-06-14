@@ -315,7 +315,7 @@ class InputStandardTests(unittest.TestCase):
 
         enum = input_enum(
             'tests/files/test_input_errors/test_input_warnings.in')
-        assert (enum != None)
+        assert (enum is not None)
 
 
 class InputKernel(unittest.TestCase):

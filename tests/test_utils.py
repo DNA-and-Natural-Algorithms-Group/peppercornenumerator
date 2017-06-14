@@ -157,7 +157,7 @@ class DomainTests(unittest.TestCase):
         assert_raises(AttributeError, assnLen, self)
 
     def testSequence(self):
-        assert self.d1.sequence == None
+        assert self.d1.sequence is None
         assert self.d5.sequence == 'ATGCGA'
         assert self.d6.sequence == 'TCGCAT'
 
@@ -464,7 +464,8 @@ class ComplexTests(unittest.TestCase):
         ) == "7*( 6*( 5*( 1 2 3 + 1( 2( 3( 4 + ) ) ) ) 6 + ) )"
 
     def testCheckStructure(self):
-        #                 0                 1                 2                 3                  4
+        # 0                 1                 2                 3
+        # 4
         s1 = Strand('S1', [self.domains['1'], self.domains['2'],
                            self.domains['3'], self.domains['1*'], self.domains['2*']])
         c1 = Complex('C1', [s1], [(0, 4), (0, 3), None, (0, 1), (0, 0)])

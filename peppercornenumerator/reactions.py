@@ -24,7 +24,7 @@ def get_auto_name():
 RELEASE_CUTOFF_1_1 = 6
 RELEASE_CUTOFF_1_N = 6
 """
-Gives the maximum length of a duplex in nucleotides that should be considered 
+Gives the maximum length of a duplex in nucleotides that should be considered
 reversibly bound; that is, helices longer than RELEASE_CUTOFF will never be
 unbound by the `open` reaction function.
 """
@@ -83,8 +83,10 @@ class ReactionPathway(object):
         return self.name
 
     def full_string(self):
-        # return "ReactionPathway(%s): %s -> %s" % (self.name, str(self.reactants), str(self.products))
-        return "ReactionPathway(\"%s\",%s,%s)" % (self.name, str(self.reactants), str(self.products))
+        # return "ReactionPathway(%s): %s -> %s" % (self.name,
+        # str(self.reactants), str(self.products))
+        return "ReactionPathway(\"%s\",%s,%s)" % (
+            self.name, str(self.reactants), str(self.products))
 
     @property
     def name(self):
@@ -124,7 +126,8 @@ class ReactionPathway(object):
             (self.products == other.products)
 
     def __hash__(self):
-        return hash(self.name) + hash(frozenset(self.reactants)) + hash(frozenset(self.products))
+        return hash(self.name) + hash(frozenset(self.reactants)) + \
+            hash(frozenset(self.products))
 
     def __cmp__(self, other):
         """
@@ -237,7 +240,8 @@ def polymer_link_rate(linker_length):
     a = 1e6        # per second; Kuznetsov et al 2008, Nayak et al 2012, Tsukanov et al 2013ab, all say at least 10x slower
     # fit from data in Bonnet et al 1998, consistent with Kuznetsov et al 2008
     b = -2.5
-    # hairpin closing adapted (simplified) from data in Bonnet et al 1998, modified as above
+    # hairpin closing adapted (simplified) from data in Bonnet et al 1998,
+    # modified as above
     k = a * linker_length**b
     # hairpins shorter than about 4 nt can't close any faster.
     return min(k, 33000)
@@ -245,17 +249,19 @@ def polymer_link_rate(linker_length):
 
 def binding_rate(length, before, after):
     """
-    Rate constant formula for unimolecular binding of a domain of the given length.  
+    Rate constant formula for unimolecular binding of a domain of the given length.
     Could be zippering, hairpin closing, bubble closing, bulge formation, multiloop formation,
-    depending on the flanking loops, which may be open or closed.  
+    depending on the flanking loops, which may be open or closed.
     """
     if not before.is_open and before.stems == 1 and before.bases == 0:
         if not after.is_open and after.stems == 1 and after.bases == 0:
             return 1e4  # bubble closing rate from Altan-Bonnet 2003
-        # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et al 2013, low end
+        # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et
+        # al 2013, low end
         return (1e6) / length
     if not after.is_open and after.stems == 1 and after.bases == 0:
-        # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et al 2013, low end
+        # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et
+        # al 2013, low end
         return (1e6) / length
 
     # bulge closing assumed to be similar to faster of two hairpin closings
@@ -281,11 +287,11 @@ def show_loops(before, after, message):
     """
     print "before: [ ",
     for step in before.parts:
-        print " | " if step == None else step[0].name + ("!" if step[1] is not None else "") + " ",
+        print " | " if step is None else step[0].name + ("!" if step[1] is not None else "") + " ",
     print " ] is_open = %r, stems = %d, bases = %d" % (before.is_open, before.stems, before.bases)
     print "after: [ ",
     for step in after.parts:
-        print " | " if step == None else step[0].name + ("!" if step[1] is not None else "") + " ",
+        print " | " if step is None else step[0].name + ("!" if step[1] is not None else "") + " ",
     print " ] is_open = %r, stems = %d, bases = %d" % (after.is_open, after.stems, after.bases)
     raw_input(message)
 
@@ -295,14 +301,16 @@ def branch_3way_remote_rate(length, before, after):
     Rate constant formula for 3-way branch migration, possibly with a remote toehold
     """
     # step = 0.1e-3  # 100us branch migration step time from Srinivas et al 2013 (not relevant)
-    # k_init = k_uni exp(-dGsp / RT) with k_uni = 7.5e7, dGsp = 7.3 kcal/mol, T = 273.15 + 25 K, R = 0.001987 kcal/mol/K
+    # k_init = k_uni exp(-dGsp / RT) with k_uni = 7.5e7, dGsp = 7.3 kcal/mol,
+    # T = 273.15 + 25 K, R = 0.001987 kcal/mol/K
     init = 3.0e-3  # sec, = 1/k_init from Srinivas et al 2013
 
     # show_loops(before, after, "...before & after loops for 3-way branch migration...")
 
     # "standard" 3-way bm initiation (plus "before" being closed)
     if not after.is_open and after.stems == 1 and after.bases == 0:
-        # each initiation has probability 1/length of succeeding.  how long it takes doesn't matter.
+        # each initiation has probability 1/length of succeeding.  how long it
+        # takes doesn't matter.
         return 1.0 / init / length
 
     # show_loops(before, after, "run_tests.py should not have any remote toeholds for 3-way branch migration")
@@ -320,9 +328,11 @@ def branch_4way_remote_rate(length, before, after):
     """
     Rate constant formula for 4-way branch migration, possibly with a remote toehold
     """
-    # rates recalculated from Nadine Dabby, PhD Thesis, 2013, based on assuming last 6 bp dissociate faster than 4way bm step
+    # rates recalculated from Nadine Dabby, PhD Thesis, 2013, based on
+    # assuming last 6 bp dissociate faster than 4way bm step
     open_step = 107   # sec, = 1/k_first  (this is for open 4-way case only)
-    # sec, = 1/k_bm     (this is used for initiating closed 4-way case; consistent with Panyutin&Hsieh 1993)
+    # sec, = 1/k_bm     (this is used for initiating closed 4-way case;
+    # consistent with Panyutin&Hsieh 1993)
     closed_step = 3.0
 
     # open_step = 200 # fudge !
@@ -364,7 +374,8 @@ def bimolecular_binding_rate(length):
     #
     # instead, use k_hybrid = L * 3 * 10^5, which matches the above for L=10.
     # see Wetmur 1976 review, and Srinivas et al 2013 AEL model.
-    # another motivation is to have binding rate approx = if a domain is divided into two domains.
+    # another motivation is to have binding rate approx = if a domain is
+    # divided into two domains.
     return length * 3e5
 
 
@@ -373,9 +384,9 @@ def bimolecular_binding_rate(length):
 
 def bind11(reactant):
     """
-    Returns a list of reaction pathways which can be produced by 1-1 binding 
-    reactions of the argument complex. The 1-1 binding reaction is the 
-    hybridization of two complementary unpaired domains within a single complex 
+    Returns a list of reaction pathways which can be produced by 1-1 binding
+    reactions of the argument complex. The 1-1 binding reaction is the
+    hybridization of two complementary unpaired domains within a single complex
     to produce a single unpseudoknotted product complex.
     """
     reactions = []
@@ -386,7 +397,7 @@ def bind11(reactant):
         for (domain_index, domain) in enumerate(strand.domains):
 
             # The displacing domain must be free
-            if (structure[strand_index][domain_index] != None):
+            if (structure[strand_index][domain_index] is not None):
                 continue
 
             d1 = strand.domains[domain_index]
@@ -395,7 +406,8 @@ def bind11(reactant):
             # search both directions around the loop for a bound domain that
             # has the same sequence (and therefore can be displaced)
             locs = find_on_loop(reactant, loc1, -1, \
-                                # lambda dom, struct, loc: struct is None and dom.can_pair(d1)) + \
+                                # lambda dom, struct, loc: struct is None and
+                                # dom.can_pair(d1)) + \
                                 lambda dom1, struct1, loc1, dom2, struct2, loc2: struct1 is None and struct2 is None and dom2.can_pair(dom1)) + \
                 find_on_loop(reactant, loc1, +1, \
                              lambda dom1, struct1, loc1, dom2, struct2, loc2: struct1 is None and struct2 is None and dom2.can_pair(dom1))
@@ -457,10 +469,10 @@ def do_bind11(reactant, loc1s, loc2s):
 
 def bind21(reactant1, reactant2):
     """
-    Returns a list of reaction pathways which can be produced by 2-1 binding 
-    reactions of the argument complexes. The 2-1 binding reaction is the 
-    hybridization of two complementary unpaired domains, each in a different 
-    complex, to produce a single, unpseudoknotted product complex containing 
+    Returns a list of reaction pathways which can be produced by 2-1 binding
+    reactions of the argument complexes. The 2-1 binding reaction is the
+    hybridization of two complementary unpaired domains, each in a different
+    complex, to produce a single, unpseudoknotted product complex containing
     all of the strands contained in either of the original complexes.
     """
     r1_doms = reactant1.available_domains
@@ -520,11 +532,11 @@ def bind21(reactant1, reactant2):
 def find_external_strand_break(complex, location):
     """
     Takes a complex and a location (strand index, domain index). This location
-    refers to a domain in the `complex` which is on an external loop. Returns the 
-    index of the last strand _before_ the strand break which would put `location` 
+    refers to a domain in the `complex` which is on an external loop. Returns the
+    index of the last strand _before_ the strand break which would put `location`
     on an external loop.
 
-    Finds the location of a strand break on an external loop.  Used to 
+    Finds the location of a strand break on an external loop.  Used to
     determine where to split a complex when merging it with another complex at
     `location`.
     """
@@ -539,7 +551,7 @@ def find_external_strand_break(complex, location):
 
     # We will first search to the 'right', looking for the first external
     # strand break
-    while insertion_strand_index == None:
+    while insertion_strand_index is None:
         # First check to see if we've run off the end of a strand
         # in which case the external break is between this strand and the
         # next one
@@ -547,7 +559,7 @@ def find_external_strand_break(complex, location):
             insertion_strand_index = search_strand_index
         else:
             paired_dom = complex.structure[search_strand_index][search_dom_index]
-            if (paired_dom == None):
+            if (paired_dom is None):
                 # If the current domain is unpaired, move to the next domain
                 # to the right
                 search_dom_index += 1
@@ -571,14 +583,14 @@ def find_external_strand_break(complex, location):
     search_strand_index = strand_num
 
     # We now search to the 'left' if we haven't found the break yet
-    while insertion_strand_index == None:
+    while insertion_strand_index is None:
         # First check to see if we've run off the end of a strand, in which
         # case the external break is between the previous strand and this one
         if (search_dom_index == -1):
             insertion_strand_index = search_strand_index - 1
         else:
             paired_dom = complex.structure[search_strand_index][search_dom_index]
-            if (paired_dom == None):
+            if (paired_dom is None):
                 # If the current domain is unpaired, move to the next domain
                 # to the left
                 search_dom_index -= 1
@@ -674,7 +686,8 @@ def combine_complexes_21(complex1, location1, complex2, location2):
             # in s2 or s3
             if (pair):
                 # Check if paired to s2
-                if ((insertion_index_2 >= 0) and (pair[0] > insertion_index_2)):
+                if ((insertion_index_2 >= 0) and (
+                        pair[0] > insertion_index_2)):
                     new_pair = (pair[0] + s2_strand_offset, pair[1])
                     s2[strand_index][dom_index] = new_pair
                 # Otherwise paired to s3
@@ -688,7 +701,8 @@ def combine_complexes_21(complex1, location1, complex2, location2):
             # in s2 or s3
             if (pair):
                 # Check if paired to s2
-                if ((insertion_index_2 >= 0) and (pair[0] > insertion_index_2)):
+                if ((insertion_index_2 >= 0) and (
+                        pair[0] > insertion_index_2)):
                     new_pair = (pair[0] + s2_strand_offset, pair[1])
                     s3[strand_index][dom_index] = new_pair
                 # Otherwise paired to s3
@@ -763,7 +777,7 @@ def open(reactant):
     set are the results of one particular dissociation; each strand in the
     reactant occurs exactly once in one of the complexes in the product set.
 
-    A dissociation can happen to any helix under the threshold length		
+    A dissociation can happen to any helix under the threshold length
     """
 
     # remember the larger release cutoff; don't enumerate any reactions
@@ -795,7 +809,8 @@ def open(reactant):
                 # # search both directions around the loop for a bound domain that
                 # # is complementary (and therefore can be bound to)
                 # def criteria(dom1, struct1, loc1, dom2, struct2, loc2):
-                # 	return struct1 == loc2 and struct2 == loc1 and dom1.can_pair(dom2)
+                # return struct1 == loc2 and struct2 == loc1 and
+                # dom1.can_pair(dom2)
 
                 # bound_doms = (find_on_loop(reactant, bound_loc, -1, criteria) +
                 # 	find_on_loop(reactant, bound_loc, +1, criteria))
@@ -813,7 +828,7 @@ def open(reactant):
         for (strand_index, strand) in enumerate(strands):
             for (domain_index, domain) in enumerate(strand.domains):
                 # If the domain is unpaired, skip it
-                if (structure[strand_index][domain_index] == None):
+                if (structure[strand_index][domain_index] is None):
                     continue
 
                 # A: Strand/domain position on "top" strand - CG 5/21
@@ -851,7 +866,8 @@ def open(reactant):
 
                     # If these domains aren't bound to each other, the helix
                     # has ended
-                    if (tuple(helix_endA) != structure[helix_endB[0]][helix_endB[1]]):
+                    if (tuple(helix_endA) !=
+                            structure[helix_endB[0]][helix_endB[1]]):
                         break
 
                     # Add the current domain to the current helix
@@ -873,7 +889,8 @@ def open(reactant):
 
                     # If these domains aren't bound to each other, the helix
                     # has ended
-                    if (tuple(helix_startA) != structure[helix_startB[0]][helix_startB[1]]):
+                    if (tuple(helix_startA) !=
+                            structure[helix_startB[0]][helix_startB[1]]):
                         break
 
                     # Add the current domain to the current helix
@@ -905,7 +922,8 @@ def open(reactant):
     for product_set, length in reactions:
         reaction = ReactionPathway('open', [reactant], sorted(product_set))
 
-        # discard reactions where the release cutoff is greater than the threshold
+        # discard reactions where the release cutoff is greater than the
+        # threshold
         if len(reaction.products) == 1 and length > RELEASE_CUTOFF_1_1:
             continue
         elif len(reaction.products) > 1 and length > RELEASE_CUTOFF_1_N:
@@ -967,7 +985,7 @@ def find_releases(reactant):
             curr_structure = structure[inner_index[0]][inner_index[1]]
 
             # If this domain is unpaired, move to the next
-            if (curr_structure == None):
+            if (curr_structure is None):
                 inner_index = (inner_index[0], inner_index[1] - 1)
 
             # Check if the structure points to a higher domain
@@ -978,8 +996,10 @@ def find_releases(reactant):
 
                 # If the structure points to a domain above the start, this section
                 # is connected to something higher, so abort this loop
-                # if (curr_structure[0] > strand_index) and (curr_structure[1] > 0):
-                if (curr_structure[0] > strand_index) and (curr_structure[1] >= 0):
+                # if (curr_structure[0] > strand_index) and (curr_structure[1]
+                # > 0):
+                if (curr_structure[0] > strand_index) and (
+                        curr_structure[1] >= 0):
                     break
 
                 # Otherwise it points to a domain between this one and the start
@@ -1082,7 +1102,7 @@ def split_complex(reactant, split_start, split_end):
     for strand in structure1:
         strand_out = []
         for struct_element in strand:
-            if struct_element == None:
+            if struct_element is None:
                 strand_out.append(None)
             elif (struct_element[0] > split_end[0]):
                 strand_out.append(
@@ -1097,7 +1117,7 @@ def split_complex(reactant, split_start, split_end):
     for strand in structure2:
         strand_out = []
         for struct_element in strand:
-            if struct_element == None:
+            if struct_element is None:
                 strand_out.append(None)
             else:
                 strand_out.append(
@@ -1110,7 +1130,7 @@ def split_complex(reactant, split_start, split_end):
     for strand in structure3:
         strand_out = []
         for struct_element in strand:
-            if struct_element == None:
+            if struct_element is None:
                 strand_out.append(None)
             elif (struct_element[0] < split_start[0]):
                 strand_out.append(struct_element)
@@ -1138,9 +1158,9 @@ def domains_adjacent(loc1, loc2):
 
 def branch_3way(reactant):
     """
-    Returns a list of reaction pathways that can be created through one 
-    iteration of a 3 way branch migration reaction (more than one molecule may 
-    be produced by a reaction because branch migration can liberate strands and 
+    Returns a list of reaction pathways that can be created through one
+    iteration of a 3 way branch migration reaction (more than one molecule may
+    be produced by a reaction because branch migration can liberate strands and
     complexes).
     """
 
@@ -1152,7 +1172,7 @@ def branch_3way(reactant):
         for (domain_index, domain) in enumerate(strand.domains):
 
             # The displacing domain must be free
-            if (structure[strand_index][domain_index] != None):
+            if (structure[strand_index][domain_index] is not None):
                 continue
 
             displacing_domain = strand.domains[domain_index]
@@ -1161,7 +1181,8 @@ def branch_3way(reactant):
             # search both directions around the loop for a bound domain that
             # is complementary (and therefore can be bound to)
             def criteria(dom1, struct1, loc1, dom2, struct2, loc2):
-                return struct1 is None and struct2 is not None and dom1.can_pair(dom2)
+                return struct1 is None and struct2 is not None and dom1.can_pair(
+                    dom2)
 
             bound_doms = (find_on_loop(reactant, displacing_loc, -1, criteria) +
                           find_on_loop(reactant, displacing_loc, +1, criteria))
@@ -1171,12 +1192,14 @@ def branch_3way(reactant):
             # bound_doms = find_on_loop(reactant, displacing_loc, -1, \
             # 	lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2) + \
             # find_on_loop(reactant, displacing_loc, +1, \
-            # 	lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2)
+            # lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not
+            # None and dom1 == dom2)
 
             # bound_doms = find_on_loop(reactant, displacing_loc, -1, \
             # 	lambda dom, struct, loc: struct is not None and dom == displacing_domain) + \
             # find_on_loop(reactant, displacing_loc, +1, \
-            # 	lambda dom, struct, loc: struct is not None and dom == displacing_domain)
+            # lambda dom, struct, loc: struct is not None and dom ==
+            # displacing_domain)
 
             # build products
             # [ (Loop([triple(start_loc)]), Loop([triple(bound_loc]), Loop(loop[:i]), Loop(loop[i+1:])) ]
@@ -1207,7 +1230,8 @@ def branch_3way(reactant):
 
                 # skip remote toehold reactions if directed
                 if REJECT_REMOTE:
-                    if not (not after.is_open and after.stems == 1 and after.bases == 0):
+                    if not (not after.is_open and after.stems ==
+                            1 and after.bases == 0):
                         # print "Rejecting... " + reaction.kernel_string()
                         # import pdb; pdb.set_trace()
                         continue
@@ -1304,20 +1328,22 @@ def do_3way_migration_legacy(reactant, displacing_loc, new_bound_loc):
         bstrand = new_bound_loc[0]
         bdomain = new_bound_loc[1]
         if (ddomain + 1 < len(out_reactant.strands[dstrand].domains)) and \
-                (out_reactant.structure[dstrand][ddomain + 1] == None) and \
+                (out_reactant.structure[dstrand][ddomain + 1] is None) and \
                 (bdomain - 1 >= 0) and \
-                (out_reactant.structure[bstrand][bdomain - 1] != None) and \
+                (out_reactant.structure[bstrand][bdomain - 1] is not None) and \
                 (out_reactant.strands[bstrand].domains[bdomain - 1].can_pair(out_reactant.strands[dstrand].domains[ddomain + 1])):
 
-            return do_3way_migration_legacy(out_reactant, (dstrand, ddomain + 1), (bstrand, bdomain - 1))
+            return do_3way_migration_legacy(
+                out_reactant, (dstrand, ddomain + 1), (bstrand, bdomain - 1))
 
         elif (ddomain - 1 >= 0) and \
-                (out_reactant.structure[dstrand][ddomain - 1] == None) and \
+                (out_reactant.structure[dstrand][ddomain - 1] is None) and \
                 (bdomain + 1 < len(out_reactant.strands[bstrand].domains)) and \
-                (out_reactant.structure[bstrand][bdomain + 1] != None) and \
+                (out_reactant.structure[bstrand][bdomain + 1] is not None) and \
                 (out_reactant.strands[bstrand].domains[bdomain + 1].can_pair(out_reactant.strands[dstrand].domains[ddomain - 1])):
 
-            return do_3way_migration_legacy(out_reactant, (dstrand, ddomain - 1), (bstrand, bdomain + 1))
+            return do_3way_migration_legacy(
+                out_reactant, (dstrand, ddomain - 1), (bstrand, bdomain + 1))
         else:
             return find_releases(out_reactant)
     else:
@@ -1463,75 +1489,76 @@ def do_3way_migration_legacy(reactant, displacing_loc, new_bound_loc):
 # 		# so it's bound to something: follow the structure to stay on the same loop
 # 		bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
 
-# 	return list( (bound_loc, Loop(loop[:i]), Loop(loop[i+1:]) ) for (bound_loc, i) in results )  #EW
+# return list( (bound_loc, Loop(loop[:i]), Loop(loop[i+1:]) ) for
+# (bound_loc, i) in results )  #EW
 
 def find_on_loop(reactant, start_loc, direction, filter):
     """
-    Finds the next domain within `reactant` that's on the same inner loop as 
-    `start_loc` and matches the passed `filter` function. Looks in either the 
-    5'->3' (+1) or 3'->5' (-1) `direction`.  
+    Finds the next domain within `reactant` that's on the same inner loop as
+    `start_loc` and matches the passed `filter` function. Looks in either the
+    5'->3' (+1) or 3'->5' (-1) `direction`.
 
     Filter should accept the following arguments and return True or False:
             -	dom (utils.Domain) : the domain at `loc`
-            -	struct (tuple or None): a (strand index, domain index) pair 
+            -	struct (tuple or None): a (strand index, domain index) pair
                     indicating what `dom` is bound to, or None if `dom` is unpaired.
             -	loc (tuple) : a (strand index, domain index) pair
             -       Note that while every single-stranded domain is tested,
-                    only the "first" domain of a stem helix (in the direction of 
+                    only the "first" domain of a stem helix (in the direction of
                     search) will be passed to the filter.
 
 
     Returns an array of tuples: `(loc, before, after)`, where:
-            -	`loc` is a (strand index, domain index) pair indicating the 
+            -	`loc` is a (strand index, domain index) pair indicating the
                     position of the matched domain
-            -	`before` is a list of (domain, struct, loc) triples giving the 
+            -	`before` is a list of (domain, struct, loc) triples giving the
                     domains after `start_loc` but before the matched domain on the loop
                     (or None instead of triple where there is a break in the loop)
-            -	`after` is a list of (domain, struct, loc) triples giving the 
+            -	`after` is a list of (domain, struct, loc) triples giving the
                     domains after the matched domain but before `start_loc` on the loop
                     (or None instead of triple where there is a break in the loop)
 
-    Where a loop involves stems, only one of the complementary domains will be 
-    listed in the array of tuples, specifically, the "first" one in the search 
-    direction. Thus, a multiloop with n unpaired domains and m stems will 
-    result, for closed loops, in `len(before+after) == n+m-2`, as the match 
+    Where a loop involves stems, only one of the complementary domains will be
+    listed in the array of tuples, specifically, the "first" one in the search
+    direction. Thus, a multiloop with n unpaired domains and m stems will
+    result, for closed loops, in `len(before+after) == n+m-2`, as the match
     location and `start_loc` are omitted.
 
-    `before` and `after` are converted to Loop objects (see utils.py) prior 
-    to being returned, so that the number of bases and number of stems and 
+    `before` and `after` are converted to Loop objects (see utils.py) prior
+    to being returned, so that the number of bases and number of stems and
     open/closed status is readily accessible.
 
-    Note 1: `before` and `after` refer to the partial loops between `start_loc` 
+    Note 1: `before` and `after` refer to the partial loops between `start_loc`
     and each of the results, _in the `direction`_ of the search. For example:
 
        A
           ____
-         /    \ 
+         /    \
      x  |     |  x*
         |
          \____> 3'
 
             B
 
-    If `start_loc` pointed to `x` and `direction` is +1, then `before` would 
-    be `A` and `after` would be `B`. If instead `direction` is -1, then 
-    `before` is `B` and `after` is `A`. 
+    If `start_loc` pointed to `x` and `direction` is +1, then `before` would
+    be `A` and `after` would be `B`. If instead `direction` is -1, then
+    `before` is `B` and `after` is `A`.
 
-    Note 2: If the domain passed to `start_loc` is a duplex, the results may 
+    Note 2: If the domain passed to `start_loc` is a duplex, the results may
     be unexpected:
 
            ___  x  ___
-    5' ___/   \___/   \___  
+    5' ___/   \___/   \___
     3' ___  A  ___  B  ___)
           \___/   \___/
                 x*
 
-    Notice that the duplex x() participates in two internal loops (A and B). 
+    Notice that the duplex x() participates in two internal loops (A and B).
     By convention, the internal loop considered is the _internal loop which
     encloses this domain_. That means if you pass domain x and +1, you'll get
     loop A, whereas if you pass x and -1, you'll get loop B. This is in an
     attempt to be consistent with the case where you pass an unpaired domain
-    (and therefore the internal loop searched is the one which encloses the 
+    (and therefore the internal loop searched is the one which encloses the
     unpaired domain).
     """
     results = []
@@ -1605,7 +1632,8 @@ def find_on_loop(reactant, start_loc, direction, filter):
             # look to the next domain
             continue
 
-        # so it's bound to something: follow the structure to stay on the same loop
+        # so it's bound to something: follow the structure to stay on the same
+        # loop
         bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
 
     if UNZIP and not LEGACY_UNZIP:
@@ -1615,21 +1643,23 @@ def find_on_loop(reactant, start_loc, direction, filter):
                 reactant, start_loc, bound_loc, loop[:i], loop[i + 1:], direction, filter))
         return zipped_results
     else:
-        return [(Loop([triple(start_loc)]), Loop([triple(bound_loc)]), Loop(loop[:i]), Loop(loop[i + 1:])) for (bound_loc, i) in results]
-        # return list( (bound_loc, Loop(loop[:i]), Loop(loop[i+1:]) ) for (bound_loc, i) in results )  #EW
+        return [(Loop([triple(start_loc)]), Loop([triple(bound_loc)]), Loop(
+            loop[:i]), Loop(loop[i + 1:])) for (bound_loc, i) in results]
+        # return list( (bound_loc, Loop(loop[:i]), Loop(loop[i+1:]) ) for
+        # (bound_loc, i) in results )  #EW
 
 
 def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
     """
-    Takes a result from `find_on_loop` and "zips" it inwards (in the given 
-    `direction`); that is, given some `start_loc` and some `bound_loc`, tries 
-    to find as many adjacent domains as possible such that the `filter` 
+    Takes a result from `find_on_loop` and "zips" it inwards (in the given
+    `direction`); that is, given some `start_loc` and some `bound_loc`, tries
+    to find as many adjacent domains as possible such that the `filter`
     function still returns True.
 
 
     For example, if `start_loc` was b1 and `bound_loc` was b1*, and the filter
-    function specified that the domain at `start_loc` must be complementary to 
-    the domain at `bound_loc`, then the function would return [b1,b2] as 
+    function specified that the domain at `start_loc` must be complementary to
+    the domain at `bound_loc`, then the function would return [b1,b2] as
     start_locs and [b1*, b2*] as bound_locs
 
 
@@ -1693,13 +1723,15 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
                 bound_index = (-direction - 1) / 2
 
                 try:
-                    if middle[displacing_index] is not None and middle[displacing_index][2] == (dstrand, ddomain):
+                    if middle[displacing_index] is not None and middle[displacing_index][2] == (
+                            dstrand, ddomain):
                         del middle[displacing_index]
                 except IndexError:
                     pass
 
                 try:
-                    if middle[bound_index] is not None and middle[bound_index][2] == (bstrand, bdomain):
+                    if middle[bound_index] is not None and middle[bound_index][2] == (
+                            bstrand, bdomain):
                         del middle[bound_index]
                 except IndexError:
                     pass
@@ -1731,7 +1763,8 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
 # 		(reactant.structure[bstrand][bdomain-1] != None) and \
 # 		(reactant.strands[bstrand].domains[bdomain-1].can_pair(reactant.strands[dstrand].domains[ddomain+1])):
 
-# 		return do_3way_migration(reactant, (dstrand, ddomain+1), (bstrand, bdomain-1))
+# return do_3way_migration(reactant, (dstrand, ddomain+1), (bstrand,
+# bdomain-1))
 
 # 	elif (ddomain-1 >= 0) and \
 # 		(reactant.structure[dstrand][ddomain-1] == None) and \
@@ -1749,7 +1782,7 @@ def branch_4way(reactant):
     Returns a list of complex sets that can be created through one iteration of
     a 4 way branch migration reaction (each set consists of the molecules that
     result from the iteration; more than one molecule may result because branch
-    migration can liberate strands and complexes).	
+    migration can liberate strands and complexes).
     """
 
     structure = reactant.structure
@@ -1760,7 +1793,7 @@ def branch_4way(reactant):
         for (domain_index, domain) in enumerate(strand.domains):
 
             # Unbound domains can't participate in branch migration
-            if (structure[strand_index][domain_index] == None):
+            if (structure[strand_index][domain_index] is None):
                 continue
 
             displacing_domain = strand.domains[domain_index]
@@ -1776,13 +1809,15 @@ def branch_4way(reactant):
             #   z*      z
             #
             bound_doms = find_on_loop(reactant, displacing_loc, +1, \
-                                      # lambda dom, struct, loc: struct is not None and dom == displacing_domain)
+                                      # lambda dom, struct, loc: struct is not
+                                      # None and dom == displacing_domain)
                                       lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is not None and dom1 == dom2)
 
             # bound_doms = find_on_loop(reactant, structure[strand_index][domain_index], -1, \
             # 	lambda dom, struct, loc: struct is not None and dom.can_pair(displacing_domain)) + \
             # find_on_loop(reactant, displacing_loc, +1, \
-            # 	lambda dom, struct, loc: struct is not None and dom == displacing_domain))
+            # lambda dom, struct, loc: struct is not None and dom ==
+            # displacing_domain))
 
             # build products
             for (displacing, displaced, before, after) in bound_doms:
