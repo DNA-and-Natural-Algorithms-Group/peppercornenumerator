@@ -371,15 +371,11 @@ class Enumerator(object):
                     # Check whether too many complexes have been generated
                     if (len(self._E) + len(self._T) +
                             len(self._S) > self.MAX_COMPLEX_COUNT):
-                        logging.error("Too many complexes enumerated!")
-                        finish(premature=True)
-                        return
+                        raise RuntimeError("Too many complexes enumerated!")
 
                     # Check whether too many reactions have been generated
                     if (len(self._reactions) > self.MAX_REACTION_COUNT):
-                        logging.error("Too many reactions enumerated!")
-                        finish(premature=True)
-                        return
+                        raise RuntimeError("Too many reactions enumerated!")
 
                     # Generate a neighborhood from `source`
                     source = self._B.pop()
@@ -392,21 +388,16 @@ class Enumerator(object):
                 logging.warning("Interrupted; gracefully exiting...")
                 finish(premature=True)
             except RuntimeError as e:
-                import traceback
                 logging.exception(e)
-                # print
                 # print e
+                # import traceback
                 # print traceback.format_exc()
-                # print
                 logging.warning("Runtime error; gracefully exiting...")
                 finish(premature=True)
         else:
             do_enumerate()
 
         finish()
-
-        # except KeyboardInterrupt:
-        # 	finish(premature=True)
 
     def reactions_interactive(self, root, reactions, type='fast'):
         """
