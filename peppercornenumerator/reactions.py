@@ -1811,6 +1811,12 @@ def branch_4way(reactant):
     structure = reactant.structure
     reactions = []
 
+    # NOTE(SB): zippering is not implemented correctly for 4-way brach
+    # migration and causes not properly defined Errors.
+    global UNZIP
+    backup = UNZIP
+    UNZIP = False
+
     # We loop through all domains
     for (strand_index, strand) in enumerate(reactant.strands):
         for (domain_index, domain) in enumerate(strand.domains):
@@ -1888,6 +1894,8 @@ def branch_4way(reactant):
 
     # remove any duplicate reactions
     output = sorted(list(set(output)))
+
+    UNZIP = backup
 
     return output
 
