@@ -14,6 +14,14 @@ from math import log10
 SHORT_DOMAIN_LENGTH = 6
 LONG_DOMAIN_LENGTH = 12
 
+class PeppercornUsageError(Exception):
+    """Error class to catch usage errors."""
+
+    def __init__(self, msg, val=None):
+        self.message = msg
+        if val :
+            self.message += " ({})".format(val)
+        super(PeppercornUsageError, self).__init__(self.message) 
 
 class colors:
     RED = '\033[91m'
@@ -240,6 +248,16 @@ def index_parts(enum):
 class Loop(object):
     """
     Represents (possibly a part) of a single open or closed loop
+
+    Args: 
+        loop [(Domain, bound_to, position),..]: Is a list of descriptors for
+            involved domains.  In particular: [0] A Domain Object, [1] its
+            binding partner position (or None), [2] the domain position.
+            None marks the 3' or 5' end of a strand.
+    
+    TODO: Loop == Loop is only true if the two loops were initialized with the
+    same domain ordering.
+
     """
 
     def __init__(self, loop):
@@ -249,6 +267,10 @@ class Loop(object):
         bases = 0
         stems = 0
 
+        # Sanity check to alert that a stem has been specified with both
+        # complementary domains.
+        stem_list = set()
+
         # calculate stems, bases, and is_open   #loop re-written by EW
         for step in loop:
             if step is None:
@@ -257,8 +279,11 @@ class Loop(object):
                 (dom, struct, loc) = step
                 if struct is None:
                     bases += len(dom)
-                elif struct is not None:
+                elif struct in stem_list:
+                    raise PeppercornUsageError('Double stem count in Loop() Object.')
+                else :
                     stems += 1
+                    stem_list.add(loc)
 
         # update cached properties
         self._is_open = is_open
@@ -279,6 +304,7 @@ class Loop(object):
 
     @property
     def structs(self):
+        raise DeprecationWarning('SB: Use of Loop.structs has been replaced by Loop.structures.')
         return self.structures
 
     @property
@@ -316,8 +342,7 @@ class Loop(object):
             return item in self.locs
 
     def __str__(self):
-        return ' '.join([(str(s) if s is not None else '+')
-                         for s in self.domains])
+        return ' '.join([(str(s) if s is not None else '+') for s in self.domains])
 
     def __repr__(self):
         return "Loop(%s)" % list(self.domains)
@@ -326,8 +351,8 @@ class Loop(object):
         return sum(len(dom) for dom in self.domains)
 
     def __eq__(self, other):
+        #TODO print Warning('SB: not obvious!!')
         return self._parts == other._parts
-
 
 class Domain(object):
     """
@@ -532,21 +557,21 @@ class Complex(object):
 
         :param name: string holding complex name
         :param strands: list of Strand objects in order
-        :param structure: list of lists of tuples indicating pairing of domains in the
-                                complex. ``None`` indicates the domain is unpaired, while a
-                                ``(strand, domain)`` tuple indicates the domain is paired to ``domain``
-                                on ``strand``.
+        :param structure: list of lists of tuples indicating pairing of domains
+            in the complex. ``None`` indicates the domain is unpaired, while a
+            ``(strand, domain)`` tuple indicates the domain is paired to
+            ``domain`` on ``strand``.
 
-                                Examples:
+        Examples:
 
-                                *	``[[(0, 2) None (0, 0)]]`` indicates one strand with 3 domains
-                                        with the first one bound to the last one, and the middle one free.
-                                *	``[[None (1, 0) (1, 1)], [(0, 1) (0, 2) None]]`` indicates 2
-                                        strands with 3 domains each -- the first two domains of the second
-                                        strand are bound to the last two of the first.
+        *	``[[(0, 2) None (0, 0)]]`` indicates one strand with 3 domains
+                with the first one bound to the last one, and the middle one free.
+        *	``[[None (1, 0) (1, 1)], [(0, 1) (0, 2) None]]`` indicates 2
+                strands with 3 domains each -- the first two domains of the second
+                strand are bound to the last two of the first.
 
-                                Lists should be in the same order as the strands in the
-                                second argument, with each strand's domains from 5' to 3'
+        Lists should be in the same order as the strands in the
+        second argument, with each strand's domains from 5' to 3'
         """
 
         # Holds the complex name

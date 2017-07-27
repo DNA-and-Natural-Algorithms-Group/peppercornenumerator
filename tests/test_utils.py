@@ -85,6 +85,26 @@ class LoopTests(unittest.TestCase):
         assert loop.stems == 1
         assert loop.is_open
 
+    def testLoop_fail(self):
+        (domains, strands, complexes) = input.from_kernel(["C = 1 2 3() + 4"])
+
+        parts = []
+        domain_length = 0
+        complex = complexes['C']
+
+        # do NOT skip the closing helical domain
+        for loc in [(0, 0), (0, 1), (0, 2), (0,3), None, (1, 0)]:
+            if loc is None:
+                parts.append(None)
+                continue
+
+            domain = complex.get_domain(loc)
+            parts.append((domain, complex.get_structure(loc), loc))
+
+        # construct a loop from parts
+        with self.assertRaises(PeppercornUsageError):
+            loop = Loop(parts)
+
 
 class DomainTests(unittest.TestCase):
     def setUp(self):
