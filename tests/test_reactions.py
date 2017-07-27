@@ -103,26 +103,26 @@ class ReactionTests(unittest.TestCase):
         # return start_locs, bound_locs, before, after
 
         (domains, strands, complexes) = from_kernel([
-            #     0         1
-            #     0 1 2 3   0  1  2  3
-            "A1 = a(x y z + z* y* x* )"
+            #     0          1
+            #     0  1 2 3   0  1  2  3
+            "A1 = a( x y z + z* y* x* )"
         ])
         A1 = complexes['A1']
-        print A1.triple(0, 2)
-        print A1.triple(1, 1)
+        #print A1.triple(0, 2)
+        #print A1.triple(1, 1)
         zipped = zipper(A1,
                         (0, 2),
                         (1, 1),
                         #  z              z*
                         [A1.triple(0, 3), A1.triple(1, 0)],
-                        #  x*             a*              x*
+                        #  x*             a*               x
                         [A1.triple(1, 2), A1.triple(1, 3), A1.triple(0, 1)],
                         1,
-                        lambda dom1, struct1, loc1, dom2, struct2, loc2: struct2 is None and dom2.can_pair(
-                            dom1)
+                        lambda dom1, struct1, loc1, dom2, struct2, loc2: \
+                                struct2 is None and dom2.can_pair(dom1)
                         )
         start_locs, bound_locs, before, after = zipped
-        print zipped
+        #print 'zzz', zipped
         assert start_locs == make_loop(A1, (0, 1), (0, 2), (0, 3))
         assert bound_locs == make_loop(A1, (1, 2), (1, 1), (1, 0))
         assert before == make_loop(A1)
@@ -130,32 +130,53 @@ class ReactionTests(unittest.TestCase):
         # assert (Loop([Domain(x), Domain(y), Domain(z)]), Loop([Domain(x*),
         # Domain(y*), Domain(z*)]), Loop([]), Loop([Domain(a*)]))
 
+    def testZipper2(self):
+        (domains, strands, complexes) = from_kernel([
+            #     0          1
+            #     0  1 2 3   0  1  2  3
+            "A1 = a( x y z + z* y* x* )"
+        ])
+        A1 = complexes['A1']
+        #print A1.triple(0, 1)
+        #print A1.triple(1, 2)
+        zipped = zipper(A1,
+                        (0, 1),
+                        (1, 2),
+                        #  y              z                z*               y*
+                        [A1.triple(0, 2), A1.triple(0, 3), A1.triple(1, 0), A1.triple(1, 1)],
+                        #  a*
+                        [A1.triple(1, 3)],
+                        1,
+                        lambda dom1, struct1, loc1, dom2, struct2, loc2: \
+                                struct2 is None and dom2.can_pair(dom1)
+                        )
+        start_locs, bound_locs, before, after = zipped
+        assert start_locs == make_loop(A1, (0, 1), (0, 2), (0, 3))
+        assert bound_locs == make_loop(A1, (1, 2), (1, 1), (1, 0))
+        assert before == make_loop(A1)
+        assert after == make_loop(A1, (1, 3))
+        # assert (Loop([Domain(x), Domain(y), Domain(z)]), Loop([Domain(x*), Domain(y*), Domain(z*)]), Loop([]), Loop([Domain(a*)]))
+
     def testFindOnLoop(self):
         # enable_new_zipping()
 
         (domains, strands, complexes) = from_kernel([
-            #     0 1 2 3  4
-            "A1 = x y z x* y",
-            #     0 1 2 3   0  1 2
-            "A2 = a(x y z + x* y )",
-            #     0 1 2 3   0  1  2
-            "A3 = a(x y z + y* x* )",
-            #     0 1 2 3  4
-            "A4 = a(x y a* z)",
+            #     0  1 2 3  4
+            "A1 = x  y z x* y",
+            #     0  1 2 3   0  1  2
+            "A2 = a( x y z + x* y  )",
+            #     0  1 2 3   0  1  2
+            "A3 = a( x y z + y* x* )",
+            #     0  1 2 3  4
+            "A4 = a( x y a* z)",
         ])
 
         # test outside loop
         locs = reactions.find_on_loop(
-            complexes['A1'],
-            (0,
-             0),
-            1,
-            lambda dom1,
-            struct1,
-            loc1,
-            dom2,
-            struct2,
-            loc2: struct2 is None and dom2.can_pair(dom1))
+            complexes['A1'], (0, 0), 1,
+            lambda dom1, struct1, loc1, dom2, struct2, loc2: \
+                    struct2 is None and dom2.can_pair(dom1))
+
         A1 = complexes['A1']
         expected_locs = [(
             Loop([A1.triple(0, 0)]),  # x
@@ -163,22 +184,16 @@ class ReactionTests(unittest.TestCase):
             Loop([A1.triple(0, 1), A1.triple(0, 2)]),  # y z
             Loop([A1.triple(0, 4), None])  # y +
         )]
-        print locs
-        print expected_locs
+        print 
+        print "1", locs
+        print "2", expected_locs
         assert locs == expected_locs
 
         # test within loop with strand break, no zippering possible
         locs = reactions.find_on_loop(
-            complexes['A2'],
-            (0,
-             1),
-            1,
-            lambda dom1,
-            struct1,
-            loc1,
-            dom2,
-            struct2,
-            loc2: struct2 is None and dom2.can_pair(dom1))
+            complexes['A2'], (0, 1), 1,
+            lambda dom1, struct1, loc1, dom2, struct2, loc2: \
+                    struct2 is None and dom2.can_pair(dom1))
         A2 = complexes['A2']
         expected_locs = [(
             Loop([A2.triple(0, 1)]),  # x
@@ -186,6 +201,7 @@ class ReactionTests(unittest.TestCase):
             Loop([A2.triple(0, 2), A2.triple(0, 3), None]),  # y z +
             Loop([A2.triple(1, 1), A2.triple(1, 2)])  # a*
         )]
+        print 'looop', [A2.triple(0, 0)]
         print locs
         print expected_locs
         assert locs == expected_locs
@@ -214,13 +230,135 @@ class ReactionTests(unittest.TestCase):
         print expected_locs
         assert locs == expected_locs
 
+    def testFindOnLoop_3way(self):
+        (domains, strands, complexes) = from_kernel([
+           "A1 = x a( b( c( d(  + ) ) ) + d* c* b* ) x*",
+           #"A1 = x a( b( c( d(  + d* c* b* + ) ) ) ) x*",
+           #"A1 = a( b + b*( a*(  + ) ) )",
+        ])
+
+        reactant = complexes['A1']
+        structure = reactant.structure
+
+        def filter_3way(dom1, struct1, loc1, dom2, struct2, loc2):
+            return struct1 is None and struct2 is not None and dom1.can_pair( dom2)
+
+        print 'rectant-3way', reactant.kernel_string()
+
+        unzip = True
+        legacy= False
+        greedy = unzip and not legacy
+
+        # We iterate through all the domains
+        for (strand_index, strand) in enumerate(reactant.strands):
+            for (domain_index, domain) in enumerate(strand.domains):
+                # The displacing domain must be free
+                if (structure[strand_index][domain_index] is not None):
+                    continue
+
+
+                displacing_domain = strand.domains[domain_index]
+                displacing_loc = (strand_index, domain_index)
+
+                bound_doms = (find_on_loop(reactant, displacing_loc, -1, filter_3way, greedy=greedy) +
+                              find_on_loop(reactant, displacing_loc, +1, filter_3way, greedy=greedy))
+
+                for (displacing, bound, before, after) in bound_doms:
+                    if unzip and legacy :
+                        displacing_loc = list(displacing.locs)[0]
+                        bound_loc = list(bound.locs)[0]
+                        reaction = ReactionPathway(
+                            'branch_3way', [reactant], do_3way_migration_legacy(
+                                reactant, displacing_loc, bound_loc))
+                    else :
+                        reaction = ReactionPathway(
+                            'branch_3way', [reactant], do_3way_migration(
+                                reactant, displacing.locs, bound.locs))
+
+                    print 'rpw', reaction.kernel_string()
+                    # length of invading domain
+                    length = len(displacing)
+
+                    # calculate reaction constant
+                    (after, before) = (before, after)
+                    reaction._const = branch_3way_remote_rate(
+                        length, before, after)
+
+
+    def testFindOnLoop_4way(self):
+        (domains, strands, complexes) = from_kernel([
+           #"A1 = x a( b( c( d(  + ) ) ) + d* c* b* ) x*",
+           #"A1 = aa a( b( c( d( + ) ) ) a*( l( + ) ) b( c( + ) ) ) j",
+           #"A1 = aa a( b( + ) a*( l( + ) ) b( + ) ) j",
+           #"A1 = aa( a( b( c( + ) ) a*( aa*( + ) ) b( c( + ) ) ) )",
+           #"A1 = aa( a( ab( cd( b( c( + ) ) ) ab*( a*( aa*( + ) ) ) cd( b( c( + ) ) ) ) ) )", # big zipper test
+           "A1 = t0*( d3*( d4*( + ) ) + d3*( t0* d3*( d4*( + ) ) + ) )",
+           #"A1 = d4( d3( + d3*( t0* d3*( d4*( + ) ) + ) t0( + ) ) )",
+           #"A1 = d4( d3( + d3*( t0* + ) t0( + ) ) )",
+        ])
+
+        reactant = complexes['A1']
+        structure = reactant.structure
+
+        def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2):
+            return struct2 is not None and dom1 == dom2
+
+        def triple(loc):
+            return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
+
+        print 'rectant-4way', reactant.kernel_string()
+
+        unzip = False # True will break the test
+        legacy= False
+        greedy = unzip and not legacy
+
+        # We iterate through all the domains
+        for (strand_index, strand) in enumerate(reactant.strands):
+            for (domain_index, domain) in enumerate(strand.domains):
+                # The displacing domain must be paired
+                if (structure[strand_index][domain_index] is None):
+                    continue
+
+                displacing_domain = strand.domains[domain_index]
+                displacing_loc = (strand_index, domain_index)
+
+                bound_doms = find_on_loop(reactant, displacing_loc, +1, filter_4way, greedy=greedy)
+
+                for (displacing, displaced, before, after) in bound_doms:
+                    #show_loops(before, after, "before & after loops for 4-way branch migration")
+                    reaction = ReactionPathway(
+                        'branch_4way', 
+                        [reactant], 
+                        do_4way_migration(
+                            reactant, 
+                            displacing.locs,
+                            (structure[displacing_loc[0]][displacing_loc[1]] 
+                                for displacing_loc in displacing.locs),
+                            (structure[bound_loc[0]][bound_loc[1]]
+                                for bound_loc in displaced.locs), 
+                            displaced.locs)
+                        )
+
+                    print 'rpw', reaction.kernel_string()
+
+                    # length of invading domain
+                    length = len(displacing)
+
+                    # calculate reaction constant
+                    reaction._const = 1; #branch_4way_remote_rate( length, before, after)
+
+                    # skip remote toehold reactions if directed
+                    if REJECT_REMOTE:
+                        if not (not after.is_open and after.stems == 1 and after.bases == 0 and
+                                not before.is_open and before.stems == 1 and before.bases == 0):
+                            continue
+
 
 class BindTests(unittest.TestCase):
     def setUp(self):
         enable_new_zipping()
 
-        self.SLC_enumerator = input_enum(
-            'tests/files/test_input_standard_SLC.in')
+        self.SLC_enumerator = input_enum('tests/files/test_input_standard_SLC.in')
         self.domains = {}
         self.strands = {}
         self.complexes = {}
@@ -248,6 +386,7 @@ class BindTests(unittest.TestCase):
 
     def testFindExternalStrandBreak(self):
 
+
         # complex I4 :
         # BS       OP     PS     Cat
         # (((... + (((. + )))). + ))
@@ -260,6 +399,19 @@ class BindTests(unittest.TestCase):
         # Cat  PS
         #
         I4 = self.complexes['I4']
+
+        # (domains, strands, complexes) = parse_kernel(""" 
+        # length t1 : 5
+        # length t2 : 5
+        # length t3 : 5
+        # length d4 : 15
+        # length t5 : 5
+        # length d6 : 15
+        # length t7 : 5
+
+        # I4 = t7*( d6*( t5*( t1 t2 t3 + t1( t2( t3( d4 + ) ) ) ) d6 + ) )
+        # """)
+        # I4 = complexes['I4']
 
         # find index of these strands
         for (i, strand) in enumerate(I4.strands):
