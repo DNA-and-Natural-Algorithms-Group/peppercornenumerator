@@ -47,6 +47,15 @@ Slow reactions can only be unimolecular or bimolecular, though
 order to lift this restriction.
 """
 
+class PolymerizationError(Exception):
+    """Error class to catch polymerization."""
+
+    def __init__(self, msg, val=None):
+        self.message = msg
+        if val :
+            self.message += " ({})".format(val)
+        super(PolymerizationError, self).__init__(self.message) 
+
 
 class Enumerator(object):
     """
@@ -117,7 +126,7 @@ class Enumerator(object):
         called before access.
         """
         if self._reactions is None:
-            raise Exception("enumerate not yet called!")
+            raise utils.PeppercornUsageError("enumerate not yet called!")
         return self._reactions[:]
 
     @property
@@ -127,7 +136,7 @@ class Enumerator(object):
         called before access.
         """
         if self._resting_states is None:
-            raise Exception("enumerate not yet called!")
+            raise utils.PeppercornUsageError("enumerate not yet called!")
         return self._resting_states[:]
 
     @property
@@ -137,7 +146,7 @@ class Enumerator(object):
         called before access.
         """
         if self._complexes is None:
-            raise Exception("enumerate not yet called!")
+            raise utils.PeppercornUsageError("enumerate not yet called!")
         return self._complexes[:]
 
     @property
@@ -147,7 +156,7 @@ class Enumerator(object):
         :py:meth:`.enumerate` must be called before access.
         """
         if self._resting_complexes is None:
-            raise Exception("enumerate not yet called!")
+            raise utils.PeppercornUsageError("enumerate not yet called!")
         return self._resting_complexes[:]
 
     @property
@@ -158,7 +167,7 @@ class Enumerator(object):
         called before access.
         """
         if self._transient_complexes is None:
-            raise Exception("enumerate not yet called!")
+            raise utils.PeppercornUsageError("enumerate not yet called!")
         return self._transient_complexes[:]
 
     def __eq__(self, object):
@@ -359,13 +368,14 @@ class Enumerator(object):
                 while len(self._B) > 0:
 
                     # Check whether too many complexes have been generated
-                    if (len(self._E) + len(self._T) +
-                            len(self._S) > self.MAX_COMPLEX_COUNT):
-                        raise RuntimeError("Too many complexes enumerated!")
+                    if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
+                        raise PolymerizationError("Too many complexes enumerated!", 
+                                len(self._E) + len(self._T) + len(self._S))
 
                     # Check whether too many reactions have been generated
                     if (len(self._reactions) > self.MAX_REACTION_COUNT):
-                        raise RuntimeError("Too many reactions enumerated!")
+                        raise PolymerizationError("Too many reactions enumerated!", 
+                                len(self._reactions))
 
                     # Generate a neighborhood from `source`
                     source = self._B.pop()
@@ -377,12 +387,12 @@ class Enumerator(object):
             except KeyboardInterrupt:
                 logging.warning("Interrupted; gracefully exiting...")
                 finish(premature=True)
-            except RuntimeError as e:
+            except PolymerizationError as e:
                 logging.exception(e)
                 # print e
                 # import traceback
                 # print traceback.format_exc()
-                logging.warning("Runtime error; gracefully exiting...")
+                logging.warning("Polymerization error; gracefully exiting...")
                 finish(premature=True)
         else:
             do_enumerate()
