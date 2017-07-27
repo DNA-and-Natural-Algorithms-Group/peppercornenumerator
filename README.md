@@ -180,7 +180,7 @@ $ setup.py test
 ```
 
 ## Version
-v0.4.2
+v0.4.3
 
 ## Authors
 Karthik Sarma, Casey Grun, and Erik Winfree.
