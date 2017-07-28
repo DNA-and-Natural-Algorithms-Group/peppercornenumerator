@@ -9,9 +9,8 @@ import argparse
 from peppercornenumerator.enumerator import MAX_COMPLEX_SIZE
 from peppercornenumerator.enumerator import MAX_COMPLEX_COUNT
 from peppercornenumerator.enumerator import MAX_REACTION_COUNT
-from peppercornenumerator.reactions import RELEASE_CUTOFF_1_1
-from peppercornenumerator.reactions import RELEASE_CUTOFF_1_N
 from peppercornenumerator.reactions import branch_3way, branch_4way
+
 # Import wrapper functions to initialize the Enumerator object.
 from peppercornenumerator.input import text_input_functions, load_input_functions
 # Import wrapper functions to output enumeration results
@@ -64,29 +63,24 @@ def add_peppercorn_args(parser):
         default=MAX_REACTION_COUNT,
         help="Maximum number of reactions that may be enumerated before the enumerator halts. (default: %(default)s)")
 
-    parser.add_argument( '--release-cutoff-1-1', action='store', dest='RELEASE_CUTOFF_1_1', type=int,
-        help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction (default: %d)" %
-        RELEASE_CUTOFF_1_1)
-    parser.add_argument( '--release-cutoff-1-n', action='store', dest='RELEASE_CUTOFF_1_N', type=int,
-        help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction. (default: %d)" %
-        RELEASE_CUTOFF_1_N)
-    parser.add_argument( '--release-cutoff', action='store', dest='RELEASE_CUTOFF', default=None, type=int,
+    parser.add_argument( '--release-cutoff-1-1', action='store', type=int, default=6, metavar='<int>',
+        help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction.")
+    parser.add_argument( '--release-cutoff-1-n', action='store', type=int, default=6, metavar='<int>',
+        help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction.")
+    parser.add_argument( '--release-cutoff', action='store', default=None, type=int, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
-        an `open` reaction, for either 1-1 or 1-n reactions (equivalent to
-            setting --release-cutoff-1-1 and --release-cutoff-1-n to the same
-            value)""")
+        an `open` reaction, for either 1-1 or 1-n reactions (overwrites both
+        --release-cutoff-1-1 and --release-cutoff-1-n to the same value)""")
 
     parser.add_argument( '--k-slow', action='store', dest='k_slow', default=0.0, type=float,
         help="Unimolecular reactions slower than this rate will be discarded (default: %(default)f)")
     parser.add_argument( '--k-fast', action='store', dest='k_fast', default=0.0, type=float,
         help="Unimolecular reactions slower than this rate will be marked as slow (default: %(default)f)")
 
-    parser.add_argument( '--reject-remote', action='store_true', dest='REJECT_REMOTE', default=False,
+    parser.add_argument( '--reject-remote', action='store_true', 
         help="Discard remote toehold mediated 3-way and 4-way branch migration reactions. (default: %(default)s)")
-    parser.add_argument( '--no-max-helix', action='store_false', dest='UNZIP', default=True,
-        help="Don't apply 'max helix at a time' semantics to 3-way branch migration reactions. (default: False)")
-    parser.add_argument( '--legacy-unzip', action='store_true', dest='LEGACY_UNZIP', default=False,
-        help="Apply legacy 'UNZIP=True' behavior; no effect with --no-max-helix (default: %(default)s)")
+    parser.add_argument( '--no-max-helix', action='store_true', 
+        help="Do not apply 'max helix at a time' semantics to 3-way branch migration reactions.")
 
     parser.add_argument( '--bfs-ish', action='store_true', dest='bfs',
         help="When searching for bimolecular reactions, look to the oldest complexes first. (default: %(default)s)")
@@ -200,24 +194,15 @@ def main(cl_opts):
 
     if cl_opts.MAX_COMPLEX_SIZE is not None:
         enum.MAX_COMPLEX_SIZE = cl_opts.MAX_COMPLEX_SIZE
+    
+    enum.release_cutoff_1_1 = cl_opts.release_cutoff_1_1
+    enum.release_cutoff_1_n = cl_opts.release_cutoff_1_n
 
-    if cl_opts.RELEASE_CUTOFF is not None:
-        enum.RELEASE_CUTOFF = cl_opts.RELEASE_CUTOFF
+    if cl_opts.release_cutoff:
+        enum.release_cutoff = cl_opts.release_cutoff
 
-    if cl_opts.RELEASE_CUTOFF_1_1 is not None:
-        enum.RELEASE_CUTOFF_1_1 = cl_opts.RELEASE_CUTOFF_1_1
-
-    if cl_opts.RELEASE_CUTOFF_1_N is not None:
-        enum.RELEASE_CUTOFF_1_N = cl_opts.RELEASE_CUTOFF_1_N
-
-    if cl_opts.REJECT_REMOTE is not None:
-        enum.REJECT_REMOTE = cl_opts.REJECT_REMOTE
-
-    if cl_opts.UNZIP is not None:
-        enum.UNZIP = cl_opts.UNZIP
-
-    if cl_opts.LEGACY_UNZIP is not None:
-        enum.LEGACY_UNZIP = cl_opts.LEGACY_UNZIP
+    enum.remote_migration = not cl_opts.reject_remote 
+    enum.greedy_migration = not cl_opts.no_max_helix
 
     enum.DFS = not cl_opts.bfs
     enum.interactive = cl_opts.interactive

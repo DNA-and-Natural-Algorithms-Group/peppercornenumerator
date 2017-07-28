@@ -367,6 +367,7 @@ class Domain(object):
         Default constructor. Takes a domain name, a length (positive integer or
         "short" or "long"), and optionally a base sequence.
         """
+        assert isinstance(length, int) or length in ['long', 'short']
         self._name = name
         self._length = length
         self._sequence = None

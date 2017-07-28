@@ -7,41 +7,18 @@
 #  Modifications by Stefan Badelt 09/2019
 
 import copy
+
 from peppercornenumerator.utils import Complex, Loop, wrap
 
 auto_name = 0
 
-
-def get_auto_name():
+def get_auto_name(prefix=''):
     """
     Returns a new unique name
     """
     global auto_name
     auto_name += 1
-    return str(auto_name)
-
-
-RELEASE_CUTOFF_1_1 = 6
-RELEASE_CUTOFF_1_N = 6
-"""
-Gives the maximum length of a duplex in nucleotides that should be considered
-reversibly bound; that is, helices longer than RELEASE_CUTOFF will never be
-unbound by the `open` reaction function.
-"""
-
-REJECT_REMOTE = False
-"""
-If True, discards 3-way and 4-way remote toehold branch migration reactions
-"""
-
-
-# If true, 3 way branch migrations are always greedy
-UNZIP = True
-"""
-If True, 3-way branch migrations obey "Maximum helix at a time" semantics
-"""
-LEGACY_UNZIP = True
-
+    return prefix + str(auto_name)
 
 class ReactionPathway(object):
     """
@@ -193,7 +170,10 @@ def opening_rate(length):
 
 
 def polymer_link_length(before, after):
-    """Effective length estimate for (ss+ds) linkers between two domains, one or both of which may be open."""
+    """
+    Effective length estimate for (ss+ds) linkers between two domains, 
+    one or both of which may be open.
+    """
     L_stem = 2.0 / 0.43  # rough equivalent number of single-stranded nucleotides to span a stem
     if not before.is_open:
         L_before = 1 + before.bases + L_stem * before.stems
@@ -211,7 +191,9 @@ def polymer_link_length(before, after):
 
 
 def polymer_link_rate(linker_length):
-    """Unimolecular hairpin closing rate, as a function of effective linker length. """
+    """
+    Unimolecular hairpin closing rate, as a function of effective linker length. 
+    """
     # a = 2.5e7    # per second; fit from data in Bonnet et al 1998 only
     a = 1e6        # per second; Kuznetsov et al 2008, Nayak et al 2012, Tsukanov et al 2013ab, all say at least 10x slower
     # fit from data in Bonnet et al 1998, consistent with Kuznetsov et al 2008
@@ -246,7 +228,8 @@ def binding_rate(length, before, after):
     return polymer_link_rate(L)
 
 # Diagram for 3-way branch migration, general case.
-# Loops could be listed either 5'->3' or 3'->5, but they always go from invading domain to bound stem (non-inclusive).
+# Loops could be listed either 5'->3' or 3'->5, but they always go from
+# invading domain to bound stem (non-inclusive).
 #
 #                before
 #                _______  x (bound domain)
@@ -274,7 +257,7 @@ def show_loops(before, after, message):
     raw_input(message)
 
 
-def branch_3way_remote_rate(length, before, after):
+def branch_3way_remote_rate(length, before, after, debug = False):
     """
     Rate constant formula for 3-way branch migration, possibly with a remote toehold
     """
@@ -283,15 +266,18 @@ def branch_3way_remote_rate(length, before, after):
     # T = 273.15 + 25 K, R = 0.001987 kcal/mol/K
     init = 3.0e-3  # sec, = 1/k_init from Srinivas et al 2013
 
-    # show_loops(before, after, "...before & after loops for 3-way branch migration...")
+    if debug :
+        show_loops(before, after, "...before & after loops for 3-way branch migration...")
 
     # "standard" 3-way bm initiation (plus "before" being closed)
     if not after.is_open and after.stems == 1 and after.bases == 0:
-        # each initiation has probability 1/length of succeeding.  how long it
-        # takes doesn't matter.
+        # each initiation has probability 1/length of succeeding.  
+        # how long it takes doesn't matter.
         return 1.0 / init / length
-
-    # show_loops(before, after, "run_tests.py should not have any remote toeholds for 3-way branch migration")
+    
+    if debug:
+        show_loops(before, after, 
+                "run_tests.py should not have any remote toeholds for 3-way branch migration")
 
     # consider a slowdown analogous to Genot et al 2011 (remote) supp info derivation
     # bulge closing assumed to be similar to faster of two hairpin closings
@@ -302,7 +288,7 @@ def branch_3way_remote_rate(length, before, after):
     return ratio / init / length
 
 
-def branch_4way_remote_rate(length, before, after):
+def branch_4way_remote_rate(length, before, after, debug=False):
     """
     Rate constant formula for 4-way branch migration, possibly with a remote toehold
     """
@@ -314,8 +300,9 @@ def branch_4way_remote_rate(length, before, after):
     closed_step = 3.0
 
     # open_step = 200 # fudge !
-
-    #show_loops(before, after, "before & after loops for 4-way branch migration")
+    
+    if debug:
+        show_loops(before, after, "before & after loops for 4-way branch migration")
 
     if not before.is_open and not after.is_open:
         init = closed_step
@@ -332,7 +319,9 @@ def branch_4way_remote_rate(length, before, after):
             # we care about probability of taking this path, not actual time
             return 1.0 / init / length
 
-    #show_loops(before, after, "run_tests.py should not have any remote toeholds for 4-way branch migration")
+    if debug: 
+        show_loops(before, after, 
+                "run_tests.py should not have any remote toeholds for 4-way branch migration")
 
     # consider a slowdown analogous to Genot et al 2011 (remote) supp info derivation
     # bulge closing assumed to be similar to faster of two hairpin closings
@@ -360,7 +349,7 @@ def bimolecular_binding_rate(length):
 # Reaction functions
 # ----------------------------------------------------------------------------
 
-def bind11(reactant, greedy=True):
+def bind11(reactant, greedy=True, remote=None):
     """
     Returns a list of reaction pathways which can be produced by 1-1 binding
     reactions of the argument complex. The 1-1 binding reaction is the
@@ -370,8 +359,7 @@ def bind11(reactant, greedy=True):
     reactions = []
     structure = reactant.structure
 
-    # bind11 does not have a LEGACY_UNZIP implementation... does UNZIP have an effect?
-    greedy = UNZIP and not LEGACY_UNZIP
+    # TODO: does greedy have an effect? Remote does not!
 
     def filter_bind11(dom1, struct1, loc1, dom2, struct2, loc2):
         return struct1 is None and struct2 is None and dom2.can_pair(dom1)
@@ -423,7 +411,7 @@ def do_bind11(reactant, loc1s, loc2s):
         product = do_single_bind11(product, loc1, loc2)
     return product
 
-def bind21(reactant1, reactant2, greedy = True):
+def bind21(reactant1, reactant2, greedy = True, remote=None):
     """
     Returns a list of reaction pathways which can be produced by 2-1 binding
     reactions of the argument complexes. The 2-1 binding reaction is the
@@ -435,7 +423,7 @@ def bind21(reactant1, reactant2, greedy = True):
     r2_doms = reactant2.available_domains
 
     # Greedy cannot be effective within the find_on_loop function in the bind21 case.
-    greedy = UNZIP and not LEGACY_UNZIP
+    # Remote is ineffective, but may be set for convencience
 
     def filter_bind21(dom1, struct1, loc1, dom2, struct2, loc2):
         return struct1 is None and struct2 is None and dom1.can_pair(dom2)
@@ -733,7 +721,7 @@ def do_single_open(reactant, loc):
     return out
 
 
-def open(reactant):
+def open(reactant, greedy = True, release_11=6, release_1N=6):
     """
     Returns a list of reaction product sets that can be produced by the
     'open' reaction, in which a short helix dissociates. Each product
@@ -741,11 +729,17 @@ def open(reactant):
     reactant occurs exactly once in one of the complexes in the product set.
 
     A dissociation can happen to any helix under the threshold length
+
     """
+    # """
+    # Gives the maximum length of a duplex in nucleotides that should be considered
+    # reversibly bound; that is, helices longer than RELEASE_CUTOFF will never be
+    # unbound by the `open` reaction function.
+    # """
 
     # remember the larger release cutoff; don't enumerate any reactions
     # for helices longer than this
-    MAX_RELEASE_CUTOFF = max(RELEASE_CUTOFF_1_1, RELEASE_CUTOFF_1_N)
+    max_release = max(release_11, release_1N)
 
     reactions = []
 
@@ -753,7 +747,7 @@ def open(reactant):
     strands = reactant.strands
 
     # for no-max-helix mode:
-    if not UNZIP:
+    if not greedy:
         # We iterate through all the domains
         for (strand_index, strand) in enumerate(reactant.strands):
             for (domain_index, domain) in enumerate(strand.domains):
@@ -849,7 +843,7 @@ def open(reactant):
                 helix_startB[1] -= 1
 
                 # If the helix is short enough, we have a reaction
-                if (helix_length <= MAX_RELEASE_CUTOFF):
+                if (helix_length <= max_release):
 
                     release_reactant = Complex(
                         get_auto_name(),
@@ -874,9 +868,9 @@ def open(reactant):
 
         # discard reactions where the release cutoff is greater than the
         # threshold
-        if len(reaction.products) == 1 and length > RELEASE_CUTOFF_1_1:
+        if len(reaction.products) == 1 and length > release_11:
             continue
-        elif len(reaction.products) > 1 and length > RELEASE_CUTOFF_1_N:
+        elif len(reaction.products) > 1 and length > release_1N:
             continue
 
         reaction._const = opening_rate(length)
@@ -1056,17 +1050,13 @@ def domains_adjacent(loc1, loc2):
     return (loc1[0] == loc2[0]) and (abs(loc1[0] - loc2[0]) == 1)
 
 
-def branch_3way(reactant, greedy = True):
+def branch_3way(reactant, greedy = True, remote=True):
     """
     Returns a list of reaction pathways that can be created through one
     iteration of a 3 way branch migration reaction (more than one molecule may
     be produced by a reaction because branch migration can liberate strands and
     complexes).
     """
-
-    # Greedy is False in the LEGACY_UNZIP mode. That meand the zipper() function
-    # within find_on_loop() gets turned off, but we use LEGACY_UNZIP.
-    greedy = UNZIP and not LEGACY_UNZIP
 
     def filter_3way(dom1, struct1, loc1, dom2, struct2, loc2):
         return struct1 is None and struct2 is not None and dom1.can_pair( dom2)
@@ -1092,14 +1082,7 @@ def branch_3way(reactant, greedy = True):
                           find_on_loop(reactant, displacing_loc, +1, filter_3way, greedy=greedy))
 
             for (displacing, bound, before, after) in bound_doms:
-                if UNZIP and LEGACY_UNZIP:
-                    displacing_loc = list(displacing.locs)[0]
-                    bound_loc = list(bound.locs)[0]
-                    reaction = ReactionPathway(
-                        'branch_3way', [reactant], do_3way_migration_legacy(
-                            reactant, displacing_loc, bound_loc))
-                else:
-                    reaction = ReactionPathway(
+                reaction = ReactionPathway(
                         'branch_3way', [reactant], do_3way_migration(
                             reactant, displacing.locs, bound.locs))
 
@@ -1111,7 +1094,7 @@ def branch_3way(reactant, greedy = True):
                 reaction._const = branch_3way_remote_rate(length, before, after)
 
                 # skip remote toehold reactions if directed
-                if REJECT_REMOTE:
+                if not remote :
                     if not (not after.is_open and after.stems ==
                             1 and after.bases == 0):
                         # print "Rejecting... " + reaction.kernel_string()
@@ -1166,58 +1149,6 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
 
     return find_releases(product)
 
-# TODO: DEPRECATED???
-def do_3way_migration_legacy(reactant, displacing_loc, new_bound_loc):
-    """
-    Returns the product set which is the result of a 3-way branch migration
-    reaction where the domain at displacing_loc displaces the domain bound to
-    the domain at new_bound_loc.
-    """
-
-    # out_reactant = copy.deepcopy(reactant)
-
-    out_reactant_structure = copy.deepcopy(reactant.structure)
-
-    out_reactant_structure[displacing_loc[0]
-                           ][displacing_loc[1]] = new_bound_loc
-    displaced_loc = out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]]
-    out_reactant_structure[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
-    out_reactant_structure[displaced_loc[0]][displaced_loc[1]] = None
-
-    out_reactant = Complex(
-        get_auto_name(), reactant.strands[:], out_reactant_structure)
-
-    global UNZIP
-
-    # Check to see if an adjacent displacement is possible
-    if (UNZIP):
-        dstrand = displacing_loc[0]
-        ddomain = displacing_loc[1]
-        bstrand = new_bound_loc[0]
-        bdomain = new_bound_loc[1]
-        if (ddomain + 1 < len(out_reactant.strands[dstrand].domains)) and \
-                (out_reactant.structure[dstrand][ddomain + 1] is None) and \
-                (bdomain - 1 >= 0) and \
-                (out_reactant.structure[bstrand][bdomain - 1] is not None) and \
-                (out_reactant.strands[bstrand].domains[bdomain - 1].can_pair(
-                    out_reactant.strands[dstrand].domains[ddomain + 1])):
-
-            return do_3way_migration_legacy(
-                out_reactant, (dstrand, ddomain + 1), (bstrand, bdomain - 1))
-
-        elif (ddomain - 1 >= 0) and \
-                (out_reactant.structure[dstrand][ddomain - 1] is None) and \
-                (bdomain + 1 < len(out_reactant.strands[bstrand].domains)) and \
-                (out_reactant.structure[bstrand][bdomain + 1] is not None) and \
-                (out_reactant.strands[bstrand].domains[bdomain + 1].can_pair(
-                    out_reactant.strands[dstrand].domains[ddomain - 1])):
-
-            return do_3way_migration_legacy(
-                out_reactant, (dstrand, ddomain - 1), (bstrand, bdomain + 1))
-        else:
-            return find_releases(out_reactant)
-    else:
-        return find_releases(out_reactant)
 
 def find_on_loop(reactant, start_loc, direction, filter, greedy=True):
     """
@@ -1367,7 +1298,7 @@ def find_on_loop(reactant, start_loc, direction, filter, greedy=True):
         # so it's bound to something: follow the structure to stay on the same loop
         bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
 
-    if greedy: #UNZIP and not LEGACY_UNZIP:
+    if greedy: 
         zipped_results = []
         for (bound_loc, i) in results:
             zipped_results.append(zipper(
@@ -1489,7 +1420,7 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
     return start_locs, bound_locs, before, after
 
 
-def branch_4way(reactant, greedy = False):
+def branch_4way(reactant, greedy = False, remote=True):
     """
     Returns a list of complex sets that can be created through one iteration of
     a 4 way branch migration reaction (each set consists of the molecules that
@@ -1498,7 +1429,8 @@ def branch_4way(reactant, greedy = False):
     """
 
     if greedy:
-        raise NotImplementedError('Greedy 4-way branch migration not implemented.')
+        #print NotImplementedError('Greedy 4-way branch migration not implemented.')
+        greedy = False
 
     def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2):
         """ A filter function for *find_on_loop()* """
@@ -1553,7 +1485,7 @@ def branch_4way(reactant, greedy = False):
                 reaction._const = branch_4way_remote_rate(length, before, after)
 
                 # skip remote toehold reactions
-                if REJECT_REMOTE:
+                if not remote:
                     if not (not after.is_open and after.stems == 1 and after.bases == 0 and
                             not before.is_open and before.stems == 1 and before.bases == 0):
                         continue

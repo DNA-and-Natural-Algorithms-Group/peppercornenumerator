@@ -604,7 +604,7 @@ class CondenseTests(unittest.TestCase):
         self.bounded_dendrimer.MAX_COMPLEX_SIZE = 10
         self.bounded_dendrimer.MAX_REACTION_COUNT = 1000
         self.bounded_dendrimer.MAX_COMPLEX_COUNT = 200
-        self.bounded_dendrimer.RELEASE_CUTOFF = 8
+        self.bounded_dendrimer.release_cutoff = 8
 
         self.bounded_dendrimer.enumerate()
 
@@ -620,7 +620,7 @@ class CondenseTests(unittest.TestCase):
         self.fate_example.MAX_COMPLEX_SIZE = 10
         self.fate_example.MAX_REACTION_COUNT = 1000
         self.fate_example.MAX_COMPLEX_COUNT = 200
-        self.fate_example.RELEASE_CUTOFF = 7
+        self.fate_example.release_cutoff = 7
 
         self.fate_example.enumerate()
 
@@ -634,7 +634,7 @@ class CondenseTests(unittest.TestCase):
         self.fate_example.MAX_COMPLEX_SIZE = 10
         self.fate_example.MAX_REACTION_COUNT = 1000
         self.fate_example.MAX_COMPLEX_COUNT = 200
-        self.fate_example.RELEASE_CUTOFF = 7
+        self.fate_example.release_cutoff = 7
 
         self.fate_example.enumerate()
 

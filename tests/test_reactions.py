@@ -52,51 +52,29 @@ def assert_reaction(reactants, move, product_sets):
     assert set(rxns) == set(expected_rxns)
 
 
-def disable_zipping():
-    reactions.UNZIP = False
-
-
-def enable_zipping():
-    reactions.UNZIP = True
-
-
-def enable_new_zipping():
-    reactions.UNZIP = True
-    reactions.LEGACY_UNZIP = False
-
-
-def enable_old_zipping():
-    # return
-    reactions.UNZIP = True
-    reactions.LEGACY_UNZIP = True
-
-
-old_release_cutoff_1_1 = reactions.RELEASE_CUTOFF_1_1
-old_release_cutoff_1_n = reactions.RELEASE_CUTOFF_1_N
-
-
-def set_release_cutoff(r_1_1, r_1_n):
-    old_release_cutoff_1_1 = reactions.RELEASE_CUTOFF_1_1
-    old_release_cutoff_1_n = reactions.RELEASE_CUTOFF_1_N
-    reactions.RELEASE_CUTOFF_1_1 = r_1_1
-    reactions.RELEASE_CUTOFF_1_N = r_1_n
-
-
-def restore_release_cutoff():
-    reactions.RELEASE_CUTOFF_1_1 = old_release_cutoff_1_1
-    reactions.RELEASE_CUTOFF_1_N = old_release_cutoff_1_n
-
+#def enable_new_zipping():
+#    print DeprecationWarning('global variables have been removed.')
+#    reactions.UNZIP = True
+#    reactions.LEGACY_UNZIP = False
+#
+#
+#def enable_old_zipping():
+#    raise DeprecationWarning('LEGACY_UNZIP has been removed.')
+#    # return
+#    reactions.UNZIP = True
+#    reactions.LEGACY_UNZIP = True
 
 def make_loop(complex, *pairs):
     return Loop([complex.triple(*pair) for pair in pairs])
 
 
-enable_new_zipping()
+#enable_new_zipping()
 
 
 class ReactionTests(unittest.TestCase):
     def setUp(self):
-        enable_new_zipping()
+        #enable_new_zipping()
+        pass
 
     def testZipper(self):
         # def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
@@ -348,7 +326,7 @@ class ReactionTests(unittest.TestCase):
                     reaction._const = 1; #branch_4way_remote_rate( length, before, after)
 
                     # skip remote toehold reactions if directed
-                    if REJECT_REMOTE:
+                    if False:
                         if not (not after.is_open and after.stems == 1 and after.bases == 0 and
                                 not before.is_open and before.stems == 1 and before.bases == 0):
                             continue
@@ -356,7 +334,7 @@ class ReactionTests(unittest.TestCase):
 
 class BindTests(unittest.TestCase):
     def setUp(self):
-        enable_new_zipping()
+        #enable_new_zipping()
 
         self.SLC_enumerator = input_enum('tests/files/test_input_standard_SLC.in')
         self.domains = {}
@@ -1434,12 +1412,10 @@ class OpenTests(unittest.TestCase):
             'open', [complexes['A1']], [complexes['A2']])]
 
         # Zipping possible
-        set_release_cutoff(13, 13)
-        rxns = reactions.open(complexes['A3'])
+        rxns = reactions.open(complexes['A3'], release_11 = 13, release_1N=13)
         print_rxns(rxns)
         assert rxns == [ReactionPathway(
             'open', [complexes['A3']], [complexes['A4']])]
-        restore_release_cutoff()
 
     def testOpenB(self):
         # open:  ? a( ? ) ? -> ? a ? a* ?
@@ -1453,17 +1429,15 @@ class OpenTests(unittest.TestCase):
         ])
 
         # enable single domain semantics
-        disable_zipping()
-        set_release_cutoff(7, 7)
 
         # No zipping possible
-        rxns = reactions.open(complexes['A1'])
+        rxns = reactions.open(complexes['A1'], greedy=False, release_11 = 7, release_1N=7)
         print_rxns(rxns)
         assert rxns == [ReactionPathway(
             'open', [complexes['A1']], [complexes['A2']])]
 
         # Zipping possible
-        rxns = reactions.open(complexes['A3'])
+        rxns = reactions.open(complexes['A3'], greedy=False, release_11 = 7, release_1N=7)
         print_rxns(rxns)
         assert set(rxns) == set(
             [
@@ -1475,9 +1449,6 @@ class OpenTests(unittest.TestCase):
                         complexes['A3']], [
                         complexes['A5']])])
 
-        enable_zipping()
-        restore_release_cutoff()
-
     def testOpenNoMaxHelix(self):
         # open:  ? a( ? ) ? -> ? a ? a* ?
         (domains, strands, complexes) = from_kernel([
@@ -1488,11 +1459,9 @@ class OpenTests(unittest.TestCase):
         ])
 
         # enable single domain semantics
-        disable_zipping()
-        set_release_cutoff(10, 10)
 
         # Zipping possible
-        rxns = reactions.open(complexes['A1'])
+        rxns = reactions.open(complexes['A1'], greedy=False, release_11 = 10, release_1N=10)
         print_rxns(rxns)
         assert set(rxns) == set(
             [
@@ -1503,13 +1472,11 @@ class OpenTests(unittest.TestCase):
                     'open', [
                         complexes['A1']], [
                         complexes['A3']])])
-        enable_zipping()
-        restore_release_cutoff()
 
 
 class Branch3WayTests(unittest.TestCase):
     def setUp(self):
-        enable_new_zipping()
+        #enable_new_zipping()
 
         self.SLC_enumerator = input_enum(
             'tests/files/test_input_standard_SLC.in')

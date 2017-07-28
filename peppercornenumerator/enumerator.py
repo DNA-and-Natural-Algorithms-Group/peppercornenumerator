@@ -97,6 +97,60 @@ class Enumerator(object):
         self.k_slow = 0  # float("-inf")
         self.k_fast = 0  # float("-inf")
 
+        # The new local variable instead of reactions.X
+        self._greedy = True
+        self._remote = True
+        self._release_11 = 6
+        self._release_1N = 6
+
+    @property
+    def release_cutoff(self):
+        if self._release_11 != self._release_1N :
+            raise PeppercornUsageError('Ambiguous release cutoff request.')
+        return self._release_11
+
+    @release_cutoff.setter
+    def release_cutoff(self, value):
+        assert isinstance(value, int)
+        self._release_11 = value
+        self._release_1N = value
+
+    @property
+    def release_cutoff_1_1(self):
+        return self._release_11
+
+    @release_cutoff_1_1.setter
+    def release_cutoff_1_1(self, value):
+        assert isinstance(value, int)
+        self._release_11 = value
+
+    @property
+    def release_cutoff_1_n(self):
+        return self._release_1N
+
+    @release_cutoff_1_n.setter
+    def release_cutoff_1_n(self, value):
+        assert isinstance(value, int)
+        self._release_1N = value
+
+
+    @property
+    def remote_migration(self):
+        return self._remote
+
+    @remote_migration.setter
+    def remote_migration(self, remote):
+        assert isinstance(remote, bool)
+        self._remote = remote
+
+    @property
+    def greedy_migration(self):
+        return self._greedy
+
+    @greedy_migration.setter
+    def greedy_migration(self, greedy):
+      self._greedy = greedy
+
     @property
     def auto_name(self):
         return reactions.auto_name
@@ -192,50 +246,6 @@ class Enumerator(object):
         self._transient_complexes = []
         self._reactions = []
 
-    def set_reaction_options(self):
-        # handle release cutoff
-        self.old = {}
-        self.old['release_cutoff_1_1'] = reactions.RELEASE_CUTOFF_1_1
-        self.old['release_cutoff_1_N'] = reactions.RELEASE_CUTOFF_1_N
-        self.old['unzip'] = reactions.UNZIP
-        self.old['legacy_unzip'] = reactions.LEGACY_UNZIP
-        self.old['reject_remote'] = reactions.REJECT_REMOTE
-        if (hasattr(self, 'RELEASE_CUTOFF')):
-            reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF
-            reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF
-
-        if (hasattr(self, 'RELEASE_CUTOFF_1_1')):
-            reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF_1_1
-
-        if (hasattr(self, 'RELEASE_CUTOFF_1_N')):
-            reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF_1_N
-
-        if (hasattr(self, 'UNZIP')):
-            reactions.UNZIP = self.UNZIP
-            if reactions.UNZIP:
-                logging.info("Using max-helix semantics")
-
-        if (hasattr(self, 'LEGACY_UNZIP')):
-            reactions.LEGACY_UNZIP = self.LEGACY_UNZIP
-            if reactions.LEGACY_UNZIP:
-                logging.info("Using legacy unzipping mode")
-            if not reactions.UNZIP:
-                logging.debug(
-                    "Note: legacy unzip mode will have no effect, since max helix semantics are disabled")
-
-        if (hasattr(self, 'REJECT_REMOTE')):
-            reactions.REJECT_REMOTE = self.REJECT_REMOTE
-            if reactions.REJECT_REMOTE:
-                logging.info(
-                    "Ignoring remote toehold-mediated branch migration")
-
-    def reset_reaction_options(self):
-        reactions.RELEASE_CUTOFF_1_1 = self.old['release_cutoff_1_1']
-        reactions.RELEASE_CUTOFF_1_N = self.old['release_cutoff_1_N']
-        reactions.UNZIP = self.old['unzip']
-        reactions.LEGACY_UNZIP = self.old['legacy_unzip']
-        reactions.REJECT_REMOTE = self.old['reject_remote']
-
     def enumerate(self):
         """
         Generates the reaction graph consisting of all complexes reachable from
@@ -244,16 +254,16 @@ class Enumerator(object):
         class.
         """
 
-        self.set_reaction_options()
-        logging.info("Release cutoff 1-1: %d nt" %
-                     reactions.RELEASE_CUTOFF_1_1)
-        logging.info("Release cutoff 1-n: %d nt" %
-                     reactions.RELEASE_CUTOFF_1_N)
+        #self.set_reaction_options()
+        #logging.info("Release cutoff 1-1: %d nt" %
+        #             reactions.RELEASE_CUTOFF_1_1)
+        #logging.info("Release cutoff 1-n: %d nt" %
+        #             reactions.RELEASE_CUTOFF_1_N)
 
         # Will be called once enumeration halts, either because it's finished or
         # because too many complexes/reactions have been enumerated
         def finish(premature=False):
-            self.reset_reaction_options()
+            #self.reset_reaction_options()
 
             # copy E and T into #complexes
             self._complexes += (self._E)
@@ -542,13 +552,24 @@ class Enumerator(object):
 
         # Do unimolecular reactions that are always slow
         for move in slow_reactions[1]:
-            reactions += (move(complex))
+            if move.__name__ == 'open':
+                reactions += (move(complex, 
+                        greedy=self._greedy, 
+                        release_11 = self._release_11,
+                        release_1N = self._release_1N))
+            else :
+                reactions += (move(complex, greedy=self._greedy, remote=self._remote))
 
         # Do unimolecular reactions that are sometimes slow
         for move in self.FAST_REACTIONS:
-            move_reactions = move(complex)
-            reactions += (r for r in move_reactions if self.k_fast >
-                          r.rate() > self.k_slow)
+            if move.__name__ == 'open':
+                move_reactions = move(complex, 
+                        greedy=self._greedy, 
+                        release_11 = self._release_11,
+                        release_1N = self._release_1N)
+            else :
+                move_reactions = move(complex, greedy=self._greedy, remote=self._remote)
+            reactions += (r for r in move_reactions if self.k_fast > r.rate() > self.k_slow)
 
         # Do bimolecular reactions
         for move in slow_reactions[2]:
@@ -570,7 +591,13 @@ class Enumerator(object):
 
         # Do unimolecular reactions
         for move in self.FAST_REACTIONS:
-            move_reactions = move(complex)
+            if move.__name__ == 'open':
+                move_reactions = move(complex, 
+                        greedy=self._greedy, 
+                        release_11 = self._release_11,
+                        release_1N = self._release_1N)
+            else :
+                move_reactions = move(complex, greedy=self._greedy, remote=self._remote)
             # reactions += (r for r in move_reactions if r.rate() > self.k_slow)
             reactions += (r for r in move_reactions if r.rate() > self.k_fast)
 
