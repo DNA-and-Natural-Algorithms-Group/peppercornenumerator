@@ -181,10 +181,6 @@ def main(cl_opts):
         logging.info(c.kernel_string())
 
     # Transfer options to enumerator object
-    if cl_opts.k_slow is not None:
-        enum.k_slow = cl_opts.k_slow
-    if cl_opts.k_fast is not None:
-        enum.k_fast = cl_opts.k_fast
 
     if cl_opts.MAX_REACTION_COUNT is not None:
         enum.MAX_REACTION_COUNT = cl_opts.MAX_REACTION_COUNT
@@ -195,6 +191,9 @@ def main(cl_opts):
     if cl_opts.MAX_COMPLEX_SIZE is not None:
         enum.MAX_COMPLEX_SIZE = cl_opts.MAX_COMPLEX_SIZE
     
+    enum.k_slow = cl_opts.k_slow
+    enum.k_fast = cl_opts.k_fast
+
     enum.release_cutoff_1_1 = cl_opts.release_cutoff_1_1
     enum.release_cutoff_1_n = cl_opts.release_cutoff_1_n
 

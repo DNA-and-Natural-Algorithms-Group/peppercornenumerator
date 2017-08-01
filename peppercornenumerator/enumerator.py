@@ -61,8 +61,7 @@ class Enumerator(object):
     """
     Represents a single enumerator instance, consisting of all the information
     required for a reaction graph. This class is the coordinator for the state
-    enumerator. Enumerators have immutable starting conditions. If unzip is true,
-    all 3-way branch migrations are greedy.
+    enumerator. Enumerators have immutable starting conditions. 
     """
 
     def __init__(self, domains, strands, initial_complexes):
@@ -94,14 +93,33 @@ class Enumerator(object):
         self.FAST_REACTIONS = fast_reactions[1]
         self.interruptible = True
         self.interactive = False
-        self.k_slow = 0  # float("-inf")
-        self.k_fast = 0  # float("-inf")
+        
+        # set 
+        self._k_slow = 0  # float("-inf")
+        self._k_fast = 0  # float("-inf")
 
         # The new local variable instead of reactions.X
-        self._greedy = True
+        self._max_helix = True
         self._remote = True
         self._release_11 = 6
         self._release_1N = 6
+
+    @property
+    def k_slow(self):
+        return self._k_slow
+
+    @k_slow.setter
+    def k_slow(self, value):
+        self._k_slow = value
+
+    @property
+    def k_fast(self):
+        return self._k_fast
+
+    @k_fast.setter
+    def k_fast(self, value):
+        self._k_fast = value
+
 
     @property
     def release_cutoff(self):
@@ -144,12 +162,13 @@ class Enumerator(object):
         self._remote = remote
 
     @property
-    def greedy_migration(self):
-        return self._greedy
+    def max_helix_migration(self):
+        """ """
+        return self._max_helix
 
-    @greedy_migration.setter
-    def greedy_migration(self, greedy):
-      self._greedy = greedy
+    @max_helix_migration.setter
+    def max_helix_migration(self, max_helix):
+      self._max_helix = max_helix
 
     @property
     def auto_name(self):
@@ -554,22 +573,22 @@ class Enumerator(object):
         for move in slow_reactions[1]:
             if move.__name__ == 'open':
                 reactions += (move(complex, 
-                        greedy=self._greedy, 
+                        max_helix=self._max_helix, 
                         release_11 = self._release_11,
                         release_1N = self._release_1N))
             else :
-                reactions += (move(complex, greedy=self._greedy, remote=self._remote))
+                reactions += (move(complex, max_helix=self._max_helix, remote=self._remote))
 
         # Do unimolecular reactions that are sometimes slow
         for move in self.FAST_REACTIONS:
             if move.__name__ == 'open':
                 move_reactions = move(complex, 
-                        greedy=self._greedy, 
+                        max_helix=self._max_helix, 
                         release_11 = self._release_11,
                         release_1N = self._release_1N)
             else :
-                move_reactions = move(complex, greedy=self._greedy, remote=self._remote)
-            reactions += (r for r in move_reactions if self.k_fast > r.rate() > self.k_slow)
+                move_reactions = move(complex, max_helix=self._max_helix, remote=self._remote)
+            reactions += (r for r in move_reactions if self._k_fast > r.rate() > self._k_slow)
 
         # Do bimolecular reactions
         for move in slow_reactions[2]:
@@ -593,13 +612,13 @@ class Enumerator(object):
         for move in self.FAST_REACTIONS:
             if move.__name__ == 'open':
                 move_reactions = move(complex, 
-                        greedy=self._greedy, 
+                        max_helix=self._max_helix, 
                         release_11 = self._release_11,
                         release_1N = self._release_1N)
             else :
-                move_reactions = move(complex, greedy=self._greedy, remote=self._remote)
+                move_reactions = move(complex, max_helix=self._max_helix, remote=self._remote)
             # reactions += (r for r in move_reactions if r.rate() > self.k_slow)
-            reactions += (r for r in move_reactions if r.rate() > self.k_fast)
+            reactions += (r for r in move_reactions if r.rate() > self._k_fast)
 
         return reactions
 

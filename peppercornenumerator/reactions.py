@@ -349,7 +349,7 @@ def bimolecular_binding_rate(length):
 # Reaction functions
 # ----------------------------------------------------------------------------
 
-def bind11(reactant, greedy=True, remote=None):
+def bind11(reactant, max_helix=True, remote=None):
     """
     Returns a list of reaction pathways which can be produced by 1-1 binding
     reactions of the argument complex. The 1-1 binding reaction is the
@@ -359,7 +359,7 @@ def bind11(reactant, greedy=True, remote=None):
     reactions = []
     structure = reactant.structure
 
-    # TODO: does greedy have an effect? Remote does not!
+    # TODO: does max_helix have an effect? Remote does not!
 
     def filter_bind11(dom1, struct1, loc1, dom2, struct2, loc2):
         return struct1 is None and struct2 is None and dom2.can_pair(dom1)
@@ -377,8 +377,8 @@ def bind11(reactant, greedy=True, remote=None):
 
             # search both directions around the loop for a bound domain that
             # has the same sequence (and therefore can be displaced)
-            locs = find_on_loop(reactant, loc1, -1, filter_bind11, greedy=greedy) + \
-                   find_on_loop(reactant, loc1, +1, filter_bind11, greedy=greedy)  
+            locs = find_on_loop(reactant, loc1, -1, filter_bind11, max_helix=max_helix) + \
+                   find_on_loop(reactant, loc1, +1, filter_bind11, max_helix=max_helix)  
 
             # build products
             for (loc1s, loc2s, before, after) in locs:
@@ -411,7 +411,7 @@ def do_bind11(reactant, loc1s, loc2s):
         product = do_single_bind11(product, loc1, loc2)
     return product
 
-def bind21(reactant1, reactant2, greedy = True, remote=None):
+def bind21(reactant1, reactant2, max_helix = True, remote=None):
     """
     Returns a list of reaction pathways which can be produced by 2-1 binding
     reactions of the argument complexes. The 2-1 binding reaction is the
@@ -422,7 +422,7 @@ def bind21(reactant1, reactant2, greedy = True, remote=None):
     r1_doms = reactant1.available_domains
     r2_doms = reactant2.available_domains
 
-    # Greedy cannot be effective within the find_on_loop function in the bind21 case.
+    # max_helix cannot be effective within the find_on_loop function in the bind21 case.
     # Remote is ineffective, but may be set for convencience
 
     def filter_bind21(dom1, struct1, loc1, dom2, struct2, loc2):
@@ -455,16 +455,16 @@ def bind21(reactant1, reactant2, greedy = True, remote=None):
         # build "before" and "after" loop structures
         # NOTE: seams like zipper was called within find_on_loop as well, but then it could
         # not find anything because the *filter function* is too strict. Let's see 
-        # if sthg changes with greedy=False...
+        # if sthg changes with max_helix=False...
         # it just predents it found the reaction via find_on_loop for return values...
         out = find_on_loop( complex, location1, 1,
             lambda dom1, struct1, loc1, dom2, struct2, loc2: 
-                loc1 == location1 and loc2 == location2, greedy=False)
+                loc1 == location1 and loc2 == location2, max_helix=False)
 
         [(loc1s, loc2s, before, after)] = out
 
         # zipper for max-helix semantics
-        if greedy :
+        if max_helix :
             (loc1s, loc2s, before, after) = zipper(
                     complex, location1, location2, before.parts, after.parts, 1, filter_bind21)
 
@@ -477,7 +477,7 @@ def bind21(reactant1, reactant2, greedy = True, remote=None):
 
         output.append(reaction)
 
-    return output
+    return sorted(list(set(output)))
 
 
 def find_external_strand_break(complex, location):
@@ -721,7 +721,7 @@ def do_single_open(reactant, loc):
     return out
 
 
-def open(reactant, greedy = True, release_11=6, release_1N=6):
+def open(reactant, max_helix = True, release_11=6, release_1N=6):
     """
     Returns a list of reaction product sets that can be produced by the
     'open' reaction, in which a short helix dissociates. Each product
@@ -747,7 +747,7 @@ def open(reactant, greedy = True, release_11=6, release_1N=6):
     strands = reactant.strands
 
     # for no-max-helix mode:
-    if not greedy:
+    if not max_helix:
         # We iterate through all the domains
         for (strand_index, strand) in enumerate(reactant.strands):
             for (domain_index, domain) in enumerate(strand.domains):
@@ -1050,7 +1050,7 @@ def domains_adjacent(loc1, loc2):
     return (loc1[0] == loc2[0]) and (abs(loc1[0] - loc2[0]) == 1)
 
 
-def branch_3way(reactant, greedy = True, remote=True):
+def branch_3way(reactant, max_helix = True, remote=True):
     """
     Returns a list of reaction pathways that can be created through one
     iteration of a 3 way branch migration reaction (more than one molecule may
@@ -1078,8 +1078,8 @@ def branch_3way(reactant, greedy = True, remote=True):
             # search 5'->3' and 3'->5' directions around the loop for a bound
             # domain that is complementary (and therefore can be displaced)
 
-            bound_doms = (find_on_loop(reactant, displacing_loc, -1, filter_3way, greedy=greedy) +
-                          find_on_loop(reactant, displacing_loc, +1, filter_3way, greedy=greedy))
+            bound_doms = (find_on_loop(reactant, displacing_loc, -1, filter_3way, max_helix=max_helix) +
+                          find_on_loop(reactant, displacing_loc, +1, filter_3way, max_helix=max_helix))
 
             for (displacing, bound, before, after) in bound_doms:
                 reaction = ReactionPathway(
@@ -1150,7 +1150,7 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
     return find_releases(product)
 
 
-def find_on_loop(reactant, start_loc, direction, filter, greedy=True):
+def find_on_loop(reactant, start_loc, direction, filter, max_helix=True):
     """
     Finds the next domain within `reactant` that's on the same inner loop as
     `start_loc` and matches the passed `filter` function. Looks in either the
@@ -1298,7 +1298,7 @@ def find_on_loop(reactant, start_loc, direction, filter, greedy=True):
         # so it's bound to something: follow the structure to stay on the same loop
         bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
 
-    if greedy: 
+    if max_helix: 
         zipped_results = []
         for (bound_loc, i) in results:
             zipped_results.append(zipper(
@@ -1340,16 +1340,10 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
         dstrand, ddomain = start_loc
         bstrand, bdomain = bound_loc
 
-        #print 'init1', dstrand, ddomain
-        #print 'init2', bstrand, bdomain
-
         while True:
             # move domain pointers "inwards" towards each other
             ddomain += direction
             bdomain -= direction
-
-            #print 'while1', dstrand, ddomain
-            #print 'while2', bstrand, bdomain
 
             # if ddomain is still on dstrand
             if ((ddomain < len(reactant.strands[dstrand].domains) and ddomain >= 0) and
@@ -1370,16 +1364,12 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
                         reactant.get_domain((bstrand, bdomain)),
                         reactant.get_structure((bstrand, bdomain)),
                         (bstrand, bdomain))):
-                #print 'dom1', reactant.get_domain((dstrand, ddomain))
-                #print 'dom2', reactant.get_domain((bstrand, bdomain))
 
                 # add new positions to list
                 if direction == 1:
-                    #print 'fw', dstrand, ddomain, bstrand, bdomain
                     start_locs.append(triple((dstrand, ddomain)))
                     bound_locs.append(triple((bstrand, bdomain)))
                 elif direction == -1:
-                    #print 'bw', dstrand, ddomain, bstrand, bdomain
                     start_locs[:0] = [triple((dstrand, ddomain))]
                     bound_locs[:0] = [triple((bstrand, bdomain))]
 
@@ -1387,20 +1377,13 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
                 displacing_index = (direction - 1) / 2
                 bound_index = (-direction - 1) / 2
 
-                #print 'yay == ', displacing_index, bound_index
-                #print 'mo', middle
-
-                # NOTE(SB): There was an try/except IndexError wrapper, but the additional
-                # "if middle and " in the second statement should fix that.
-                if middle[displacing_index] is not None and middle[displacing_index][2] == (
-                        dstrand, ddomain):
+                if middle and middle[displacing_index] is not None and \
+                        middle[displacing_index][2] == (dstrand, ddomain):
                     del middle[displacing_index]
 
-                if middle and middle[bound_index] is not None and middle[bound_index][2] == (
-                        bstrand, bdomain):
+                if middle and middle[bound_index] is not None and \
+                        middle[bound_index][2] == (bstrand, bdomain):
                     del middle[bound_index]
-
-                #print 'mn', middle
 
             else:
                 break
@@ -1409,7 +1392,6 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
     bound_locs = [triple(bound_loc)]
 
     for (d, middle) in [(direction, before), (-direction, after)]:
-        #print 'zipp, d, middle', d, middle
         move_towards_middle(middle, d)
 
     start_locs = Loop(start_locs)
@@ -1420,7 +1402,7 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
     return start_locs, bound_locs, before, after
 
 
-def branch_4way(reactant, greedy = False, remote=True):
+def branch_4way(reactant, max_helix = False, remote=True):
     """
     Returns a list of complex sets that can be created through one iteration of
     a 4 way branch migration reaction (each set consists of the molecules that
@@ -1428,9 +1410,9 @@ def branch_4way(reactant, greedy = False, remote=True):
     migration can liberate strands and complexes).
     """
 
-    if greedy:
-        #print NotImplementedError('Greedy 4-way branch migration not implemented.')
-        greedy = False
+    if max_helix:
+        #print NotImplementedError('max_helix 4-way branch migration not implemented.')
+        max_helix = False
 
     def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2):
         """ A filter function for *find_on_loop()* """
@@ -1465,7 +1447,7 @@ def branch_4way(reactant, greedy = False, remote=True):
             #   z*  ~   z
             #
 
-            bound_doms = find_on_loop(reactant, displacing_loc, +1, filter_4way, greedy=greedy)
+            bound_doms = find_on_loop(reactant, displacing_loc, +1, filter_4way, max_helix=max_helix)
 
             # build products
             for (displacing, displaced, before, after) in bound_doms:
@@ -1502,7 +1484,7 @@ def branch_4way(reactant, greedy = False, remote=True):
 
 def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
     """
-    Perform a sequence of greedy 4-way branch migration reactions.
+    Perform a sequence of max_helix 4-way branch migration reactions.
 
     Note: Only tested for single 4-way branch migration.
     """

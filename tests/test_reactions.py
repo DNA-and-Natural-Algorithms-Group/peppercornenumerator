@@ -225,7 +225,7 @@ class ReactionTests(unittest.TestCase):
 
         unzip = True
         legacy= False
-        greedy = unzip and not legacy
+        max_helix = unzip and not legacy
 
         # We iterate through all the domains
         for (strand_index, strand) in enumerate(reactant.strands):
@@ -238,8 +238,8 @@ class ReactionTests(unittest.TestCase):
                 displacing_domain = strand.domains[domain_index]
                 displacing_loc = (strand_index, domain_index)
 
-                bound_doms = (find_on_loop(reactant, displacing_loc, -1, filter_3way, greedy=greedy) +
-                              find_on_loop(reactant, displacing_loc, +1, filter_3way, greedy=greedy))
+                bound_doms = (find_on_loop(reactant, displacing_loc, -1, filter_3way, max_helix=max_helix) +
+                              find_on_loop(reactant, displacing_loc, +1, filter_3way, max_helix=max_helix))
 
                 for (displacing, bound, before, after) in bound_doms:
                     if unzip and legacy :
@@ -288,7 +288,7 @@ class ReactionTests(unittest.TestCase):
 
         unzip = False # True will break the test
         legacy= False
-        greedy = unzip and not legacy
+        max_helix = unzip and not legacy
 
         # We iterate through all the domains
         for (strand_index, strand) in enumerate(reactant.strands):
@@ -300,7 +300,7 @@ class ReactionTests(unittest.TestCase):
                 displacing_domain = strand.domains[domain_index]
                 displacing_loc = (strand_index, domain_index)
 
-                bound_doms = find_on_loop(reactant, displacing_loc, +1, filter_4way, greedy=greedy)
+                bound_doms = find_on_loop(reactant, displacing_loc, +1, filter_4way, max_helix=max_helix)
 
                 for (displacing, displaced, before, after) in bound_doms:
                     #show_loops(before, after, "before & after loops for 4-way branch migration")
@@ -1431,13 +1431,13 @@ class OpenTests(unittest.TestCase):
         # enable single domain semantics
 
         # No zipping possible
-        rxns = reactions.open(complexes['A1'], greedy=False, release_11 = 7, release_1N=7)
+        rxns = reactions.open(complexes['A1'], max_helix=False, release_11 = 7, release_1N=7)
         print_rxns(rxns)
         assert rxns == [ReactionPathway(
             'open', [complexes['A1']], [complexes['A2']])]
 
         # Zipping possible
-        rxns = reactions.open(complexes['A3'], greedy=False, release_11 = 7, release_1N=7)
+        rxns = reactions.open(complexes['A3'], max_helix=False, release_11 = 7, release_1N=7)
         print_rxns(rxns)
         assert set(rxns) == set(
             [
@@ -1461,7 +1461,7 @@ class OpenTests(unittest.TestCase):
         # enable single domain semantics
 
         # Zipping possible
-        rxns = reactions.open(complexes['A1'], greedy=False, release_11 = 10, release_1N=10)
+        rxns = reactions.open(complexes['A1'], max_helix=False, release_11 = 10, release_1N=10)
         print_rxns(rxns)
         assert set(rxns) == set(
             [
