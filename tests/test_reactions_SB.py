@@ -14,7 +14,7 @@ import peppercornenumerator.reactions as rxn
 from peppercornenumerator.utils import Domain, Strand, Complex, parse_dot_paren
 from peppercornenumerator.input import from_kernel
 
-SKIP = True
+SKIP = False
 
 def nuskell_parser(pil_string, ddlen=15):
     # snatched from nuskell.objects.TestTube.load_pil_kernel
@@ -439,6 +439,8 @@ class NewBranch3WayTests(unittest.TestCase):
         "I4 = a( x( b y z x y( + x y z( c( + ) ) ) ) )",
         "I3 = a( x b y z x( y + x y( z( c( + ) ) ) ) )", # no-max-helix
         "Y2 = a( x b y z x( y( + x y z( c( + ) ) ) ) )",
+        "Y3 = a( x( b y z x y( + x y z( c( + ) ) ) ) )",
+        "Y4 = a( x b y z x( y + x y( z( c( + ) ) ) ) )",
         ])
         reactant = complexes['X']
         inter1 = complexes['I1']
@@ -447,6 +449,8 @@ class NewBranch3WayTests(unittest.TestCase):
         inter4 = complexes['I4']
         product1 = complexes['Y1']
         product2 = complexes['Y2']
+        product3 = complexes['Y3']
+        product4 = complexes['Y4']
 
         # ~~~~~~ #
         # OUTPUT #
@@ -472,13 +476,14 @@ class NewBranch3WayTests(unittest.TestCase):
         #for o in output: print 'ow', o.kernel_string()
         self.assertEqual(output, [backward2, backward2b])
 
-        # NOTE: max_helix BRANCH MIGRATION MAXIMIZES NEW FORMED HELIX (forward2)!
-        backward = rxn.ReactionPathway('branch_3way', [inter1], [reactant])
-        forward2 = rxn.ReactionPathway('branch_3way', [inter1], [product2])
-        forward  = rxn.ReactionPathway('branch_3way', [inter1], [product1])
+        # NOTE: max_helix zippering cannot involve different strands than the initial step
+        backward = rxn.ReactionPathway('branch_3way', [inter1], [reactant]) #1
+        forward  = rxn.ReactionPathway('branch_3way', [inter1], [product1]) #4
+        forward2 = rxn.ReactionPathway('branch_3way', [inter1], [product3])
+        forward3 = rxn.ReactionPathway('branch_3way', [inter1], [product4])
         output = rxn.branch_3way(inter1, max_helix=True, remote=True)
-        #for o in output: print 'ow', o.kernel_string()
-        self.assertEqual(output, [backward, forward2, forward])
+        #for o in output: print 'fixme', o.kernel_string()
+        self.assertEqual(output, sorted([backward, forward, forward2, forward3]))
 
 @unittest.skipIf(SKIP, "skipping tests")
 class NewBranch4WayTests(unittest.TestCase):
@@ -697,8 +702,8 @@ class IsomorphicSets(unittest.TestCase):
         B1 = complexes['B1']
         B2 = complexes['B2']
 
-        #enum = Enumerator([A1, A2])
-        enum = Enumerator([B1, B2])
+        enum = Enumerator([A1, A2])
+        #enum = Enumerator([B1, B2])
         enum.k_fast = 0
         enum.k_slow = 0
         enum.max_helix_migration = True

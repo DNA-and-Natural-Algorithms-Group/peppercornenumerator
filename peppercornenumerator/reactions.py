@@ -467,7 +467,7 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
         # zipper for max-helix semantics
         if max_helix :
             (loc1s, loc2s, before, after) = zipper(
-                    complex, location1, location2, before.parts, after.parts, 1, filter_bind21)
+                    complex, location1, location2, before.parts, after.parts, 1, None, filter_bind21)
 
         product = do_bind11(complex, loc1s.locs, loc2s.locs)
 
@@ -1285,8 +1285,14 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True):
                 reactant.get_structure(bound_loc),
                 bound_loc)):
 
+            if reactant.structure[bound_loc[0]][bound_loc[1]] is not None:
+                # store the id of the displaced strand
+                disp_strand = reactant.structure[bound_loc[0]][bound_loc[1]][0]
+            else :
+                disp_strand = None
+
             # append the location
-            results.append((bound_loc, len(loop)))
+            results.append((bound_loc, len(loop), disp_strand))
 
         # store unpaired domains and "first" domain of each stem
         loop.append(triple(bound_loc))  # EW
@@ -1301,15 +1307,16 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True):
 
     if max_helix: 
         zipped_results = []
-        for (bound_loc, i) in results:
+        for (bound_loc, i, disp_strand) in results:
             zipped_results.append(zipper(
-                reactant, start_loc, bound_loc, loop[:i], loop[i + 1:], direction, filter))
+                reactant, start_loc, bound_loc, loop[:i], loop[i + 1:], 
+                direction, disp_strand, filter))
         return zipped_results
     else:
         return [(Loop([triple(start_loc)]), Loop([triple(bound_loc)]), 
-            Loop(loop[:i]), Loop(loop[i + 1:])) for (bound_loc, i) in results]
+            Loop(loop[:i]), Loop(loop[i + 1:])) for (bound_loc, i, _) in results]
 
-def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
+def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand, filter):
     """
     Takes a result from `find_on_loop` and "zips" it inwards (in the given
     `direction`); that is, given some `start_loc` and some `bound_loc`, tries
@@ -1341,16 +1348,10 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
         dstrand, ddomain = start_loc
         bstrand, bdomain = bound_loc
 
-        #print 'dd', dstrand, ddomain
-        #print 'bb', bstrand, bdomain
-
         while True:
             # move domain pointers "inwards" towards each other
             ddomain += direction
             bdomain -= direction
-
-            #print 'while dd', dstrand, ddomain
-            #print 'while bb', bstrand, bdomain
 
             # if ddomain is still on dstrand
             if ((ddomain < len(reactant.strands[dstrand].domains) and ddomain >= 0) and
@@ -1363,6 +1364,10 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
 
                     # and bdomain hasn't passed start_loc
                     (cmp((bstrand, bdomain), start_loc) == cmp(bound_loc, start_loc)) and
+
+                    # if we are displacing, we are still displacing the same strand.
+                    ((reactant.structure[bstrand][bdomain] is None) or 
+                        (reactant.structure[bstrand][bdomain][0] == disp_strand)) and
 
                     # and filter condition still applies
                     filter(reactant.get_domain((dstrand, ddomain)),
@@ -1384,9 +1389,6 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
                 displacing_index = (direction - 1) / 2
                 bound_index = (-direction - 1) / 2
 
-                #print 'CONGRATS', displacing_index, bound_index
-                #print 'middle1', middle
-
                 if middle and middle[displacing_index] is not None and \
                         middle[displacing_index][2] == (dstrand, ddomain):
                     del middle[displacing_index]
@@ -1395,19 +1397,13 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
                         middle[bound_index][2] == (bstrand, bdomain):
                     del middle[bound_index]
 
-                #print 'middle2', middle
-
             else:
                 break
-
-    #print reactant.kernel_string() 
-    #print 'ba1', before, after
 
     start_locs = [triple(start_loc)]
     bound_locs = [triple(bound_loc)]
 
     for (d, middle) in [(direction, before), (-direction, after)]:
-        #print 'towards middle', d, middle
         move_towards_middle(middle, d)
 
     start_locs = Loop(start_locs)
