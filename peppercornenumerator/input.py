@@ -191,7 +191,7 @@ def input_enum(filename):
     strands = strands.values()
     complexes = complexes.values()
 
-    enumerator = peppercornenumerator.Enumerator(domains, strands, complexes)
+    enumerator = peppercornenumerator.Enumerator(complexes, strands, domains)
     return enumerator
 
 
@@ -425,7 +425,8 @@ def from_kernel(lines):
 
 def enum_from_kernel(lines):
     (domains, strands, complexes) = from_kernel(lines)
-    return peppercornenumerator.Enumerator(domains, strands, complexes)
+    #return peppercornenumerator.Enumerator(domains, strands, complexes)
+    return peppercornenumerator.Enumerator(complexes, strands, domains)
 
 
 def input_pil(filename):
@@ -799,7 +800,7 @@ def input_pil(filename):
     strands = strands.values()
     complexes = complexes.values()
 
-    enumerator = peppercornenumerator.Enumerator(domains, strands, complexes)
+    enumerator = peppercornenumerator.Enumerator(complexes, strands, domains)
     return enumerator
 
 
@@ -921,7 +922,7 @@ def load_json(filename):
         initial_complexes[saved_complex['name']] = new_complex
 
     enumerator = peppercornenumerator.Enumerator(
-        domains.values(), strands.values(), initial_complexes.values())
+        initial_complexes.values(), strands.values(), domains.values())
     enumerator._complexes = complexes.values()
     enumerator._resting_states = resting_states
     enumerator._transient_complexes = transient_complexes.values()

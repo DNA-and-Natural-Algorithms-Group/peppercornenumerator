@@ -129,7 +129,7 @@ def output_pil(enumerator, filename, output_condensed=False,
 
         if output_rates:
             rate_units = "/M" * (reaction.arity[0] - 1) + "/s"
-            rate_const = "[%12.8g %s]" % (reaction.rate(), rate_units)
+            rate_const = "[%12.8g %s]" % (reaction.rate, rate_units)
         else:
             rate_const = ""
 
@@ -219,7 +219,7 @@ def output_kernel(enumerator, filename, output_condensed=False,
     def write_reaction(output_file, reaction):
         if output_rates:
             rate_units = "/M" * (reaction.arity[0] - 1) + "/s"
-            rate_const = "[%f %s]" % (reaction.rate(), rate_units)
+            rate_const = "[%f %s]" % (reaction.rate, rate_units)
         else:
             rate_const = ""
         reac_string_list = [rate_const, reaction.kernel_string()]
@@ -660,7 +660,7 @@ def output_sbml(enumerator, filename, output_condensed=False,
              '</math>',
              '<listOfParameters>',
              '<parameter id="k"  value="%.10f" units="%s"/>' % (
-                 reaction.rate(), units),
+                 reaction.rate, units),
              '</listOfParameters>',
              '</kineticLaw>',
              '</reaction>']

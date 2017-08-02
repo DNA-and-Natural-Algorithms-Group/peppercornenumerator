@@ -180,8 +180,9 @@ class EnumeratorTests(unittest.TestCase):
 
     def testSegmentNeighborhood1(self):
         enum = Enumerator(
-            self.SLC_enumerator._domains, self.SLC_enumerator._strands, [
-                self.complexes['Cat']])
+                [self.complexes['Cat']],
+                self.SLC_enumerator._strands, 
+                self.SLC_enumerator._domains)
         res = enum.segment_neighborhood(enum.initial_complexes, [])
 
         assert res == {
@@ -339,8 +340,10 @@ class EnumeratorTests(unittest.TestCase):
         assert expected_complexes == resting_complexes
 
     def testEnumeration2(self):
-        enum = Enumerator(self.SLC_enumerator._domains,
-                          self.SLC_enumerator._strands, [self.complexes['I1']])
+        enum = Enumerator(
+                [self.complexes['I1']],
+                self.SLC_enumerator._strands, 
+                self.SLC_enumerator._domains)
         enum.enumerate()
 
         exp_initial_complexes = [self.complexes['I1']]
@@ -402,8 +405,10 @@ class EnumeratorTests(unittest.TestCase):
         assert res_transient_complexes == exp_transient_complexes
 
     def testEnumeration3(self):
-        enum = Enumerator(self.SLC_enumerator.domains, self.SLC_enumerator.strands, [
-                          self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']])
+        enum = Enumerator(
+                [self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']],
+                self.SLC_enumerator.strands, 
+                self.SLC_enumerator.domains)
         enum.enumerate()
 
         # shortcut because of large number of uses

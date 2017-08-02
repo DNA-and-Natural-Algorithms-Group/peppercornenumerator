@@ -41,8 +41,9 @@ class OutputTests(unittest.TestCase):
             self.SLC_enumerator)
 
         self.SLC_enumerator_reduced = Enumerator(
-            self.SLC_enumerator.domains, self.SLC_enumerator.strands, [
-                self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']])
+                [self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']],
+                self.SLC_enumerator.strands, 
+                self.SLC_enumerator.domains)
 
         self.three_arm_enumerator = input_enum(
             'tests/files/test_input_standard_3arm_junction.in')
@@ -51,8 +52,9 @@ class OutputTests(unittest.TestCase):
             self.complexes[complex.name] = complex
 
         self.three_arm_enumerator_reduced = Enumerator(
-            self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [
-                self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
+                [self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']],
+                self.three_arm_enumerator.strands, 
+                self.three_arm_enumerator.domains)
 
         self.simple_enumerator = input_enum(
             'tests/files/test_input_standard_simple.in')

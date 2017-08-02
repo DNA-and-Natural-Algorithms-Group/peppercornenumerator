@@ -14,6 +14,8 @@ import peppercornenumerator.reactions as rxn
 from peppercornenumerator.utils import Domain, Strand, Complex, parse_dot_paren
 from peppercornenumerator.input import from_kernel
 
+SKIP = True
+
 def nuskell_parser(pil_string, ddlen=15):
     # snatched from nuskell.objects.TestTube.load_pil_kernel
     ppil = parse_pil_string(pil_string)
@@ -99,6 +101,7 @@ def nuskell_parser(pil_string, ddlen=15):
     #complexes = complexes.values()
     return (domains, strands, complexes)
 
+@unittest.skipIf(SKIP, "skipping tests")
 class NewOpenTests(unittest.TestCase):
     def setUp(self):
         pass
@@ -170,6 +173,7 @@ class NewOpenTests(unittest.TestCase):
         """)
         pass
 
+@unittest.skipIf(SKIP, "skipping tests")
 class NewBindTests(unittest.TestCase):
     def setUp(self):
         pass
@@ -251,7 +255,8 @@ class NewBindTests(unittest.TestCase):
 
     def test_multiple_choice(self):
         pass
-
+ 
+@unittest.skipIf(SKIP, "skipping tests")
 class NewBranch3WayTests(unittest.TestCase):
     def setUp(self):
         pass
@@ -475,6 +480,7 @@ class NewBranch3WayTests(unittest.TestCase):
         #for o in output: print 'ow', o.kernel_string()
         self.assertEqual(output, [backward, forward2, forward])
 
+@unittest.skipIf(SKIP, "skipping tests")
 class NewBranch4WayTests(unittest.TestCase):
     def setUp(self):
         pass
@@ -482,6 +488,7 @@ class NewBranch4WayTests(unittest.TestCase):
     def test_branch4_way(self):
         pass
 
+@unittest.skipIf(SKIP, "skipping tests")
 class DSD_PathwayTests(unittest.TestCase):
     def setUp(self):
         self.fast_reactions = [rxn.bind11, 
@@ -530,47 +537,176 @@ class DSD_PathwayTests(unittest.TestCase):
         #for o in output: print 'test', o.kernel_string()
         self.assertEqual(output, [path2])
 
-        enum = Enumerator(domains.values(), strands.values(), complexes.values())
+        #enum = Enumerator(domains.values(), strands.values(), complexes.values())
+        enum = Enumerator(complexes.values())
         enum.enumerate()
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2]))
 
     def test_cooperative_binding(self):
         (domains, strands, complexes) = nuskell_parser("""
         length a = 5
-        length x = 15
-        length y = 15
+        length x = 10
+        length y = 10
         length b = 5
 
         C = x( y( + b* ) ) a*
         L = a x
         R = y b
         T = x y
+
+        LC = a( x + x( y( + b* ) ) )
+         CR = x( y( + y b( + ) ) ) a*
+        LCR = a( x + x( y( + y b( + ) ) ) )
+        LCF = a( x( + x y( + b* ) ) )
+         CRF = x( y + y( b( + ) ) ) a*
+
+        LCRF1 = a( x( + x y( + y b( + ) ) ) )
+        LCRF2 = a( x + x( y + y( b( + ) ) ) )
+        LR = a( x( + y( b( + ) ) ) )
         """)
-        enum = Enumerator(domains.values(), strands.values(), complexes.values())
-        enum.k_fast = 25
-        enum.max_helix_migration = False
+
+        C = complexes['C']
+        L = complexes['L']
+        R = complexes['R']
+        T = complexes['T']
+
+        LC = complexes['LC']
+        LCF = complexes['LCF']
+        CR = complexes['CR']
+        CRF = complexes['CRF']
+        LCRF1 = complexes['LCRF1']
+        LR = complexes['LR']
+        
+        self.k_fast = float('inf')
+        self.k_slow = 0
+
+        path1 = rxn.ReactionPathway('bind21', sorted([L, C]), [LC])
+        path1r = rxn.ReactionPathway('open', [LC], sorted([L, C]))
+        path2 = rxn.ReactionPathway('branch_3way', [LC], [LCF])
+        path3 = rxn.ReactionPathway('bind21', sorted([R, LCF]), [LCRF1])
+        path4 = rxn.ReactionPathway('branch_3way', [LCRF1], sorted([LR, T]))
+
+        enum = Enumerator(complexes.values())
+        enum.k_fast = self.k_fast
+        enum.k_slow = self.k_slow
+        enum.max_helix_migration = True
         enum.enumerate()
-        for r in enum.reactions:
-            print r.kernel_string(), r.rate()
 
-        print 'condensing'
+        self.assertEqual(len(enum.reactions), 22)
+        #for r in enum.reactions:
+        #    if r == path1:
+        #        print 'bind21: L+C->LC', r.rate
+        #    elif r == path1r:
+        #        print 'open: LC->L+C', r.rate
+        #    elif r == path2:
+        #        print 'branch_3way: LC->LCF', r.rate
+        #    elif r == path3:
+        #        print 'bind21: R + LCF->LCRF1', r.rate
+        #    elif r == path4:
+        #        print 'brnach_3way: LCRF1 -> LR', r.rate
+        #    else:
+        #        print r.kernel_string(), r.rate
 
+        # NOTE: condensation has no effect for cooperative binding with k_fast 
         from peppercornenumerator.condense import condense_resting_states
-        condensed = condense_resting_states(enum, compute_rates = True, k_fast=25)
-        for r in condensed['reactions']:
-            print r.kernel_string(), r.rate()
- 
+        condensed = condense_resting_states(enum, compute_rates = True, k_fast=self.k_fast)
+        self.assertEqual(len(enum.reactions), 22)
+        #for r in condensed['reactions']:
+        #    print r.kernel_string(), r.rate
+
 
 class NeighborhoodSearch(unittest.TestCase):
     # Test a basic move set and enumerate using k-fast/k-slow
     pass
 
+#@unittest.skipIf(SKIP, "skipping tests")
 class IsomorphicSets(unittest.TestCase):
     def setUp(self):
         pass
 
-    def simple(self):
-        pass
+    @unittest.skipIf(SKIP, "skipping tests")
+    def test_simple(self):
+        # works just fine
+        (domains, strands, complexes) = nuskell_parser("""
+        length a = 6
+        length a1 = 2
+        length a2 = 2
+        length a3 = 2
+        length b  = 24
+        length b1 = 8
+        length b2 = 8
+        length b3 = 8
+        length c  = 24
+        length c1 = 8
+        length c2 = 8
+        length c3 = 8
+
+        I = a b c
+        C = b( c( + ) ) a*
+        J = a( b c + b( c( + ) ) )
+        D = a( b( c( + ) ) )
+
+        cI = a1 a2 a3 b1 b2 b3 c1 c2 c3
+        cC = b1( b2( b3( c1( c2( c3( + ) ) ) ) ) ) a3* a2* a1*
+        cJ = a1( a2( a3( b1 b2 b3 c1 c2 c3 + b1( b2( b3( c1( c2( c3( + ) ) ) ) ) ) ) ) )
+        cD = a1( a2( a3( b1( b2( b3( c1( c2( c3( + ) ) ) ) ) ) ) ) )
+        """)
+
+        self.k_fast = 0
+        self.k_slow = 0
+
+
+        enum = Enumerator([complexes['I'], complexes['C'], complexes['J'], complexes['D']])
+        enum.k_fast = self.k_fast
+        enum.k_slow = self.k_slow
+        enum.max_helix_migration = True
+        enum.enumerate()
+
+        enum2 = Enumerator([complexes['cI'], complexes['cC'], complexes['cJ'], complexes['cD']])
+        enum2.k_fast = self.k_fast
+        enum2.k_slow = self.k_slow
+        enum2.max_helix_migration = True
+        enum2.enumerate()
+
+        self.assertEqual(len(enum2.reactions), len(enum.reactions))
+        #for r in enum.reactions:
+        #    print 'test_isomorph', r.kernel_string(), r.rate
+
+    def test_erik_max_helix_examples_3way(self):
+        (domains, strands, complexes) = nuskell_parser("""
+
+        # should be one reaction, is one
+        A1 = x( y z + y( z( + ) ) )
+
+        # should be one reactions, is one
+        B1 = x1( x2( y1 y2 z1 z2 + y1( y2( z1( z2( + ) ) ) ) ) ) 
+
+        # should be two reactions, is one
+        A2 = x( y z + y( + z( + ) ) )
+
+        # should be two reactions, is one
+        B2 = x1( x2( y1 y2 z1 z2 + y1( y2( + z1( z2( + ) ) ) ) ) ) 
+
+        # should be two reactions, is one
+        C = x( y z + y( + a( + ) z( + ) ) )
+
+        """)
+
+        A1 = complexes['A1']
+        A2 = complexes['A2']
+        B1 = complexes['B1']
+        B2 = complexes['B2']
+
+        #enum = Enumerator([A1, A2])
+        enum = Enumerator([B1, B2])
+        enum.k_fast = 0
+        enum.k_slow = 0
+        enum.max_helix_migration = True
+        enum.enumerate()
+
+        for r in enum.reactions:
+            print 'invade', r, r.kernel_string(), r.rate
+ 
 
 if __name__ == '__main__':
   unittest.main()

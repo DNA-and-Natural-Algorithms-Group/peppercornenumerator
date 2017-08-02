@@ -129,6 +129,7 @@ class ReactionPathway(object):
                 self.reactants.remove(reactant)
                 self.products.remove(reactant)
 
+    @property
     def rate(self):
         """
         Gives the rate constant for this reaction
@@ -1340,10 +1341,16 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
         dstrand, ddomain = start_loc
         bstrand, bdomain = bound_loc
 
+        #print 'dd', dstrand, ddomain
+        #print 'bb', bstrand, bdomain
+
         while True:
             # move domain pointers "inwards" towards each other
             ddomain += direction
             bdomain -= direction
+
+            #print 'while dd', dstrand, ddomain
+            #print 'while bb', bstrand, bdomain
 
             # if ddomain is still on dstrand
             if ((ddomain < len(reactant.strands[dstrand].domains) and ddomain >= 0) and
@@ -1377,6 +1384,9 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
                 displacing_index = (direction - 1) / 2
                 bound_index = (-direction - 1) / 2
 
+                #print 'CONGRATS', displacing_index, bound_index
+                #print 'middle1', middle
+
                 if middle and middle[displacing_index] is not None and \
                         middle[displacing_index][2] == (dstrand, ddomain):
                     del middle[displacing_index]
@@ -1385,19 +1395,27 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
                         middle[bound_index][2] == (bstrand, bdomain):
                     del middle[bound_index]
 
+                #print 'middle2', middle
+
             else:
                 break
+
+    #print reactant.kernel_string() 
+    #print 'ba1', before, after
 
     start_locs = [triple(start_loc)]
     bound_locs = [triple(bound_loc)]
 
     for (d, middle) in [(direction, before), (-direction, after)]:
+        #print 'towards middle', d, middle
         move_towards_middle(middle, d)
 
     start_locs = Loop(start_locs)
     bound_locs = Loop(bound_locs)
     before = Loop(before)
     after = Loop(after)
+
+    #print 'ba2', before, after
 
     return start_locs, bound_locs, before, after
 

@@ -64,41 +64,54 @@ class Enumerator(object):
     enumerator. Enumerators have immutable starting conditions. 
     """
 
-    def __init__(self, domains, strands, initial_complexes):
+    def __init__(self, initial_complexes, strands=None, domains=None):
         """
-        Initializes the enumerator. Takes a list of domains, a list of strands
-        made up of those domains, and a list of the initial complexes, made
-        of the strands.
+        Initializes the enumerator with a list of initial complexes.
 
-        :param list domains: Domain objects in the ensemble
-        :param list strands: Strand objects in the ensemble
-        :param list initial_complexes: Complex objects in the system starting configuration.
+        Note: The optional arguments 'strands' and 'domains' are there for
+        backwards-compatibility and will be remove at some point. Ignoring them
+        below breaks unit-tests - why? (1) sometimes complementary domains are
+        specified that are actually not present in any of the complexes, (2)
+        conflicts with strand names in the original kernel format (where
+        explicit strand specifications are supported).
         """
-        self._domains = domains
-        self._strands = strands
+        # System initialization
         self._initial_complexes = initial_complexes
+        self._strands = strands if strands else self.get_strands(self._initial_complexes)
+        self._domains = domains if domains else self.get_domains(self._strands)
+
         self._reactions = None
         self._resting_states = None
         self._complexes = None
         self._transient_complexes = None
         self._resting_complexes = None
 
+        # Polymerization settings
         global MAX_COMPLEX_SIZE
         global MAX_REACTION_COUNT
         global MAX_COMPLEX_COUNT
         self.MAX_COMPLEX_SIZE = MAX_COMPLEX_SIZE
         self.MAX_REACTION_COUNT = MAX_REACTION_COUNT
         self.MAX_COMPLEX_COUNT = MAX_COMPLEX_COUNT
+
         self.DFS = True
-        self.FAST_REACTIONS = fast_reactions[1]
         self.interruptible = True
         self.interactive = False
         
-        # set 
-        self._k_slow = 0  # float("-inf")
-        self._k_fast = 0  # float("-inf")
+        self.FAST_REACTIONS = fast_reactions[1]
+        #
+        # Set separation of timescales for *unimolecular* reactions.
+        #
+        #  ignore-reaction | resting-state | transient-state
+        # -----------------|---------------|---------------> rate
+        #                k_slow          k_fast
+        #
+        # Default: All unimolecular reactions are transient, none are ignored.
+        #
+        self._k_slow = 0 
+        self._k_fast = 0
 
-        # The new local variable instead of reactions.X
+        # Settings for reaction enumeration. 
         self._max_helix = True
         self._remote = True
         self._release_11 = 6
@@ -119,7 +132,6 @@ class Enumerator(object):
     @k_fast.setter
     def k_fast(self, value):
         self._k_fast = value
-
 
     @property
     def release_cutoff(self):
@@ -151,7 +163,6 @@ class Enumerator(object):
         assert isinstance(value, int)
         self._release_1N = value
 
-
     @property
     def remote_migration(self):
         return self._remote
@@ -170,6 +181,7 @@ class Enumerator(object):
     def max_helix_migration(self, max_helix):
       self._max_helix = max_helix
 
+    # ------------
     @property
     def auto_name(self):
         return reactions.auto_name
@@ -178,19 +190,19 @@ class Enumerator(object):
         return reactions.get_auto_name()
 
     @property
+    def initial_complexes(self):
+        """
+        Complexes present in the system's initial configuration
+        """
+        return self._initial_complexes[:]
+
+    @property
     def domains(self):
         return self._domains[:]
 
     @property
     def strands(self):
         return self._strands[:]
-
-    @property
-    def initial_complexes(self):
-        """
-        Complexes present in the system's initial configuration
-        """
-        return self._initial_complexes[:]
 
     @property
     def reactions(self):
@@ -253,6 +265,30 @@ class Enumerator(object):
             (sorted(self.resting_complexes) == sorted(object.resting_complexes)) and \
             (sorted(self.transient_complexes) ==
              sorted(object.transient_complexes))
+
+    def get_domains(self, strands):
+        domains = set()
+        #option to add both complementary domains... 
+        #def add_both(domain):
+        #    if domain.name not in map(lambda x: x.name, domains):
+        #        complement = utils.Domain(
+        #                domain.name[0:-1] if domain.is_complement else domain.name,
+        #                domain.length, 
+        #                not domain.is_complement, 
+        #                domain.sequence)
+        #        domains.add(domain)
+        #        domains.add(complement)
+
+        for strnd in strands:
+            #map(add_both, strnd.domains)
+            map(lambda d: domains.add(d), strnd.domains)
+        return list(domains)
+
+    def get_strands(self, initial_complexes):
+        strands = set()
+        for cplx in initial_complexes:
+            map(lambda s: strands.add(s), cplx.strands)
+        return list(strands)
 
     def dry_run(self):
         """
@@ -443,20 +479,6 @@ class Enumerator(object):
             print
             utils.wait_for_input()
 
-    # def partition_reactions(self, reactions):
-    # 	too_slow = []
-    # 	slow = []
-    # 	fast = []
-
-    # 	for r in self.reactions:
-    # 		if r.rate() < self.k_slow: too_slow.append(r)
-    # 		elif self.k_slow < r.rate() < self.k_fast: slow.append(r)
-    # 		elif self.k_fast < r.rate(): fast.append(r)
-    # 		else:
-    # 			raise Exception("Unable to classify reaction as fast (k > %(k_fast)d) or slow (%(k_slow)d > k > %(k_fast)d)" % { k_slow: self.k_slow, k_fast: self.k_fast })
-
-    # 	return (too_slow, slow, fast)
-
     def process_neighborhood(self, source):
         """
         Takes a single complex, generates the 'neighborhood' of complexes
@@ -588,7 +610,7 @@ class Enumerator(object):
                         release_1N = self._release_1N)
             else :
                 move_reactions = move(complex, max_helix=self._max_helix, remote=self._remote)
-            reactions += (r for r in move_reactions if self._k_fast > r.rate() > self._k_slow)
+            reactions += (r for r in move_reactions if self._k_fast > r.rate > self._k_slow)
 
         # Do bimolecular reactions
         for move in slow_reactions[2]:
@@ -617,8 +639,8 @@ class Enumerator(object):
                         release_1N = self._release_1N)
             else :
                 move_reactions = move(complex, max_helix=self._max_helix, remote=self._remote)
-            # reactions += (r for r in move_reactions if r.rate() > self.k_slow)
-            reactions += (r for r in move_reactions if r.rate() > self._k_fast)
+            # reactions += (r for r in move_reactions if r.rate > self.k_slow)
+            reactions += (r for r in move_reactions if r.rate > self._k_fast)
 
         return reactions
 
@@ -852,6 +874,5 @@ class Enumerator(object):
 
             # Add the SCC to the list of SCCs
             self._SCC_stack.append(scc)
-
 
 

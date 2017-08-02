@@ -357,8 +357,9 @@ class BindTests(unittest.TestCase):
             self.complexes[complex.name] = complex
 
         self.three_arm_enumerator_reduced = Enumerator(
-            self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [
-                self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
+                [self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']],
+                self.three_arm_enumerator.strands, 
+                self.three_arm_enumerator.domains)
 
         self.index_parts = index_parts
 

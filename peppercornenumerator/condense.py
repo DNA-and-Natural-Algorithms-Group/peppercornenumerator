@@ -329,7 +329,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
             # T_{b,a} = rate(r : a -> b)
             a = r.reactants[0]
             b = r.products[0]
-            T[complex_indices[b]][complex_indices[a]] = r.rate()
+            T[complex_indices[b]][complex_indices[a]] = r.rate
 
         T0 = np.copy(T)
 
@@ -396,13 +396,13 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         for r in r_internal:
             a = r.reactants[0]
             b = r.products[0]
-            T[complex_indices[a]][complex_indices[b]] = r.rate()
+            T[complex_indices[a]][complex_indices[b]] = r.rate
 
         # add transition rates for each outgoing reaction
         Te = np.zeros((L, e))
         for r in r_outgoing:
             a = r.reactants[0]
-            Te[complex_indices[a]][exit_indices[r]] = r.rate()
+            Te[complex_indices[a]][exit_indices[r]] = r.rate
 
         # the full transition matrix P_{L+e x L+e} would be
         #
@@ -449,8 +449,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         AND rate constant > k_fast
         """
         # return (reaction.arity == (1,1) or reaction.arity == (1,2)) and
-        # reaction.rate() > k_fast
-        return (reaction.arity[0] == 1) and reaction.rate() > k_fast
+        # reaction.rate > k_fast
+        return (reaction.arity[0] == 1) and reaction.rate > k_fast
 
     def get_fates(complex):
         """
@@ -706,7 +706,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                         assert reactant_probabilities >= 0
 
                         # rate of the detailed reaction
-                        k = r.rate()
+                        k = r.rate
                         assert k >= 0
 
                         # overall contribution of detailed reaction r to rate of the condensed reaction ^r =

@@ -26,7 +26,7 @@ def is_fast(reaction):
     """
     k_fast = 0.0
     return (reaction.arity == (1, 1) or reaction.arity ==
-            (1, 2)) and reaction.rate() > k_fast
+            (1, 2)) and reaction.rate > k_fast
 
 
 def print_dict(d, key_format=str, value_format=str):
