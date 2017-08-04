@@ -133,11 +133,11 @@ class NewOpenTests(unittest.TestCase):
         self.assertEqual(output, [])
         output = rxn.open(reactant, max_helix=True, release_11=8, release_1N=8)
         self.assertEqual(output, [])
+
         forward = rxn.ReactionPathway('open', [reactant], product_set)
-        # TODO: stopped working?????
-        #output = rxn.open(reactant, max_helix=True, release_11=13, release_1N=13)
+        output = rxn.open(reactant, max_helix=True, release_11=13, release_1N=13)
         #for o in output: print 'ow', o.kernel_string()
-        #self.assertEqual(output, [forward])
+        self.assertEqual(output, [forward])
 
         # max helix semantics OFF -> domains dissociate, but at most one at a time
         forward1 = rxn.ReactionPathway('open', [reactant], [product1])
@@ -254,6 +254,7 @@ class NewBindTests(unittest.TestCase):
         self.assertEqual(output, sorted([path1, path2, path3, path4, path5]))
 
     def test_multiple_choice(self):
+        #TODO
         pass
  
 @unittest.skipIf(SKIP, "skipping tests")
@@ -309,9 +310,9 @@ class NewBranch3WayTests(unittest.TestCase):
         inter2 = complexes['I2']
         product = complexes['Y']
 
-        # ~~~~~~~~~~~~~ #
-        # OUTPUT max_helix #
-        # ~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~ #
+        # OUTPUT max-helix #
+        # ~~~~~~~~~~~~~~~~ #
         forward = rxn.ReactionPathway('branch_3way', [reactant], [product])
         backward = rxn.ReactionPathway('branch_3way', [product], [reactant])
 
@@ -485,13 +486,193 @@ class NewBranch3WayTests(unittest.TestCase):
         #for o in output: print 'fixme', o.kernel_string()
         self.assertEqual(output, sorted([backward, forward, forward2, forward3]))
 
+    def test_multiple_choice_2(self):
+        # INPUT
+        (domains, strands, complexes) = from_kernel([
+            "N = a( x( b x y + y( z( + ) ) ) )",
+            "P1 = a( x b x( y + y( z( + ) ) ) )",
+            "P2 = a( x( b x y( + y z( + ) ) ) )",
+        ])
+        N = complexes['N']
+        P1 = complexes['P1']
+        P2 = complexes['P2']
+
+        forward1 = rxn.ReactionPathway('branch_3way', [N], [P1])
+        forward2 = rxn.ReactionPathway('branch_3way', [N], [P2])
+        output = rxn.branch_3way(N, max_helix=True, remote=True)
+        #for o in output: print 'new-max', o.kernel_string()
+        self.assertEqual(output, sorted([forward1, forward2]))
+
+
 @unittest.skipIf(SKIP, "skipping tests")
 class NewBranch4WayTests(unittest.TestCase):
     def setUp(self):
         pass
 
+    def dont_test_break_casey_4way(self):
+        # Note the new max-helix semantics also fixes the old 4way error,
+        # so this test can be safely removed...
+        (domains, strands, complexes) = nuskell_parser("""
+        A1 = t0*( d3*( d4*( + ) ) + d3*( t0* d3*( d4*( + ) ) + ) )
+        """)
+
+        A1 = complexes['A1']
+        output = rxn.branch_4way(A1, max_helix=True, remote=True)
+        for o in output: print 'branch_4way_bug', o.kernel_string()
+
     def test_branch4_way(self):
-        pass
+        # Standard 3state 4way junction, no end-dissociation
+        (domains, strands, complexes) = nuskell_parser("""
+        A1 = a( b( c( + ) ) x*( + ) b( c( y( + ) ) ) )
+        A2 = a( b( c( + ) b*( x*( + ) ) c( y( + ) ) ) )
+        A3 = a( b( c( + c*( b*( x*( + ) ) ) y( + ) ) ) )
+        """)
+        A1 = complexes['A1']
+        A2 = complexes['A2']
+        A3 = complexes['A3']
+
+        path = rxn.ReactionPathway('branch_4way', [A1], [A2])
+        output = rxn.branch_4way(A1, max_helix=False)
+        #for o in output: print 'branch_4way one-step', o.kernel_string(), o.rate
+        self.assertEqual(output, [path])
+
+        path = rxn.ReactionPathway('branch_4way', [A3], [A2])
+        output = rxn.branch_4way(A3, max_helix=False)
+        #for o in output: print 'branch_4way one-step', o.kernel_string(), o.rate
+        self.assertEqual(output, [path])
+
+        path1 = rxn.ReactionPathway('branch_4way', [A2], [A1])
+        path2 = rxn.ReactionPathway('branch_4way', [A2], [A3])
+        output = rxn.branch_4way(A2, max_helix=False)
+        #for o in output: print 'branch_4way one-step', o.kernel_string(), o.rate
+        self.assertEqual(output, sorted([path1, path2]))
+
+        path = rxn.ReactionPathway('branch_4way', [A1], [A3])
+        output = rxn.branch_4way(A1, max_helix=True)
+        #for o in output: print 'branch_4way_two-step', o.kernel_string(), o.rate
+        self.assertEqual(output, [path])
+
+        path = rxn.ReactionPathway('branch_4way', [A3], [A1])
+        output = rxn.branch_4way(A3, max_helix=True)
+        #for o in output: print 'branch_4way_two-step', o.kernel_string(), o.rate
+        self.assertEqual(output, [path])
+
+    def test_branch4_way_2(self):
+        # Unconventional multi-state 4way junction, no end-dissociation
+        (domains, strands, complexes) = nuskell_parser("""
+        A1 = a( a*( b( + ) ) a*( x*( + ) ) b( c( + ) ) )
+        A2 = a( ) b( + ) a( a*( x*( + ) ) b( c( + ) ) )
+        A3 = a( a*( b( + ) a( ) x*( + ) ) b( c( + ) ) )
+        A4 = a( a*( b( + ) ) ) x*( + ) a( b( c( + ) ) )
+        """)
+        A1 = complexes['A1']
+        A2 = complexes['A2']
+        A3 = complexes['A3']
+        A4 = complexes['A4']
+
+        path1 = rxn.ReactionPathway('branch_4way', [A1], [A2])
+        path2 = rxn.ReactionPathway('branch_4way', [A1], [A3])
+        path3 = rxn.ReactionPathway('branch_4way', [A1], [A4])
+        output = rxn.branch_4way(A1, max_helix=False)
+        #for o in output: print 'branch_4way_next', o.kernel_string()
+        self.assertEqual(output, sorted([path1, path2, path3]))
+
+        path1 = rxn.ReactionPathway('branch_4way', [A1], [A2])
+        path2 = rxn.ReactionPathway('branch_4way', [A1], [A3])
+        path3 = rxn.ReactionPathway('branch_4way', [A1], [A4])
+        output = rxn.branch_4way(A1, max_helix=True)
+        #for o in output: print 'branch_4way_next_mh', o.kernel_string()
+        self.assertEqual(output, sorted([path1, path2, path3]))
+
+    def test_branch4_way_2(self):
+        # Unconventional multi-state 4way junction, no end-dissociation
+        (domains, strands, complexes) = nuskell_parser("""
+        A1 = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d z( y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
+
+        A2 = a( x*( y*( z*( b ) y( x( c( + ) ) ) z*( d z( y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
+        A3 = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d ) y( x( e( + ) ) ) z*( f z( y( x( g( + ) ) ) ) h ) ) ) )
+        A4 = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d z( y( x( e( + ) ) ) ) f ) y( x( g( + ) ) ) z*( h ) ) ) )
+        A5 = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d z( y( x( e( + ) ) ) z*( f ) y( x( g( + ) ) ) ) h ) ) ) )
+        A6 = a( x*( y*( z*( b z( y( x( c( + ) ) ) z*( d ) y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
+        A7 = a( x*( y*( z*( b z( y( x( c( + ) ) ) z*( d z( y( x( e( + ) ) ) ) f ) y( x( g( + ) ) ) ) h ) ) ) )
+
+        A2m = a( x*( y*( z*( b ) ) ) c( + ) x*( y*( z*( d z( y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
+        A3m = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d ) ) ) e( + ) x*( y*( z*( f z( y( x( g( + ) ) ) ) h ) ) ) )
+        A4m = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d z( y( x( e( + ) ) ) ) f ) ) ) g( + ) x*( y*( z*( h ) ) ) )
+        A5m = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d z( y( x( e( + ) x*( y*( z*( f ) ) ) g( + ) ) ) ) h ) ) ) )
+        A6m = a( x*( y*( z*( b z( y( x( c( + ) x*( y*( z*( d ) ) ) e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
+        A7m = a( x*( y*( z*( b z( y( x( c( + ) x*( y*( z*( d z( y( x( e( + ) ) ) ) f ) ) ) g( + ) ) ) ) h ) ) ) )
+        """)
+        A1 = complexes['A1']
+        A2 = complexes['A2']
+        A3 = complexes['A3']
+        A4 = complexes['A4']
+        A5 = complexes['A5']
+        A6 = complexes['A6']
+        A7 = complexes['A7']
+        A2m = complexes['A2m']
+        A3m = complexes['A3m']
+        A4m = complexes['A4m']
+        A5m = complexes['A5m']
+        A6m = complexes['A6m']
+        A7m = complexes['A7m']
+
+        path1 = rxn.ReactionPathway('branch_4way', [A1], [A2])
+        path2 = rxn.ReactionPathway('branch_4way', [A1], [A3])
+        path3 = rxn.ReactionPathway('branch_4way', [A1], [A4])
+        path4 = rxn.ReactionPathway('branch_4way', [A1], [A5])
+        path5 = rxn.ReactionPathway('branch_4way', [A1], [A6])
+        path6 = rxn.ReactionPathway('branch_4way', [A1], [A7])
+        output = rxn.branch_4way(A1, max_helix=False)
+        #for o in output: print 'b_4way', o.kernel_string()
+        self.assertEqual(output, sorted([path1, path2, path3, path4, path5, path6]))
+
+        path1 = rxn.ReactionPathway('branch_4way', [A1], [A2m])
+        path2 = rxn.ReactionPathway('branch_4way', [A1], [A3m])
+        path3 = rxn.ReactionPathway('branch_4way', [A1], [A4m])
+        path4 = rxn.ReactionPathway('branch_4way', [A1], [A5m])
+        path5 = rxn.ReactionPathway('branch_4way', [A1], [A6m])
+        path6 = rxn.ReactionPathway('branch_4way', [A1], [A7m])
+
+        output = rxn.branch_4way(A1, max_helix=True)
+        #for o in output: print 'b_4way_mh', o.kernel_string()
+        self.assertEqual(output, sorted([path1, path2, path3, path4, path5, path6]))
+
+    def test_branch4_way(self):
+        # Standard 4state 4way junction, no end-dissociation
+        (domains, strands, complexes) = nuskell_parser("""
+        A0 = a( x( + y( z( b(  + ) ) ) ) c*( + ) x( y( z( d( + ) ) ) ) )
+        A1 = a( x( + y( z( b(  + ) ) ) x*( c*( + ) ) y( z( d( + ) ) ) ) )
+        A2 = a( x( + y( z( b(  + ) ) y*( x*( c*( + ) ) ) z( d( + ) ) ) ) )
+        A3 = a( x( + y( z( b(  + ) z*( y*( x*( c*( + ) ) ) ) d( + ) ) ) ) )
+        """)
+        A0 = complexes['A0']
+        A1 = complexes['A1']
+        A2 = complexes['A2']
+        A3 = complexes['A3']
+
+        path1 = rxn.ReactionPathway('branch_4way', [A1], [A3])
+        path2 = rxn.ReactionPathway('branch_4way', [A1], [A0])
+        output = rxn.branch_4way(A1, max_helix=True)
+        #for o in output: print 'branch_4way', o.kernel_string()
+        self.assertEqual(output, sorted([path1, path2]))
+
+        path = rxn.ReactionPathway('branch_4way', [A3], [A2])
+        output = rxn.branch_4way(A3, max_helix=False)
+        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        self.assertEqual(output, [path])
+
+        path1 = rxn.ReactionPathway('branch_4way', [A2], [A1])
+        path2 = rxn.ReactionPathway('branch_4way', [A2], [A3])
+        output = rxn.branch_4way(A2, max_helix=True)
+        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        self.assertEqual(output, sorted([path1, path2]))
+
+        path = rxn.ReactionPathway('branch_4way', [A3], [A1])
+        output = rxn.branch_4way(A3, max_helix=True)
+        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        self.assertEqual(output, [path])
+
 
 @unittest.skipIf(SKIP, "skipping tests")
 class DSD_PathwayTests(unittest.TestCase):
@@ -596,8 +777,6 @@ class DSD_PathwayTests(unittest.TestCase):
         enum.k_slow = self.k_slow
         enum.max_helix_migration = True
         enum.enumerate()
-
-        self.assertEqual(len(enum.reactions), 22)
         #for r in enum.reactions:
         #    if r == path1:
         #        print 'bind21: L+C->LC', r.rate
@@ -611,20 +790,21 @@ class DSD_PathwayTests(unittest.TestCase):
         #        print 'brnach_3way: LCRF1 -> LR', r.rate
         #    else:
         #        print r.kernel_string(), r.rate
+        self.assertEqual(len(enum.reactions), 22)
 
         # NOTE: condensation has no effect for cooperative binding with k_fast 
         from peppercornenumerator.condense import condense_resting_states
         condensed = condense_resting_states(enum, compute_rates = True, k_fast=self.k_fast)
-        self.assertEqual(len(enum.reactions), 22)
         #for r in condensed['reactions']:
         #    print r.kernel_string(), r.rate
+        self.assertEqual(len(enum.reactions), 22)
 
 
 class NeighborhoodSearch(unittest.TestCase):
     # Test a basic move set and enumerate using k-fast/k-slow
     pass
 
-#@unittest.skipIf(SKIP, "skipping tests")
+@unittest.skipIf(SKIP, "skipping tests")
 class IsomorphicSets(unittest.TestCase):
     def setUp(self):
         pass
@@ -677,20 +857,35 @@ class IsomorphicSets(unittest.TestCase):
         #for r in enum.reactions:
         #    print 'test_isomorph', r.kernel_string(), r.rate
 
+    def test_old_vs_new_max_helix(self):
+        pass
+
     def test_erik_max_helix_examples_3way(self):
         (domains, strands, complexes) = nuskell_parser("""
 
         # should be one reaction, is one
         A1 = x( y z + y( z( + ) ) )
+        A1_2 = x( y( z( + ) ) )
+        YZ = y z
 
         # should be one reactions, is one
         B1 = x1( x2( y1 y2 z1 z2 + y1( y2( z1( z2( + ) ) ) ) ) ) 
+        B1_2 = x1( x2( y1( y2( z1( z2( + ) ) ) ) ) ) 
+        YZ2 = y1 y2 z1 z2
 
         # should be two reactions, is one
         A2 = x( y z + y( + z( + ) ) )
+        A2_1 = x( y( z + z( + ) ) )
+        A2_2 = x( y( z( + ) ) )
+        Y1 = y
+        Z1 = z
 
         # should be two reactions, is one
         B2 = x1( x2( y1 y2 z1 z2 + y1( y2( + z1( z2( + ) ) ) ) ) ) 
+        B2_1 = x1( x2( y1( y2( z1 z2 + z1( z2( + ) ) ) ) ) ) 
+        B2_2 = x1( x2( y1( y2( z1( z2( + ) ) ) ) ) ) 
+        Y2 = y1 y2
+        Z2 = z1 z2
 
         # should be two reactions, is one
         C = x( y z + y( + a( + ) z( + ) ) )
@@ -698,20 +893,53 @@ class IsomorphicSets(unittest.TestCase):
         """)
 
         A1 = complexes['A1']
+        A1_2 = complexes['A1_2']
+        YZ = complexes['YZ']
+
         A2 = complexes['A2']
-        B1 = complexes['B1']
-        B2 = complexes['B2']
+        A2_1 = complexes['A2_1']
+        A2_2 = complexes['A2_2']
+        Y1 = complexes['Y1']
+        Z1 = complexes['Z1']
 
         enum = Enumerator([A1, A2])
-        #enum = Enumerator([B1, B2])
         enum.k_fast = 0
         enum.k_slow = 0
         enum.max_helix_migration = True
         enum.enumerate()
 
-        for r in enum.reactions:
-            print 'invade', r, r.kernel_string(), r.rate
+        path1 = rxn.ReactionPathway('branch_3way', [A1], sorted([A1_2, YZ]))
+        path2 = rxn.ReactionPathway('branch_3way', [A2], sorted([A2_1, Y1]))
+        path3 = rxn.ReactionPathway('branch_3way', [A2_1], sorted([A2_2, Z1]))
+
+        self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
+        #for r in enum.reactions:
+        #    print 'invade', r, r.kernel_string(), r.rate
  
+        B1 = complexes['B1']
+        B1_2 = complexes['B1_2']
+        YZ2 = complexes['YZ2']
+
+        B2 = complexes['B2']
+        B2_1 = complexes['B2_1']
+        B2_2 = complexes['B2_2']
+        Y2 = complexes['Y2']
+        Z2 = complexes['Z2']
+
+        enum = Enumerator([B1, B2])
+        enum.k_fast = 0
+        enum.k_slow = 0
+        enum.max_helix_migration = True
+        enum.enumerate()
+
+        path1 = rxn.ReactionPathway('branch_3way', [B1], sorted([B1_2, YZ2]))
+        path2 = rxn.ReactionPathway('branch_3way', [B2], sorted([B2_1, Y2]))
+        path3 = rxn.ReactionPathway('branch_3way', [B2_1], sorted([B2_2, Z2]))
+        #for r in enum.reactions:
+        #    print 'invade', r, r.kernel_string(), r.rate
+        self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
+
+
 
 if __name__ == '__main__':
   unittest.main()

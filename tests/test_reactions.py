@@ -96,7 +96,7 @@ class ReactionTests(unittest.TestCase):
                         #  x*             a*               x
                         [A1.triple(1, 2), A1.triple(1, 3), A1.triple(0, 1)],
                         1,
-                        1, #displaced strand?
+                        (None,1), #displaced strand (start, bound)?
                         lambda dom1, struct1, loc1, dom2, struct2, loc2: \
                                 struct2 is None and dom2.can_pair(dom1)
                         )
@@ -126,7 +126,7 @@ class ReactionTests(unittest.TestCase):
                         #  a*
                         [A1.triple(1, 3)],
                         1,
-                        1, #displaced strand?
+                        (None,1), #displaced strand (start, bound)?
                         lambda dom1, struct1, loc1, dom2, struct2, loc2: \
                                 struct2 is None and dom2.can_pair(dom1)
                         )

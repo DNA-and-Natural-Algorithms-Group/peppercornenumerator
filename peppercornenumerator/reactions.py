@@ -1151,7 +1151,7 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
     return find_releases(product)
 
 
-def find_on_loop(reactant, start_loc, direction, filter, max_helix=True):
+def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way = False):
     """
     Finds the next domain within `reactant` that's on the same inner loop as
     `start_loc` and matches the passed `filter` function. Looks in either the
@@ -1285,14 +1285,15 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True):
                 reactant.get_structure(bound_loc),
                 bound_loc)):
 
+            # store the id(s) of the displaced strand
+            disp_strands = [None, None]
+            if reactant.structure[start_loc[0]][start_loc[1]] is not None:
+                disp_strands[0] = reactant.structure[start_loc[0]][start_loc[1]][0]
             if reactant.structure[bound_loc[0]][bound_loc[1]] is not None:
-                # store the id of the displaced strand
-                disp_strand = reactant.structure[bound_loc[0]][bound_loc[1]][0]
-            else :
-                disp_strand = None
+                disp_strands[1] = reactant.structure[bound_loc[0]][bound_loc[1]][0]
 
             # append the location
-            results.append((bound_loc, len(loop), disp_strand))
+            results.append((bound_loc, len(loop), disp_strands))
 
         # store unpaired domains and "first" domain of each stem
         loop.append(triple(bound_loc))  # EW
@@ -1306,17 +1307,56 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True):
         bound_loc = reactant.structure[bound_loc[0]][bound_loc[1]]
 
     if max_helix: 
+
         zipped_results = []
-        for (bound_loc, i, disp_strand) in results:
+        for (bound_loc, i, disp_strands) in results:
+
+            if b4way :
+                # for 4-way we don't zip along before/after, but along top/bottom...
+                # both top and bottom have to mach -- i.d. eht filter function has
+                # to compare top and bottom.
+                #print 'zippering', reactant, start_loc, bound_loc, \
+                #        loop[:i], loop[i+1:], direction, disp_strands
+
+                # 4-way zipper
+                top_loop = []
+                top_loc = (start_loc[0], start_loc[1] + direction)
+                while True:
+                    if (top_loc[1] == -1):
+                        top_loop.append(None)
+                        break
+                    elif (top_loc[1] == len(reactant.strands[top_loc[0]])):
+                        top_loop.append(None)
+                        break
+                    else :
+                        top_loop.append(triple(top_loc))
+                        top_loc = (top_loc[0], top_loc[1] + direction)
+
+                bottom_loop = []
+                bottom_loc = (bound_loc[0], bound_loc[1] + direction)
+                while True:
+                    if (bottom_loc[1] == -1):
+                        break
+                    elif (bottom_loc[1] == len(reactant.strands[bottom_loc[0]])):
+                        break
+                    else :
+                        bottom_loop.append(triple(bottom_loc))
+                        bottom_loc = (bottom_loc[0], bottom_loc[1] + direction)
+
+                b4way_loop = top_loop + bottom_loop[::-1] # reversed
+            else :
+                b4way_loop = None
+ 
             zipped_results.append(zipper(
                 reactant, start_loc, bound_loc, loop[:i], loop[i + 1:], 
-                direction, disp_strand, filter))
+                direction, disp_strands, filter, b4way=b4way_loop))
         return zipped_results
     else:
         return [(Loop([triple(start_loc)]), Loop([triple(bound_loc)]), 
             Loop(loop[:i]), Loop(loop[i + 1:])) for (bound_loc, i, _) in results]
 
-def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand, filter):
+def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strands, filter,
+        b4way=None):
     """
     Takes a result from `find_on_loop` and "zips" it inwards (in the given
     `direction`); that is, given some `start_loc` and some `bound_loc`, tries
@@ -1327,6 +1367,9 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand
     function specified that the domain at `start_loc` must be complementary to
     the domain at `bound_loc`, then the function would return [b1,b2] as
     start_locs and [b1*, b2*] as bound_locs
+
+    Note: if you pass disp_strands = None, you will turn of the new max-helix semantics
+    and enable Caseys max helix semantics
 
 
             b1* b2*
@@ -1351,7 +1394,10 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand
         while True:
             # move domain pointers "inwards" towards each other
             ddomain += direction
-            bdomain -= direction
+            if b4way :
+                bdomain += direction
+            else :
+                bdomain -= direction
 
             # if ddomain is still on dstrand
             if ((ddomain < len(reactant.strands[dstrand].domains) and ddomain >= 0) and
@@ -1366,8 +1412,13 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand
                     (cmp((bstrand, bdomain), start_loc) == cmp(bound_loc, start_loc)) and
 
                     # if we are displacing, we are still displacing the same strand.
+                    # uncomment this condition if you want to enable the previous UNZIP semantics
+                    ((reactant.structure[dstrand][ddomain] is None) or 
+                        (disp_strands is None) or 
+                        (reactant.structure[dstrand][ddomain][0] == disp_strands[0])) and
                     ((reactant.structure[bstrand][bdomain] is None) or 
-                        (reactant.structure[bstrand][bdomain][0] == disp_strand)) and
+                        (disp_strands is None) or 
+                        (reactant.structure[bstrand][bdomain][0] == disp_strands[1])) and
 
                     # and filter condition still applies
                     filter(reactant.get_domain((dstrand, ddomain)),
@@ -1403,15 +1454,17 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand
     start_locs = [triple(start_loc)]
     bound_locs = [triple(bound_loc)]
 
-    for (d, middle) in [(direction, before), (-direction, after)]:
-        move_towards_middle(middle, d)
+    if b4way :
+        for (d, middle) in [(direction, b4way)]:
+            move_towards_middle(middle, d)
+    else :
+        for (d, middle) in [(direction, before), (-direction, after)]:
+            move_towards_middle(middle, d)
 
     start_locs = Loop(start_locs)
     bound_locs = Loop(bound_locs)
     before = Loop(before)
     after = Loop(after)
-
-    #print 'ba2', before, after
 
     return start_locs, bound_locs, before, after
 
@@ -1424,10 +1477,6 @@ def branch_4way(reactant, max_helix = False, remote=True):
     migration can liberate strands and complexes).
     """
 
-    if max_helix:
-        #print NotImplementedError('max_helix 4-way branch migration not implemented.')
-        max_helix = False
-
     def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2):
         """ A filter function for *find_on_loop()* """
         return struct2 is not None and dom1 == dom2
@@ -1435,7 +1484,7 @@ def branch_4way(reactant, max_helix = False, remote=True):
     structure = reactant.structure
     reactions = []
 
-    #print '4-way reactant', reactant, reactant.kernel_string()
+    #print '4-way reactant', reactant, reactant.kernel_string(), max_helix
 
     # We loop through all domains
     for (strand_index, strand) in enumerate(reactant.strands):
@@ -1461,7 +1510,8 @@ def branch_4way(reactant, max_helix = False, remote=True):
             #   z*  ~   z
             #
 
-            bound_doms = find_on_loop(reactant, displacing_loc, +1, filter_4way, max_helix=max_helix)
+            bound_doms = find_on_loop(reactant, 
+                    displacing_loc, +1, filter_4way, max_helix=max_helix, b4way = True)
 
             # build products
             for (displacing, displaced, before, after) in bound_doms:

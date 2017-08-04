@@ -155,11 +155,11 @@ class Enumerator(object):
         self._release_11 = value
 
     @property
-    def release_cutoff_1_n(self):
+    def release_cutoff_1_N(self):
         return self._release_1N
 
-    @release_cutoff_1_n.setter
-    def release_cutoff_1_n(self, value):
+    @release_cutoff_1_N.setter
+    def release_cutoff_1_N(self, value):
         assert isinstance(value, int)
         self._release_1N = value
 

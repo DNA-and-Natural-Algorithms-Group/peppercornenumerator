@@ -65,7 +65,7 @@ def add_peppercorn_args(parser):
 
     parser.add_argument( '--release-cutoff-1-1', action='store', type=int, default=6, metavar='<int>',
         help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction.")
-    parser.add_argument( '--release-cutoff-1-n', action='store', type=int, default=6, metavar='<int>',
+    parser.add_argument( '--release-cutoff-1-N', action='store', type=int, default=6, metavar='<int>',
         help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction.")
     parser.add_argument( '--release-cutoff', action='store', default=None, type=int, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
@@ -195,7 +195,7 @@ def main(cl_opts):
     enum.k_fast = cl_opts.k_fast
 
     enum.release_cutoff_1_1 = cl_opts.release_cutoff_1_1
-    enum.release_cutoff_1_n = cl_opts.release_cutoff_1_n
+    enum.release_cutoff_1_N = cl_opts.release_cutoff_1_N
 
     if cl_opts.release_cutoff:
         enum.release_cutoff = cl_opts.release_cutoff
