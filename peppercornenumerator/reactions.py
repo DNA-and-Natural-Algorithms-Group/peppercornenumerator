@@ -1483,7 +1483,8 @@ def branch_4way(reactant, max_helix = False, remote=True):
 
     def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2):
         """ A filter function for *find_on_loop()* """
-        return struct2 is not None and dom1 == dom2
+        # struct1 is necessary within the zipper function...
+        return struct1 is not None and struct2 is not None and dom1 == dom2
 
     structure = reactant.structure
     reactions = []

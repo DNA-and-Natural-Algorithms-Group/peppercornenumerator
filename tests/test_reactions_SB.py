@@ -509,7 +509,7 @@ class NewBranch4WayTests(unittest.TestCase):
     def setUp(self):
         pass
 
-    def dont_test_break_casey_4way(self):
+    def test_break_casey_4way(self):
         # Note the new max-helix semantics also fixes the old 4way error,
         # so this test can be safely removed...
         (domains, strands, complexes) = nuskell_parser("""
@@ -518,7 +518,31 @@ class NewBranch4WayTests(unittest.TestCase):
 
         A1 = complexes['A1']
         output = rxn.branch_4way(A1, max_helix=True, remote=True)
-        for o in output: print 'branch_4way_bug', o.kernel_string()
+        #for o in output: print 'branch_4way_bug', o.kernel_string()
+
+    def test_4wayfilter_bugfix(self):
+        # a test to ensure the 4way filter includes struct1
+        (domains, strands, complexes) = nuskell_parser("""
+
+        # Domain Specifications
+        length d1 = 15
+        length d2 = 15
+        length d3 = 15
+        length d4 = 15
+        length d5 = 15
+        length d6 = 15
+        length t0 = 6
+
+        BUG = d4*( t0* + ) t0( + ) d4*( t0*( + ) ) 
+        FIX = d4*( t0* + d4( t0( + ) ) t0*( + ) )
+        """)
+        BUG = complexes['BUG']
+        FIX = complexes['FIX']
+
+        path = rxn.ReactionPathway('branch_4way', [BUG], [FIX])
+        output = rxn.branch_4way(BUG, max_helix=True, remote=True)
+        #for o in output: print 'branch_4way_bug', o.kernel_string()
+        self.assertEqual(output, [path])
 
     def test_branch4_way(self):
         # Standard 3state 4way junction, no end-dissociation
