@@ -584,7 +584,7 @@ class NewBranch4WayTests(unittest.TestCase):
         #for o in output: print 'branch_4way_next_mh', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2, path3]))
 
-    def test_branch4_way_2(self):
+    def test_branch4_way_long(self):
         # Unconventional multi-state 4way junction, no end-dissociation
         (domains, strands, complexes) = nuskell_parser("""
         A1 = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d z( y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
@@ -638,13 +638,13 @@ class NewBranch4WayTests(unittest.TestCase):
         #for o in output: print 'b_4way_mh', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2, path3, path4, path5, path6]))
 
-    def test_branch4_way(self):
+    def test_branch4_way_no_remote(self):
         # Standard 4state 4way junction, no end-dissociation
         (domains, strands, complexes) = nuskell_parser("""
-        A0 = a( x( + y( z( b(  + ) ) ) ) c*( + ) x( y( z( d( + ) ) ) ) )
-        A1 = a( x( + y( z( b(  + ) ) ) x*( c*( + ) ) y( z( d( + ) ) ) ) )
-        A2 = a( x( + y( z( b(  + ) ) y*( x*( c*( + ) ) ) z( d( + ) ) ) ) )
-        A3 = a( x( + y( z( b(  + ) z*( y*( x*( c*( + ) ) ) ) d( + ) ) ) ) )
+        A0 = a( x( y( z( b(  + ) ) ) ) c*( + ) x( y( z( d( + ) ) ) ) )
+        A1 = a( x( y( z( b(  + ) ) ) x*( c*( + ) ) y( z( d( + ) ) ) ) )
+        A2 = a( x( y( z( b(  + ) ) y*( x*( c*( + ) ) ) z( d( + ) ) ) ) )
+        A3 = a( x( y( z( b(  + ) z*( y*( x*( c*( + ) ) ) ) d( + ) ) ) ) )
         """)
         A0 = complexes['A0']
         A1 = complexes['A1']
@@ -653,25 +653,37 @@ class NewBranch4WayTests(unittest.TestCase):
 
         path1 = rxn.ReactionPathway('branch_4way', [A1], [A3])
         path2 = rxn.ReactionPathway('branch_4way', [A1], [A0])
-        output = rxn.branch_4way(A1, max_helix=True)
+        output = rxn.branch_4way(A1, max_helix=True, remote = False)
+        #for o in output: print 'branch_4way', o.kernel_string()
+        self.assertEqual(output, sorted([path1, path2]))
+        path1 = rxn.ReactionPathway('branch_4way', [A2], [A0])
+        path2 = rxn.ReactionPathway('branch_4way', [A2], [A3])
+        output = rxn.branch_4way(A2, max_helix=True, remote = False)
+        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        self.assertEqual(output, sorted([path1, path2]))
+
+        path = rxn.ReactionPathway('branch_4way', [A3], [A0])
+        output = rxn.branch_4way(A3, max_helix=True, remote = False)
+        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        self.assertEqual(output, [path])
+
+        path1 = rxn.ReactionPathway('branch_4way', [A2], [A0])
+        path2 = rxn.ReactionPathway('branch_4way', [A2], [A3])
+        output = rxn.branch_4way(A2, max_helix=True, remote = False)
+        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        self.assertEqual(output, sorted([path1, path2]))
+
+        path1 = rxn.ReactionPathway('branch_4way', [A1], [A3])
+        path2 = rxn.ReactionPathway('branch_4way', [A1], [A0])
+        output = rxn.branch_4way(A1, max_helix=True, remote = True)
         #for o in output: print 'branch_4way', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2]))
 
-        path = rxn.ReactionPathway('branch_4way', [A3], [A2])
-        output = rxn.branch_4way(A3, max_helix=False)
+        path = rxn.ReactionPathway('branch_4way', [A3], [A0])
+        output = rxn.branch_4way(A3, max_helix=True, remote = False)
         #for o in output: print 'branch_4way', o.kernel_string(), o.rate
         self.assertEqual(output, [path])
 
-        path1 = rxn.ReactionPathway('branch_4way', [A2], [A1])
-        path2 = rxn.ReactionPathway('branch_4way', [A2], [A3])
-        output = rxn.branch_4way(A2, max_helix=True)
-        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
-        self.assertEqual(output, sorted([path1, path2]))
-
-        path = rxn.ReactionPathway('branch_4way', [A3], [A1])
-        output = rxn.branch_4way(A3, max_helix=True)
-        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
-        self.assertEqual(output, [path])
 
 
 @unittest.skipIf(SKIP, "skipping tests")

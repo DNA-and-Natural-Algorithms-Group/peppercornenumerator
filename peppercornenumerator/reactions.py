@@ -360,7 +360,7 @@ def bind11(reactant, max_helix=True, remote=None):
     reactions = []
     structure = reactant.structure
 
-    # TODO: does max_helix have an effect? Remote does not!
+    # Remote is ineffective, but may be set for convencience
 
     def filter_bind11(dom1, struct1, loc1, dom2, struct2, loc2):
         return struct1 is None and struct2 is None and dom2.can_pair(dom1)
@@ -455,8 +455,7 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
 
         # build "before" and "after" loop structures
         # NOTE: seams like zipper was called within find_on_loop as well, but then it could
-        # not find anything because the *filter function* is too strict. Let's see 
-        # if sthg changes with max_helix=False...
+        # not find anything because the *filter function* is too strict. 
         # it just predents it found the reaction via find_on_loop for return values...
         out = find_on_loop( complex, location1, 1,
             lambda dom1, struct1, loc1, dom2, struct2, loc2: 
@@ -721,6 +720,10 @@ def do_single_open(reactant, loc):
     out = Complex(get_auto_name(), reactant.strands[:], new_struct)
     return out
 
+def breathing(reactant, ends = 1):
+    # every complex reacts by opening one dummy nucleotide at the end
+    # add an universal dummy-domain to each helix-end.
+    pass
 
 def open(reactant, max_helix = True, release_11=6, release_1N=6):
     """
@@ -1411,14 +1414,15 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand
                     # and bdomain hasn't passed start_loc
                     (cmp((bstrand, bdomain), start_loc) == cmp(bound_loc, start_loc)) and
 
-                    # if we are displacing, we are still displacing the same strand.
-                    # uncomment this condition if you want to enable the previous UNZIP semantics
+                    # If we are displacing, we are still displacing the same strand.
+                    # Delete these conditions if you want to enable the previous max-helix semantics
                     ((reactant.structure[dstrand][ddomain] is None) or 
                         (disp_strands is None) or 
                         (reactant.structure[dstrand][ddomain][0] == disp_strands[0])) and
                     ((reactant.structure[bstrand][bdomain] is None) or 
                         (disp_strands is None) or 
                         (reactant.structure[bstrand][bdomain][0] == disp_strands[1])) and
+                    # ~~~
 
                     # and filter condition still applies
                     filter(reactant.get_domain((dstrand, ddomain)),
@@ -1484,8 +1488,6 @@ def branch_4way(reactant, max_helix = False, remote=True):
     structure = reactant.structure
     reactions = []
 
-    #print '4-way reactant', reactant, reactant.kernel_string(), max_helix
-
     # We loop through all domains
     for (strand_index, strand) in enumerate(reactant.strands):
         for (domain_index, domain) in enumerate(strand.domains):
@@ -1496,8 +1498,6 @@ def branch_4way(reactant, max_helix = False, remote=True):
 
             displacing_domain = strand.domains[domain_index]
             displacing_loc = (strand_index, domain_index)
-
-            #print '--', displacing_domain, displacing_loc
 
             # searches only 5'->3' direction around the loop for a bound domain that
             # has the same sequence (and therefore can be displaced)
@@ -1541,10 +1541,7 @@ def branch_4way(reactant, max_helix = False, remote=True):
     output = reactions
 
     # remove any duplicate reactions
-    output = sorted(list(set(output)))
-
-    return output
-
+    return sorted(list(set(output)))
 
 def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
     """

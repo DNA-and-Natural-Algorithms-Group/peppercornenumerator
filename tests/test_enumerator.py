@@ -557,9 +557,9 @@ class EnumeratorTests(unittest.TestCase):
         self.bounded_dendrimer = input_enum(
             'tests/files/examples/bounded-dendrimer.enum')
 
-        self.bounded_dendrimer.MAX_COMPLEX_SIZE = 15
-        self.bounded_dendrimer.MAX_REACTION_COUNT = 1000
-        self.bounded_dendrimer.MAX_COMPLEX_COUNT = 200
+        self.bounded_dendrimer.max_complex_size = 15
+        self.bounded_dendrimer.max_reaction_count = 1000
+        self.bounded_dendrimer.max_complex_count = 200
         self.bounded_dendrimer.release_cutoff = 8
 
         self.bounded_dendrimer.enumerate()
@@ -571,30 +571,30 @@ class EnumeratorTests(unittest.TestCase):
         # Test that too many reactions triggers exception
         polymer_enum = self.polymer_enum = input_enum(
             'tests/files/test_input_standard_polymer.in')
-        polymer_enum.MAX_REACTION_COUNT = 10
+        polymer_enum.max_reaction_count = 10
         polymer_enum.enumerate()
         print "%d Complexes" % len(polymer_enum.complexes)
         print "%d Reactions" % len(polymer_enum.reactions)
 
-        # The failure condition stops if .reactions > MAX_REACTION_COUNT, so we test for that (rather
-        # than that .reactions < MAX_REACTION_COUNT, which is not guaranteed.
-        assert(len(polymer_enum.reactions) >= polymer_enum.MAX_REACTION_COUNT)
+        # The failure condition stops if .reactions > max_reaction_count, so we test for that (rather
+        # than that .reactions < max_reaction_count, which is not guaranteed.
+        assert(len(polymer_enum.reactions) >= polymer_enum.max_reaction_count)
 
         # Now test that too many complexes also causes the error
         polymer_enum = self.polymer_enum = input_enum(
             'tests/files/test_input_standard_polymer.in')
-        polymer_enum.MAX_COMPLEX_COUNT = 10
+        polymer_enum.max_complex_count = 10
         polymer_enum.enumerate()
         print "%d Complexes" % len(polymer_enum.complexes)
         print "%d Reactions" % len(polymer_enum.reactions)
         # We're not examining len(polymer_enum.complexes) because that doesn't include ._S, which *is*
         # tested for in the failure mode.
         assert((len(polymer_enum.complexes) + len(polymer_enum._S)) >=
-               polymer_enum.MAX_COMPLEX_COUNT)
+               polymer_enum.max_complex_count)
 
         complexes = polymer_enum._E + polymer_enum._T + polymer_enum._S
         assert max([len(c.strands) for c in complexes]
-                   ) <= polymer_enum.MAX_COMPLEX_SIZE
+                   ) <= polymer_enum.max_complex_size
 
         # Now we want to make sure that no reactions in the enumerator point to
         # complexes that weren't in the list

@@ -12,12 +12,6 @@ import itertools
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactions
 
-
-# These are sanity checks to prevent infinite looping
-MAX_COMPLEX_SIZE = 6
-MAX_REACTION_COUNT = 1000
-MAX_COMPLEX_COUNT = 200
-
 # There should be better control of this limit -- only set it when
 # necessary (Erik Winfree based on Chris Thachuk's advice...)
 sys.setrecursionlimit(20000)
@@ -86,19 +80,16 @@ class Enumerator(object):
         self._transient_complexes = None
         self._resting_complexes = None
 
-        # Polymerization settings
-        global MAX_COMPLEX_SIZE
-        global MAX_REACTION_COUNT
-        global MAX_COMPLEX_COUNT
-        self.MAX_COMPLEX_SIZE = MAX_COMPLEX_SIZE
-        self.MAX_REACTION_COUNT = MAX_REACTION_COUNT
-        self.MAX_COMPLEX_COUNT = MAX_COMPLEX_COUNT
-
         self.DFS = True
         self.interruptible = True
         self.interactive = False
-        
         self.FAST_REACTIONS = fast_reactions[1]
+        
+        # Polymerization settings to prevent infinite looping
+        self.max_complex_size = 6
+        self.max_complex_count = 200
+        self.max_reaction_count = 1000
+
         #
         # Set separation of timescales for *unimolecular* reactions.
         #
@@ -116,6 +107,30 @@ class Enumerator(object):
         self._remote = True
         self._release_11 = 6
         self._release_1N = 6
+
+    @property
+    def max_complex_size(self):
+        return self._max_complex_size
+
+    @max_complex_size.setter
+    def max_complex_size(self, value):
+        self._max_complex_size = value
+
+    @property
+    def max_reaction_count(self):
+        return self._max_reaction_count
+
+    @max_reaction_count.setter
+    def max_reaction_count(self, value):
+        self._max_reaction_count = value
+
+    @property
+    def max_complex_count(self):
+        return self._max_complex_count
+
+    @max_complex_count.setter
+    def max_complex_count(self, value):
+        self._max_complex_count = value
 
     @property
     def k_slow(self):
@@ -433,12 +448,12 @@ class Enumerator(object):
                 while len(self._B) > 0:
 
                     # Check whether too many complexes have been generated
-                    if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
+                    if (len(self._E) + len(self._T) + len(self._S) > self._max_complex_count):
                         raise PolymerizationError("Too many complexes enumerated!", 
                                 len(self._E) + len(self._T) + len(self._S))
 
                     # Check whether too many reactions have been generated
-                    if (len(self._reactions) > self.MAX_REACTION_COUNT):
+                    if (len(self._reactions) > self._max_reaction_count):
                         raise PolymerizationError("Too many reactions enumerated!", 
                                 len(self._reactions))
 
@@ -651,7 +666,7 @@ class Enumerator(object):
         returns the new complexes in a list.
 
         Additionally, prunes passed reactions to remove those with excessively
-        large complexes (len(complex) > self.MAX_COMPLEX_SIZE)
+        large complexes (len(complex) > self._max_complex_size)
         """
         new_products = []
         new_reactions = []
@@ -669,7 +684,7 @@ class Enumerator(object):
             # Check every product of the reaction to see if it is new
             for (i, product) in enumerate(reaction.products):
 
-                if (len(product.strands) > self.MAX_COMPLEX_SIZE):
+                if (len(product.strands) > self._max_complex_size):
                     logging.warning(
                         "Complex %(name)s (%(strands)d strands) too large, ignoring!" % {
                             "name": product.name,
