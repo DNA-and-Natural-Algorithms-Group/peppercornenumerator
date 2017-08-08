@@ -97,7 +97,8 @@ class ReactionTests(unittest.TestCase):
                         [A1.triple(1, 2), A1.triple(1, 3), A1.triple(0, 1)],
                         1,
                         (None,1), #displaced strand (start, bound)?
-                        lambda dom1, struct1, loc1, dom2, struct2, loc2: \
+                        None, # freed
+                        lambda dom1, struct1, loc1, dom2, struct2, loc2, freed: \
                                 struct2 is None and dom2.can_pair(dom1)
                         )
         start_locs, bound_locs, before, after = zipped
@@ -127,7 +128,8 @@ class ReactionTests(unittest.TestCase):
                         [A1.triple(1, 3)],
                         1,
                         (None,1), #displaced strand (start, bound)?
-                        lambda dom1, struct1, loc1, dom2, struct2, loc2: \
+                        None, # freed
+                        lambda dom1, struct1, loc1, dom2, struct2, loc2, freed: \
                                 struct2 is None and dom2.can_pair(dom1)
                         )
         start_locs, bound_locs, before, after = zipped
@@ -154,7 +156,7 @@ class ReactionTests(unittest.TestCase):
         # test outside loop
         locs = reactions.find_on_loop(
             complexes['A1'], (0, 0), 1,
-            lambda dom1, struct1, loc1, dom2, struct2, loc2: \
+            lambda dom1, struct1, loc1, dom2, struct2, loc2, freed: \
                     struct2 is None and dom2.can_pair(dom1))
 
         A1 = complexes['A1']
@@ -172,7 +174,7 @@ class ReactionTests(unittest.TestCase):
         # test within loop with strand break, no zippering possible
         locs = reactions.find_on_loop(
             complexes['A2'], (0, 1), 1,
-            lambda dom1, struct1, loc1, dom2, struct2, loc2: \
+            lambda dom1, struct1, loc1, dom2, struct2, loc2, freed: \
                     struct2 is None and dom2.can_pair(dom1))
         A2 = complexes['A2']
         expected_locs = [(
@@ -189,16 +191,9 @@ class ReactionTests(unittest.TestCase):
         # test within loop with strand break, zippering possible
         # from nose.tools import set_trace; set_trace()
         locs = reactions.find_on_loop(
-            complexes['A3'],
-            (0,
-             1),
-            1,
-            lambda dom1,
-            struct1,
-            loc1,
-            dom2,
-            struct2,
-            loc2: struct2 is None and dom2.can_pair(dom1))
+            complexes['A3'], (0, 1), 1,
+            lambda dom1, struct1, loc1, dom2, struct2, loc2, freed: \
+                    struct2 is None and dom2.can_pair(dom1))
         A3 = complexes['A3']
         expected_locs = [(
             Loop([A3.triple(0, 1), A3.triple(0, 2)]),  # x y
@@ -220,7 +215,7 @@ class ReactionTests(unittest.TestCase):
         reactant = complexes['A1']
         structure = reactant.structure
 
-        def filter_3way(dom1, struct1, loc1, dom2, struct2, loc2):
+        def filter_3way(dom1, struct1, loc1, dom2, struct2, loc2, freed):
             return struct1 is None and struct2 is not None and dom1.can_pair( dom2)
 
         print 'rectant-3way', reactant.kernel_string()
@@ -280,7 +275,7 @@ class ReactionTests(unittest.TestCase):
         reactant = complexes['A1']
         structure = reactant.structure
 
-        def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2):
+        def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2, freed):
             return struct2 is not None and dom1 == dom2
 
         def triple(loc):

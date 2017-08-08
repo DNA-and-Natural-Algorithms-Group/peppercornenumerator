@@ -974,10 +974,97 @@ class IsomorphicSets(unittest.TestCase):
         #    print 'invade', r, r.kernel_string(), r.rate
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
 
-@unittest.skipIf(SKIP, "skipping tests")
+#@unittest.skipIf(SKIP, "skipping tests")
 class Compare_MaxHelix(unittest.TestCase):
     def setUp(self):
         pass
+
+    def test_self_displacement_bug(self):
+        (domains, strands, complexes) = nuskell_parser("""
+        B1 = x( y( x( y x + ) ) )
+        B2 = x y x( y( x( + ) ) )
+
+        B3 = x( y( x y x( + ) ) )
+        B4 = x( y x y( x( + ) ) )
+        """)
+        B1 = complexes['B1']
+        B2 = complexes['B2']
+        B3 = complexes['B3']
+        B4 = complexes['B4']
+
+        forward = rxn.ReactionPathway('branch_3way', [B1], [B2])
+        backward= rxn.ReactionPathway('branch_3way', [B2], [B1])
+
+        path1  = rxn.ReactionPathway('branch_3way', [B1], [B4])
+        path1r  = rxn.ReactionPathway('branch_3way', [B4], [B1])
+        path2 = rxn.ReactionPathway('branch_3way', [B4], [B2])
+
+        path3  = rxn.ReactionPathway('branch_3way', [B2], [B3])
+        path3r = rxn.ReactionPathway('branch_3way', [B3], [B2])
+        path4 = rxn.ReactionPathway('branch_3way', [B3], [B1])
+
+        enum = Enumerator([B1])
+        enum.max_helix_migration = True
+        enum.enumerate()
+        #for r in sorted(enum.reactions): print 'max-helix', r, r.kernel_string(), r.rate
+        #self.assertEqual(sorted([path1, path1r, path2, path3, path3r, path4]), sorted(enum.reactions))
+        self.assertEqual(sorted([forward, backward]), sorted(enum.reactions))
+
+    def test_self_displacement_bug_iso(self):
+        (domains, strands, complexes) = nuskell_parser("""
+        B1 = x1( x2( y1( y2( x1( x2( y1 y2 x1 x2 + ) ) ) ) ) )
+        B2 = x1 x2 y1 y2 x1( x2( y1( y2( x1( x2( + ) ) ) ) ) )
+
+        """)
+        B1 = complexes['B1']
+        B2 = complexes['B2']
+
+        forward = rxn.ReactionPathway('branch_3way', [B1], [B2])
+        backward= rxn.ReactionPathway('branch_3way', [B2], [B1])
+
+        enum = Enumerator([B1])
+        enum.max_helix_migration = True
+        enum.enumerate()
+        #for r in sorted(enum.reactions): print 'max-helix', r, r.kernel_string(), r.rate
+        self.assertEqual(sorted([forward, backward]), sorted(enum.reactions))
+
+
+    def test_self_displacement(self):
+        (domains, strands, complexes) = nuskell_parser("""
+        T = x( y x + ) y* x*
+
+        T1 = x( y x + x* y* )
+        T2 = x y x( + ) y* x*
+        T3 = x( y( x( + ) ) )
+
+        T4 = x y x( + x* y* )
+        """)
+        T = complexes['T']
+        T1 = complexes['T1']
+        T2 = complexes['T2']
+        T3 = complexes['T3']
+        T4 = complexes['T4']
+ 
+        enum = Enumerator([T])
+        enum.max_helix_migration = True
+        enum.enumerate()
+
+        path1  = rxn.ReactionPathway('branch_3way', [T], [T1])
+        path1r = rxn.ReactionPathway('branch_3way', [T1], [T])
+        path2  = rxn.ReactionPathway('branch_3way', [T], [T2])
+        path2r = rxn.ReactionPathway('branch_3way', [T2], [T])
+
+        path3 = rxn.ReactionPathway('bind11', [T1], [T3])
+        path4 = rxn.ReactionPathway('bind11', [T2], [T3])
+
+        path5  = rxn.ReactionPathway('branch_3way', [T1], [T4])
+        path5r = rxn.ReactionPathway('branch_3way', [T4], [T1])
+        path6  = rxn.ReactionPathway('branch_3way', [T2], [T4])
+        path6r = rxn.ReactionPathway('branch_3way', [T4], [T2])
+
+        self.assertEqual(sorted([path1, path1r, path2, path2r, path3, path4, 
+                                 path5, path5r, path6, path6r]), sorted(enum.reactions))
+
 
     def test_compare_semantics(self):
         (domains, strands, complexes) = nuskell_parser("""
@@ -1044,21 +1131,27 @@ class Compare_MaxHelix(unittest.TestCase):
         self.assertTrue(path5 in enum.reactions)
         self.assertTrue(path6 in enum.reactions)
 
-        # CASEY Semantics
-        path10  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2], [PR_FLh2B2_v2])
-        path11  = rxn.ReactionPathway('open', [PR_FLh2B2_v2], sorted([PR_FLh2w, B2]))
-        path12  = rxn.ReactionPathway('bind11', [PR_FLh2w], [PR_FL_h1w])
-        path13  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2_v2], [PR_FLh1B2])
-        path14  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2_v2], sorted([PR_FL_h1w, B2]))
-        self.assertTrue(path10 not in enum.reactions)
-        self.assertTrue(path11 not in enum.reactions)
-        self.assertTrue(path12 not in enum.reactions)
-        self.assertTrue(path13 not in enum.reactions)
-        self.assertTrue(path14 not in enum.reactions)
+        # CASEY Semantics after fix
+        #path6  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2], sorted([PR_FL_h1w, B2]))
 
-        for r in enum.reactions:
-            if r not in [path1, path1r, path2, path2r, path3, path4, path4r, path5, path6, path10, path11, path12, path13, path14]:
-                print 'invade', r, r.kernel_string(), r.rate
+        #path10  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2], [PR_FLh2B2_v2])
+        #path11  = rxn.ReactionPathway('open', [PR_FLh2B2_v2], sorted([PR_FLh2w, B2]))
+        #path12  = rxn.ReactionPathway('bind11', [PR_FLh2w], [PR_FL_h1w])
+        #path13  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2_v2], [PR_FLh1B2])
+        #path14  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2_v2], sorted([PR_FL_h1w, B2]))
+        #self.assertTrue(path10 not in enum.reactions)
+        #self.assertTrue(path11 not in enum.reactions)
+        #self.assertTrue(path12 not in enum.reactions)
+        #self.assertTrue(path13 not in enum.reactions)
+        #self.assertTrue(path14 not in enum.reactions)
+
+        #for r in enum.reactions:
+        #    #if r not in [path1, path1r, path2, path2r, path3, path4, path4r, path5, path6, path10, path11, path12, path13, path14]:
+        #    #if r not in [path1, path1r, path2, path2r, path3, path4, path4r, path5, path6]:
+        #    if r not in [path1, path1r, path2, path2r, path3, path4, path4r, path5, path6]:
+        #        print 'new-max-helix', r, r.kernel_string(), r.rate
+        #    else :
+        #        print 'both-max-helix', r, r.kernel_string(), r.rate
 
 
 if __name__ == '__main__':

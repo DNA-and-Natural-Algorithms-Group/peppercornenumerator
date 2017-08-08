@@ -295,6 +295,10 @@ class Loop(object):
         return (part[2] if part is not None else None for part in self._parts)
 
     @property
+    def revlocs(self):
+        return (part[2] if part is not None else None for part in self._parts[::-1])
+
+    @property
     def domains(self):
         return (part[0] if part is not None else None for part in self._parts)
 
