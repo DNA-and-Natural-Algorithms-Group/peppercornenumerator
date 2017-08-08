@@ -709,7 +709,6 @@ class NewBranch4WayTests(unittest.TestCase):
         self.assertEqual(output, [path])
 
 
-
 @unittest.skipIf(SKIP, "skipping tests")
 class DSD_PathwayTests(unittest.TestCase):
     def setUp(self):
@@ -975,6 +974,91 @@ class IsomorphicSets(unittest.TestCase):
         #    print 'invade', r, r.kernel_string(), r.rate
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
 
+@unittest.skipIf(SKIP, "skipping tests")
+class Compare_MaxHelix(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_compare_semantics(self):
+        (domains, strands, complexes) = nuskell_parser("""
+        length d1 = 15
+        length d4 = 15
+        length d6 = 15
+        length d7 = 15
+        length h8 = 15
+        length t0 = 6
+        length t2 = 6
+        length t3 = 6
+        length t5 = 6
+
+        # Initial Complexes
+        B2 = d7 t3 d4 t5 
+        helper = t3 d7 t3
+        PR_FL_B2  = d1 t2( d6( + d7( t3( d4 t5 + ) ) t3* ) )  @ initial 0 M
+        
+        # Intermediate Complexes
+        PR_FLh1B2 = d1 t2( d6( + t3( d7 t3 + d7( t3( d4 t5 + ) ) ) ) )  @ initial 0 M
+        PR_FLh2B2 = d1 t2( d6( + t3 d7 t3( + d7( t3( d4 t5 + ) ) ) ) )  @ initial 0 M
+        PR_FL_h1w = d1 t2( d6( + t3( d7( t3( + ) ) ) ) )  @ initial 0 M
+        
+        # sidestuff
+        PR_FLB2B2 = d1 t2( d6( + d7 t3( d4 t5 + d7( t3( d4 t5 + ) ) ) ) )  @ initial 0 M
+
+        # casey-semantics
+        PR_FLh2B2_v2 = d1 t2( d6( + t3( d7( t3 + d7 t3( d4 t5 + ) ) ) ) )  @ initial 0 M
+        PR_FLh2w =     d1 t2( d6( + t3( d7( t3 + t3* ) ) ) )  @ initial 0 M
+
+        """)
+        B2 = complexes['B2']
+        helper = complexes['helper']
+        PR_FL_B2 = complexes['PR_FL_B2']
+        PR_FLh1B2 = complexes['PR_FLh1B2']
+        PR_FLh2B2 = complexes['PR_FLh2B2']
+        PR_FL_h1w = complexes['PR_FL_h1w']
+        PR_FLB2B2 = complexes['PR_FLB2B2']
+        PR_FLh2B2_v2 = complexes['PR_FLh2B2_v2']
+        PR_FLh2w = complexes['PR_FLh2w']
+ 
+        enum = Enumerator([B2, helper, PR_FL_B2])
+        enum.max_helix_migration = True
+        enum.enumerate()
+
+        path1  = rxn.ReactionPathway('bind21', sorted([PR_FL_B2, helper]), [PR_FLh1B2])
+        path1r = rxn.ReactionPathway('open', [PR_FLh1B2], sorted([PR_FL_B2, helper]))
+        path2  = rxn.ReactionPathway('bind21', sorted([PR_FL_B2, helper]), [PR_FLh2B2])
+        path2r = rxn.ReactionPathway('open', [PR_FLh2B2], sorted([PR_FL_B2, helper]))
+        path3  = rxn.ReactionPathway('branch_3way', [PR_FLh1B2], sorted([PR_FL_h1w, B2]))
+        path4  = rxn.ReactionPathway('bind21', sorted([PR_FL_B2, B2]), [PR_FLB2B2])
+        path4r = rxn.ReactionPathway('open', [PR_FLB2B2], sorted([PR_FL_B2, B2]))
+
+        path5  = rxn.ReactionPathway('branch_3way', [PR_FLh1B2], [PR_FLh2B2])
+        path6  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2], [PR_FLh1B2])
+
+        self.assertTrue(path1 in enum.reactions)
+        self.assertTrue(path1r in enum.reactions)
+        self.assertTrue(path2 in enum.reactions)
+        self.assertTrue(path2r in enum.reactions)
+        self.assertTrue(path3 in enum.reactions)
+        self.assertTrue(path4 in enum.reactions)
+        self.assertTrue(path4r in enum.reactions)
+        self.assertTrue(path5 in enum.reactions)
+        self.assertTrue(path6 in enum.reactions)
+
+        # CASEY Semantics
+        path10  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2], [PR_FLh2B2_v2])
+        path11  = rxn.ReactionPathway('open', [PR_FLh2B2_v2], sorted([PR_FLh2w, B2]))
+        path12  = rxn.ReactionPathway('bind11', [PR_FLh2w], [PR_FL_h1w])
+        path13  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2_v2], [PR_FLh1B2])
+        path14  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2_v2], sorted([PR_FL_h1w, B2]))
+        self.assertTrue(path10 not in enum.reactions)
+        self.assertTrue(path11 not in enum.reactions)
+        self.assertTrue(path12 not in enum.reactions)
+        self.assertTrue(path13 not in enum.reactions)
+        self.assertTrue(path14 not in enum.reactions)
+
+        for r in enum.reactions:
+            if r not in [path1, path1r, path2, path2r, path3, path4, path4r, path5, path6, path10, path11, path12, path13, path14]:
+                print 'invade', r, r.kernel_string(), r.rate
 
 
 if __name__ == '__main__':
