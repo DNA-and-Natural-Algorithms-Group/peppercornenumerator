@@ -6,6 +6,7 @@ import logging
 import argparse
 
 # Import global default variables from peppercornenumerator library
+from peppercornenumerator import __version__
 from peppercornenumerator.reactions import branch_3way, branch_4way
 
 # Import wrapper functions to initialize the Enumerator object.
@@ -17,6 +18,10 @@ from peppercornenumerator.utils import colors
 version = __import__('peppercornenumerator').__version__
 
 def add_peppercorn_args(parser):
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+    parser.add_argument( '-v', action='count', dest='verbose', default=0,
+        help="Print more output (-vv for extra debugging information)")
+
     parser.add_argument('input_filename', action='store', default=None,
             nargs='?', help="Path to the input file (same as --infile)")
     parser.add_argument('--infile', action='store', default=None, 
@@ -44,8 +49,6 @@ def add_peppercorn_args(parser):
         help="Dry run: read input, write output. Do not enumerate any reactions.")
     parser.add_argument( '--interactive', action='store_true', 
         help="Interactive---display new reactions after each step.")
-    parser.add_argument( '-v', action='count', dest='verbose', default=0,
-        help="Print more output (-vv for extra debugging information)")
 
     parser.add_argument( '--max-complex-size', action='store', type=int, default=6, metavar='<int>',
         help="Maximum number of strands allowed in a complex (used to prevent polymerization).")
