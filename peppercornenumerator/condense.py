@@ -5,7 +5,7 @@ import logging
 import numpy as np
 
 from peppercornenumerator.reactions import get_auto_name, ReactionPathway
-from peppercornenumerator.utils import Complex, Domain, Strand, RestingState
+from peppercornenumerator.utils import Complex, Strand, RestingState
 from functools import reduce
 
 

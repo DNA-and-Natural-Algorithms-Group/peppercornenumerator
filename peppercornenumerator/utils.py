@@ -10,6 +10,7 @@ import sys
 import copy
 import logging
 from math import log10
+from dsdobjects import DSD_Domain, SequenceConstraint, DSDObjectsError
 
 SHORT_DOMAIN_LENGTH = 6
 LONG_DOMAIN_LENGTH = 12
@@ -358,45 +359,130 @@ class Loop(object):
         #TODO print Warning('SB: not obvious!!')
         return self._parts == other._parts
 
-class Domain(object):
+#class Domain(object):
+#    """
+#    Represents a single domain. We allow several options for specifying domain
+#    properties. Domains might have an explicit integer (bp) length, or may be
+#    designated as short or long. If the latter method is used, the code will use
+#    the relevant constant as the integer domain length.
+#    """
+#
+#    def __init__(self, name, length, is_complement=False, sequence=None):
+#        """
+#        Default constructor. Takes a domain name, a length (positive integer or
+#        "short" or "long"), and optionally a base sequence.
+#        """
+#        assert isinstance(length, int) or length in ['long', 'short']
+#        self._name = name
+#        self._length = length
+#        self._sequence = None
+#        self._complement_sequence = None
+#        self._is_complement = is_complement
+#        if (sequence):
+#            self._sequence = sequence.upper()
+#            self._complement_sequence = self._sequence
+#            self._complement_sequence = list(self._complement_sequence[::-1])
+#            for i, l in enumerate(self._complement_sequence):
+#                if (l == 'A'):
+#                    self._complement_sequence[i] = 'T'
+#                elif (l == 'T'):
+#                    self._complement_sequence[i] = 'A'
+#                elif (l == 'C'):
+#                    self._complement_sequence[i] = 'G'
+#                elif (l == 'G'):
+#                    self._complement_sequence[i] = 'C'
+#            self._complement_sequence = ''.join(self._complement_sequence)
+#
+#    def __repr__(self):
+#        return "Domain(%s)" % (self.name)
+#
+#    def __str__(self):
+#        return self.name
+#
+#    def __cmp__(self, other):
+#        out = cmp(self.name, other.name)
+#        if (out != 0):
+#            return out
+#
+#        out = self.length - other.length
+#        if (out != 0):
+#            return out
+#
+#        if (self.is_complement == other.is_complement):
+#            return 0
+#        elif self.is_complement:
+#            return 1
+#        else:
+#            return 0
+#
+#    def __len__(self):
+#        return self.length
+#
+#    def __hash__(self):
+#        return hash((self.name, self.length, self.is_complement))
+#
+#    def can_pair(self, other):
+#        """
+#        Returns True if this domain is complementary to the argument.
+#        """
+#        return ((self.identity == other.identity) and
+#                (self.is_complement or other.is_complement) and
+#                (not (self.is_complement and other.is_complement)))
+#
+#    @property
+#    def identity(self):
+#        """
+#        Returns the identity of this domain, which is its name without a
+#        complement specifier (i.e. A and A* both have identity A).
+#        """
+#        return self._name
+#
+#    @property
+#    def name(self):
+#        """
+#        The name of this domain.
+#        """
+#        return (self._name + ("" if not self.is_complement else "*"))
+#
+#    @property
+#    def length(self):
+#        """
+#        The length of this domain. Either uses the integer length previously
+#        specified or the constant associated with "short" and "long" domains as
+#        appropriate.
+#        """
+#        return resolve_length(self._length)
+#
+#    @property
+#    def sequence(self):
+#        """
+#        This domain's sequence. May be None if no sequence was specified.
+#        """
+#        if (not self.is_complement):
+#            return self._sequence
+#        else:
+#            return self._complement_sequence
+#
+#    @property
+#    def is_complement(self):
+#        """
+#        Returns true if this domain is a complement (e.g. A* rather than A),
+#        false otherwise.
+#        """
+#        return self._is_complement
+
+class PepperDomain(DSD_Domain):
     """
     Represents a single domain. We allow several options for specifying domain
     properties. Domains might have an explicit integer (bp) length, or may be
     designated as short or long. If the latter method is used, the code will use
     the relevant constant as the integer domain length.
     """
-
-    def __init__(self, name, length, is_complement=False, sequence=None):
-        """
-        Default constructor. Takes a domain name, a length (positive integer or
-        "short" or "long"), and optionally a base sequence.
-        """
-        assert isinstance(length, int) or length in ['long', 'short']
-        self._name = name
-        self._length = length
-        self._sequence = None
-        self._complement_sequence = None
-        self._is_complement = is_complement
-        if (sequence):
-            self._sequence = sequence.upper()
-            self._complement_sequence = self._sequence
-            self._complement_sequence = list(self._complement_sequence[::-1])
-            for i, l in enumerate(self._complement_sequence):
-                if (l == 'A'):
-                    self._complement_sequence[i] = 'T'
-                elif (l == 'T'):
-                    self._complement_sequence[i] = 'A'
-                elif (l == 'C'):
-                    self._complement_sequence[i] = 'G'
-                elif (l == 'G'):
-                    self._complement_sequence[i] = 'C'
-            self._complement_sequence = ''.join(self._complement_sequence)
+    def __init__(self, *kargs, **kwargs):
+        super(PepperDomain, self).__init__(*kargs, **kwargs)
 
     def __repr__(self):
         return "Domain(%s)" % (self.name)
-
-    def __str__(self):
-        return self.name
 
     def __cmp__(self, other):
         out = cmp(self.name, other.name)
@@ -414,19 +500,58 @@ class Domain(object):
         else:
             return 0
 
-    def __len__(self):
-        return self.length
-
     def __hash__(self):
         return hash((self.name, self.length, self.is_complement))
+
+    # Overwrite original
+    def get_ComplementDomain(self, compseq):
+        """This function returns a complementary domain.
+
+        Args:
+          compseq (list): list of IUPAC nucleic acid sequence constraints.
+
+        Note:
+          To simply return the complement, use the '~' operator.
+
+        Returns:
+          [nuskell.objects.DSD_ComplementDomain()]
+        """
+        if not all(isinstance(s, str) for s in self.sequence + compseq):
+            raise NotImplementedError('Cannot initialize composite DSD_ComplementDomain.')
+
+        # Make sure sequence constraint is possible
+        con1 = SequenceConstraint(''.join(self.sequence[::-1]))
+        con2 = SequenceConstraint(''.join(compseq))
+        # Invert con1 and merge with con2
+        compseq = list(str(~con1 + con2))
+
+        if self.is_complement:
+            if self._identity in DSD_Domain.dictionary :
+                other = DSD_Domain.dictionary[self._identity]
+                other.update_constraints(compseq)
+                #self.update_constraints(other.sequence[::-1])
+            else :
+                other = PepperDomain(compseq, self._identity, is_complement = False)
+        else :
+            if self._identity + '*' in DSD_Domain.dictionary :
+                other = DSD_Domain.dictionary[self._identity + '*']
+                other.update_constraints(compseq)
+                #self.update_constraints(other.sequence[::-1])
+            else :
+                other = PepperDomain(compseq, self._identity + '*', is_complement = True)
+
+        return other
 
     def can_pair(self, other):
         """
         Returns True if this domain is complementary to the argument.
         """
-        return ((self.identity == other.identity) and
-                (self.is_complement or other.is_complement) and
-                (not (self.is_complement and other.is_complement)))
+        try :
+            return self == ~other
+        except KeyError, e:
+            return ((not self.is_complement == other.is_complement) and 
+                    (self.identity == other.identity))
+            #raise DSDObjectsError('Complementary domain has not been initialized.')
 
     @property
     def identity(self):
@@ -434,33 +559,7 @@ class Domain(object):
         Returns the identity of this domain, which is its name without a
         complement specifier (i.e. A and A* both have identity A).
         """
-        return self._name
-
-    @property
-    def name(self):
-        """
-        The name of this domain.
-        """
-        return (self._name + ("" if not self.is_complement else "*"))
-
-    @property
-    def length(self):
-        """
-        The length of this domain. Either uses the integer length previously
-        specified or the constant associated with "short" and "long" domains as
-        appropriate.
-        """
-        return resolve_length(self._length)
-
-    @property
-    def sequence(self):
-        """
-        This domain's sequence. May be None if no sequence was specified.
-        """
-        if (not self.is_complement):
-            return self._sequence
-        else:
-            return self._complement_sequence
+        return self._name[:-1] if self._name[-1] == '*' else self._name
 
     @property
     def is_complement(self):
@@ -468,7 +567,7 @@ class Domain(object):
         Returns true if this domain is a complement (e.g. A* rather than A),
         false otherwise.
         """
-        return self._is_complement
+        return self._name[-1:] == '*'
 
 
 class Strand(object):

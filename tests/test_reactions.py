@@ -10,6 +10,7 @@ import peppercornenumerator.reactions as reactions
 from peppercornenumerator.reactions import *
 from peppercornenumerator.input import input_enum, from_kernel
 from peppercornenumerator.enumerator import Enumerator
+from peppercornenumerator.dsdobjects import reset_names
 
 import unittest
 from nose.tools import *
@@ -75,6 +76,9 @@ class ReactionTests(unittest.TestCase):
     def setUp(self):
         #enable_new_zipping()
         pass
+
+    def tearDown(self):
+        reset_names()
 
     def testZipper(self):
         # def zipper(reactant, start_loc, bound_loc, before, after, direction, filter):
@@ -360,6 +364,9 @@ class BindTests(unittest.TestCase):
 
         self.index_parts = index_parts
 
+    def tearDown(self):
+        reset_names()
+
     def testFindExternalStrandBreak(self):
 
 
@@ -435,8 +442,8 @@ class BindTests(unittest.TestCase):
         #  /
         #   s2
 
-        s1 = Strand('s1', [self.domains['1'], self.domains['2']])
-        s2 = Strand('s2', [self.domains['2*'], self.domains['3']])
+        s1 = Strand('s1', [self.domains['d1'], self.domains['d2']])
+        s2 = Strand('s2', [self.domains['d2*'], self.domains['d3']])
 
         c = Complex('C', [s1, s2], [[None, (1, 0)], [(0, 1), None]])
 
@@ -452,10 +459,10 @@ class BindTests(unittest.TestCase):
         #    \_/
         #        s3
 
-        s1 = Strand('s1', [self.domains['4'], self.domains['2']])
-        s2 = Strand('s2', [self.domains['1']])
-        s3 = Strand('s3', [self.domains['1*'],
-                           self.domains['3*'], self.domains['4*']])
+        s1 = Strand('s1', [self.domains['d4'], self.domains['d2']])
+        s2 = Strand('s2', [self.domains['d1']])
+        s3 = Strand('s3', [self.domains['d1*'],
+                           self.domains['d3*'], self.domains['d4*']])
 
         c = Complex('C', [s1, s2, s3], [[(2, 2), None],
                                         [(2, 0)], [(1, 0), None, (0, 0)]])
@@ -466,17 +473,17 @@ class BindTests(unittest.TestCase):
         # s1 s2 s3
         # ( + .(. + )..(.))
 
-        s1 = Strand('s1', [self.domains['1']])
+        s1 = Strand('s1', [self.domains['d1']])
         s2 = Strand('s2',
-                    [self.domains['5'],
-                     self.domains['2'],
-                        self.domains['6'],
-                        self.domains['3'],
-                        self.domains['4'],
-                        self.domains['3*'],
-                        self.domains['1*']])
-        s3 = Strand('s3', [self.domains['4*'],
-                           self.domains['5*'], self.domains['6']])
+                    [self.domains['d5'],
+                     self.domains['d2'],
+                        self.domains['d6'],
+                        self.domains['d3'],
+                        self.domains['d4'],
+                        self.domains['d3*'],
+                        self.domains['d1*']])
+        s3 = Strand('s3', [self.domains['d4*'],
+                           self.domains['d5*'], self.domains['d6']])
 
         c = Complex('C', [s1, s3, s2], [[(2, 6)], [None, (2, 0), None], [
                     (1, 1), None, None, (2, 5), None, (2, 3), (0, 0)]])
@@ -501,7 +508,7 @@ class BindTests(unittest.TestCase):
 
         # Test simple
         strand = Strand(
-            'A', [self.domains['1'], self.domains['2'], self.domains['1*']])
+            'A', [self.domains['d1'], self.domains['d2'], self.domains['d1*']])
         complex = Complex('C', [strand], [[None, None, None]])
 
         out_list = bind11(complex)
@@ -667,8 +674,8 @@ class BindTests(unittest.TestCase):
 
     def testCombineComplexes21_3(self):
 
-        s1 = Strand('A', [self.domains['1'], self.domains['2']])
-        s2 = Strand('B', [self.domains['2*'], self.domains['3']])
+        s1 = Strand('A', [self.domains['d1'], self.domains['d2']])
+        s2 = Strand('B', [self.domains['d2*'], self.domains['d3']])
 
         c1 = Complex('A', [s1], [[None, None]])
         c2 = Complex('B', [s2], [[None, None]])
@@ -862,6 +869,9 @@ class OpenTests(unittest.TestCase):
 
         for complex in self.SLC_enumerator.initial_complexes:
             self.complexes[complex.name] = complex
+
+    def tearDown(self):
+        reset_names()
 
     def testSplitComplex1(self):
 
@@ -1360,7 +1370,7 @@ class OpenTests(unittest.TestCase):
         #  ______
         #
         strand = Strand(
-            'A', [self.domains['1'], self.domains['2'], self.domains['1*']])
+            'A', [self.domains['d1'], self.domains['d2'], self.domains['d1*']])
         complex = Complex('A', [strand], [[(0, 2), None, (0, 0)]])
 
         res_list = open(complex)
@@ -1381,9 +1391,9 @@ class OpenTests(unittest.TestCase):
         # 4* 1* 4*
         #
 
-        S1 = Strand('S1', [self.domains['1'], self.domains['4']])
-        S2 = Strand('S2', [self.domains['4*']])
-        S3 = Strand('S3', [self.domains['1*'], self.domains['4*']])
+        S1 = Strand('S1', [self.domains['d1'], self.domains['d4']])
+        S2 = Strand('S2', [self.domains['d4*']])
+        S3 = Strand('S3', [self.domains['d1*'], self.domains['d4*']])
         complex = Complex('C', [S1, S2, S3], [
                           [(2, 0), (1, 0)], [(0, 1)], [(0, 0), None]])
 
@@ -1491,6 +1501,9 @@ class Branch3WayTests(unittest.TestCase):
         for complex in self.SLC_enumerator.initial_complexes:
             self.complexes[complex.name] = complex
 
+    def tearDown(self):
+        reset_names()
+
     def testDo3wayMigration1(self):
         # complex I1 :
         # SP Cat BS
@@ -1577,9 +1590,9 @@ class Branch3WayTests(unittest.TestCase):
         #     /
         #  1* 1* 2*
 
-        s1 = Strand('S1', [self.domains['1'], self.domains['2']])
-        s2 = Strand('S2', [self.domains['1*']])
-        s3 = Strand('S3', [self.domains['2*'], self.domains['1*']])
+        s1 = Strand('S1', [self.domains['d1'], self.domains['d2']])
+        s2 = Strand('S2', [self.domains['d1*']])
+        s3 = Strand('S3', [self.domains['d2*'], self.domains['d1*']])
 
         c1 = Complex('c1', [s1, s3, s2], [
                      [(2, 0), (1, 0)], [(0, 1), None], [(0, 0)]])
@@ -1885,15 +1898,18 @@ class Branch4WayTests(unittest.TestCase):
         for complex in self.SLC_enumerator.initial_complexes:
             self.complexes[complex.name] = complex
 
+    def tearDown(self):
+        reset_names()
+
     def testDo4wayMigration1(self):
-        s1 = Strand('s1', [self.domains['1*'],
-                           self.domains['2*'], self.domains['3']])
-        s2 = Strand('s2', [self.domains['3*'],
-                           self.domains['2'], self.domains['4']])
-        s3 = Strand('s3', [self.domains['4*'],
-                           self.domains['2*'], self.domains['5*']])
-        s4 = Strand('s4', [self.domains['5'],
-                           self.domains['2'], self.domains['1']])
+        s1 = Strand('s1', [self.domains['d1*'],
+                           self.domains['d2*'], self.domains['d3']])
+        s2 = Strand('s2', [self.domains['d3*'],
+                           self.domains['d2'], self.domains['d4']])
+        s3 = Strand('s3', [self.domains['d4*'],
+                           self.domains['d2*'], self.domains['d5*']])
+        s4 = Strand('s4', [self.domains['d5'],
+                           self.domains['d2'], self.domains['d1']])
 
         c1 = Complex(
             'c1', [
@@ -1922,14 +1938,14 @@ class Branch4WayTests(unittest.TestCase):
         assert exp_list == res_list
 
     def testDo4wayMigration2(self):
-        s1 = Strand('s1', [self.domains['1*'],
-                           self.domains['2*'], self.domains['3']])
-        s2 = Strand('s2', [self.domains['3*'],
-                           self.domains['2'], self.domains['1']])
-        s3 = Strand('s3', [self.domains['1*'],
-                           self.domains['2*'], self.domains['5*']])
-        s4 = Strand('s4', [self.domains['5'],
-                           self.domains['2'], self.domains['1']])
+        s1 = Strand('s1', [self.domains['d1*'],
+                           self.domains['d2*'], self.domains['d3']])
+        s2 = Strand('s2', [self.domains['d3*'],
+                           self.domains['d2'], self.domains['d1']])
+        s3 = Strand('s3', [self.domains['d1*'],
+                           self.domains['d2*'], self.domains['d5*']])
+        s4 = Strand('s4', [self.domains['d5'],
+                           self.domains['d2'], self.domains['d1']])
 
         c2 = Complex(
             'c2', [
@@ -1968,14 +1984,14 @@ class Branch4WayTests(unittest.TestCase):
         assert res_list == exp_list
 
     def testBranch4way2(self):
-        s1 = Strand('s1', [self.domains['1*'],
-                           self.domains['2*'], self.domains['3']])
-        s2 = Strand('s2', [self.domains['3*'],
-                           self.domains['2'], self.domains['4']])
-        s3 = Strand('s3', [self.domains['4*'],
-                           self.domains['2*'], self.domains['5*']])
-        s4 = Strand('s4', [self.domains['5'],
-                           self.domains['2'], self.domains['1']])
+        s1 = Strand('s1', [self.domains['d1*'],
+                           self.domains['d2*'], self.domains['d3']])
+        s2 = Strand('s2', [self.domains['d3*'],
+                           self.domains['d2'], self.domains['d4']])
+        s3 = Strand('s3', [self.domains['d4*'],
+                           self.domains['d2*'], self.domains['d5*']])
+        s4 = Strand('s4', [self.domains['d5'],
+                           self.domains['d2'], self.domains['d1']])
 
         c1 = Complex(
             'c1', [
@@ -2007,14 +2023,14 @@ class Branch4WayTests(unittest.TestCase):
         assert exp_list == res_list
 
     def testBranch4way3(self):
-        s1 = Strand('s1', [self.domains['1*'],
-                           self.domains['2*'], self.domains['3']])
-        s2 = Strand('s2', [self.domains['3*'],
-                           self.domains['2'], self.domains['4']])
-        s3 = Strand('s3', [self.domains['4*'],
-                           self.domains['2*'], self.domains['5*']])
-        s4 = Strand('s4', [self.domains['5'],
-                           self.domains['2'], self.domains['1']])
+        s1 = Strand('s1', [self.domains['d1*'],
+                           self.domains['d2*'], self.domains['d3']])
+        s2 = Strand('s2', [self.domains['d3*'],
+                           self.domains['d2'], self.domains['d4']])
+        s3 = Strand('s3', [self.domains['d4*'],
+                           self.domains['d2*'], self.domains['d5*']])
+        s4 = Strand('s4', [self.domains['d5'],
+                           self.domains['d2'], self.domains['d1']])
 
         c1 = Complex(
             'c1', [
@@ -2046,14 +2062,14 @@ class Branch4WayTests(unittest.TestCase):
         assert exp_list == res_list
 
     def testBranch4way4(self):
-        s1 = Strand('s1', [self.domains['1*'],
-                           self.domains['2*'], self.domains['3']])
-        s2 = Strand('s2', [self.domains['3*'],
-                           self.domains['2'], self.domains['1']])
-        s3 = Strand('s3', [self.domains['1*'],
-                           self.domains['2*'], self.domains['5*']])
-        s4 = Strand('s4', [self.domains['5'],
-                           self.domains['2'], self.domains['1']])
+        s1 = Strand('s1', [self.domains['d1*'],
+                           self.domains['d2*'], self.domains['d3']])
+        s2 = Strand('s2', [self.domains['d3*'],
+                           self.domains['d2'], self.domains['d1']])
+        s3 = Strand('s3', [self.domains['d1*'],
+                           self.domains['d2*'], self.domains['d5*']])
+        s4 = Strand('s4', [self.domains['d5'],
+                           self.domains['d2'], self.domains['d1']])
 
         c1 = Complex(
             'c1', [
@@ -2129,6 +2145,9 @@ class ReactionPathwayTests(unittest.TestCase):
 
         for complex in self.SLC_enumerator.initial_complexes:
             self.complexes[complex.name] = complex
+
+    def tearDown(self):
+        reset_names()
 
     def testHash(self):
         assert hash(

@@ -14,6 +14,7 @@ import peppercornenumerator
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactions
 from peppercornenumerator.reactions import ReactionPathway, get_auto_name
+from peppercornenumerator.dsdobjects import SequenceConstraint
 
 
 def input_enum(filename):
@@ -66,7 +67,11 @@ def input_enum(filename):
             # The domain length could be either short or long or it could be
             # an exact number
             domain_length = parts[3]
-            if not ((domain_length == 'short') or (domain_length == 'long')):
+            if (domain_length == 'short') :
+                domain_length = utils.SHORT_DOMAIN_LENGTH 
+            elif (domain_length == 'long') :
+                domain_length = utils.LONG_DOMAIN_LENGTH
+            else :
                 domain_length = int(domain_length)
                 if domain_length <= 0:
                     logging.warn("Domain of length %d found in input line %d"
@@ -74,16 +79,21 @@ def input_enum(filename):
 
             # Check to see if a sequence is specified
             if len(parts) > 4:
-                domain_sequence = parts[4]
+                domain_sequence = list(parts[4])
             else:
-                domain_sequence = None
+                domain_sequence = list('N' * domain_length)
 
             # Create the new domains
-            new_dom = utils.Domain(domain_name, domain_length,
-                                   sequence=domain_sequence)
-            new_dom_comp = utils.Domain(domain_name, domain_length,
-                                        sequence=domain_sequence,
-                                        is_complement=True)
+            new_dom = utils.PepperDomain(domain_sequence, name=domain_name)
+            new_dom_comp = new_dom.get_ComplementDomain(list('N' * domain_length))
+
+            #print new_dom, new_dom_comp
+
+            #new_dom = utils.Domain(domain_name, domain_length,
+            #                       sequence=domain_sequence)
+            #new_dom_comp = utils.Domain(domain_name, domain_length,
+            #                            sequence=domain_sequence,
+            #                            is_complement=True)
 
             domains[domain_name] = new_dom
             domains["%s*" % domain_name] = new_dom_comp
@@ -248,6 +258,9 @@ def auto_domain(name, polarity, domains):
     """
     Finds or automatically generates a domain and/or its complement.
     """
+    # Dirty hack to fix unittest-errors
+    from peppercornenumerator.dsdobjects import DSD_Domain
+    domains.update(DSD_Domain.dictionary)
 
     # figure name, polarity, length
     identity, plrt, length = parse_identifier(name)
@@ -274,9 +287,12 @@ def auto_domain(name, polarity, domains):
 
         sequence = 'N' * utils.resolve_length(length)
 
-        new_dom = utils.Domain(identity, length, sequence=sequence)
-        new_dom_comp = utils.Domain(identity, length,
-                                    is_complement=True, sequence=sequence)
+        print 'XXX', identity, polarity, domains
+        new_dom = utils.PepperDomain(list(sequence), name=identity)
+        new_dom_comp = new_dom.get_ComplementDomain(list(sequence))
+
+        #new_dom = utils.Domain(identity, length, sequence=sequence)
+        #new_dom_comp = utils.Domain(identity, length, is_complement=True, sequence=sequence)
         domains[identity] = new_dom
         domains[identity + '*'] = new_dom_comp
 
@@ -481,11 +497,17 @@ def input_pil(filename):
             domain_sequence = "N" * domain_length
 
             # Create the new domains
-            new_dom = utils.Domain(domain_name, domain_length,
-                                   sequence=domain_sequence)
-            new_dom_comp = utils.Domain(domain_name, domain_length,
-                                        sequence=domain_sequence,
-                                        is_complement=True)
+            rev_comp = SequenceConstraint(domain_sequence).reverse_complement
+            print 'a', domain_sequence
+            print 'b', rev_comp
+            new_dom = utils.PepperDomain(list(domain_sequence), name=domain_name)
+            new_dom_comp = new_dom.get_ComplementDomain(list(rev_comp))
+
+            #new_dom = utils.Domain(domain_name, domain_length,
+            #                       sequence=domain_sequence)
+            #new_dom_comp = utils.Domain(domain_name, domain_length,
+            #                            sequence=domain_sequence,
+            #                            is_complement=True)
 
             domains[domain_name] = new_dom
             domains["%s*" % domain_name] = new_dom_comp
@@ -521,12 +543,16 @@ def input_pil(filename):
             # domain_sequence = parts[1]
             domain_length = len(domain_sequence)
 
-            # Create the new domains
-            new_dom = utils.Domain(domain_name, domain_length,
-                                   sequence=domain_sequence)
-            new_dom_comp = utils.Domain(domain_name, domain_length,
-                                        sequence=domain_sequence,
-                                        is_complement=True)
+
+            rev_comp = SequenceConstraint(domain_sequence).reverse_complement
+            new_dom = utils.PepperDomain(list(domain_sequence), name=domain_name)
+            new_dom_comp = new_dom.get_ComplementDomain(list(rev_comp))
+
+            #new_dom = utils.Domain(domain_name, domain_length,
+            #                       sequence=domain_sequence)
+            #new_dom_comp = utils.Domain(domain_name, domain_length,
+            #                            sequence=domain_sequence,
+            #                            is_complement=True)
 
             domains[domain_name] = new_dom
             domains["%s*" % domain_name] = new_dom_comp
@@ -573,7 +599,7 @@ def input_pil(filename):
                     raise Exception()
 
                 # build up the full sequence
-                sequence += domains[sequence_name].sequence
+                sequence += ''.join(domains[sequence_name].sequence)
 
             # check for correctness
             if length:
@@ -588,11 +614,14 @@ def input_pil(filename):
             domain_length = len(sequence)
 
             # Create the new domains
-            new_dom = utils.Domain(domain_name, domain_length,
-                                   sequence=domain_sequence)
-            new_dom_comp = utils.Domain(domain_name, domain_length,
-                                        sequence=domain_sequence,
-                                        is_complement=True)
+            rev_comp = SequenceConstraint(domain_sequence).reverse_complement
+            new_dom = utils.PepperDomain(list(domain_sequence), name=domain_name)
+            new_dom_comp = new_dom.get_ComplementDomain(list(rev_comp))
+            #new_dom = utils.Domain(domain_name, domain_length,
+            #                       sequence=domain_sequence)
+            #new_dom_comp = utils.Domain(domain_name, domain_length,
+            #                            sequence=domain_sequence,
+            #                            is_complement=True)
 
             domains[domain_name] = new_dom
             domains["%s*" % domain_name] = new_dom_comp
@@ -619,13 +648,16 @@ def input_pil(filename):
             source_domain = domains[source_domain_name]
 
             for target_domain_name in target_domain_names:
-                new_dom = utils.Domain(target_domain_name, len(source_domain),
-                                       sequence=source_domain.sequence)
-                new_dom_comp = utils.Domain(
-                    target_domain_name,
-                    len(source_domain),
-                    sequence=source_domain.sequence,
-                    is_complement=True)
+                new_dom = utils.PepperDomain(source_domain.sequence, name=target_domain_name)
+                new_dom_comp = new_dom.get_ComplementDomain(source_domain.get_ComplementDomain.sequence)
+
+                #new_dom = utils.Domain(target_domain_name, len(source_domain),
+                #                       sequence=source_domain.sequence)
+                #new_dom_comp = utils.Domain(
+                #    target_domain_name,
+                #    len(source_domain),
+                #    sequence=source_domain.sequence,
+                #    is_complement=True)
 
                 domains[target_domain_name] = new_dom
                 domains["%s*" % target_domain_name] = new_dom_comp
@@ -816,14 +848,25 @@ def load_json(filename):
     domains = {}
     for saved_domain in saved_domains:
         if 'sequence' not in saved_domain:
-            saved_domain['sequence'] = None
+            saved_domain['sequence'] = 'N' * int(saved_domain['length'])
+        else:
+            saved_domain['sequence'] = str(''.join(saved_domain['sequence']))
+
         if (saved_domain['is_complement']):
-            saved_domain['name'] = saved_domain['name'][:-1]
-        new_dom = utils.Domain(
-            saved_domain['name'],
-            saved_domain['length'],
-            is_complement=saved_domain['is_complement'],
-            sequence=saved_domain['sequence'])
+            #saved_domain['name'] = str(saved_domain['name'][:-1])
+            new_dom = utils.PepperDomain(list(saved_domain['sequence']), 
+                    name=str(saved_domain['name']), is_complement=True)
+            #new_dom = tmp_dom.get_ComplementDomain(list(saved_domain['sequence']))
+
+        else :
+            new_dom = utils.PepperDomain(list(saved_domain['sequence']), 
+                    name=str(saved_domain['name']))
+
+        #new_dom = utils.Domain(
+        #    saved_domain['name'],
+        #    saved_domain['length'],
+        #    is_complement=saved_domain['is_complement'],
+        #    sequence=saved_domain['sequence'])
         domains[new_dom.name] = new_dom
 
     saved_strands = saved['strands']

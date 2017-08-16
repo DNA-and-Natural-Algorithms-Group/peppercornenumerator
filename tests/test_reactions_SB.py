@@ -5,13 +5,14 @@
 import copy
 import unittest
 
-from nuskell.parser import parse_pil_string
 
 from peppercornenumerator import Enumerator
+from peppercornenumerator.pil_parser import parse_pil_string
 import peppercornenumerator.reactions as rxn
 
 # Input parsing stuff
-from peppercornenumerator.utils import Domain, Strand, Complex, parse_dot_paren
+from peppercornenumerator.utils import PepperDomain, Strand, Complex, parse_dot_paren
+from peppercornenumerator.dsdobjects import reset_names
 from peppercornenumerator.input import from_kernel
 
 SKIP = False
@@ -48,7 +49,8 @@ def nuskell_parser(pil_string, ddlen=15):
     complexes = {}
     for line in ppil :
       if line[0] == 'domain':
-          domains[line[1]] = Domain(line[1], int(line[2]), sequence = 'N'* int(line[2]))
+          #domains[line[1]] = PepperDomain(line[1], int(line[2]), sequence = 'N'* int(line[2]))
+          domains[line[1]] = PepperDomain(list('N'* int(line[2])), name=line[1])
       elif line[0] == 'complex':
         name = line[1]
         sequence, structure = resolve_loops(line[2])
@@ -68,17 +70,21 @@ def nuskell_parser(pil_string, ddlen=15):
             dname = d[:-1]
             if dname in domains :
                 cdom = domains[dname]
-                dom = Domain(cdom.name, len(cdom), sequence = 'N'* len(cdom), is_complement=True)
+                #dom = PepperDomain(cdom.name, len(cdom), , is_complement=True)
+                dom = cdom.get_ComplementDomain(list(sequence = 'N'* len(cdom)))
             else :
-                cdom = Domain(dname, ddlen, sequence = 'N'* ddlen, is_complement=False)
+                #cdom = PepperDomain(dname, ddlen, sequence = 'N'* ddlen, is_complement=False)
+                cdom = PepperDomain(list('N'* ddlen), name=dname)
                 domains[dname] = cdom
-                dom = Domain(dname, ddlen, sequence = 'N'* ddlen, is_complement=True)
+                #dom = Domain(dname, ddlen, sequence = 'N'* ddlen, is_complement=True)
+                dom = cdom.get_ComplementDomain(list(sequence = 'N'* len(cdom)))
           else :
             dname = d
             if dname in domains :
                 dom = domains[dname]
             else :
-                dom = Domain(dname, ddlen, sequence = 'N'* ddlen)
+                #dom = Domain(dname, ddlen, sequence = 'N'* ddlen)
+                dom = PepperDomain(list('N'* ddlen), name=dname)
                 domains[dname] = dom
           strand.append(dom)
 
@@ -105,6 +111,9 @@ def nuskell_parser(pil_string, ddlen=15):
 class NewOpenTests(unittest.TestCase):
     def setUp(self):
         pass
+
+    def tearDown(self):
+        reset_names()
 
     def test_basic_open(self):
         """ 
@@ -177,6 +186,9 @@ class NewOpenTests(unittest.TestCase):
 class NewBindTests(unittest.TestCase):
     def setUp(self):
         pass
+
+    def tearDown(self):
+        reset_names()
 
     def test_binding(self):
         (domains, strands, complexes) = nuskell_parser("""
@@ -261,6 +273,9 @@ class NewBindTests(unittest.TestCase):
 class NewBranch3WayTests(unittest.TestCase):
     def setUp(self):
         pass
+
+    def tearDown(self):
+        reset_names()
 
     def test_single_migration(self):
         """ 
@@ -509,6 +524,9 @@ class NewBranch4WayTests(unittest.TestCase):
     def setUp(self):
         pass
 
+    def tearDown(self):
+        reset_names()
+
     def test_break_casey_4way(self):
         # Note the new max-helix semantics also fixes the old 4way error,
         # so this test can be safely removed...
@@ -729,6 +747,9 @@ class DSD_PathwayTests(unittest.TestCase):
         self._k_fast = 0.0
         self._k_slow = 0.0
 
+    def tearDown(self):
+        reset_names()
+
     def test_bind_and_displace3way(self):
         # Skip the outer loop of the enumerator...
         (domains, strands, complexes) = nuskell_parser("""
@@ -844,7 +865,9 @@ class IsomorphicSets(unittest.TestCase):
     def setUp(self):
         pass
 
-    @unittest.skipIf(SKIP, "skipping tests")
+    def tearDown(self):
+        reset_names()
+
     def test_simple(self):
         # works just fine
         (domains, strands, complexes) = nuskell_parser("""
@@ -974,10 +997,13 @@ class IsomorphicSets(unittest.TestCase):
         #    print 'invade', r, r.kernel_string(), r.rate
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
 
-#@unittest.skipIf(SKIP, "skipping tests")
+@unittest.skipIf(SKIP, "skipping tests")
 class Compare_MaxHelix(unittest.TestCase):
     def setUp(self):
         pass
+
+    def tearDown(self):
+        reset_names()
 
     def test_self_displacement_bug(self):
         (domains, strands, complexes) = nuskell_parser("""

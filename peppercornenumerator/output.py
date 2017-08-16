@@ -155,7 +155,7 @@ def output_pil(enumerator, filename, output_condensed=False,
 
     def seq(dom):
         if(dom.sequence is not None):
-            return dom.sequence
+            return ''.join(dom.sequence)
         else:
             return "N" * len(dom)
 

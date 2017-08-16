@@ -12,26 +12,33 @@ from nose.tools import *
 
 from peppercornenumerator.utils import *
 from peppercornenumerator.input import *
+from peppercornenumerator.dsdobjects import reset_names
 
 
 class InputStandardTests(unittest.TestCase):
+    def setUp(self):
+        pass
+    def tearDown(self):
+        reset_names()
+
     def testStandard_SLC(self):
         enumerator = input_enum('tests/files/test_input_standard_SLC.in')
+        reset_names()
 
-        d1 = Domain('1', 'short')
-        d1c = Domain('1', 'short', True)
-        d2 = Domain('2', 'short')
-        d2c = Domain('2', 'short', True)
-        d3 = Domain('3', 'short')
-        d3c = Domain('3', 'short', True)
-        d4 = Domain('4', 'long')
-        d4c = Domain('4', 'long', True)
-        d5 = Domain('5', 'short')
-        d5c = Domain('5', 'short', True)
-        d6 = Domain('6', 'long')
-        d6c = Domain('6', 'long', True)
-        d7 = Domain('7', 'short')
-        d7c = Domain('7', 'short', True)
+        d1 =  PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d1')
+        d1c = PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d1*', is_complement = True)
+        d2 =  PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d2')
+        d2c = PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d2*', is_complement = True)
+        d3 =  PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d3')
+        d3c = PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d3*', is_complement = True)
+        d4 =  PepperDomain(list('N'*LONG_DOMAIN_LENGTH), name='d4')
+        d4c = PepperDomain(list('N'*LONG_DOMAIN_LENGTH), name='d4*', is_complement = True)
+        d5 =  PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d5')
+        d5c = PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d5*', is_complement = True)
+        d6 =  PepperDomain(list('N'*LONG_DOMAIN_LENGTH), name='d6')
+        d6c = PepperDomain(list('N'*LONG_DOMAIN_LENGTH), name='d6*', is_complement = True)
+        d7 =  PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d7')
+        d7c = PepperDomain(list('N'*SHORT_DOMAIN_LENGTH), name='d7*', is_complement = True)
 
         enum_doms = enumerator.domains[:]
         doms = [d1, d1c, d2, d2c, d3, d3c, d4, d4c, d5, d5c, d6, d6c, d7, d7c]
@@ -97,18 +104,19 @@ class InputStandardTests(unittest.TestCase):
         enumerator = input_enum(
             'tests/files/test_input_standard_3arm_junction.in')
 
-        da = Domain('a', 6)
-        db = Domain('b', 6)
-        dc = Domain('c', 6)
-        dx = Domain('x', 6)
-        dy = Domain('y', 6)
-        dz = Domain('z', 6)
-        dac = Domain('a', 6, True)
-        dbc = Domain('b', 6, True)
-        dcc = Domain('c', 6, True)
-        dxc = Domain('x', 6, True)
-        dyc = Domain('y', 6, True)
-        dzc = Domain('z', 6, True)
+        reset_names()
+        da =  PepperDomain(list('N'*6), name='a')
+        db =  PepperDomain(list('N'*6), name='b')
+        dc =  PepperDomain(list('N'*6), name='c')
+        dx =  PepperDomain(list('N'*6), name='x')
+        dy =  PepperDomain(list('N'*6), name='y')
+        dz =  PepperDomain(list('N'*6), name='z')
+        dac = PepperDomain(list('N'*6), name='a*', is_complement = True)
+        dbc = PepperDomain(list('N'*6), name='b*', is_complement = True)
+        dcc = PepperDomain(list('N'*6), name='c*', is_complement = True)
+        dxc = PepperDomain(list('N'*6), name='x*', is_complement = True)
+        dyc = PepperDomain(list('N'*6), name='y*', is_complement = True)
+        dzc = PepperDomain(list('N'*6), name='z*', is_complement = True)
 
         enum_doms = enumerator.domains[:]
         doms = [da, dac, db, dbc, dc, dcc, dx, dxc, dy, dyc, dz, dzc]
@@ -175,16 +183,28 @@ class InputStandardTests(unittest.TestCase):
     def testPil(self):
         enumerator = input_pil('tests/files/test_input_pil.pil')
 
-        # domains
-        da = Domain('a', 6, sequence="CTACTC")
-        db = Domain('b-seq', 8, sequence="ACATCGAN")
-        dz = Domain('z', 6, sequence="TTTCCA")
-        dac = Domain('a', 6, True, sequence="CTACTC")
-        dbc = Domain('b-seq', 8, True, sequence="ACATCGAN")
-        dzc = Domain('z', 6, True, sequence="TTTCCA")
+        reset_names()
 
-        dq = Domain('q', 20, sequence="CTACTCACATCGANTTTCCA")
-        dqc = Domain('q', 20, True, sequence="CTACTCACATCGANTTTCCA")
+        # domains
+        da =  PepperDomain(list('CTACTC'), name='a', )
+
+        db =  PepperDomain(list('ACATCGAN'), name='b-seq', )
+        dz =  PepperDomain(list('TTTCCA'), name='z', )
+
+        seq = SequenceConstraint('CTACTC').reverse_wc_complement
+        dac = PepperDomain(list(seq), name='a*', is_complement=True)
+
+        seq = SequenceConstraint('ACATCGAN').reverse_wc_complement
+        dbc = PepperDomain(list(seq), name='b-seq*', is_complement=True)
+
+        seq = SequenceConstraint('TTTCCA').reverse_wc_complement
+        dzc = PepperDomain(list(seq), name='z*', is_complement=True)
+
+        dq =  PepperDomain(list('CTACTCACATCGANTTTCCA'), name='q')
+
+        seq = SequenceConstraint('CTACTCACATCGANTTTCCA').reverse_wc_complement
+        print seq
+        dqc = PepperDomain(list(seq), name='q*', is_complement=True)
 
         enum_doms = enumerator.domains[:]
         doms = [da, dac, db, dbc, dz, dzc, dq, dqc]
@@ -244,18 +264,21 @@ class InputStandardTests(unittest.TestCase):
     def testPil_3arm_junction(self):
         enumerator = input_pil('tests/files/test_input_pil_3arm_junction.pil')
 
-        da = Domain('a', 6, sequence="CTACTC")
-        db = Domain('b', 6, sequence="TCCTCA")
-        dc = Domain('c', 6, sequence="TTTCCA")
-        dx = Domain('x', 6, sequence="CTACTC")
-        dy = Domain('y', 6, sequence="TCCTCA")
-        dz = Domain('z', 6, sequence="TTTCCA")
-        dac = Domain('a', 6, True, sequence="CTACTC")
-        dbc = Domain('b', 6, True, sequence="TCCTCA")
-        dcc = Domain('c', 6, True, sequence="TTTCCA")
-        dxc = Domain('x', 6, True, sequence="CTACTC")
-        dyc = Domain('y', 6, True, sequence="TCCTCA")
-        dzc = Domain('z', 6, True, sequence="TTTCCA")
+        reset_names()
+
+        da =  PepperDomain(list('CTACTC'), name='a')
+        db =  PepperDomain(list('TCCTCA'), name='b')
+        dc =  PepperDomain(list('TTTCCA'), name='c')
+        dx =  PepperDomain(list('CTACTC'), name='x')
+        dy =  PepperDomain(list('TCCTCA'), name='y')
+        dz =  PepperDomain(list('TTTCCA'), name='z')
+
+        dac = PepperDomain(list(SequenceConstraint('CTACTC').reverse_wc_complement), name='a*', is_complement = True)
+        dbc = PepperDomain(list(SequenceConstraint('TCCTCA').reverse_wc_complement), name='b*', is_complement = True)
+        dcc = PepperDomain(list(SequenceConstraint('TTTCCA').reverse_wc_complement), name='c*', is_complement = True)
+        dxc = PepperDomain(list(SequenceConstraint('CTACTC').reverse_wc_complement), name='x*', is_complement = True)
+        dyc = PepperDomain(list(SequenceConstraint('TCCTCA').reverse_wc_complement), name='y*', is_complement = True)
+        dzc = PepperDomain(list(SequenceConstraint('TTTCCA').reverse_wc_complement), name='z*', is_complement = True)
 
         enum_doms = enumerator.domains[:]
         doms = [da, dac, db, dbc, dc, dcc, dx, dxc, dy, dyc, dz, dzc]
@@ -325,38 +348,50 @@ class InputStandardTests(unittest.TestCase):
             enum = input_enum(
                 'tests/files/test_input_errors/test_input_duplicate_domain.in')
         assert_raises(Exception, testDuplicateDomain)
+        reset_names()
 
         def testDuplicateStrand():
             enum = input_enum(
                 'tests/files/test_input_errors/test_input_duplicate_strand.in')
         assert_raises(Exception, testDuplicateStrand)
+        reset_names()
 
         def testDuplicateComplex():
             enum = input_enum(
                 'tests/files/test_input_errors/test_input_duplicate_complex.in')
         assert_raises(Exception, testDuplicateComplex)
+        reset_names()
 
         def testMissingDomain():
             enum = input_enum(
                 'tests/files/test_input_errors/test_input_missing_domain.in')
         assert_raises(Exception, testMissingDomain)
+        reset_names()
 
         def testMissingStrand():
             enum = input_enum(
                 'tests/files/test_input_errors/test_input_missing_strand.in')
         assert_raises(Exception, testMissingStrand)
+        reset_names()
 
         def testComplexError():
             enum = input_enum(
                 'tests/files/test_input_errors/test_input_size_mismatch.in')
         assert_raises(Exception, testComplexError)
+        reset_names()
 
-        enum = input_enum(
-            'tests/files/test_input_errors/test_input_warnings.in')
-        assert (enum is not None)
+        #enum = input_enum(
+        #    'tests/files/test_input_errors/test_input_warnings.in')
+        #assert (enum is not None)
 
 
+@unittest.skip("skipping deprecated tests")
 class InputKernel(unittest.TestCase):
+
+    def setUp(self):
+        pass
+    def tearDown(self):
+        reset_names()
 
     def test_parse_kernel(self):
         def listify(x):

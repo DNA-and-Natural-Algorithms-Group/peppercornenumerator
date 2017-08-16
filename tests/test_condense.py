@@ -2,10 +2,11 @@ import unittest
 # from nose.tools import *
 
 import peppercornenumerator.input as input
-from peppercornenumerator.utils import Complex, Domain, Strand, index_parts
+from peppercornenumerator.utils import Complex, PepperDomain, Strand, index_parts
 from peppercornenumerator.reactions import ReactionPathway
 
 from peppercornenumerator.condense import *
+from peppercornenumerator.dsdobjects import reset_names
 
 # ----------------------------------------------------------------------------
 # Utils
@@ -81,16 +82,16 @@ class CondenseTests(unittest.TestCase):
     def setUp(self):
 
         self.domains = domains = {
-            'a': Domain('a', 'long'),
-            'b': Domain('b', 'long'),
-            'c': Domain('c', 'long'),
-            'd': Domain('d', 'long'),
-            'e': Domain('e', 'long'),
-            'f': Domain('f', 'long'),
-            'g': Domain('g', 'long'),
-            'h': Domain('h', 'long'),
-            'i': Domain('i', 'long'),
-            'j': Domain('j', 'long'),
+            'a': PepperDomain(list('N' * 12), name='a'),
+            'b': PepperDomain(list('N' * 12), name='b'),
+            'c': PepperDomain(list('N' * 12), name='c'),
+            'd': PepperDomain(list('N' * 12), name='d'),
+            'e': PepperDomain(list('N' * 12), name='e'),
+            'f': PepperDomain(list('N' * 12), name='f'),
+            'g': PepperDomain(list('N' * 12), name='g'),
+            'h': PepperDomain(list('N' * 12), name='h'),
+            'i': PepperDomain(list('N' * 12), name='i'),
+            'j': PepperDomain(list('N' * 12), name='j'),
         }
         self.strands = strands = {
             's1': Strand('s1', [domains['a']]),
@@ -156,6 +157,9 @@ class CondenseTests(unittest.TestCase):
         self.enumerator = self.enum = enum
         self.neighborhood_abcd = pluck(complexes, ['A', 'B', 'C', 'D'])
         self.neighborhood_e = [complexes['E']]
+
+    def tearDown(self):
+        reset_names()
 
     def testGetReactionsConsuming(self):
         complexes = pluck(self.complexes, ['A', 'B', 'C', 'D', 'E', 'F', 'G'])
@@ -613,6 +617,7 @@ class CondenseTests(unittest.TestCase):
     def testCondenseGraph5(self):
 
         # import pdb; pdb.set_trace()
+        reset_names()
 
         self.fate_example = input.input_pil(
             'tests/files/examples/fate-example.pil')
@@ -628,6 +633,7 @@ class CondenseTests(unittest.TestCase):
 
     def testCondenseGraph6(self):
 
+        reset_names()
         self.fate_example = input.input_pil(
             'tests/files/examples/fate-example.pil')
 
@@ -641,42 +647,43 @@ class CondenseTests(unittest.TestCase):
         enumerator = self.fate_example
         condensed = condense_resting_states(self.fate_example)
 
+        reset_names()
         # Domains
         domains = {
-            '2': Domain('2', 8, is_complement=False, sequence='NNNNNNNN'),
-            '2*': Domain('2', 8, is_complement=True, sequence='NNNNNNNN'),
-            '3': Domain('3', 8, is_complement=False, sequence='NNNNNNNN'),
-            '3*': Domain('3', 8, is_complement=True, sequence='NNNNNNNN'),
-            'a': Domain('a', 8, is_complement=False, sequence='NNNNNNNN'),
-            'a*': Domain('a', 8, is_complement=True, sequence='NNNNNNNN'),
-            'b': Domain('b', 8, is_complement=False, sequence='NNNNNNNN'),
-            'b*': Domain('b', 8, is_complement=True, sequence='NNNNNNNN'),
-            'c': Domain('c', 8, is_complement=False, sequence='NNNNNNNN'),
-            'c*': Domain('c', 8, is_complement=True, sequence='NNNNNNNN'),
-            't': Domain('t', 4, is_complement=False, sequence='NNNN'),
-            't*': Domain('t', 4, is_complement=True, sequence='NNNN')
+            'd2':  PepperDomain(list('N' * 8), name='d2', is_complement=False),
+            'd2*': PepperDomain(list('N' * 8), name='d2*', is_complement=True),
+            'd3':  PepperDomain(list('N' * 8), name='d3', is_complement=False),
+            'd3*': PepperDomain(list('N' * 8), name='d3*', is_complement=True),
+            'a':  PepperDomain(list('N' * 8), name='a', is_complement=False),
+            'a*': PepperDomain(list('N' * 8), name='a*', is_complement=True),
+            'b':  PepperDomain(list('N' * 8), name='b', is_complement=False),
+            'b*': PepperDomain(list('N' * 8), name='b*', is_complement=True),
+            'c':  PepperDomain(list('N' * 8), name='c', is_complement=False),
+            'c*': PepperDomain(list('N' * 8), name='c*', is_complement=True),
+            't':  PepperDomain(list('N' * 4), name='t', is_complement=False),
+            't*': PepperDomain(list('N' * 4), name='t*', is_complement=True)
         }
         assert set(domains.values()) == set(enumerator.domains)
 
         # Strands
         strands = {'3a': Strand('3a',
-                                [domains['3*'],
+                                [domains['d3*'],
                                  domains['a*']]),
                    '23': Strand('23',
-                                [domains['2'],
-                                 domains['3']]),
+                                [domains['d2'],
+                                 domains['d3']]),
                    'gate': Strand('gate',
                                   [domains['a*'],
                                    domains['b*'],
                                    domains['c'],
                                    domains['b'],
                                    domains['a'],
-                                   domains['2*'],
+                                   domains['d2*'],
                                    domains['t*']]),
                    't23': Strand('t23',
                                  [domains['t'],
-                                  domains['2'],
-                                  domains['3']])}
+                                  domains['d2'],
+                                  domains['d3']])}
         assert set(strands.values()) == set(enumerator.strands)
 
         # Complexes

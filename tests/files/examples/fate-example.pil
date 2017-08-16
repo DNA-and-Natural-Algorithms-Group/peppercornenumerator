@@ -1,14 +1,14 @@
 sequence t = NNNN
-sequence 2 = NNNNNNNN
-sequence 3 = NNNNNNNN
+sequence d2 = NNNNNNNN
+sequence d3 = NNNNNNNN
 sequence a = NNNNNNNN
 sequence b = NNNNNNNN
 sequence c = NNNNNNNN
 
-strand t23 = t 2 3
-strand 23 = 2 3 
-strand 3a = 3* a* 
-strand gate = a* b* c b a 2* t*
+strand t23 = t d2 d3
+strand 23 = d2 d3 
+strand 3a = d3* a* 
+strand gate = a* b* c b a d2* t*
 
 structure t23 = t23 : ...
 structure gate = 23 + 3a + gate : ((+)(+.(.))).

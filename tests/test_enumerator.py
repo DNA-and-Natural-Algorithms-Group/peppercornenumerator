@@ -13,6 +13,7 @@ from peppercornenumerator.utils import *
 from peppercornenumerator.reactions import ReactionPathway
 from peppercornenumerator.input import input_enum
 from peppercornenumerator.enumerator import *
+from peppercornenumerator.dsdobjects import reset_names
 
 
 class EnumeratorTests(unittest.TestCase):
@@ -35,6 +36,7 @@ class EnumeratorTests(unittest.TestCase):
         (self.domains, self.strands, self.complexes) = index_parts(
             self.SLC_enumerator)
 
+        reset_names()
         self.three_arm_enumerator = input_enum(
             'tests/files/test_input_standard_3arm_junction.in')
         self.domains2 = {}
@@ -53,30 +55,35 @@ class EnumeratorTests(unittest.TestCase):
 #		for complex in self.three_arm_enumerator.initial_complexes:
 #			self.complexes2[complex.name] = complex
 
+    def tearDown(self):
+        reset_names()
+
     def testDomains(self):
         exp_domains = [
-            Domain(
-                '1', 'short'), Domain(
-                '1', 'short', True), Domain(
-                '2', 'short'), Domain(
-                    '2', 'short', True), Domain(
-                        '3', 'short'), Domain(
-                            '3', 'short', True), Domain(
-                                '4', 'long'), Domain(
-                                    '4', 'long', True), Domain(
-                                        '5', 'short'), Domain(
-                                            '5', 'short', True), Domain(
-                                                '6', 'long'), Domain(
-                                                    '6', 'long', True), Domain(
-                                                        '7', 'short'), Domain(
-                                                            '7', 'short', True)]
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd1'), 
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd1*', is_complement = True), 
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd2'),
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd2*', is_complement = True), 
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd3'), 
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd3*', is_complement = True), 
+            PepperDomain(list('N' *  LONG_DOMAIN_LENGTH), 'd4'),
+            PepperDomain(list('N' *  LONG_DOMAIN_LENGTH), 'd4*', is_complement = True), 
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd5'),
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd5*', is_complement = True), 
+            PepperDomain(list('N' *  LONG_DOMAIN_LENGTH), 'd6'),
+            PepperDomain(list('N' *  LONG_DOMAIN_LENGTH), 'd6*', is_complement = True), 
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd7'),
+            PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), 'd7*', is_complement = True)]
         act_domains = self.SLC_enumerator.domains
 
         exp_domains.sort()
         act_domains.sort()
+        
+        #print exp_domains
+        #print act_domains
 
         assert exp_domains == act_domains
-        act_domains[0] = Domain('99', 'short')
+        act_domains[0] = PepperDomain(list('N' * SHORT_DOMAIN_LENGTH), name='d99')
 
         assert exp_domains != act_domains
 
@@ -87,29 +94,29 @@ class EnumeratorTests(unittest.TestCase):
 
     def testStrands(self):
         exp_strands = [Strand('PS',
-                              [self.domains['3*'],
-                               self.domains['2*'],
-                                  self.domains['1*'],
-                                  self.domains['5'],
-                                  self.domains['6']]),
+                              [self.domains['d3*'],
+                               self.domains['d2*'],
+                                  self.domains['d1*'],
+                                  self.domains['d5'],
+                                  self.domains['d6']]),
                        Strand('OP',
-                              [self.domains['1'],
-                               self.domains['2'],
-                               self.domains['3'],
-                               self.domains['4']]),
+                              [self.domains['d1'],
+                               self.domains['d2'],
+                               self.domains['d3'],
+                               self.domains['d4']]),
                        Strand('SP',
-                              [self.domains['5'],
-                               self.domains['6']]),
+                              [self.domains['d5'],
+                               self.domains['d6']]),
                        Strand('BS',
-                              [self.domains['7*'],
-                               self.domains['6*'],
-                               self.domains['5*'],
-                               self.domains['1'],
-                               self.domains['2'],
-                               self.domains['3']]),
+                              [self.domains['d7*'],
+                               self.domains['d6*'],
+                               self.domains['d5*'],
+                               self.domains['d1'],
+                               self.domains['d2'],
+                               self.domains['d3']]),
                        Strand('Cat',
-                              [self.domains['6'],
-                               self.domains['7']])]
+                              [self.domains['d6'],
+                               self.domains['d7']])]
         act_strands = self.SLC_enumerator.strands
 
         exp_strands.sort()
@@ -117,7 +124,7 @@ class EnumeratorTests(unittest.TestCase):
 
         assert exp_strands == act_strands
 
-        act_strands[0] = Strand('A', [self.domains['1']])
+        act_strands[0] = Strand('A', [self.domains['d1']])
 
         assert exp_strands != act_strands
 
@@ -319,6 +326,7 @@ class EnumeratorTests(unittest.TestCase):
         # assert sorted(enum._reactions) == sorted(reaction_set)
 
     def testEnumeration1(self):
+        reset_names()
         enum = input_enum('tests/files/test_input_standard_simple.in')
         strands = {}
         for strand in enum.strands:
@@ -581,6 +589,7 @@ class EnumeratorTests(unittest.TestCase):
         assert(len(polymer_enum.reactions) >= polymer_enum.max_reaction_count)
 
         # Now test that too many complexes also causes the error
+        reset_names()
         polymer_enum = self.polymer_enum = input_enum(
             'tests/files/test_input_standard_polymer.in')
         polymer_enum.max_complex_count = 10
