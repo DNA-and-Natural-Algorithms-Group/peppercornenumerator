@@ -29,18 +29,24 @@ class DSDObjectsError(Exception):
     dna_objects.py error class.
     """
 
-    def __init__(self, message, *kargs, **kwargs):
-        super(DSDObjectsError, self).__init__(message, kargs)
+    def __init__(self, message, *kargs):
+        if kargs:
+            self.message = "{} [{}]".format(message, ', '.join(map(str,kargs)))
+        else :
+            self.message = message
+        super(DSDObjectsError, self).__init__(self.message)
 
-def reset_names(): # TODO: dsd_reset_names()
+def reset_names(): # TODO: find a better name
     """
     Reset all names, counters of dnaobjects.
     """
     DSD_Complex.id_counter = 0
-    DSD_Complex.names = set()
+    DSD_Complex.dictionary = dict()
+    DSD_Complex.canonical_forms = dict()
     DSD_Domain.id_counter = 0
     DSD_Domain.dictionary = dict()
-    DSD_Reaction.id_counter = 0
+    DSD_Reaction.dictionary = dict()
+    DSD_Reaction.rtypes = set([None])
 
 def make_pair_table(ss, strand_break='+', ignore=set('.')):
     """Return a secondary struture in form of pair table:
@@ -93,7 +99,7 @@ def make_pair_table(ss, strand_break='+', ignore=set('.')):
             try:
                 loc = stack.pop()
             except IndexError as e:
-                raise DSDObjectsError("Too many closing parenthesis ')' in secondary structure.")
+                raise DSDObjectsError("Too few closing parenthesis ')' in secondary structure.")
             strand.append(loc)
             pair_table[loc[0]][loc[1]] = (strand_index, domain_index)
             domain_index += 1
@@ -106,9 +112,47 @@ def make_pair_table(ss, strand_break='+', ignore=set('.')):
             raise DSDObjectsError("Unexpected character in sequence: '{}'.".format(char))
 
     if len(stack) > 0 :
-        raise DSDObjectsError("Too many opening parenthesis '(' in secondary structure.")
+        raise DSDObjectsError("Too few opening parenthesis '(' in secondary structure.")
 
     return pair_table 
+
+def make_loop_index(ptable):
+    """
+    number loops and assign each position its loop-number
+    handy for checking which pairs can be added
+    """
+    loop_index = []
+    exterior = set()
+
+    stack = []
+    (cl, nl) = (0, 0)
+
+    for si, strand in enumerate(ptable):
+        loop = []
+        loop_index.append(loop)
+        for di, pair in enumerate(strand):
+            loc = (si, di)
+            if pair is None:
+                pass
+            elif loc < pair : # '('
+                nl += 1
+                cl = nl
+                stack.append(loc)
+            loop.append(cl)
+            if pair and pair < loc : # ')'
+                _ = stack.pop()
+                try :
+                    ploc = stack[-1]
+                    cl = loop_index[ploc[0]][ploc[1]]
+                except IndexError:
+                    cl = 0
+        # strand break
+        if cl in exterior :
+            raise DSDObjectsError('Complexes not connected.')
+        else :
+            exterior.add(cl)
+    # ptable end
+    return loop_index, exterior
 
 def _find(l, key):
     for i in range(len(l)):
@@ -308,8 +352,6 @@ class SequenceConstraint(object):
             'N']            # 1111 15
         return bin_iupac_dict[nuc]
 
-#### ^^^^ end of edits ^^^^ ####
-
 class DSD_Domain(object):
     """Nucleic acid domain sequence.
 
@@ -409,6 +451,11 @@ class DSD_Domain(object):
         return self._sequence
 
     @property
+    def sequence_string(self):
+        """list: DSD_Domain sequence."""
+        return ''.join(map(str,self._sequence))
+
+    @property
     def length(self):
         """int: length of the sequence."""
         return len(self.sequence)
@@ -471,10 +518,12 @@ class DSD_Domain(object):
           compseq (list): list of IUPAC nucleic acid sequence constraints.
 
         Note:
-          To simply return the complement, use the '~' operator.
+          To simply return the complement, use the '~' operator. This function
+          returns a DSD_Domain(), if you inherit from DSD_Domain, you might
+          want to overwrite this function to return your object.
 
         Returns:
-          [nuskell.objects.DSD_ComplementDomain()]
+          [dsdobjects.DSD_Domain()]: A domain complementary to self
         """
         if not all(isinstance(s, str) for s in self.sequence + compseq):
             raise NotImplementedError('Cannot initialize composite DSD_ComplementDomain.')
@@ -567,38 +616,57 @@ class DSD_Complex(object):
 
     """
 
-    names = set()
+    # Automatic name assignments
     id_counter = 0
 
-    def __init__(self, sequence=[], structure=[], name='', prefix='cplx'):
+    # Complex and complex names sanity checks:
+    dictionary = dict()
+    canonical_forms = dict()
+
+    def __init__(self, sequence, structure, name='', prefix='cplx'):
         # Assign name
         if name:
-            if name in DSD_Complex.names:
-                raise DSDObjectsError('Duplicate complex name!')
             self._name = name
-            DSD_Complex.names.add(name)
         else:
             if prefix == '':
                 raise DSDObjectsError('DSD_Complex prefix must not be empty!')
             if prefix[-1].isdigit():
-                raise DSDObjectsError(
-                    'DSD_Complex prefix must not end with a digit!')
+                raise DSDObjectsError('DSD_Complex prefix must not end with a digit!')
             self._name = prefix + str(DSD_Complex.id_counter)
             DSD_Complex.id_counter += 1
 
-        if DSD_Complex.names and DSD_Complex.id_counter:
-            raise DSDObjectsError(
-                'Mixed naming schemes! Reset DSD_Complex.id_counter or DSD_Complex.names.')
+        if self._name in DSD_Complex.dictionary:
+            raise DSDObjectsError('Duplicate DSD_Complex name!', self._name)
 
-        if sequence == []:
+        DSD_Complex.dictionary[self._name] = self
+
+        if not sequence:
             raise DSDObjectsError(
                 'DSD_Complex() requires Sequence and Structure Argument')
 
         if len(sequence) != len(structure):
             raise DSDObjectsError(
                 "DSD_Complex() sequence and structure must have same length")
+
+        # should remain in same order as initialized
         self._sequence = sequence
         self._structure = structure
+        self._canonical_form = None
+
+        if self.canonical_form in DSD_Complex.canonical_forms:
+            raise DSDObjectsError('Duplicate Complex specification:', self.name,
+                    DSD_Complex.canonical_forms[self.canonical_form])
+        else :
+            DSD_Complex.canonical_forms[self.canonical_form] = self.name
+
+        # Initialized on demand:
+        self._pair_table = None
+        self._strands = None
+        self._domains = None
+
+        # rotate strands into a canonical form.
+        # two complexes are equal if they have equal canonial form
+        self._exterior_domains = None
 
     @property
     def name(self):
@@ -607,30 +675,116 @@ class DSD_Complex(object):
 
     @name.setter
     def name(self, name):
-        if DSD_Complex.id_counter:
-            raise DSDObjectsError(
-                'Mixed naming schemes! Reset DSD_Complex.id_counter.')
-        if self._name in DSD_Complex.names:
-            DSD_Complex.names.remove(self._name)
+        if name in DSD_Complex.dictionary:
+            raise DSDObjectsError('name reserved for different complex')
+        if self._name in DSD_Complex.dictionary:
+            del DSD_Complex.dictionary[self._name]
         self._name = name
-        DSD_Complex.names.add(name)
+        DSD_Complex.dictionary[self._name] = self
 
     @property
     def sequence(self):
         """list: sequence the complex object. """
+        #TODO: return copy? [:]
         return self._sequence
 
     @property
+    def structure(self):
+        """list: the complex structure. """
+        #TODO: return copy? [:]
+        return self._structure
+
+    @property
+    def strands(self):
+        if not self._strands:
+            self._strands = sorted('_'.join(tuple(map(str,self.sequence))).split('_+_'))
+        return self._strands
+
+    @property
+    def domains(self):
+        if not self._domains:
+            self._domains = set(self.sequence)
+            if '+' in self._domains: self._domains.remove('+')
+            self._domains = sorted(self._domains, key = lambda x: x.name)
+        return self._domains
+
+    @property
+    def kernel_string(self):
+        """str: print sequence and structure in `kernel` notation. """
+        seq = self.sequence
+        sst = self.structure
+        knl = ''
+        for i in range(len(seq)):
+            if sst[i] == '+':
+                knl += str(sst[i]) + ' '
+            elif sst[i] == ')':
+                knl += str(sst[i]) + ' '
+            elif sst[i] == '(':
+                knl += str(seq[i]) + str(sst[i]) + ' '
+            else:
+                knl += str(seq[i]) + ' '
+        return knl
+
+    @property
+    def canonical_form(self):
+        """ Sort sequence & structure in a unique way for each complex.
+
+        Complexes are equal if they have the same canonical form:
+            1) sort by sequence string
+            2) sort by structure string
+        """
+        def string(s):
+            return '_'.join(map(str,s))
+
+        if not self._canonical_form:
+            all_variants = set()
+            for new in self.rotate:
+                all_variants.add((string(self.sequence), string(self.structure)))
+            self._canonical_form = tuple(sorted(list(all_variants), key = lambda x:(x[0],x[1]))[0])
+        return self._canonical_form
+
+    # Move set
+    @property
+    def pair_table(self):
+        # Make a new pair_table every time, it might get modified.
+        return make_pair_table(''.join(self.structure))
+
+    def get_domain(self, loc):
+        return self.lol_sequence[loc[0]][loc[1]]
+    
+    def get_paired_loc(self, loc):
+        if not self._pair_table:
+            self._pair_table = make_pair_table(''.join(self.structure))
+        return self.pair_table[loc[0]][loc[1]]
+
+    def get_triple(self, *loc):
+        return (loc, self.get_domain(loc), self.get_paired_loc(loc))
+
+    @property
+    def exterior_domains(self):
+        if not self._exterior_domains:
+            if not self._pair_table:
+                self._pair_table = make_pair_table(''.join(self.structure))
+            loop_index, exteriors = make_loop_index(self._pair_table)
+
+            self._exterior_domains = []
+            for si, strand in enumerate(loop_index):
+                for di, domain in enumerate(strand):
+                    if loop_index[si][di] in exteriors:
+                        if self._pair_table[si][di] is None:
+                            self._exterior_domains.append((si, di))
+        return self._exterior_domains
+
+    @property
     def lol_sequence(self):
-        #""" Returns sequence as a list of lists, rather than one flat list with the
-        #'+' separator.
-        #
-        # Example:
-        #  ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
-        #"""
+        """ Returns sequence as a list of lists, without the '+' separator.
+        
+         Example:
+          ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
+        """
         indices = [-1] + [i for i, x in enumerate(self._sequence) if x == "+"]
         indices.append(len(self._sequence))
-        return [self._sequence[indices[i - 1] + 1: indices[i]]
+        return [self._sequence[indices[i - 1] + 1 : indices[i]] 
                 for i in range(1, len(indices))]
 
     @property
@@ -641,16 +795,9 @@ class DSD_Complex(object):
         def my_base_sequence(seq):
             if all(isinstance(d, DSD_Domain) for d in seq):
                 return map(lambda x: x.base_sequence, seq)
-            elif not all(isinstance(d, str) for d in seq):
-                raise NotImplementedError("mixed sequences are not supported")
             else:
                 return seq
         return _flatten(map(lambda x: my_base_sequence(x) + ['+'], lol))[:-1]
-
-    @property
-    def structure(self):
-        """list: the complex structure. """
-        return self._structure
 
     @property
     def lol_structure(self):
@@ -668,29 +815,16 @@ class DSD_Complex(object):
             if all(isinstance(d, DSD_Domain) for d in seq):
                 tups = zip(seq, sst)
                 return map(lambda x_y: x_y[1] * x_y[0].base_length, tups)
-            elif not all(isinstance(d, str) for d in seq):
-                raise NotImplementedError("mixed sequences are not supported")
             else:
                 return sst
         return _flatten(map(lambda x_y1: my_base_sequence(
             x_y1[0], x_y1[1]) + ['+'], lol))[:-1]
 
     @property
-    def kernel(self):
-        """str: print sequence and structure in `kernel` notation. """
-        seq = self.sequence
-        sst = self.structure
-        knl = ''
-        for i in range(len(seq)):
-            if sst[i] == '+':
-                knl += str(sst[i]) + ' '
-            elif sst[i] == ')':
-                knl += str(sst[i]) + ' '
-            elif sst[i] == '(':
-                knl += str(seq[i]) + str(sst[i]) + ' '
-            else:
-                knl += str(seq[i]) + ' '
-        return knl
+    def rotate(self):
+        """Generator function yields every rotation of the complex. """
+        for i in range(len(self.lol_sequence)):
+            yield self.rotate_once
 
     @property
     def rotate_once(self):
@@ -704,7 +838,11 @@ class DSD_Complex(object):
                 if self._structure[i] == "(":
                     stack.append(i)
                 elif self._structure[i] == ")":
-                    stack.pop()
+                    try :
+                        stack.pop()
+                    except IndexError:
+                        raise DSDObjectsError(
+                                "Unbalanced parenthesis in secondary structure.")
             for i in stack:
                 self._structure[i] = ")"
 
@@ -713,19 +851,49 @@ class DSD_Complex(object):
                 if self._structure[i] == ")":
                     stack.append(i)
                 elif self._structure[i] == "(":
-                    stack.pop()
+                    try :
+                        stack.pop()
+                    except IndexError:
+                        raise DSDObjectsError(
+                                "Unbalanced parenthesis in secondary structure.")
             for i in stack:
                 self._structure[i] = "("
-            self._structure = self._structure[p +
-                                              1:] + ["+"] + self._structure[:p]
+            self._structure = self._structure[p + 1:] + ["+"] + self._structure[:p]
+        self._pair_table = None
         return self
 
+    # Sanity Checks
     @property
-    def rotate(self):
-        """Generator function yields every rotation of the complex. """
-        for i in range(len(self.lol_sequence)):
-            yield self.rotate_once
+    def is_domainlevel_complement(self):
+        """
+        Determines whether the structure includes pairs only between complementary domains.
+        Returns True if all paired domains are complementary, raises an Exception otherwise
+        """
+        if not self._pair_table:
+            self._pair_table = make_pair_table(''.join(self.structure))
+        for si, strand in enumerate(self._pair_table):
+            for di, domain in enumerate(strand):
+                loc = (si,di)
+                cloc = self.pair_table[si][di] 
+                if cloc is None or self.get_domain(loc) == ~self.get_domain(cloc):
+                    continue
+                else :
+                    raise DSDObjectsError('Domains cannot pair', 
+                            self.get_domain(loc), self.get_domain(cloc))
+        return True
 
+    @property
+    def is_connected(self):
+        if not self._pair_table:
+            self._pair_table = make_pair_table(''.join(self.structure))
+        try :
+            # make loop index raises disconnected error.
+            make_loop_index(self._pair_table)
+        except DSDObjectsError, e:
+            raise DSDObjectsError(e)
+        return True
+
+    # Object properties.
     def __str__(self):
         """str: the name of the complex. """
         return self._name
@@ -733,30 +901,139 @@ class DSD_Complex(object):
     def __eq__(self, other):
         """ Test if two complexes are equal.
 
-        They are equal if they have the same coarse-graining in terms of domains
-        and the same secondary structure.
-
-        Note:
-          This function might change the strand-ordering of the complex!
+        They are equal if they have the same sequence and secondary structure.
         """
         if not isinstance(self, DSD_Complex) or not isinstance(other, DSD_Complex):
             return False
-        if len(self.sequence) != len(other.sequence):
-            return False
-        if len(self.nucleotide_sequence) != len(other.nucleotide_sequence):
-            return False
-        if self._sequence == other.sequence and self.structure == other.structure:
-            return True
-        else:
-            for r in self.rotate:
-                if r.sequence == other.sequence and r.structure == other.structure:
-                    return True
-            return False
+        return self.canonical_form == other.canonical_form
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
+class DSD_Reaction(object):
+    """ A reaction pathway.
 
+    Args:
+      reactants (list): A list of reactants. Reactants can be strings or
+        :obj:`DSD_Complex()` objects.
+      products (list): A list of products. Products can be strings or 
+        :obj:`DSD_Complex()` objects.
+      rtype (str, optional): Reaction type, e.g. bind21, condensed, ..
+      rate (flt, optional): Reaction rate.
+      name (str, optional): Name of the reaction.
+      prefix (str, optional): Prefix for atomatic naming scheme.
+
+    TODO: think about reversible reactions (invert operator, etc)
+    """
+
+    dictionary = dict()
+
+    # Used for sanity checks, defaults to DNA branch migration reaction types.
+    rtypes = set([None])
+
+    def __init__(self, reactants, products, rtype=None, rate=None):
+        self._reactants = reactants
+        self._products = products
+        self._rtype = rtype
+        self._rate = rate
+        
+        # Used for __eq__ only.
+        self._canonical_form = tuple(self.canonical_form)
+        if self._canonical_form in DSD_Reaction.dictionary:
+            raise DSDObjectsError('Duplicate reaction in system.', self._canonical_form)
+        else :
+            DSD_Reaction.dictionary[self._canonical_form] = self
+
+
+        if rtype not in DSD_Reaction.rtypes:
+            raise DSDObjectsError('Reaction type not supported! ' + 
+            'Set supported reaction types using DSD_Reaction.rtypes')
+
+        # Not Implemented, ...
+        #self._normalized_form = tuple((self.normalized, rtype))
+
+    @property
+    def name(self):
+        """str: name of the reaction. """
+        return self._name
+
+    @property
+    def rate(self):
+        """flt: reaction rate. """
+        return self._rate
+
+    @property
+    def rateunits(self):
+        """str: reaction rate units. """
+        return "/M" * (self.arity[0] - 1) + "/s"
+
+    @property
+    def rtype(self):
+        """str: *peppercorn* reaction type (bind21, condensed, ...) """
+        return self._rtype
+
+    @property
+    def reactants(self):
+        """list: list of reactants. """
+        return self._reactants
+
+    @property
+    def products(self):
+        """list: list of products. """
+        return self._products
+
+    @property
+    def arity(self):
+        """(int, int): number of reactants, number of products."""
+        return (len(self._reactants), len(self._products))
+
+    @property
+    def kernel_string(self):
+        return "{} -> {}".format("  +  ".join(r.kernel_string for r in self.reactants),
+                "  +  ".join(p.kernel_string for p in self.products))
+
+    @property
+    def sorted(self):
+        return "{} -> {}".format(
+            " + ".join(sorted(map(str, self.reactants))), 
+            " + ".join(sorted(map(str, self.products))))
+
+    @property
+    def normalized(self):
+        """
+        Ensures that complexes appear on only one side of the reaction by
+        removing them evenly from both sides until only one side has any.
+        """
+        reactants = self.reactants[:]
+        products = self.products[:]
+
+        for reactant in reactants:
+            while (reactant in reactants and reactant in products):
+                reactants.remove(reactant)
+                products.remove(reactant)
+        return "{} -> {}".format(
+            " + ".join(sorted(map(str, reactants))), 
+            " + ".join(sorted(map(str, products))))
+
+    @property
+    def canonical_form(self):
+        return self.sorted, self.rtype
+
+    def __str__(self):
+        """prints the formal chemical reaction."""
+        return "{} -> {}".format(
+            " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
+
+    def __eq__(self, other):
+        """bool: Checks if DSD_Reaction objects have the same rtype, reactants, and products. """
+        if not isinstance(self, DSD_Reaction) or not isinstance(other, DSD_Reaction):
+            return False
+        return self._canonical_form == other._canonical_form
+
+    def __ne__(self, other):
+        return not (self == other)
+
+#### ^^^^ end of edits ^^^^ ####
 class TestTube(object):
     """A reaction network of nucleic acid complexes.
 
@@ -1335,8 +1612,8 @@ class TestTube(object):
         else:
             return self.__add__(other)
 
-
 class TestTubeIO(object):
+    # Requires parser modules
     """A wrapper class to handle I/O of TestTube objects.
 
     Args:
@@ -1669,443 +1946,6 @@ class TestTubeIO(object):
 
         fh.write(")\n")
 
-
-class DSD_Reaction(object):
-    """ A reaction pathway.
-
-    Args:
-      reactants (list): A list of reactants. Reactants can be strings or :obj:`DSD_Complex()` objects.
-      products (list): A list of products. Products can be strings or :obj:`DSD_Complex()` objects.
-      rtype (str, optional): Reaction type, e.g. bind21, condensed, ..
-      rate (flt, optional): Reaction rate.
-      name (str, optional): Name of the reaction.
-      prefix (str, optional): Prefix for atomatic naming scheme.
-
-    """
-    id_counter = 0
-
-    def __init__(self, reactants, products, rtype=None,
-                 rate=None, name='', prefix='REACT'):
-        # Assign name
-        if name:
-            if name[-1].isdigit():
-                raise DSDObjectsError(
-                    'Reaction name must not end with a digit!', name)
-            self._name = name
-        else:
-            if prefix == '':
-                raise DSDObjectsError('DSD_Reaction prefix must not be empty!')
-            if prefix[-1].isdigit():
-                raise DSDObjectsError(
-                    'DSD_Reaction prefix must not end with a digit!')
-            self._name = prefix + str(DSD_Reaction.id_counter)
-            DSD_Reaction.id_counter += 1
-
-        self._reactants = sorted(reactants)
-        self._products = sorted(products)
-        self._rtype = rtype
-        self._rate = rate
-
-    @property
-    def name(self):
-        """str: name of the reaction. """
-        return self._name
-
-    @property
-    def rate(self):
-        """flt: reaction rate. """
-        return self._rate
-
-    @property
-    def rateunits(self):
-        """str: reaction rate units. """
-        return "/M" * (self.arity[0] - 1) + "/s"
-
-    @property
-    def rtype(self):
-        """str: *peppercorn* reaction type (bind21, condensed, ...) """
-        return self._rtype
-
-    @property
-    def reactants(self):
-        """list: list of reactants. """
-        return self._reactants
-
-    @property
-    def products(self):
-        """list: list of products. """
-        return self._products
-
-    @property
-    def arity(self):
-        """(int, int): number of reactants, number of products."""
-        return (len(self._reactants), len(self._products))
-
-    def __str__(self):
-        """prints the formal chemical reaction."""
-        return "{} -> {}".format(
-            " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
-
-    def __eq__(self, other):
-        """bool: Checks if two DSD_Reaction() objects have the same rtype, reactants, and products. """
-        if not self.rtype or not other.rtype:
-            raise DSDObjectsError(
-                'Cannot compare reactions without knowing the reaction-type.')
-        return (self.rtype == other.rtype) and \
-            (self.reactants == other.reactants) and \
-            (self.products == other.products)
-
-    def __ne__(self, other):
-        return not (self == other)
-
-
-# OLD CODE
-class PepperComplex(object):
-    import re
-    """
-    Peppercorn's Complex() format.
-
-    Should be similar to Nuskell's format.
-
-    Args:
-        sequence (list): A list of PepperDomain objects or strings.
-        structure (list): A dot-paren notation corresponding to the sequence.
-        name(string, optional)
-
-    """
-
-    names = set()
-    id_counter = 0
-    valid_names = re.compile('[\W_]+', re.UNICODE)
-
-    def __init__(self, sequence, structure, name='', strand_names=None):
-        if name :
-            if name in Complex.names :
-                raise NuskellObjectError('Duplicate complex name!')
-            self._name = name
-            Complex.names.add(name)
-        else :
-            if prefix == '' :
-                raise NuskellObjectError('Complex prefix must not be empty!')
-            if prefix[-1].isdigit():
-                raise NuskellObjectError('Complex prefix must not end with a digit!')
-            self._name = prefix + str(Complex.id_counter)
-            Complex.id_counter += 1
-
-        if Complex.names and Complex.id_counter:
-            raise NuskellObjectError(
-                    'Mixed naming schemes! Reset Complex.id_counter or Complex.names.')
-
-        if sequence == [] :
-            raise NuskellObjectError('Complex() requires Sequence and Structure Argument')
-
-        if len(sequence) != len(structure) :
-            raise NuskellObjectError("Complex() sequence and structure must have same length")
-
-        self._sequence = sequence
-        self._structure = structure
-        self._pair_list = parse_dot_paren(''.join(structure))
-
-        self._strands = dict() # get a dictionary strands[auto-name] = assigned_name
-        if strand_names :
-            assert strand_names.keys() == self._strands.keys()
-            self._strands = strand_names #TODO copy?
-
-    @property
-    def name(self):
-        #"""Return the name of the complex """
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        #"""Set the name of the complex """
-        if PepperComplex.id_counter:
-            raise PeppercornObjectError('Mixed naming schemes! Reset PepperComplex.id_counter.')
-        if self._name in PepperComplex.names:
-            PepperComplex.names.remove(self._name)
-        assert PepperComplex.valid_names.match(value)
-        PepperComplex.names.add(value)
-        self._name = value
-
-    @property
-    def sequence(self):
-        """list: sequence the complex object. """
-        return self._sequence
-
-    @property
-    def structure(self):
-        """list: the complex structure. """
-        return self._structure
-
-    @property
-    def kernel_string(self):
-        """str: Print sequence and structure in `kernel` notation. """
-        seq = self.sequence
-        sst = self.structure
-        knl = ''
-        for i in range(len(seq)) :
-          if sst[i] == '+': 
-            knl += str(sst[i]) + ' '
-          elif sst[i] == ')':
-            knl += str(sst[i]) + ' '
-          elif sst[i] == '(':
-            knl += str(seq[i])+str(sst[i]) + ' '
-          else :
-            knl += str(seq[i]) + ' '
-        return knl
-
-    @staticmethod
-    def complexes_from_kernel_string(pil_string, autoname=False):
-        ppil = parse_pil_string(pil_string)
-
-        def resolve_loops(loop):
-          """ Return a sequence, structure pair from PIL kernel format complex notation. """
-          sequen = []
-          struct = []
-          for dom in loop :
-            if isinstance(dom, str):
-              sequen.append(dom)
-              if dom == '+' :
-                struct.append('+')
-              else :
-                struct.append('.')
-            elif isinstance(dom, list):
-              struct[-1] = '('
-              old = sequen[-1]
-              se, ss = resolve_loops(dom)
-              sequen.extend(se)
-              struct.extend(ss)
-              sequen.append(old + '*' if old[-1] != '*' else old[:-1])
-              struct.append(')')
-          return sequen, struct
-
-        domains = {}
-        complexes = {}
-        for line in ppil :
-            if line[0] == 'domain':
-                raise NotImplementedError('Requires PepperDomain.')
-                domains[line[1]] = PepperDomain(name=line[1], sequence = list('N'* int(line[2])))
-            elif line[0] == 'complex':
-                name = '' if autoname else line[1]
-                sequence, structure = resolve_loops(line[2])
-                #NOTE: concentrations are ignored for PepperComplex initialization!
-                for e in range(len(sequence)):
-                    d = sequence[e]
-                    if d == '+': 
-                        continue
-                    if d[-1] == '*' : 
-                        dname = d[:-1]
-                        if dname in domains :
-                            cdom = domains[dname]
-                        else :
-                            domains[dname] = PepperDomain(name=line[1], 
-                                    sequence = list('N'* int(line[2])))
-                            cdom = domains[dname]
-                        sequence[e] = cdom.get_ComplementDomain(list('R'*cdom.length))
-                    else :
-                        dname = d
-                        if dname in domains :
-                            dom = domains[dname]
-                        else :
-                            domains[dname] = PepperDomain(name=line[1], 
-                                    sequence = list('N'* int(line[2])))
-                            dom = domains[dname]
-                        sequence[e] = dom
-
-                cplx = PepperComplex(sequence, structure, name)
-                complexes[cplx.name] = cplx
-            else :
-                raise NotImplementedError('Weird expression returned from pil_parser!')
-
-        return complexes.values()
-
-    @property
-    def pair_list(self):
-        # A pair-table format for multistrands. 
-        # Equivalent to former "structure"
-        # TODO: why return self._pair_list[:]
-        return self._pair_list
-
-    @property
-    def strands(self):
-        # Return a list of automatic strand-names.
-        return self._strands.values()
-
-    @strands.setter
-    def strands(self, dictionary):
-        # Rename strands according to dictionary.
-        pass
-
-    def triple(self, *loc):
-        raise DeprecationWarning
-        return (self.get_domain, self.paired_loc, loc)
-
-    def get_domain(self, loc):
-        # Returns the domain at the given pair-table index in this complex
-        # (loc is a (strand,domain) tuple)
-        pass
-
-    def paired_loc(self, loc):
-        # Returns a (strand index, domain index) pair indicating to which
-        # domain this location is bound, or None if it is unbound.
-        pass
-
-    ###################
-    # Not a must... 
-    def available_domains(self, breathing=False):
-        raise NotImplementedError
-    def update_available_domains(self):
-        raise NotImplementedError
-
-    def kernel_string_loop(self, *loops):
-        raise NotImplementedError
-
-    def strand_to_index(self, strand_name):
-        raise NotImplementedError
-
-    def index_to_strand(self, idx):
-        # Returns the strand at the given index in this complex
-        raise NotImplementedError
-    ###################
-
-    @property
-    def lol_sequence(self):
-        """ Returns sequence as a list of lists, rather than one flat list with the
-        '+' separator.
-        
-        Example: 
-          ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
-        """
-        indices = [-1] + [i for i, x in enumerate(self._sequence) if x == "+"]
-        indices.append(len(self._sequence))
-        return [self._sequence[indices[i-1]+1: indices[i]] 
-            for i in range(1, len(indices))]
-
-    @property
-    def lol_structure(self):
-        indices = [-1] + [i for i, x in enumerate(self._structure) if x == "+"]
-        indices.append(len(self._structure))
-        return [self._structure[indices[i-1]+1: indices[i]] 
-            for i in range(1, len(indices))]
-
-    @property
-    def nucleotide_sequence(self):
-        """list: the complex sequence in form of a flat list of nucleotides. """
-        lol = self.lol_sequence
-        def my_base_sequence(seq) :
-            if all(isinstance(d, Domain) for d in seq):
-                return map(lambda x: x.base_sequence, seq)
-            elif not all(isinstance(d, str) for d in seq) :
-                raise NotImplementedError("mixed sequences are not supported")
-            else :
-                return seq
-        return _flatten(map(lambda x: my_base_sequence(x) + ['+'], lol))[:-1]
-
-    @property
-    def nucleotide_structure(self):
-        """list: the complex structure on nucleotide-level. """
-        lol = zip(self.lol_sequence, self.lol_structure)
-        def my_base_sequence(seq, sst) :
-            if all(isinstance(d, Domain) for d in seq):
-                tups = zip(seq, sst)
-                return map(lambda (x,y): y * x.base_length, tups)
-            elif not all(isinstance(d, str) for d in seq) :
-                raise NotImplementedError("mixed sequences are not supported")
-            else :
-                return sst
-        return _flatten(map(lambda (x,y): my_base_sequence(x,y) + ['+'], lol))[:-1]
-
-    @property
-    def rotate(self):
-        #"""Generator function yields every rotation of the complex. """
-        #for i in range(len(self.lol_sequence)):
-        #  yield self.rotate_once
-        pass
-
-    @property
-    def rotate_once(self):
-        """Rotate the strands within the complex and return the updated object. """
-        if "+" in self._sequence :
-            p = _find(self._sequence, "+")
-            self._sequence = self._sequence[p + 1:] + ["+"] + self._sequence[:p]
-
-            stack = []
-            for i in range(p):
-                if self._structure[i] == "(": stack.append(i)
-                elif self._structure[i] == ")": stack.pop()
-            for i in stack:
-                self._structure[i] = ")"
-
-            stack = []
-            for i in reversed(range(p + 1, len(self._structure))):
-                if self._structure[i] == ")": stack.append(i)
-                elif self._structure[i] == "(": stack.pop()
-            for i in stack:
-                self._structure[i] = "("
-            self._structure = self._structure[p + 1:] + ["+"] + self._structure[:p]
-        return self
-
-
-
-    def wrap_location(self, loc):
-        # Return a valid location that corresponds to indices in the
-        # pair_table. E.g. (0, -1) will return the location of the last
-        # domain on the last strand.
-        pass
-
-    def check_structure(self):
-        pass
-
-    def check_pseudoknots(self):
-        pass
-
-    def check_connected(self):
-        pass
-
-    def clone(self):
-        pass
-
-    def __eq__(self, other):
-        """ Test if two complexes are equal.
-        
-        They are equal if they have the same coarse-graining in terms of domains
-        and the same secondary structure. 
-
-        Note: 
-          This function might change the strand-ordering of the complex!
-        """
-        if not isinstance(self, Complex) or not isinstance(other, Complex):
-            return False
-        if len(self.sequence) != len(other.sequence):
-            return False
-        if len(self.nucleotide_sequence) != len(other.nucleotide_sequence):
-            return False
-        if self._sequence == other.sequence and self.structure == other.structure:
-            return True
-        else :
-            for r in self.rotate :
-                if r.sequence == other.sequence and r.structure == other.structure:
-                    return True
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __cmp__(self, other):
-        raise NotImplementedError
-
-    def __repr__(self):
-        raise NotImplementedError
-
-    def __str__(self):
-        raise NotImplementedError
-        #"""str: the name of the complex. """
-        #return self._name
-
-    def __hash__(self):
-        raise NotImplementedError
-
-
 def pair_table(ss, chars=['.']):
     print DeprecationWarning('old format')
     """Return a secondary struture in form of pair table:
@@ -2151,5 +1991,4 @@ def pair_table(ss, chars=['.']):
         raise DSDObjectsError(
             "Too many opening brackets in secondary structure")
     return pt
-
 

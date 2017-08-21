@@ -6,7 +6,7 @@ import peppercornenumerator.dsdobjects as objects
 
 SKIP = True
 
-#@unittest.skipIf(SKIP, "skipping tests")
+@unittest.skipIf(SKIP, "skipping tests")
 class UtilityTests(unittest.TestCase):
     def setUp(self):
         pass
@@ -34,8 +34,56 @@ class UtilityTests(unittest.TestCase):
         with self.assertRaises(objects.DSDObjectsError):
             res = objects.make_pair_table('((((&))).)')
 
+    def test_make_loop_index(self):
+        struct = '(((...)))'
+        pt = objects.make_pair_table(struct)
+        exp1 = [[1,2,3,3,3,3,3,2,1]]
+        exp2 = set([0])
+        out1, out2 = objects.make_loop_index(pt)
+        self.assertEqual(out1, exp1)
+        self.assertSetEqual(out2, exp2)
 
-#@unittest.skipIf(SKIP, "skipping tests")
+        struct = '..(((...)))..'
+        pt = objects.make_pair_table(struct)
+        exp1 = [[0,0,1,2,3,3,3,3,3,2,1,0,0]]
+        exp2 = set([0])
+        out1, out2 = objects.make_loop_index(pt)
+        self.assertEqual(out1, exp1)
+        self.assertSetEqual(out2, exp2)
+
+        struct = '.((.((...))..((...).))).'
+        pt = objects.make_pair_table(struct)
+        exp1 = [[0,1,2,2,3,4,4,4,4,4,3,2,2,5,6,6,6,6,6,5,5,2,1,0]]
+        exp2 = set([0])
+        out1, out2 = objects.make_loop_index(pt)
+        self.assertEqual(out1, exp1)
+        self.assertSetEqual(out2, exp2)
+
+        struct = '.((.((...)).+.((...).))).'
+        pt = objects.make_pair_table(struct)
+        exp1 = [[0,1,2,2,3,4,4,4,4,4,3,2],[2,5,6,6,6,6,6,5,5,2,1,0]]
+        exp2 = set([0,2])
+        out1, out2 = objects.make_loop_index(pt)
+        self.assertEqual(out1, exp1)
+        self.assertSetEqual(out2, exp2)
+
+        struct = '.((.((...))+..((...).))).'
+        pt = objects.make_pair_table(struct)
+        exp1 = [[0,1,2,2,3,4,4,4,4,4,3],[2,2,5,6,6,6,6,6,5,5,2,1,0]]
+        exp2 = set([0,2])
+        out1, out2 = objects.make_loop_index(pt)
+        self.assertEqual(out1, exp1)
+        self.assertSetEqual(out2, exp2)
+
+        struct = '.((.((...))+((...).))).'
+        pt = objects.make_pair_table(struct)
+        exp1 = [[0,1,2,2,3,4,4,4,4,4,3],[5,6,6,6,6,6,5,5,2,1,0]]
+        exp2 = set([0,2])
+        out1, out2 = objects.make_loop_index(pt)
+        self.assertEqual(out1, exp1)
+        self.assertSetEqual(out2, exp2)
+
+@unittest.skipIf(SKIP, "skipping tests")
 class Test_SequenceConstraint(unittest.TestCase):
     def setUp(self):
         pass
@@ -68,10 +116,8 @@ class Test_SequenceConstraint(unittest.TestCase):
         self.assertEqual(con6, ~con1)
         self.assertEqual(len(con1), 9)
 
-
-#@unittest.skipIf(SKIP, "skipping tests")
+@unittest.skipIf(SKIP, "skipping tests")
 class DSD_DomainObjectTest(unittest.TestCase):
-
     def setUp(self):
         pass
 
@@ -150,10 +196,8 @@ class DSD_DomainObjectTest(unittest.TestCase):
         # e.g. foo is in ~bar
         pass
 
-
 @unittest.skipIf(SKIP, "skipping tests")
 class DSD_ComplexObjectTest(unittest.TestCase):
-
     def setUp(self):
         self.d1 = objects.DSD_Domain(list('Y' * 5))
         self.d2 = objects.DSD_Domain(list('N' * 5))
@@ -163,15 +207,9 @@ class DSD_ComplexObjectTest(unittest.TestCase):
         self.d3c = self.d3.get_ComplementDomain(list('H' * 5))
 
     def tearDown(self):
-        objects.DSD_Domain.id_counter = 0
-        objects.DSD_Complex.id_counter = 0
+        objects.reset_names()
 
     def test_DSD_ComplexInit(self):
-        # NOTE: There is no particular reason for this Error, so it might
-        # change!
-        with self.assertRaises(objects.DSDObjectsError):
-            foo = objects.DSD_Complex()
-
         foo = objects.DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'))
         self.assertIsInstance(foo, objects.DSD_Complex)
 
@@ -185,88 +223,147 @@ class DSD_ComplexObjectTest(unittest.TestCase):
             self.assertEqual(r.structure, list('(...)'))
 
     def test_DSD_ComplexDomains(self):
-        foo = objects.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+', self.d1,
-                                        '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
+        foo = objects.DSD_Complex(sequence=
+                [self.d1, self.d2, self.d3, '+', self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2],
+                structure=list('..(+(+))..'))
 
-        self.assertEqual(foo.sequence,
-                         [self.d1,
-                          self.d2,
-                          self.d3,
-                          '+',
-                          self.d1,
-                          '+',
-                          self.d1c,
-                          self.d3c,
-                          self.d1c,
-                          self.d2])
-        self.assertEqual(foo.lol_sequence, [[self.d1, self.d2, self.d3], [
-                         self.d1], [self.d1c, self.d3c, self.d1c, self.d2]])
-        self.assertEqual(foo.nucleotide_sequence, list(
-            'YYYYYNNNNNRRRRR+YYYYY+RRRRRYYYYYRRRRRNNNNN'))
+        self.assertEqual(foo.sequence, 
+                [self.d1, self.d2, self.d3, '+', self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2])
+        self.assertEqual(foo.lol_sequence, 
+                [[self.d1, self.d2, self.d3], [self.d1], [self.d1c, self.d3c, self.d1c, self.d2]])
+        self.assertEqual(foo.nucleotide_sequence, 
+                list('YYYYYNNNNNRRRRR+YYYYY+RRRRRYYYYYRRRRRNNNNN'))
 
-        bar = objects.DSD_Complex(sequence=[self.d1c, self.d3c, self.d1c, self.d2, '+',
-                                        self.d1, self.d2, self.d3, '+', self.d1], structure=list('((..+..)+)'))
+        objects.reset_names()
+        bar = objects.DSD_Complex(sequence=
+                [self.d1c, self.d3c, self.d1c, self.d2, '+', self.d1, self.d2, self.d3, '+', self.d1], 
+                structure=list('((..+..)+)'))
 
         self.assertEqual(foo, bar)
         self.assertTrue(foo == bar)
 
-    def test_names(self):
-        objects.reset_names()
-        foo = objects.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+', self.d1,
-                                        '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
-        self.assertEqual(foo.name, 'cplx0')
+    def test_properties(self):
+        foo = objects.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
+            self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
         with self.assertRaises(objects.DSDObjectsError):
-            foo.name = 'bar'
+            bar = objects.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
+                self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
 
-        objects.reset_names()
+        self.assertEqual(foo.canonical_form, ('d0*_d2*_d0*_d1_+_d0_d1_d2_+_d0', '(_(_._._+_._._)_+_)'))
+        with self.assertRaises(TypeError):
+            foo.canonical_form[0] = 'cannot change canonical form!'
+
+        self.assertEqual(foo.strands, ['d0', 'd0*_d2*_d0*_d1', 'd0_d1_d2'])
+        self.assertEqual(foo.domains, [self.d1, self.d1c, self.d2, self.d3, self.d3c])
+        self.assertEqual(map(str,foo.domains), ['d0', 'd0*', 'd1', 'd2', 'd2*'])
+
+        # Make sure pair table is returned and immutable.
+        self.assertEqual(foo.pair_table, [[None, None, (2, 1)], [(2, 0)], [(1, 0), (0, 2), None, None]])
+        pt = foo.pair_table
+        self.assertTrue(foo.pair_table == pt)
+        pt[0][2] = None
+        self.assertFalse(foo.pair_table == pt)
+
+        self.assertEqual(foo.get_domain((0,0)), self.d1)
+        self.assertEqual(foo.get_paired_loc((0,0)), None)
+        self.assertEqual(foo.get_domain((1,0)), self.d1)
+        self.assertEqual(foo.get_paired_loc((1,0)), (2,0))
+        self.assertEqual(foo.get_domain((2,2)), self.d1c)
+        self.assertEqual(foo.get_paired_loc((2,2)), None)
+        with self.assertRaises(IndexError):
+            foo.get_domain((2,9))
+        with self.assertRaises(IndexError):
+            foo.get_paired_loc((2,9))
+
+        self.assertEqual(foo.exterior_domains, [(0,0),(0,1),(2,2),(2,3)])
+
+    def test_sanitychecks(self):
+        with self.assertRaises(objects.DSDObjectsError):
+            # Unbalanced dot-bracket string
+            foo = objects.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
+                self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))).'))
+
+        foo = objects.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
+            self.d1c, self.d3c, self.d1c, self.d2], structure=list('.((+(+))).'))
+
+        self.assertTrue(foo.is_connected)
+        with self.assertRaises(objects.DSDObjectsError):
+            foo.is_domainlevel_complement
+
+        foo = objects.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
+            self.d1c, self.d3c, self.d1c, self.d2], structure=list('(.(+.+.)).'))
+
+        self.assertTrue(foo.is_domainlevel_complement)
+        with self.assertRaises(objects.DSDObjectsError):
+            self.assertTrue(foo.is_connected)
+        
+
+    def test_names(self):
+        foo = objects.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
+            self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
+        bar = objects.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
+            self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('(.(+(+))).'))
+
+        self.assertEqual(foo.name, 'cplx0')
+        self.assertEqual(bar.name, 'cplx1')
 
         foo.name = 'foo'
         self.assertEqual(foo.name, 'foo')
-        self.assertSetEqual(objects.DSD_Complex.names, set(['foo']))
+        self.assertSetEqual(set(objects.DSD_Complex.dictionary.keys()), set(['foo', 'cplx1']))
 
         foo.name = 'bar'
         self.assertEqual(foo.name, 'bar')
-        self.assertSetEqual(objects.DSD_Complex.names, set(['bar']))
+        self.assertSetEqual(set(objects.DSD_Complex.dictionary.keys()), set(['bar', 'cplx1']))
 
-        objects.reset_names()
+        with self.assertRaises(objects.DSDObjectsError):
+            bar.name = 'bar'
 
     def test_rotations(self):
         foo = objects.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+', self.d1,
                                         '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
         self.assertEqual(foo.rotate_once, foo)
         self.assertEqual(foo.sequence,
-                         [self.d1,
-                          '+',
-                          self.d1c,
-                          self.d3c,
-                          self.d1c,
-                          self.d2,
-                          '+',
-                          self.d1,
-                          self.d2,
-                          self.d3])
+                         [self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2, '+', self.d1, self.d2, self.d3])
         self.assertEqual(foo.structure, list('(+)(..+..)'))
-        self.assertEqual(foo.nucleotide_sequence, list(
-            'YYYYY+RRRRRYYYYYRRRRRNNNNN+YYYYYNNNNNRRRRR'))
+        self.assertEqual(foo.nucleotide_sequence, list('YYYYY+RRRRRYYYYYRRRRRNNNNN+YYYYYNNNNNRRRRR'))
         for r in foo.rotate:
             self.assertEqual(r, foo)
         self.assertEqual(foo.sequence,
-                         [self.d1,
-                          '+',
-                          self.d1c,
-                          self.d3c,
-                          self.d1c,
-                          self.d2,
-                          '+',
-                          self.d1,
-                          self.d2,
-                          self.d3])
+                         [self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2, '+', self.d1, self.d2, self.d3])
         self.assertEqual(foo.structure, list('(+)(..+..)'))
-        self.assertEqual(foo.nucleotide_sequence, list(
-            'YYYYY+RRRRRYYYYYRRRRRNNNNN+YYYYYNNNNNRRRRR'))
-
+        self.assertEqual(foo.nucleotide_sequence, list('YYYYY+RRRRRYYYYYRRRRRNNNNN+YYYYYNNNNNRRRRR'))
 
 @unittest.skipIf(SKIP, "skipping tests")
+class DSD_ReactionTest(unittest.TestCase):
+    def setUp(self):
+        objects.DSD_Reaction.rtypes = set(['condensed', 'open', 'bind11', 'bind21',
+            'branch-3way', 'branch-4way'])
+
+    def tearDown(self):
+        objects.reset_names()
+
+    def test_initialize(self):
+        x = objects.DSD_Reaction(['A','B','C'],['D','A','E'], rtype = 'branch-3way')
+        with self.assertRaises(objects.DSDObjectsError):
+            y = objects.DSD_Reaction(['A','C','B'],['D','A','E'], rtype = 'branch-3way')
+
+        objects.reset_names()
+        objects.DSD_Reaction.rtypes = set(['condensed', 'open', 'bind11', 'bind21',
+            'branch-3way', 'branch-4way'])
+        y = objects.DSD_Reaction(['A','B','C'],['D','A','E'], rtype = 'branch-3way', rate=.5)
+
+        z = objects.DSD_Reaction(['A','B','C'],['D','A','E'], rtype='bind11')
+        self.assertEqual('A + B + C -> D + A + E', str(x))
+        self.assertEqual('B + C -> D + E', x.normalized)
+        self.assertEqual('A + B + C -> A + D + E', x.sorted)
+        self.assertEqual(x,y)
+        self.assertTrue(x != z)
+        
+        self.assertEqual(y.rate, .5)
+        self.assertEqual(y.rateunits, '/M/M/s')
+
+
+#@unittest.skipIf(SKIP, "skipping tests")
 class TestTubeTests(unittest.TestCase):
     def setUp(self):
         self.d1 = objects.DSD_Domain(list('Y' * 5))
@@ -276,11 +373,11 @@ class TestTubeTests(unittest.TestCase):
         self.d2c = self.d2.get_ComplementDomain(list('D' * 5))
         self.d3c = self.d3.get_ComplementDomain(list('H' * 5))
 
-        self.cplx1 = objects.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+', self.d1,
-                                               '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
+        self.cplx1 = objects.DSD_Complex(sequence=[self.d1, self.d2, self.d3,
+            '+', self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
 
-        self.cplx2 = objects.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+',
-                                               self.d3c, self.d2c, self.d2], structure=list('.((+)).'))
+        self.cplx2 = objects.DSD_Complex(sequence=[self.d1, self.d2, self.d3,
+            '+', self.d3c, self.d2c, self.d2], structure=list('.((+)).'))
 
     def tearDown(self):
         objects.reset_names()
@@ -320,7 +417,6 @@ class TestTubeTests(unittest.TestCase):
             bar.get_complex_concentration(
                 self.cplx2), foobar.get_complex_concentration(
                 self.cplx2))
-
 
 @unittest.skipIf(SKIP, "skipping tests")
 class TestTubeIOTest(unittest.TestCase):
