@@ -34,7 +34,26 @@ class DSDObjectsError(Exception):
             self.message = "{} [{}]".format(message, ', '.join(map(str,kargs)))
         else :
             self.message = message
+        self._solution = None
+        self._rotations = None
         super(DSDObjectsError, self).__init__(self.message)
+
+    @property
+    def solution(self):
+        return self._solution
+
+    @solution.setter
+    def solution(self, value):
+        self._solution = value
+
+    @property
+    def rotations(self):
+        return self._rotations
+
+    @rotations.setter
+    def rotations(self, value):
+        self._rotations = value
+
 
 def reset_names(): # TODO: find a better name
     """
@@ -52,7 +71,7 @@ def make_pair_table(ss, strand_break='+', ignore=set('.')):
     """Return a secondary struture in form of pair table:
 
     Args:
-      ss (str): secondary structure in dot-bracket format.
+      ss (str or list): secondary structure in dot-bracket format.
       cut (str, optional): character that defines a cut-point. Defaults to '+'.
       ignore (set, optional): a list of characters that are ignored. Defaults to ['.']
 
@@ -116,6 +135,31 @@ def make_pair_table(ss, strand_break='+', ignore=set('.')):
 
     return pair_table 
 
+def pair_table_to_dot_bracket(pt, strand_break='+'):
+    """
+    """
+    assert len(strand_break) == 1
+    out = []
+    for si, strand in enumerate(pt):
+        for di, pair in enumerate(strand):
+            if pair is None:
+                out.append('.')
+            else :
+                locus = (si, di)
+                if locus < pair :
+                    out.append('(')
+                else :
+                    out.append(')')
+        out.append(strand_break)
+    
+    return out[:-1] #remove last '+'
+
+def make_lol_sequence(seq):
+    indices = [-1] + [i for i, x in enumerate(seq) if x == "+"]
+    indices.append(len(seq))
+    return [seq[indices[i - 1] + 1 : indices[i]] for i in range(1, len(indices))]
+
+
 def make_loop_index(ptable):
     """
     number loops and assign each position its loop-number
@@ -153,6 +197,77 @@ def make_loop_index(ptable):
             exterior.add(cl)
     # ptable end
     return loop_index, exterior
+
+def split_complex(lol_seq, ptable):
+    """
+    number loops and assign each position its loop-number
+    handy for checking which pairs can be added
+
+    NOTE: modifies its arguments!
+    """
+    loop_index = []
+    exterior = set()
+
+    complexes = dict()
+    splice = []
+
+    stack = []
+    (cl, nl) = (0, 0)
+
+    # Identify exterior loops using the loop index function,
+    # rewrite ptable to contain characters instead of paired locus.
+    for si, strand in enumerate(ptable):
+        loop = []
+        loop_index.append(loop)
+        for di, pair in enumerate(strand):
+            loc = (si, di)
+            if pair is None:
+                ptable[si][di] = '.'
+            elif loc < pair : # '('
+                nl += 1
+                cl = nl
+                stack.append(loc)
+                ptable[si][di] = '('
+            loop.append(cl)
+            if pair and pair < loc : # ')'
+                _ = stack.pop()
+                try :
+                    ploc = stack[-1]
+                    cl = loop_index[ploc[0]][ploc[1]]
+                except IndexError:
+                    cl = 0
+                ptable[si][di] = ')'
+
+        # store the strand_index where a given loop-cut starts
+        if cl in complexes :
+            start = complexes[cl]
+            end = si
+            splice.append((start,end))
+            complexes[cl] = si
+        else :
+            complexes[cl] = si
+    # for ptable end
+
+    parts = []
+    for (s,e) in splice:
+        new_seq = lol_seq[s+1:e+1]
+        new_pt = ptable[s+1:e+1]
+
+        lol_seq[s+1:e+1] = [[] for x in range(s+1,e+1)]
+        ptable[s+1:e+1] = [[] for x in range(s+1,e+1)]
+
+        # change format from lol to regular list format
+        new_seq=reduce(lambda a,b:a+['+']+b, new_seq)
+        new_pt=reduce(lambda a,b:a+['+']+b, new_pt)
+        parts.append((new_seq, new_pt))
+
+    # append the remainder (or original) sequence
+    new_seq = lol_seq[:]
+    new_pt = ptable[:]
+    new_seq=reduce(lambda a,b:a+['+']+b if b else a+b,new_seq)
+    new_pt=reduce(lambda a,b:a+['+']+b if b else a+b,new_pt)
+    parts.append((new_seq, new_pt))
+    return parts
 
 def _find(l, key):
     for i in range(len(l)):
@@ -652,17 +767,24 @@ class DSD_Complex(object):
         self._sequence = sequence
         self._structure = structure
         self._canonical_form = None
-
-        if self.canonical_form in DSD_Complex.canonical_forms:
-            raise DSDObjectsError('Duplicate Complex specification:', self.name,
-                    DSD_Complex.canonical_forms[self.canonical_form])
-        else :
-            DSD_Complex.canonical_forms[self.canonical_form] = self.name
+        self._rotations = None
 
         # Initialized on demand:
         self._pair_table = None
         self._strands = None
         self._domains = None
+
+        if self.canonical_form in DSD_Complex.canonical_forms:
+            realname = DSD_Complex.canonical_forms[self.canonical_form]
+            other = DSD_Complex.dictionary[realname]
+
+            error = DSDObjectsError('Duplicate Complex specification:', self.name, realname)
+            error.solution = realname
+            error.rotations = self._rotations - other._rotations
+            raise error
+        else :
+            DSD_Complex.canonical_forms[self.canonical_form] = self.name
+
 
         # rotate strands into a canonical form.
         # two complexes are equal if they have equal canonial form
@@ -732,29 +854,46 @@ class DSD_Complex(object):
         Complexes are equal if they have the same canonical form:
             1) sort by sequence string
             2) sort by structure string
+
+        Sets a variable self._rotations.
         """
         def string(s):
             return '_'.join(map(str,s))
 
         if not self._canonical_form:
-            all_variants = set()
-            for new in self.rotate:
-                all_variants.add((string(self.sequence), string(self.structure)))
-            self._canonical_form = tuple(sorted(list(all_variants), key = lambda x:(x[0],x[1]))[0])
+            all_variants = dict()
+            for e, new in enumerate(self.rotate, 1):
+                canon = tuple((string(self.sequence), string(self.structure)))
+                if canon not in all_variants:
+                    all_variants[canon] = e
+            self._canonical_form = sorted(list(all_variants.keys()), key = lambda x:(x[0],x[1]))[0]
+            # Invert rotations to be compatible with 'wrap'
+            self._rotations = abs(all_variants[self._canonical_form] - len(self.strands))
         return self._canonical_form
+
+    def rotate_pairtable_loc(self, loc, n=None):
+        def wrap(x, m):
+            """
+            Mathematical modulo; wraps x so that 0 <= wrap(x,m) < m. x can be negative.
+            """
+            return (x % m + m) % m
+
+        if n is None:
+            n = len(self.strands)
+        return (wrap(loc[0] + n, len(self.strands)), loc[1])
 
     # Move set
     @property
     def pair_table(self):
         # Make a new pair_table every time, it might get modified.
-        return make_pair_table(''.join(self.structure))
+        return make_pair_table(self.structure)
 
     def get_domain(self, loc):
         return self.lol_sequence[loc[0]][loc[1]]
     
     def get_paired_loc(self, loc):
         if not self._pair_table:
-            self._pair_table = make_pair_table(''.join(self.structure))
+            self._pair_table = make_pair_table(self.structure)
         return self.pair_table[loc[0]][loc[1]]
 
     def get_triple(self, *loc):
@@ -764,7 +903,7 @@ class DSD_Complex(object):
     def exterior_domains(self):
         if not self._exterior_domains:
             if not self._pair_table:
-                self._pair_table = make_pair_table(''.join(self.structure))
+                self._pair_table = make_pair_table(self.structure)
             loop_index, exteriors = make_loop_index(self._pair_table)
 
             self._exterior_domains = []
@@ -782,10 +921,11 @@ class DSD_Complex(object):
          Example:
           ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
         """
-        indices = [-1] + [i for i, x in enumerate(self._sequence) if x == "+"]
-        indices.append(len(self._sequence))
-        return [self._sequence[indices[i - 1] + 1 : indices[i]] 
-                for i in range(1, len(indices))]
+        return make_lol_sequence(self._sequence)
+        #indices = [-1] + [i for i, x in enumerate(self._sequence) if x == "+"]
+        #indices.append(len(self._sequence))
+        #return [self._sequence[indices[i - 1] + 1 : indices[i]] 
+        #        for i in range(1, len(indices))]
 
     @property
     def nucleotide_sequence(self):
@@ -868,14 +1008,16 @@ class DSD_Complex(object):
         """
         Determines whether the structure includes pairs only between complementary domains.
         Returns True if all paired domains are complementary, raises an Exception otherwise
+
+        TODO: breaks if used on strings, due to the inverse operator
         """
         if not self._pair_table:
-            self._pair_table = make_pair_table(''.join(self.structure))
+            self._pair_table = make_pair_table(self.structure)
         for si, strand in enumerate(self._pair_table):
             for di, domain in enumerate(strand):
                 loc = (si,di)
                 cloc = self.pair_table[si][di] 
-                if cloc is None or self.get_domain(loc) == ~self.get_domain(cloc):
+                if cloc is None or self.get_domain(loc) == ~(self.get_domain(cloc)):
                     continue
                 else :
                     raise DSDObjectsError('Domains cannot pair', 
@@ -885,13 +1027,35 @@ class DSD_Complex(object):
     @property
     def is_connected(self):
         if not self._pair_table:
-            self._pair_table = make_pair_table(''.join(self.structure))
+            self._pair_table = make_pair_table(self.structure)
         try :
             # make loop index raises disconnected error.
             make_loop_index(self._pair_table)
         except DSDObjectsError, e:
-            raise DSDObjectsError(e)
+            #raise DSDObjectsError(e)
+            return False
         return True
+
+    def split_complex(self, ps, pt):
+        return split_complex(ps, pt)
+
+    def split(self):
+        """ Split DSD_Complex into disconneted components.
+        """
+        if self.is_connected:
+            return [self]
+        else :
+            ps = self.lol_sequence
+            pt = self.pair_table
+            parts = split_complex(ps, pt)
+            cplxs = []
+            # assign new_complexes
+            for (se,ss) in parts:
+                try:
+                    cplxs.append(DSD_Complex(se, ss))
+                except DSDObjectsError, e:
+                    cplxs.append(DSD_Complex.dictionary[e.solution])
+            return sorted(cplxs)
 
     # Object properties.
     def __str__(self):
@@ -909,6 +1073,7 @@ class DSD_Complex(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
 
 class DSD_Reaction(object):
     """ A reaction pathway.

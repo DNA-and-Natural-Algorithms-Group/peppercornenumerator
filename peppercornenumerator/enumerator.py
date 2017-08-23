@@ -72,7 +72,7 @@ class Enumerator(object):
         # System initialization
         self._initial_complexes = initial_complexes
         self._strands = strands if strands else self.get_strands(self._initial_complexes)
-        self._domains = domains if domains else self.get_domains(self._strands)
+        self._domains = domains if domains else self.get_domains(self._initial_complexes)
 
         self._reactions = None
         self._resting_states = None
@@ -281,22 +281,10 @@ class Enumerator(object):
             (sorted(self.transient_complexes) ==
              sorted(object.transient_complexes))
 
-    def get_domains(self, strands):
+    def get_domains(self, initial_complexes):
         domains = set()
-        #option to add both complementary domains... 
-        #def add_both(domain):
-        #    if domain.name not in map(lambda x: x.name, domains):
-        #        complement = utils.Domain(
-        #                domain.name[0:-1] if domain.is_complement else domain.name,
-        #                domain.length, 
-        #                not domain.is_complement, 
-        #                domain.sequence)
-        #        domains.add(domain)
-        #        domains.add(complement)
-
-        for strnd in strands:
-            #map(add_both, strnd.domains)
-            map(lambda d: domains.add(d), strnd.domains)
+        for cplx in initial_complexes:
+            map(lambda d: domains.add(d), cplx.domains)
         return list(domains)
 
     def get_strands(self, initial_complexes):
@@ -687,9 +675,7 @@ class Enumerator(object):
                 if (len(product.strands) > self._max_complex_size):
                     logging.warning(
                         "Complex %(name)s (%(strands)d strands) too large, ignoring!" % {
-                            "name": product.name,
-                            "strands": len(
-                                product.strands)})
+                            "name": product.name, "strands": len(product.strands)})
                     complex_size_ok = False
                     break
 

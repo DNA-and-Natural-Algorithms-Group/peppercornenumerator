@@ -11,7 +11,7 @@ from peppercornenumerator.pil_parser import parse_pil_string
 import peppercornenumerator.reactions as rxn
 
 # Input parsing stuff
-from peppercornenumerator.utils import PepperDomain, Strand, Complex, parse_dot_paren
+from peppercornenumerator.utils import PepperDomain, Strand, PepperComplex, parse_dot_paren
 from peppercornenumerator.dsdobjects import reset_names
 from peppercornenumerator.input import from_kernel
 
@@ -93,11 +93,18 @@ def nuskell_parser(pil_string, ddlen=15):
             strands[sid] = Strand(sid, strand)
         cplx_strands.append(strands[sid])
         strand = [] # construct a strand
- 
 
-        cplx_structure = parse_dot_paren(''.join(structure))
-        complex = Complex(name, cplx_strands, cplx_structure)
-        complex.check_structure()
+        for e, dom in enumerate(sequence):
+            if dom == '+':
+                domain = '+'
+            elif dom[-1] == '*' : 
+                domain = ~domains[dom[:-1]]
+            else :
+                domain = domains[dom]
+            sequence[e] = domain
+
+        #cplx_structure = parse_dot_paren(''.join(structure))
+        complex = PepperComplex(sequence, structure, name=name)
         complexes[name] = complex
       else :
         raise NotImplementedError('Weird expression returned from pil_parser!')
@@ -154,9 +161,9 @@ class NewOpenTests(unittest.TestCase):
         output = rxn.open(reactant, max_helix=False, release_11=7, release_1N=7)
         self.assertEqual(output, [forward1])
         output = rxn.open(reactant, max_helix=False, release_11=8, release_1N=8)
-        self.assertEqual(output, [forward2, forward1])
+        self.assertEqual(output, sorted([forward2, forward1]))
         output = rxn.open(reactant, max_helix=False, release_11=13, release_1N=13)
-        self.assertEqual(output, [forward2, forward1])
+        self.assertEqual(output, sorted([forward2, forward1]))
 
     def test_multiple_choice(self):
         # TODO: len(a) + len(b) = len(ab) - but the behavior is different!
@@ -282,10 +289,10 @@ class NewBranch3WayTests(unittest.TestCase):
         A single 3-way branch migration reaction.
         """
         # INPUT
-        (domains, strands, complexes) = from_kernel([
-        "X = a( b x + b( d( + ) ) )",
-        "Y = a( b( x + b d( + ) ) )",
-        ])
+        (domains, strands, complexes) = nuskell_parser("""
+        X = a( b x + b( d( + ) ) )
+        Y = a( b( x + b d( + ) ) )
+        """)
         reactant = complexes['X']
         product = complexes['Y']
 
@@ -314,12 +321,12 @@ class NewBranch3WayTests(unittest.TestCase):
         A series of 3-way branch migration reactions.
         """
         # INPUT
-        (domains, strands, complexes) = from_kernel([
-        "X  = a( x y z + x( y( z( b( + ) ) ) ) )",
-        "I1 = a( x( y z + x y( z( b( + ) ) ) ) )",
-        "I2 = a( x( y( z + x y z( b( + ) ) ) ) )",
-        "Y  = a( x( y( z( + x y z b( + ) ) ) ) )",
-        ])
+        (domains, strands, complexes) = nuskell_parser("""
+        X  = a( x y z + x( y( z( b( + ) ) ) ) )
+        I1 = a( x( y z + x y( z( b( + ) ) ) ) )
+        I2 = a( x( y( z + x y z( b( + ) ) ) ) )
+        Y  = a( x( y( z( + x y z b( + ) ) ) ) )
+        """)
         reactant = complexes['X']
         inter1 = complexes['I1']
         inter2 = complexes['I2']
@@ -344,7 +351,7 @@ class NewBranch3WayTests(unittest.TestCase):
 
         output = rxn.branch_3way(inter1, max_helix=True)
         #for o in output: print 'max_helix', o.kernel_string()
-        self.assertEqual(output, [backward, forward])
+        self.assertEqual(output, sorted([backward, forward]))
  
         # ~~~~~~~~~~~~~~~~~~~ #
         # OUTPUT NO-MAX-HELIX #
@@ -373,12 +380,12 @@ class NewBranch3WayTests(unittest.TestCase):
         A remote 3way branch migration reaction.
         """
         # INPUT
-        (domains, strands, complexes) = from_kernel([
-        "X  = a( b x y z + x( y( z( c( + ) ) ) ) )",
-        "I1 = a( b x( y z + x y( z( c( + ) ) ) ) )",
-        "I2 = a( b x( y( z + x y z( c( + ) ) ) ) )",
-        "Y  = a( b x( y( z( + x y z c( + ) ) ) ) )",
-        ])
+        (domains, strands, complexes) = nuskell_parser("""
+        X  = a( b x y z + x( y( z( c( + ) ) ) ) )
+        I1 = a( b x( y z + x y( z( c( + ) ) ) ) )
+        I2 = a( b x( y( z + x y z( c( + ) ) ) ) )
+        Y  = a( b x( y( z( + x y z c( + ) ) ) ) )
+        """)
         reactant = complexes['X']
         inter1 = complexes['I1']
         inter2 = complexes['I2']
@@ -447,22 +454,18 @@ class NewBranch3WayTests(unittest.TestCase):
 
         """
         # INPUT
-        (domains, strands, complexes) = from_kernel([
-        "X  = a( x b y z x y + x( y( z( c( + ) ) ) ) )",
-        "I1 = a( x( b y z x y + x y( z( c( + ) ) ) ) )",
-        "I2 = a( x( b y( z x y + x y z( c( + ) ) ) ) )", # no-max-helix
-        "Y1 = a( x( b y( z( x y + x y z c( + ) ) ) ) )",
-        "I4 = a( x( b y z x y( + x y z( c( + ) ) ) ) )",
-        "I3 = a( x b y z x( y + x y( z( c( + ) ) ) ) )", # no-max-helix
-        "Y2 = a( x b y z x( y( + x y z( c( + ) ) ) ) )",
-        "Y3 = a( x( b y z x y( + x y z( c( + ) ) ) ) )",
-        "Y4 = a( x b y z x( y + x y( z( c( + ) ) ) ) )",
-        ])
+        (domains, strands, complexes) = nuskell_parser("""
+        X  = a( x b y z x y + x( y( z( c( + ) ) ) ) )
+        I1 = a( x( b y z x y + x y( z( c( + ) ) ) ) )
+        I2 = a( x( b y( z x y + x y z( c( + ) ) ) ) ) # no-max-helix
+        Y1 = a( x( b y( z( x y + x y z c( + ) ) ) ) )
+        Y2 = a( x b y z x( y( + x y z( c( + ) ) ) ) )
+        Y3 = a( x( b y z x y( + x y z( c( + ) ) ) ) )
+        Y4 = a( x b y z x( y + x y( z( c( + ) ) ) ) )
+        """)
         reactant = complexes['X']
         inter1 = complexes['I1']
         inter2 = complexes['I2']
-        inter3 = complexes['I3']
-        inter4 = complexes['I4']
         product1 = complexes['Y1']
         product2 = complexes['Y2']
         product3 = complexes['Y3']
@@ -479,18 +482,19 @@ class NewBranch3WayTests(unittest.TestCase):
         forward1b = rxn.ReactionPathway('branch_3way', [reactant], [inter1])
         forward2 = rxn.ReactionPathway('branch_3way', [reactant], [product2])
         output = rxn.branch_3way(reactant, max_helix=True, remote=True)
-        self.assertEqual(output, [forward2, forward1b])
+        self.assertEqual(output, sorted([forward2, forward1b]))
 
         backward1 = rxn.ReactionPathway('branch_3way', [product1], [reactant])
         output = rxn.branch_3way(product1, max_helix=True, remote=True)
         self.assertEqual(output, [backward1])
 
-        # NOTE: INTERNAL REARRANGEMENT LEADS TO I4!
+        # NOTE: THIS behavior changed!
         backward2 = rxn.ReactionPathway('branch_3way', [product2], [reactant])
-        backward2b = rxn.ReactionPathway('branch_3way', [product2], [inter4])
+        #backward2b = rxn.ReactionPathway('branch_3way', [product2], [product4])
+        backward2b = rxn.ReactionPathway('branch_3way', [product2], [product3])
         output = rxn.branch_3way(product2, max_helix=True, remote=True)
         #for o in output: print 'ow', o.kernel_string()
-        self.assertEqual(output, [backward2, backward2b])
+        self.assertEqual(output, sorted([backward2, backward2b]))
 
         # NOTE: max_helix zippering cannot involve different strands than the initial step
         backward = rxn.ReactionPathway('branch_3way', [inter1], [reactant]) #1
@@ -503,11 +507,11 @@ class NewBranch3WayTests(unittest.TestCase):
 
     def test_multiple_choice_2(self):
         # INPUT
-        (domains, strands, complexes) = from_kernel([
-            "N = a( x( b x y + y( z( + ) ) ) )",
-            "P1 = a( x b x( y + y( z( + ) ) ) )",
-            "P2 = a( x( b x y( + y z( + ) ) ) )",
-        ])
+        (domains, strands, complexes) = nuskell_parser("""
+        N = a( x( b x y + y( z( + ) ) ) )
+        P1 = a( x b x( y + y( z( + ) ) ) )
+        P2 = a( x( b x y( + y z( + ) ) ) )
+        """)
         N = complexes['N']
         P1 = complexes['P1']
         P2 = complexes['P2']
@@ -934,14 +938,14 @@ class IsomorphicSets(unittest.TestCase):
         # should be two reactions, is one
         A2 = x( y z + y( + z( + ) ) )
         A2_1 = x( y( z + z( + ) ) )
-        A2_2 = x( y( z( + ) ) )
+        #A2_2 = x( y( z( + ) ) )
         Y1 = y
         Z1 = z
 
         # should be two reactions, is one
         B2 = x1( x2( y1 y2 z1 z2 + y1( y2( + z1( z2( + ) ) ) ) ) ) 
         B2_1 = x1( x2( y1( y2( z1 z2 + z1( z2( + ) ) ) ) ) ) 
-        B2_2 = x1( x2( y1( y2( z1( z2( + ) ) ) ) ) ) 
+        #B2_2 = x1( x2( y1( y2( z1( z2( + ) ) ) ) ) ) 
         Y2 = y1 y2
         Z2 = z1 z2
 
@@ -956,7 +960,7 @@ class IsomorphicSets(unittest.TestCase):
 
         A2 = complexes['A2']
         A2_1 = complexes['A2_1']
-        A2_2 = complexes['A2_2']
+        #A2_2 = complexes['A2_2']
         Y1 = complexes['Y1']
         Z1 = complexes['Z1']
 
@@ -968,7 +972,7 @@ class IsomorphicSets(unittest.TestCase):
 
         path1 = rxn.ReactionPathway('branch_3way', [A1], sorted([A1_2, YZ]))
         path2 = rxn.ReactionPathway('branch_3way', [A2], sorted([A2_1, Y1]))
-        path3 = rxn.ReactionPathway('branch_3way', [A2_1], sorted([A2_2, Z1]))
+        path3 = rxn.ReactionPathway('branch_3way', [A2_1], sorted([A1_2, Z1]))
 
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
         #for r in enum.reactions:
@@ -980,7 +984,7 @@ class IsomorphicSets(unittest.TestCase):
 
         B2 = complexes['B2']
         B2_1 = complexes['B2_1']
-        B2_2 = complexes['B2_2']
+        #B2_2 = complexes['B2_2']
         Y2 = complexes['Y2']
         Z2 = complexes['Z2']
 
@@ -992,7 +996,7 @@ class IsomorphicSets(unittest.TestCase):
 
         path1 = rxn.ReactionPathway('branch_3way', [B1], sorted([B1_2, YZ2]))
         path2 = rxn.ReactionPathway('branch_3way', [B2], sorted([B2_1, Y2]))
-        path3 = rxn.ReactionPathway('branch_3way', [B2_1], sorted([B2_2, Z2]))
+        path3 = rxn.ReactionPathway('branch_3way', [B2_1], sorted([B1_2, Z2]))
         #for r in enum.reactions:
         #    print 'invade', r, r.kernel_string(), r.rate
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))

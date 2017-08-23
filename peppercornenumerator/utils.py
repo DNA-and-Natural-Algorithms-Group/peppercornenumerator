@@ -10,7 +10,7 @@ import sys
 import copy
 import logging
 from math import log10
-from dsdobjects import DSD_Domain, SequenceConstraint, DSDObjectsError
+from dsdobjects import DSD_Domain, DSD_Complex, SequenceConstraint, DSDObjectsError
 
 SHORT_DOMAIN_LENGTH = 6
 LONG_DOMAIN_LENGTH = 12
@@ -482,7 +482,7 @@ class PepperDomain(DSD_Domain):
         super(PepperDomain, self).__init__(*kargs, **kwargs)
 
     def __repr__(self):
-        return "Domain(%s)" % (self.name)
+        return "%s" % (self.name)
 
     def __cmp__(self, other):
         out = cmp(self.name, other.name)
@@ -514,7 +514,7 @@ class PepperDomain(DSD_Domain):
           To simply return the complement, use the '~' operator.
 
         Returns:
-          [nuskell.objects.DSD_ComplementDomain()]
+          [PepperDomain()]
         """
         if not all(isinstance(s, str) for s in self.sequence + compseq):
             raise NotImplementedError('Cannot initialize composite DSD_ComplementDomain.')
@@ -638,177 +638,29 @@ class Strand(object):
         """
         return self._domains
 
-
-class Complex(object):
-    """
-    Represents a complex, which is a set of connected strands with a particular
-    secondary structure.
-    """
-
-    def __init__(self, name, strands, structure):
-        """
-        Constructor for complex objects. Takes a name, the ordered list of
-        strands, and the appropriate structure. Complexes are assumed to be
-        nonpseudoknotted, and the strand list should be in the order that yields
-        a nonpseudoknotted structure.
-
-        A complex is in 'canonical form' if its strands are in a non-pseudoknotted
-        circular permutation with the strand with the minimum name lexicographically
-        as the first in the list of strands.
-
-        This constructor assumes that the structure is unpseudoknotted, and will
-        rotate this complex automatically until it is in canonical form.
-
-        :param name: string holding complex name
-        :param strands: list of Strand objects in order
-        :param structure: list of lists of tuples indicating pairing of domains
-            in the complex. ``None`` indicates the domain is unpaired, while a
-            ``(strand, domain)`` tuple indicates the domain is paired to
-            ``domain`` on ``strand``.
-
-        Examples:
-
-        *	``[[(0, 2) None (0, 0)]]`` indicates one strand with 3 domains
-                with the first one bound to the last one, and the middle one free.
-        *	``[[None (1, 0) (1, 1)], [(0, 1) (0, 2) None]]`` indicates 2
-                strands with 3 domains each -- the first two domains of the second
-                strand are bound to the last two of the first.
-
-        Lists should be in the same order as the strands in the
-        second argument, with each strand's domains from 5' to 3'
-        """
-
-        # Holds the complex name
-        self._name = name
-
-        # Holds the list of strands
-        self._strands = strands
-
-        # Holds the complex structure
-        self._structure = structure
-
-        # Holds the number of domains total in this complex
-        self._ndoms = 0
-
-        strandNames = []
-
-        for strand in strands:
-            self._ndoms += len(strand.domains)
-            strandNames.append(strand.name)
-
-        # Find the minimum name to determine canonical form
-        strandNames.sort()
-
-        # A list of domains on external loops, in a tuple with format
-        # (domain, strand number, domain in strand number)
-        self._available_domains = []
-
-        # Keeps track of whether or not the _available_domains variable is valid
-        # or if it needs to be updated
-        self._valid_available_domains = False
-
-        # Rotate until we're in canonical form
-        # calculate all circular permutations
-        perms = [tuple(strands[x:] + strands[:x]) for x in range(len(strands))]
-        # select lexicographically minimum permutation
-        min_perm = min(range(len(strands)), key=lambda i: perms[i])
-        self._rotate_strands_n(min_perm)  # rotate until we're in that form
-        self._rotations = -min_perm
-
-        # Holds a unique hash identifying this complex (computed lazily by
-        # self.__hash__)
-        self._hash = None
-
-        # Store concentration
-        self.concentration = None
+class PepperComplex(DSD_Complex):
+    def __init__(self, *kargs, **kwargs):
+        super(PepperComplex, self).__init__(*kargs, **kwargs)
 
     def __hash__(self):
-        """
-        Computes a unique hash to represent this complex. Uses the tuple of
-        strands and structure
-        """
-        if (self._hash is None):
-            strands = tuple(self._strands)
-            struct = tuple([tuple(s) for s in self._structure])
-            self._hash = hash((strands, struct))
+        return hash(self.canonical_form)
 
-        return self._hash
-
-    def __eq__(self, other):
-        """
-        Tests two complexes for equality. Complexes are equal if and only if
-        they have the same strands (in the same order) and the same structure.
-        This works because of the uniqueness of nonpseudoknotted representations
-        of nonpseudoknotted structures (assuming everything is in canonical form
-        and strands have unique names).
-        """
-        return ((self._strands == other._strands) and
-                (self._structure == other._structure))
-
-    def __cmp__(self, other):
-        out = cmp(self.strands, other.strands)
-        if (out != 0):
-            return out
-
-        out = cmp(self.structure, other.structure)
-        if (out != 0):
-            return out
-
-        return cmp(self.name, other.name)
-
-    def clone(self):
-        """
-        Returns a deep copy of this complex.
-        """
-        return copy.deepcopy(self)
+    #def __cmp__(self):
+    #    raise NotImplementedError
 
     def __repr__(self):
-        #		return self.full_string()
-        return "Complex(%s)" % (self.name)
-
-    def __str__(self):
-        return self.name
+        return "%s" % (self.name)
 
     def full_string(self):
         return "Complex(%s): %s %s" % (
             self.name, str(self.strands), str(self.structure))
 
-    @property
-    def name(self):
-        """
-        Gives the name of the complex
-        """
-        return self._name
+    def get_structure(self, loc):
+        return self.get_paired_loc(loc)
 
-    @property
-    def strands(self):
-        """
-        Gives a list of :py:class:`Strand <strands>` in the complex
-        """
-        return self._strands[:]
-
-    @property
-    def structure(self):
-        """
-        Gives the structure of the complex
-        """
-        return self._structure[:]
-
-    @property
-    def available_domains(self):
-        """
-        """
-        if not (self._valid_available_domains):
-            self.update_available_domains()
-        return self._available_domains
-
-    def get_domain(self, loc):
-        """
-        Returns the domain at the given (strand,domain) index in this complex (loc is a (strand,domain) tuple)
-        """
-        if(loc is not None):
-            return self._strands[loc[0]]._domains[loc[1]]
-        return None
+    def triple(self, *loc):
+        # overwrite standard func
+        return (self.get_domain(loc), self.get_paired_loc(loc), loc)
 
     def get_strand(self, loc):
         """
@@ -818,370 +670,37 @@ class Complex(object):
             return self._strands[loc]
         return None
 
-    def get_structure(self, loc):
-        """
-        Returns a (strand index, domain index) pair indicating to which domain this location is bound,
-        or None if it is unbound.
-        """
-        if(loc is not None):
-            return self.structure[loc[0]][loc[1]]
-        return None
-
-    def triple(self, *loc):
-        return (self.get_domain(loc), self.get_structure(loc), loc)
-
-    def strand_index(self, strand_name):
-        """
-        Returns the index of the strand with the specified name in this
-        complex, or -1 if there is no such strand.
-        """
-        for (i, strand) in enumerate(self.strands):
-            if strand.name == strand_name:
-                return i
-
-        return -1
-
-    def update_available_domains(self):
-        """
-        Updates the internal list of available domains. Any domains on an
-        external loop are added to this list. Sets _valid_available_domains to
-        true on completion.
-        """
-        self._available_domains = []
-
-        # We loop through every domain in the complex to check if it is free
-        for (strand_num, strand) in enumerate(self.strands):
-            for (dom_num, dom) in enumerate(strand.domains):
-
-                # This variable will be set to true if the domain is free
-                available = False
-
-                # Domains cannot be on an ext. loop if bound
-                if self.structure[strand_num][dom_num] is None:
-                    # First we iterate 'to the left' and see if we're on an
-                    # external loop in that direction.
-                    checking_strand_num = strand_num
-                    checking_dom_num = dom_num - 1
-                    while not available:
-                        # If we ever get to the other side of the original
-                        # domain by following the structure then the original
-                        # domain may be in a hairpin, and so is not free
-                        if ((checking_strand_num > strand_num) or
-                            ((checking_strand_num == strand_num) and
-                                (checking_dom_num >= dom_num))):
-                            break
-
-                        # If we ever get to the left end of a strand without
-                        # first being linked by structure to another part of the
-                        # complex then this strand is "dangling" off the left
-                        # side, and so this is a free domain
-                        elif checking_dom_num == -1:
-                            available = True
-
-                        # If the current domain is unbound, then we keep moving
-                        # to the left
-                        elif self.structure[checking_strand_num][checking_dom_num] is None:
-                            checking_dom_num -= 1
-
-                        # If we reach some structure, then we jump to the other
-                        # end of the that structure (we know this is a non-
-                        # pseudoknotted complex, so we know we can skip any of
-                        # the inside structure since none of that will bind
-                        # with anything on the other side of the original
-                        # domain
-                        else:
-                            checking_strand_num, checking_dom_num = \
-                                self.structure[checking_strand_num][checking_dom_num]
-                            checking_dom_num -= 1
-
-                    # Next we iterate 'to the right' and see if we're on an
-                    # external loop in that direction.
-                    checking_strand_num = strand_num
-                    checking_dom_num = dom_num + 1
-                    while not available:
-                        # If we ever get to the other side of the original
-                        # domain by following the structure then the original
-                        # domain may be in a hairpin, and so is not free
-                        if ((checking_strand_num < strand_num) or
-                            ((checking_strand_num == strand_num) and
-                                (checking_dom_num <= dom_num))):
-                            break
-
-                        # If we ever get to the right end of a strand without
-                        # first being linked by structure to another part of the
-                        # complex then this strand is "dangling" off the right
-                        # side, and so this is a free domain
-                        elif checking_dom_num == len(
-                            self.strands
-                            [checking_strand_num]
-                                .domains):
-                            available = True
-
-                        # If the current domain is unbound, then we keep moving
-                        # to the right
-                        elif self.structure[checking_strand_num][checking_dom_num] is None:
-                            checking_dom_num += 1
-
-                        # If we reach some structure, then we jump to the other
-                        # end of the that structure (we know this is a non-
-                        # pseudoknotted complex, so we know we can skip any of
-                        # the inside structure since none of that will bind
-                        # with anything on the other side of the original
-                        # domain
-                        else:
-                            checking_strand_num, checking_dom_num = \
-                                self.structure[checking_strand_num][checking_dom_num]
-#							checking_dom_num -= 1
-                            checking_dom_num += 1
-                if available:
-                    self._available_domains.append((self.strands[strand_num]
-                                                    .domains[dom_num],
-                                                    strand_num, dom_num))
-
-        self._available_domains.sort(key=lambda dom: dom[0].name)
-        self._valid_available_domains = True
-
-    def _rotate_strands(self):
-        """
-        Alters this complex so that all of the strands have been
-        rotated to the right by one (that is, the strand formerly at index 1
-        is now at index 0, and the strand formerly at index 0 is at index
-        n_strands - 1). The structure is updated so that strand references are
-        correct. Note that this operation will produce a non-pseudoknotted
-        complex so long as the original complex was non-pseudoknotted.
-        """
-        new_strands = self.strands[1:] + [self.strands[0]]
-        new_struct = []
-        n_strands = len(new_strands)
-
-        for list in self.structure:
-            new_list = []
-            for el in list:
-                if el is None:
-                    new_list.append(None)
-                else:
-                    (strand, domain) = el
-                    if strand > 0:
-                        new_list.append((strand - 1, domain))
-                    else:
-                        new_list.append((n_strands - 1, domain))
-            new_struct.append(new_list)
-
-        new_struct = new_struct[1:] + [new_struct[0]]
-
-        self._avaliable_domains = []
-        self._valid_available_domains = False
-        self._structure = new_struct
-        self._strands = new_strands
-
-    def _rotate_strands_n(self, n):
-        new_strands = self.strands[:]
-        new_struct = self.structure[:]
-        old_struct = self.structure[:]
-
-        for x in range(n):
-            new_strands = new_strands[1:] + [new_strands[0]]
-
-            new_struct = []
-            n_strands = len(new_strands)
-
-            for list in old_struct:
-                new_list = []
-                for el in list:
-                    if el is None:
-                        new_list.append(None)
-                    else:
-                        (strand, domain) = el
-                        if strand > 0:
-                            new_list.append((strand - 1, domain))
-                        else:
-                            new_list.append((n_strands - 1, domain))
-                new_struct.append(new_list)
-
-            new_struct = new_struct[1:] + [new_struct[0]]
-            old_struct = new_struct[:]
-
-        self._avaliable_domains = []
-        self._valid_available_domains = False
-        self._structure = new_struct
-        self._strands = new_strands
-
-    def rotate_strands(self):
-        """
-        Returns a deep copy of this complex with its strands rotated once.
-        """
-        out = copy.deepcopy(self)
-        out._rotate_strands()
-        return out
+    @property
+    def available_domains(self):
+        ad = []
+        for (x,y) in self.exterior_domains:
+            ad.append((self.get_domain((x,y)), x, y))
+        return ad
 
     def rotate_location(self, loc, n=None):
-        if n is None:
-            n = self._rotations
-        return (wrap(loc[0] + n, len(self._strands)), loc[1])
+        return self.rotate_pairtable_loc(loc, n)
 
-    def check_structure(self):
+    def split(self):
+        """ Split DSD_Complex into disconneted components.
         """
-        Determines whether the structure includes pairs only between complementary domains.
-        Returns True if all paired domains are complementary, raises an Exception otherwise
-        """
-        for (strand_index, strand_struct) in enumerate(self.structure):
-            for (domain_index, target) in enumerate(strand_struct):
+        if self.is_connected:
+            return [self]
+        else :
+            ps = self.lol_sequence
+            pt = self.pair_table
+            parts = self.split_complex(ps, pt)
+            cplxs = []
+            # assign new_complexes
+            for (se,ss) in parts:
+                try:
+                    cplxs.append(PepperComplex(se, ss))
+                except DSDObjectsError, e:
+                    cplxs.append(PepperComplex.dictionary[e.solution])
+            return sorted(cplxs)
 
-                source_domain = self.get_domain((strand_index, domain_index))
-                target_domain = self.get_domain(target)
 
-                if (target is not None and self.structure[target[0]][target[1]] != (
-                        strand_index, domain_index)):
-                    raise Exception(
-                        "In complex %s, incoherent structure at (%d, %d) -> (%d, %d)" %
-                        (self.name, strand_index, domain_index, target[0], target[1]))
-
-                if (target_domain is not None):
-                    if(not source_domain.can_pair(target_domain)):
-                        raise Exception(
-                            "In complex %s, domain %s is paired with domain %s, but the domains are not complementary." %
-                            (self.name, source_domain.name, target_domain.name))
-
-        return self.check_pseudoknots()
-
-    def check_pseudoknots(self):
-        """
-        Checks if the structure is pseudoknotted
-        """
-        stack = []
-        for (strand_index, strand) in enumerate(self.strands):
-            for (domain_index, domain) in enumerate(strand.domains):
-                target = self.get_structure((strand_index, domain_index))
-                if target is not None:
-                    if len(stack) > 0:
-                        if target > stack[-1]:
-                            raise Exception("In complex %s, pseudoknot encountered; inner pair %s crosses outer pair %s." % (
-                                self.name, [(strand_index, domain_index), target], [self.get_structure(stack[-1]), stack[-1]]))
-                        elif (strand_index, domain_index) == stack[-1]:
-                            stack.pop()
-                    if target > (strand_index, domain_index):
-                        stack.append(target)
-        return True
-
-    def check_connected(self):
-        # string = self.dot_paren_string()
-        # graph = 0
-        # stack = [0]
-        # for i, c in enumerate(string):
-        # 	if c == '(': graph += 1
-        # 	elif c == ')': graph -= 1
-        # 	elif c == '+':
-        # 		if graph == stack[-1]:
-        # 			raise Exception("In complex %s, complex disconnected between strands %d and %d" % (self.name, strand, strand + 1))
-
-        string = self.dot_paren_string()
-        parts = string.split("+")
-        subs = 1
-        if len(parts) > 1:
-            for i, strand in enumerate(parts):
-                graph = 0
-                for c in strand:
-                    if c == '(':
-                        graph += 1
-                    elif c == ')':
-                        graph -= 1
-                    if graph < 0:
-                        break
-                if graph == 0:
-                    subs += 1
-        if subs > 1:
-            raise Exception(
-                "In complex %s, complex disconnected into %d parts" %
-                (self.name, subs))
-            return False
-        return True
-
-    def kernel_string(self):
-        parts = []
-        for strand_num, strand in enumerate(self.strands):
-            sparts = []
-            for dom_num, dom in enumerate(strand.domains):
-                if self.structure[strand_num][dom_num] is None:
-                    sparts.append(str(dom))
-                elif self.structure[strand_num][dom_num] > (strand_num, dom_num):
-                    sparts.append(str(dom) + "(")
-                else:
-                    sparts.append(")")
-
-            parts.append(" ".join(sparts))
-
-        return " + ".join(parts)
-
-    def kernel_string_loop(self, *loops):
-        parts = []
-        for strand_num, strand in enumerate(self.strands):
-            sparts = []
-            for dom_num, dom in enumerate(strand.domains):
-                color = ""
-                for i, loop in enumerate(loops):
-                    if (strand_num, dom_num) in loop:
-                        color = colors.colors[i]
-
-                if self.structure[strand_num][dom_num] is None:
-                    s = str(dom)
-                elif self.structure[strand_num][dom_num] > (strand_num, dom_num):
-                    s = str(dom) + "("
-                else:
-                    s = ")"
-
-                if color != "":
-                    s = color + s + colors.ENDC
-                sparts.append(s)
-
-            parts.append(" ".join(sparts))
-
-        return " + ".join(parts) + "\n\n" + colors.legend(loops)
-
-    def dot_paren_string(self):
-        """
-        Returns the segment-wise dot paren representation of this complex.
-        """
-        out = []
-        for strand_num, strand in enumerate(self.structure):
-            for dom_num, el in enumerate(strand):
-                if el is None:
-                    out.append('.')
-                else:
-                    (b_strand, b_domain) = el
-                    if ((b_strand > strand_num) or (
-                            (b_strand == strand_num) and (b_domain > dom_num))):
-                        out.append('(')
-                    else:
-                        out.append(')')
-            if strand_num != (len(self.structure) - 1):
-                out.append('+')
-
-        return ''.join(out)
-
-    def dot_paren_string_full(self):
-        """
-        Returns the base-wise dot paren representation of this complex.
-        """
-        out = []
-        for strand_num, strand in enumerate(self.structure):
-            for dom_num, el in enumerate(strand):
-                if el is None:
-                    out.append(
-                        '.' * len(self.strands[strand_num].domains[dom_num]))
-                else:
-                    (b_strand, b_domain) = el
-                    if ((b_strand > strand_num) or (
-                            (b_strand == strand_num) and (b_domain > dom_num))):
-                        out.append(
-                            '(' * len(self.strands[strand_num].domains[dom_num]))
-                    else:
-                        out.append(')' *
-                                   len(self.strands[strand_num].domains[dom_num]))
-            if strand_num != (len(self.structure) - 1):
-                out.append('+')
-
-        return ''.join(out)
-
+class Complex(object):
+    pass
 
 class RestingState(object):
     """
