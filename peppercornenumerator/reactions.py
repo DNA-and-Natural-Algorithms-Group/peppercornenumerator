@@ -9,7 +9,7 @@
 import copy
 
 from peppercornenumerator.utils import PepperComplex, Loop, wrap
-from peppercornenumerator.dsdobjects import pair_table_to_dot_bracket, DSDObjectsError
+from peppercornenumerator.dsdobjects import make_pair_table, pair_table_to_dot_bracket, DSDObjectsError
 
 
 auto_name = 0
@@ -356,21 +356,23 @@ def bind11(reactant, max_helix=True, remote=None):
     reactions of the argument complex. The 1-1 binding reaction is the
     hybridization of two complementary unpaired domains within a single complex
     to produce a single unpseudoknotted product complex.
+
+    Note: Remote is ineffective, but may be set for convencience
     """
-    reactions = []
-    structure = reactant.pair_table
-
-    # Remote is ineffective, but may be set for convencience
-
+    
+    # Filter function for find_on_loop()
     def filter_bind11(dom1, struct1, loc1, dom2, struct2, loc2, freed):
         return struct1 is None and struct2 is None and dom2.can_pair(dom1)
+
+    reactions = []
+    structure = reactant.pair_table
 
     # We iterate through all the domains
     for (strand_index, strand) in enumerate(structure):
         for (domain_index, domain) in enumerate(strand):
 
             # The displacing domain must be free
-            if (structure[strand_index][domain_index] is not None):
+            if structure[strand_index][domain_index] is not None :
                 continue
 
             loc1 = (strand_index, domain_index)
@@ -393,26 +395,19 @@ def bind11(reactant, max_helix=True, remote=None):
 
                 reactions.append(reaction)
 
-    output = reactions
-
     # remove any duplicate reactions
-    output = sorted(list(set(output)))
-    return output
+    return sorted(list(set(reactions)))
 
 def do_bind11(reactant, loc1s, loc2s):
-    def do_single_bind11(struct, loc1, loc2):
-        struct[loc1[0]][loc1[1]] = loc2
-        struct[loc2[0]][loc2[1]] = loc1
-        return struct
-
+    """ Returns PepperComplex after the bind11 reaction. """
     struct = reactant.pair_table
     for loc1, loc2 in zip(loc1s, loc2s):
-        struct = do_single_bind11(struct, loc1, loc2)
+        struct[loc1[0]][loc1[1]] = loc2
+        struct[loc2[0]][loc2[1]] = loc1
     newstr = pair_table_to_dot_bracket(struct)
     try:
         product = PepperComplex(reactant.sequence, newstr)
     except DSDObjectsError, e:
-        # TODO: special error class for duplication errors
         product = PepperComplex.dictionary[e.solution]
     return product
 
@@ -423,45 +418,33 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
     hybridization of two complementary unpaired domains, each in a different
     complex, to produce a single, unpseudoknotted product complex containing
     all of the strands contained in either of the original complexes.
+
+    Note: remote is ineffective, but may be set for convencience
     """
     r1_doms = reactant1.available_domains
     r2_doms = reactant2.available_domains
 
-    # max_helix cannot be effective within the find_on_loop function in the bind21 case.
-    # Remote is ineffective, but may be set for convencience
-
     def filter_bind21(dom1, struct1, loc1, dom2, struct2, loc2, freed):
         return struct1 is None and struct2 is None and dom1.can_pair(dom2)
-
-    interaction_list = []
-
-    # TODO: significant optimization likely possible here because the lists are sorted
 
     reactions = []
 
     # Iterate through all the free domains in reactant1
-    for (i, (dom1, strand_num1, dom_num1)) in enumerate(r1_doms):
+    for (dom1, strand_num1, dom_num1) in r1_doms:
         # For each, find any domains in reactant2 that could bind
-        for (j, (dom2, strand_num2, dom_num2)) in enumerate(r2_doms):
+        for (dom2, strand_num2, dom_num2) in r2_doms:
             # If it can pair, this is one possible reaction (this kind of
             # reaction cannot possibly produce a pseudoknotted structure)
             if (dom1.can_pair(dom2)):
                 # combine the two complexes into one, but do not perform the association
-                reactions.append(combine_complexes_21(
+                reactions.append(join_complexes_21(
                     reactant1, (strand_num1, dom_num1),
                     reactant2, (strand_num2, dom_num2)))
     
     output = []
     for complex, location1, location2 in reactions:
-
-        assert complex.triple(*location1) is not None
-        assert complex.triple(*location2) is not None
-
-        # build "before" and "after" loop structures
-        # NOTE: seams like zipper was called within find_on_loop as well, but then it could
-        # not find anything because the *filter function* is too strict. 
-        # it just predents it found the reaction via find_on_loop for return values...
-        out = find_on_loop( complex, location1, 1,
+        # build "before" and "after" loop structures via find_on_loop ...
+        out = find_on_loop(complex, location1, 1,
             lambda dom1, struct1, loc1, dom2, struct2, loc2, freed: 
                 loc1 == location1 and loc2 == location2, max_helix=False)
 
@@ -469,9 +452,8 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
 
         # zipper for max-helix semantics
         if max_helix :
-            (loc1s, loc2s, before, after) = zipper(
-                    complex, location1, location2, before.parts, after.parts, 1, 
-                    None, None, filter_bind21)
+            (loc1s, loc2s, before, after) = zipper(complex, location1, location2, 
+                    before.parts, after.parts, 1, None, None, filter_bind21)
 
         product = do_bind11(complex, loc1s.locs, loc2s.locs)
         
@@ -484,93 +466,7 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
 
     return sorted(list(set(output)))
 
-
-def find_external_strand_break(complex, location):
-    """
-    Takes a complex and a location (strand index, domain index). This location
-    refers to a domain in the `complex` which is on an external loop. Returns the
-    index of the last strand _before_ the strand break which would put `location`
-    on an external loop.
-
-    Finds the location of a strand break on an external loop.  Used to
-    determine where to split a complex when merging it with another complex at
-    `location`.
-    """
-
-    strand_num = location[0]
-    domain_num = location[1]
-
-    stop_flag = False
-    search_dom_index = domain_num + 1
-    search_strand_index = strand_num
-    insertion_strand_index = None
-
-    # We will first search to the 'right', looking for the first external
-    # strand break
-    while insertion_strand_index is None:
-        # First check to see if we've run off the end of a strand
-        # in which case the external break is between this strand and the
-        # next one
-        if (search_dom_index == len(complex.lol_sequence[search_strand_index])):
-            insertion_strand_index = search_strand_index
-        else:
-            paired_dom = complex.get_structure((search_strand_index, search_dom_index))
-            if (paired_dom is None):
-                # If the current domain is unpaired, move to the next domain
-                # to the right
-                search_dom_index += 1
-
-            # elif ((paired_dom[0] > search_strand_index) or \
-            # 		 ((paired_dom[0] == search_strand_index) and \
-            # 		  (paired_dom[1] > search_dom_index))):
-            elif (paired_dom > (search_strand_index, search_dom_index)):
-                # If the current domain is paired to something which is to the
-                # right of the current search domain, then we jump past that
-                # loop
-                search_strand_index = paired_dom[0]
-                search_dom_index = paired_dom[1] + 1
-            else:
-                # Otherwise the current domain is paired to something to the
-                # left of the current search domain, which means that the
-                # external strand break must be to the left
-                break
-
-    search_dom_index = domain_num - 1
-    search_strand_index = strand_num
-
-    # We now search to the 'left' if we haven't found the break yet
-    while insertion_strand_index is None:
-        # First check to see if we've run off the end of a strand, in which
-        # case the external break is between the previous strand and this one
-        if (search_dom_index == -1):
-            insertion_strand_index = search_strand_index - 1
-        else:
-            paired_dom = complex.get_structure((search_strand_index, search_dom_index))
-            if (paired_dom is None):
-                # If the current domain is unpaired, move to the next domain
-                # to the left
-                search_dom_index -= 1
-            # elif ((paired_dom[0] < search_strand_index) or
-            # 		 ((paired_dom[0] == search_strand_index) and
-            # 		  (paired_dom[1] < search_dom_index))):
-            elif (paired_dom < (search_strand_index, search_dom_index)):
-                # If the current domain is paired to something which is to the
-                # left of the current search domain, then we jump past that
-                # loop
-                search_strand_index = paired_dom[0]
-                search_dom_index = paired_dom[1] - 1
-            else:
-                # Otherwise the current domain is paired to something to the
-                # left of the current search domain, which means that the
-                # external strand break must be to the right; however we
-                # checked that, so there must have been an error...
-                raise \
-                    Exception("Unexpected error in find_external_strand_break")
-
-    return insertion_strand_index
-
-
-def combine_complexes_21(complex1, location1, complex2, location2):
+def join_complexes_21(complex1, location1, complex2, location2):
     """
     Combines two complexes to form one complex, binding the domain in
     complex1 at location1 to the domain in complex2 at location2.
@@ -578,174 +474,69 @@ def combine_complexes_21(complex1, location1, complex2, location2):
     Returns the new complex.
     """
 
-    # Remember locations on original complexes
-    loc1 = location1
-    loc2 = location2
+    # make sure that this value is larger than any possible loc in the pair_table
+    maxlen = len(complex1.strands) + len(complex2.strands) + 1
 
-    # First we need to find the external strand breaks where we will be
-    # splitting the complexes
+    if complex1.get_loop_index(location1) == 0 :
+        seq1 = complex1.sequence
+        ptb1 = complex1.pair_table
+        loc1 = location1
+        ptb1[loc1[0]][loc1[1]] = (maxlen,maxlen) # add an additional '(' 
+    else :
+        seen = False # don't break, otherwise you might lose the original strand ordering...
+        for e, rot in enumerate(complex1.rotate,1):
+            tmp = complex1.rotate_location(location1, -e)
+            if not seen and complex1.get_loop_index(tmp) == 0 :
+                seq1 = complex1.sequence
+                ptb1 = complex1.pair_table
+                loc1 = tmp
+                ptb1[loc1[0]][loc1[1]] = (maxlen,maxlen) # add an additional '(' 
+                seen = True
 
-    insertion_index_1 = find_external_strand_break(complex1, location1)
-    insertion_index_2 = find_external_strand_break(complex2, location2)
+    if complex2.get_loop_index(location2) == 0 :
+        seq2 = complex2.sequence
+        ptb2 = complex2.pair_table
+        loc2 = location2
+        ptb2[loc2[0]][loc2[1]] = (-1,-1) # add an additional ')' 
+    else :
+        seen = False # don't break, otherwise you might lose the original strand ordering...
+        for e, rot in enumerate(complex2.rotate,1):
+            tmp = complex2.rotate_location(location2, -e)
+            if not seen and complex2.get_loop_index(tmp) == 0 :
+                seq2 = complex2.sequence
+                ptb2 = complex2.pair_table
+                loc2 = tmp
+                ptb2[loc2[0]][loc2[1]] = (-1,-1) # add an additional ')' 
+                seen = True
 
-    # We then find the four parts, 1-4, which we will stick together
-    # in order to create our final complex
+    # build the new sequence and structure *including* the new pair
+    newseq = seq1 + ['+'] + seq2
+    newstr = pair_table_to_dot_bracket(ptb1) + ['+'] + pair_table_to_dot_bracket(ptb2)
 
-    # If this condition is true, we will need to cut up complex1
-    if insertion_index_1 >= 0:
-        d1 = complex1.lol_sequence[0:(insertion_index_1 + 1)]
-        d4 = complex1.lol_sequence[(insertion_index_1 + 1):]
-        s1 = complex1.pair_table[0:(insertion_index_1 + 1)]
-        s4 = complex1.pair_table[(insertion_index_1 + 1):]
-    else:
-        raise NotImplementedError('unclear')
-        # It's not clear to me whether this  condition will ever be executed,
-        # because find_external_strand_break should never return < 0 -CG 5/31
-        d1 = complex1.strands[:]
-        d4 = []
-        s1 = copy.deepcopy(complex1.structure)
-        s4 = []
+    # update loc2 from the new structure
+    combined = make_pair_table(newstr)
+    loc2 = combined[loc1[0]][loc1[1]]
 
-    # If this condition is true, we will need to cut up complex2
-    if insertion_index_2 >= 0:
-        d2 = complex2.lol_sequence[(insertion_index_2 + 1):]
-        d3 = complex2.lol_sequence[0:(insertion_index_2 + 1)]
-        s2 = complex2.pair_table[(insertion_index_2 + 1):]
-        s3 = complex2.pair_table[0:(insertion_index_2 + 1)]
-    else:
-        raise NotImplementedError('unclear')
-        # Likewise with this one; find_external_strand_break should always
-        # produce an index >= 0
-        d2 = []
-        d3 = complex2.strands[:]
-        s2 = []
-        s3 = copy.deepcopy(complex2.structure)
+    # remove the new pair again ...
+    combined[loc1[0]][loc1[1]] = None
+    combined[loc2[0]][loc2[1]] = None
 
-    # We now need to update the structures based on the way things were shifted
-    # We calculate the offsets for strand locations in each chunk
-    s1_strand_offset = 0
-    s2_strand_offset = len(d1) - len(d3)
-    s3_strand_offset = len(d1) + len(d2)
-    s4_strand_offset = len(d2) + len(d3)
+    # update the structure to the unpaired (disconnected) version.
+    newstr = pair_table_to_dot_bracket(combined)
 
-    # We then iterate through the structure and update as needed
-    if insertion_index_1 >= 0:
-        for (strand_index, strand_list) in enumerate(s1):
-            for (dom_index, pair) in enumerate(strand_list):
-                # If the domain is paired, check if it is paired to something
-                # in s4
-                if (pair and (pair[0] > insertion_index_1)):
-                    new_pair = (pair[0] + s4_strand_offset, pair[1])
-                    s1[strand_index][dom_index] = new_pair
-
-    for (strand_index, strand_list) in enumerate(s2):
-        for (dom_index, pair) in enumerate(strand_list):
-            # If the domain is paired, check to see if it is paired to something
-            # in s2 or s3
-            if (pair):
-                # Check if paired to s2
-                if ((insertion_index_2 >= 0) and (
-                        pair[0] > insertion_index_2)):
-                    new_pair = (pair[0] + s2_strand_offset, pair[1])
-                    s2[strand_index][dom_index] = new_pair
-                # Otherwise paired to s3
-                else:
-                    new_pair = (pair[0] + s3_strand_offset, pair[1])
-                    s2[strand_index][dom_index] = new_pair
-
-    for (strand_index, strand_list) in enumerate(s3):
-        for (dom_index, pair) in enumerate(strand_list):
-            # If the domain is paired, check to see if it is paired to something
-            # in s2 or s3
-            if (pair):
-                # Check if paired to s2
-                if ((insertion_index_2 >= 0) and (
-                        pair[0] > insertion_index_2)):
-                    new_pair = (pair[0] + s2_strand_offset, pair[1])
-                    s3[strand_index][dom_index] = new_pair
-                # Otherwise paired to s3
-                else:
-                    new_pair = (pair[0] + s3_strand_offset, pair[1])
-                    s3[strand_index][dom_index] = new_pair
-
-    for (strand_index, strand_list) in enumerate(s4):
-        for (dom_index, pair) in enumerate(strand_list):
-            # Check if the domain is paired to something in s4
-            if (pair and (pair[0] > insertion_index_1)):
-                new_pair = (pair[0] + s4_strand_offset, pair[1])
-                s4[strand_index][dom_index] = new_pair
-
-    new_strands = d1 + d2 + d3 + d4
-    new_structure = s1 + s2 + s3 + s4
-
-    # Finally, we need to update given reaction indices to new indices
-    # and then add the new pairing to the structure
-    # if ((insertion_index_1 > 0) and (location1[0] > insertion_index_1)):
-    if (location1[0] > insertion_index_1):
-        location1 = (location1[0] + s4_strand_offset, location1[1])
-
-    # NOTE: This case is unexercised by all tests written by Karthik, regardless
-    # whether the first clause is included. Since this tests whether the
-    # location2 is within d2 or d3, I think the first clause is unnecessary.
-
-    # if ((insertion_index_2 > 0) and (location2[0] > insertion_index_2)):
-    if (location2[0] > insertion_index_2):
-        location2 = (location2[0] + s2_strand_offset, location2[1])
-    else:
-        location2 = (location2[0] + s3_strand_offset, location2[1])
-
-    # # do single bind11
-    # new_structure[location1[0]][location1[1]] = location2
-    # new_structure[location2[0]][location2[1]] = location1
-
-    # remember strands participating in binding
-    #strand1 = complex1.get_strand(loc1[0])
-    #strand2 = complex2.get_strand(loc2[0])
-
-    # make new complex
-    sequence = []
-    for newstrand in new_strands:
-        for d in newstrand :
-            sequence.append(d)
-        sequence.append('+')
-    sequence = sequence[:-1]
-
-    newstr = pair_table_to_dot_bracket(new_structure)
     try :
-        new_complex = PepperComplex(sequence, newstr)
+        new_complex = PepperComplex(newseq, newstr)
     except DSDObjectsError, e:
         new_complex = PepperComplex.dictionary[e.solution]
         # strands may be re-ordered in new complex, so we need to back
         # out where the new strands ended up
-        location1 = new_complex.rotate_location(location1, e.rotations)
-        location2 = new_complex.rotate_location(location2, e.rotations)
+        loc1 = new_complex.rotate_location(loc1, e.rotations)
+        loc2 = new_complex.rotate_location(loc2, e.rotations)
 
-    # new_strands = new_complex.strands
-    # for index, strand in enumerate(new_strands):
-    # 	if strand == strand1: location1 = (index, location1[1])
-    # 	if strand == strand2: location2 = (index, location2[1])
+    if loc1 > loc2:
+        (loc1, loc2) = (loc2,loc1)
 
-    return new_complex, location1, location2
-
-
-def do_single_open(reactant, loc):
-    new_struct = reactant.pair_table
-    loc1 = loc
-    loc2 = new_struct[loc1[0]][loc1[1]]
-    assert new_struct[loc2[0]][loc2[1]] == loc1
-    new_struct[loc1[0]][loc1[1]] = None
-    new_struct[loc2[0]][loc2[1]] = None
-    newstr = pair_table_to_dot_bracket(new_struct)
-    try:
-        out = PepperComplex(reactant.sequence, newstr)
-    except DSDObjectsError, e:
-        out = PepperComplex.dictionary[e.solution]
-    return out
-
-def breathing(reactant, ends = 1):
-    # every complex reacts by opening one dummy nucleotide at the end
-    # add an universal dummy-domain to each helix-end.
-    pass
+    return new_complex, loc1, loc2
 
 def open(reactant, max_helix = True, release_11=6, release_1N=6):
     """
@@ -757,18 +548,12 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
     A dissociation can happen to any helix under the threshold length
 
     """
-    # """
-    # Gives the maximum length of a duplex in nucleotides that should be considered
-    # reversibly bound; that is, helices longer than RELEASE_CUTOFF will never be
-    # unbound by the `open` reaction function.
-    # """
 
     # remember the larger release cutoff; don't enumerate any reactions
     # for helices longer than this
     max_release = max(release_11, release_1N)
 
     reactions = []
-
     structure = reactant.pair_table
     strands = reactant.lol_sequence
 
@@ -816,11 +601,10 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                 bound_domain = reactant.get_domain(bound_loc)
                 helix_length = len(bound_domain)
 
-                # Now iterate through the whole helix to find the other end
-                # of this one
-                # (The helix ends at the first strand break from either direction)
+                # Now iterate through the whole helix to find the other end of
+                # this one (The helix ends at the first strand break from
+                # either direction)
                 while True:
-
                     # Strands run in opposite directions, so A must be incremented
                     # and B decremented in order that both pointers move "right"
                     # along the helix- CG 5/21
@@ -833,10 +617,8 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                     elif (helix_endB[1] < 0):
                         break
 
-                    # If these domains aren't bound to each other, the helix
-                    # has ended
-                    if (tuple(helix_endA) !=
-                            structure[helix_endB[0]][helix_endB[1]]):
+                    # If these domains aren't bound to each other, the helix has ended
+                    if (tuple(helix_endA) != structure[helix_endB[0]][helix_endB[1]]):
                         break
 
                     # Add the current domain to the current helix
@@ -845,8 +627,6 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
 
                 # We must also iterate in the other direction
                 while True:
-
-                    # Now we move
                     helix_startA[1] -= 1
                     helix_startB[1] += 1
 
@@ -856,10 +636,8 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                     elif (helix_startB[1] >= len(strands[helix_startB[0]])):
                         break
 
-                    # If these domains aren't bound to each other, the helix
-                    # has ended
-                    if (tuple(helix_startA) !=
-                            structure[helix_startB[0]][helix_startB[1]]):
+                    # If these domains aren't bound to each other, the helix has ended
+                    if (tuple(helix_startA) != structure[helix_startB[0]][helix_startB[1]]):
                         break
 
                     # Add the current domain to the current helix
@@ -888,17 +666,14 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                     except DSDObjectsError, e:
                         release_reactant = PepperComplex.dictionary[e.solution]
 
-                    #product_set = find_releases(release_reactant)
                     product_set = release_reactant.split()
-
                     reactions.append((product_set, helix_length))
 
     output = []
     for product_set, length in reactions:
         reaction = ReactionPathway('open', [reactant], sorted(product_set))
 
-        # discard reactions where the release cutoff is greater than the
-        # threshold
+        # discard reactions where the release cutoff is greater than the threshold
         if len(reaction.products) == 1 and length > release_11:
             continue
         elif len(reaction.products) > 1 and length > release_1N:
@@ -907,21 +682,21 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
         reaction._const = opening_rate(length)
         output.append(reaction)
 
-    output = sorted(list(set(output)))
+    return sorted(list(set(output)))
 
-    return output
-
-
-def find_releases(reactant):
-    raise DeprecationWarning
-
-def domains_adjacent(loc1, loc2):
-    """
-    Returns true if the two locations represent adjacent domains;
-    each location should be a (strand_index, domain_index) pair
-    """
-    return (loc1[0] == loc2[0]) and (abs(loc1[0] - loc2[0]) == 1)
-
+def do_single_open(reactant, loc):
+    new_struct = reactant.pair_table
+    loc1 = loc
+    loc2 = new_struct[loc1[0]][loc1[1]]
+    assert new_struct[loc2[0]][loc2[1]] == loc1
+    new_struct[loc1[0]][loc1[1]] = None
+    new_struct[loc2[0]][loc2[1]] = None
+    newstr = pair_table_to_dot_bracket(new_struct)
+    try:
+        out = PepperComplex(reactant.sequence, newstr)
+    except DSDObjectsError, e:
+        out = PepperComplex.dictionary[e.solution]
+    return out
 
 def branch_3way(reactant, max_helix = True, remote=True):
     """
@@ -947,7 +722,6 @@ def branch_3way(reactant, max_helix = True, remote=True):
                 continue
 
             displacing_loc = (strand_index, domain_index)
-            #displacing_domain = reactant.get_domain(displacing_loc)
 
             # search 5'->3' and 3'->5' directions around the loop for a bound
             # domain that is complementary (and therefore can be displaced)
@@ -977,20 +751,15 @@ def branch_3way(reactant, max_helix = True, remote=True):
 
                 # skip remote toehold reactions if directed
                 if not remote :
-                    if not (not after.is_open and after.stems ==
-                            1 and after.bases == 0):
+                    if not (not after.is_open and after.stems == 1 and after.bases == 0):
                         # print "Rejecting... " + reaction.kernel_string()
                         # import pdb; pdb.set_trace()
                         continue
 
                 reactions.append(reaction)
 
-    output = reactions
-
     # Remove any duplicate reactions
-    output = sorted(list(set(output)))
-
-    return output
+    return sorted(list(set(reactions)))
 
 def do_3way_migration(reactant, displacing_locs, bound_locs):
     """
@@ -998,12 +767,11 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
     location in bound_locs. The stuff bound to bound_locs will end up un-bound
     """
 
-    def do_single_3way_migration(struct, displacing_loc, new_bound_loc):
+    def update_structure(struct, displacing_loc, new_bound_loc):
         """
         displacing_loc will be bound to new_bound_loc; whatever new_bound_loc
         was bound to will be unbound.
         """
-        #struct = reactant.pair_table
         displaced_loc = struct[new_bound_loc[0]][new_bound_loc[1]]
 
         assert struct[displacing_loc[0]][displacing_loc[1]] is None
@@ -1015,26 +783,113 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
         struct[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
         struct[displaced_loc[0]][displaced_loc[1]] = None
 
-        return struct
-
-
-    if isinstance(displacing_locs, tuple):
-        displacing_locs = [displacing_locs]
-    if isinstance(bound_locs, tuple):
-        bound_locs = [bound_locs]
-
     struct = reactant.pair_table
-    for displacing_loc, bound_loc in zip(displacing_locs, bound_locs):
-        struct = do_single_3way_migration(struct, displacing_loc, bound_loc)
+    for displacing_loc, new_bound_loc in zip(displacing_locs, bound_locs):
+        update_structure(struct, displacing_loc, new_bound_loc)
     newstr = pair_table_to_dot_bracket(struct)
     try:
          product = PepperComplex(reactant.sequence, newstr)
     except DSDObjectsError, e:
-         # TODO: special error class for duplication errors
          product = PepperComplex.dictionary[e.solution]
   
     return product.split()
 
+def branch_4way(reactant, max_helix = False, remote=True):
+    """
+    Returns a list of complex sets that can be created through one iteration of
+    a 4 way branch migration reaction (each set consists of the molecules that
+    result from the iteration; more than one molecule may result because branch
+    migration can liberate strands and complexes).
+    """
+
+    def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2, freed):
+        """ A filter function for *find_on_loop()* """
+        # struct1 is necessary within the zipper function...
+        return struct1 is not None and struct2 is not None and dom1 == dom2
+
+    reactions = []
+    structure = reactant.pair_table
+
+    # We loop through all domains
+    for (strand_index, strand) in enumerate(structure):
+        for (domain_index, domain) in enumerate(strand):
+
+            # Unbound domains can't participate in branch migration
+            if (structure[strand_index][domain_index] is None):
+                continue
+
+            displacing_loc = (strand_index, domain_index)
+
+            # searches only 5'->3' direction around the loop for a bound domain that
+            # has the same sequence (and therefore can be displaced)
+            #
+            #   z  _~_  z* (displacing)
+            #  ___/   \___>
+            #
+            # <___     ___
+            #     \_ _/
+            #   z*  ~   z
+            #
+
+            bound_doms = find_on_loop(reactant, displacing_loc, +1, 
+                    filter_4way, max_helix=max_helix, b4way = True)
+
+            # build products
+            for (displacing, displaced, before, after) in bound_doms:
+
+                products = do_4way_migration(reactant, displacing.locs,
+                            (structure[displacing_loc[0]][displacing_loc[1]] 
+                                for displacing_loc in displacing.locs),
+                            (structure[bound_loc[0]][bound_loc[1]]
+                                for bound_loc in displaced.locs), 
+                            displaced.locs)
+
+                reaction = ReactionPathway('branch_4way', [reactant], products)
+
+                # length of invading domain
+                length = len(displacing)
+
+                # calculate reaction constant
+                reaction._const = branch_4way_remote_rate(length, before, after)
+
+                # skip remote toehold reactions
+                if not remote:
+                    if not (not after.is_open and after.stems == 1 and after.bases == 0 and
+                            not before.is_open and before.stems == 1 and before.bases == 0):
+                        continue
+
+                reactions.append(reaction)
+
+    # remove any duplicate reactions
+    return sorted(list(set(reactions)))
+
+def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
+    """
+    Perform a sequence of max_helix 4-way branch migration reactions.
+    """
+    def update_structure(struct, loc1, loc2, loc3, loc4):
+        """
+        Performs a 4 way branch migration on a copy of reactant, with loc1 as the
+        displacing domain, loc2 as the domain displaced from loc1, loc3 as the
+        template domain, and loc4 as the domain displaced from loc3. Returns the
+        set of complexes produced by this reaction (may be one or more complexes).
+    
+        loc1:loc2, loc3:loc4 -> loc1:loc3, loc2:loc4
+        """
+        struct[loc1[0]][loc1[1]] = loc3
+        struct[loc3[0]][loc3[1]] = loc1
+        struct[loc2[0]][loc2[1]] = loc4
+        struct[loc4[0]][loc4[1]] = loc2
+
+    struct = reactant.pair_table
+    for loc1, loc2, loc3, loc4 in zip(loc1s, loc2s, loc3s, loc4s):
+        update_structure(struct, loc1, loc2, loc3, loc4)
+    newstr = pair_table_to_dot_bracket(struct)
+    try:
+         product = PepperComplex(reactant.sequence, newstr)
+    except DSDObjectsError, e:
+         product = PepperComplex.dictionary[e.solution]
+    return product.split()
 
 def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way = False):
     """
@@ -1368,114 +1223,9 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand
 
     return start_locs, bound_locs, before, after
 
+def breathing(reactant, ends = 1):
+    # every complex reacts by opening one dummy nucleotide at the end
+    # add an universal dummy-domain to each helix-end.
+    pass
 
-def branch_4way(reactant, max_helix = False, remote=True):
-    """
-    Returns a list of complex sets that can be created through one iteration of
-    a 4 way branch migration reaction (each set consists of the molecules that
-    result from the iteration; more than one molecule may result because branch
-    migration can liberate strands and complexes).
-    """
-
-    def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2, freed):
-        """ A filter function for *find_on_loop()* """
-        # struct1 is necessary within the zipper function...
-        return struct1 is not None and struct2 is not None and dom1 == dom2
-
-    reactions = []
-    structure = reactant.pair_table
-
-    # We loop through all domains
-    for (strand_index, strand) in enumerate(structure):
-        for (domain_index, domain) in enumerate(strand):
-
-            # Unbound domains can't participate in branch migration
-            if (structure[strand_index][domain_index] is None):
-                continue
-
-            displacing_loc = (strand_index, domain_index)
-
-            # searches only 5'->3' direction around the loop for a bound domain that
-            # has the same sequence (and therefore can be displaced)
-            #
-            #   z  _~_  z* (displacing)
-            #  ___/   \___>
-            #
-            # <___     ___
-            #     \_ _/
-            #   z*  ~   z
-            #
-
-            bound_doms = find_on_loop(reactant, 
-                    displacing_loc, +1, filter_4way, max_helix=max_helix, b4way = True)
-
-            # build products
-            for (displacing, displaced, before, after) in bound_doms:
-                reaction = ReactionPathway('branch_4way', [reactant], 
-                        do_4way_migration(reactant, displacing.locs,
-                            (structure[displacing_loc[0]][displacing_loc[1]] 
-                                for displacing_loc in displacing.locs),
-                            (structure[bound_loc[0]][bound_loc[1]]
-                                for bound_loc in displaced.locs), 
-                            displaced.locs)
-                        )
-
-                # length of invading domain
-                length = len(displacing)
-
-                # calculate reaction constant
-                reaction._const = branch_4way_remote_rate(length, before, after)
-
-                # skip remote toehold reactions
-                if not remote:
-                    if not (not after.is_open and after.stems == 1 and after.bases == 0 and
-                            not before.is_open and before.stems == 1 and before.bases == 0):
-                        continue
-
-                reactions.append(reaction)
-
-    output = reactions
-
-    # remove any duplicate reactions
-    return sorted(list(set(output)))
-
-def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
-    """
-    Perform a sequence of max_helix 4-way branch migration reactions.
-
-    Note: Only tested for single 4-way branch migration.
-    """
-    def do_single_4way_migration(struct, loc1, loc2, loc3, loc4):
-        """
-        Performs a 4 way branch migration on a copy of reactant, with loc1 as the
-        displacing domain, loc2 as the domain displaced from loc1, loc3 as the
-        template domain, and loc4 as the domain displaced from loc3. Returns the
-        set of complexes produced by this reaction (may be one or more complexes).
-    
-        loc1:loc2, loc3:loc4 -> loc1:loc3, loc2:loc4
-        """
-        struct[loc1[0]][loc1[1]] = loc3
-        struct[loc3[0]][loc3[1]] = loc1
-        struct[loc2[0]][loc2[1]] = loc4
-        struct[loc4[0]][loc4[1]] = loc2
-        return struct
-
-    if isinstance(loc1s, tuple):
-        loc1s = [loc1s]
-    if isinstance(loc2s, tuple):
-        loc2s = [loc2s]
-    if isinstance(loc3s, tuple):
-        loc3s = [loc3s]
-    if isinstance(loc4s, tuple):
-        loc4s = [loc4s]
-
-    struct = reactant.pair_table
-    for loc1, loc2, loc3, loc4 in zip(loc1s, loc2s, loc3s, loc4s):
-        struct = do_single_4way_migration(struct, loc1, loc2, loc3, loc4)
-    newstr = pair_table_to_dot_bracket(struct)
-    try:
-         product = PepperComplex(reactant.sequence, newstr)
-    except DSDObjectsError, e:
-         product = PepperComplex.dictionary[e.solution]
-    return product.split()
 

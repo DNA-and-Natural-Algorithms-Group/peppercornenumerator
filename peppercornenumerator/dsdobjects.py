@@ -54,7 +54,6 @@ class DSDObjectsError(Exception):
     def rotations(self, value):
         self._rotations = value
 
-
 def reset_names(): # TODO: find a better name
     """
     Reset all names, counters of dnaobjects.
@@ -158,7 +157,6 @@ def make_lol_sequence(seq):
     indices = [-1] + [i for i, x in enumerate(seq) if x == "+"]
     indices.append(len(seq))
     return [seq[indices[i - 1] + 1 : indices[i]] for i in range(1, len(indices))]
-
 
 def make_loop_index(ptable):
     """
@@ -771,9 +769,15 @@ class DSD_Complex(object):
 
         # Initialized on demand:
         self._pair_table = None
+        self._loop_index = None
+        self._exterior_loops = None
+        self._lol_sequence = None
         self._strands = None
         self._domains = None
+        self._exterior_domains = None
 
+        # rotate strands into a canonical form.
+        # two complexes are equal if they have equal canonial form
         if self.canonical_form in DSD_Complex.canonical_forms:
             realname = DSD_Complex.canonical_forms[self.canonical_form]
             other = DSD_Complex.dictionary[realname]
@@ -785,10 +789,6 @@ class DSD_Complex(object):
         else :
             DSD_Complex.canonical_forms[self.canonical_form] = self.name
 
-
-        # rotate strands into a canonical form.
-        # two complexes are equal if they have equal canonial form
-        self._exterior_domains = None
 
     @property
     def name(self):
@@ -888,8 +888,17 @@ class DSD_Complex(object):
         # Make a new pair_table every time, it might get modified.
         return make_pair_table(self.structure)
 
+    def get_loop_index(self, loc):
+        if not self._pair_table:
+            self._pair_table = make_pair_table(self.structure)
+        if not self._loop_index:
+            self._loop_index, self._exterior_loops = make_loop_index(self._pair_table)
+        return self._loop_index[loc[0]][loc[1]]
+
     def get_domain(self, loc):
-        return self.lol_sequence[loc[0]][loc[1]]
+        if not self._lol_sequence:
+            self._lol_sequence = make_lol_sequence(self._sequence)
+        return self._lol_sequence[loc[0]][loc[1]]
     
     def get_paired_loc(self, loc):
         if not self._pair_table:
@@ -904,12 +913,13 @@ class DSD_Complex(object):
         if not self._exterior_domains:
             if not self._pair_table:
                 self._pair_table = make_pair_table(self.structure)
-            loop_index, exteriors = make_loop_index(self._pair_table)
+            if not self._loop_index or self._exterior_loops:
+                self._loop_index, self._exterior_loops = make_loop_index(self._pair_table)
 
             self._exterior_domains = []
-            for si, strand in enumerate(loop_index):
+            for si, strand in enumerate(self._loop_index):
                 for di, domain in enumerate(strand):
-                    if loop_index[si][di] in exteriors:
+                    if self._loop_index[si][di] in self._exterior_loops:
                         if self._pair_table[si][di] is None:
                             self._exterior_domains.append((si, di))
         return self._exterior_domains
@@ -930,7 +940,9 @@ class DSD_Complex(object):
     @property
     def nucleotide_sequence(self):
         """list: the complex sequence in form of a flat list of nucleotides. """
-        lol = self.lol_sequence
+        if not self._lol_sequence:
+            self._lol_sequence = make_lol_sequence(self._sequence)
+        lol = self._lol_sequence
 
         def my_base_sequence(seq):
             if all(isinstance(d, DSD_Domain) for d in seq):
@@ -1000,6 +1012,8 @@ class DSD_Complex(object):
                 self._structure[i] = "("
             self._structure = self._structure[p + 1:] + ["+"] + self._structure[:p]
         self._pair_table = None
+        self._loop_index = None
+        self._exterior_domains = None
         return self
 
     # Sanity Checks
@@ -1028,12 +1042,12 @@ class DSD_Complex(object):
     def is_connected(self):
         if not self._pair_table:
             self._pair_table = make_pair_table(self.structure)
-        try :
-            # make loop index raises disconnected error.
-            make_loop_index(self._pair_table)
-        except DSDObjectsError, e:
-            #raise DSDObjectsError(e)
-            return False
+        if not self._loop_index:
+            try :
+                # make loop index raises disconnected error.
+                self._loop_index, self._exterior_loops = make_loop_index(self._pair_table)
+            except DSDObjectsError, e:
+                return False
         return True
 
     def split_complex(self, ps, pt):
@@ -1073,7 +1087,6 @@ class DSD_Complex(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
 
 class DSD_Reaction(object):
     """ A reaction pathway.
@@ -1683,12 +1696,14 @@ class TestTube(object):
         Returns:
           [:obj:`dict()`]: strands[strand_1] = [Domain(X), Domain(Y), Domain(Z)]
         """
+        if not self._lol_sequence:
+            self._lol_sequence = make_lol_sequence(self._sequence)
         if not self._strands:
             count = 0
             self._strands = dict()
             self._strand_names = dict()
             for cplx in self.complexes:
-                for s in cplx.lol_sequence:
+                for s in cplx._lol_sequence:
                     strand = tuple(map(str, s))
                     if strand not in self._strand_names:
                         name = 'strand_{}'.format(count)

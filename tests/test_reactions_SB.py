@@ -11,7 +11,7 @@ from peppercornenumerator.pil_parser import parse_pil_string
 import peppercornenumerator.reactions as rxn
 
 # Input parsing stuff
-from peppercornenumerator.utils import PepperDomain, Strand, PepperComplex, parse_dot_paren
+from peppercornenumerator.utils import PepperDomain, PepperComplex
 from peppercornenumerator.dsdobjects import reset_names
 from peppercornenumerator.input import from_kernel
 
@@ -62,7 +62,7 @@ def nuskell_parser(pil_string, ddlen=15):
           if d == '+': 
               sid = '_'.join(tuple(map(str,strand)))
               if sid not in strands :
-                  strands[sid] = Strand(sid, strand)
+                  strands[sid] = None
               cplx_strands.append(strands[sid])
               strand = [] # construct a strand
               continue
@@ -90,7 +90,7 @@ def nuskell_parser(pil_string, ddlen=15):
 
         sid = '_'.join(tuple(map(str,strand)))
         if sid not in strands :
-            strands[sid] = Strand(sid, strand)
+            strands[sid] = None
         cplx_strands.append(strands[sid])
         strand = [] # construct a strand
 
@@ -103,15 +103,11 @@ def nuskell_parser(pil_string, ddlen=15):
                 domain = domains[dom]
             sequence[e] = domain
 
-        #cplx_structure = parse_dot_paren(''.join(structure))
         complex = PepperComplex(sequence, structure, name=name)
         complexes[name] = complex
       else :
         raise NotImplementedError('Weird expression returned from pil_parser!')
 
-    #domains = domains.values()
-    #strands = strands.values()
-    #complexes = complexes.values()
     return (domains, strands, complexes)
 
 @unittest.skipIf(SKIP, "skipping tests")
