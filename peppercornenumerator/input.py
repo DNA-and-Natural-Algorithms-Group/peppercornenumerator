@@ -13,9 +13,9 @@ import json
 import peppercornenumerator
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactions
-from peppercornenumerator.reactions import ReactionPathway, get_auto_name
-from peppercornenumerator.dsdobjects import SequenceConstraint
 
+from peppercornenumerator.objects import PepperDomain, PepperComplex, PepperRestingState
+from dsdobjects.parser import parse_kernel_string, parse_kernel_file
 
 def input_enum(filename):
     """
@@ -54,46 +54,35 @@ def input_enum(filename):
 
             domain_name = parts[1]
             if domain_name in domains:
-                logging.error(
-                    "Duplicate domain name encountered in input line %d" %
-                    line_counter)
+                logging.error( "Duplicate domain name encountered in input line %d" % line_counter)
                 raise Exception()
 
             if not re.match(r'\w+$', domain_name):
-                logging.warn(
-                    "Non-alphanumeric domain name %s encountered in input line %d" %
-                    (domain_name, line_counter))
+                logging.warn( "Non-alphanumeric domain name %s encountered in input line %d" % (domain_name, line_counter))
 
             # The domain length could be either short or long or it could be
             # an exact number
             domain_length = parts[3]
             if (domain_length == 'short') :
-                domain_length = utils.SHORT_DOMAIN_LENGTH 
+                domain_type = 'short'
+                domain_length = None
             elif (domain_length == 'long') :
-                domain_length = utils.LONG_DOMAIN_LENGTH
+                domain_type = 'long'
+                domain_length = None
             else :
                 domain_length = int(domain_length)
-                if domain_length <= 0:
-                    logging.warn("Domain of length %d found in input line %d"
-                                 % (domain_length, line_counter))
+                domain_type = None
+                if domain_length <= 0: logging.warn("Domain of length %d found in input line %d" % (domain_length, line_counter))
 
-            # Check to see if a sequence is specified
-            if len(parts) > 4:
-                domain_sequence = list(parts[4])
-            else:
-                domain_sequence = list('N' * domain_length)
+            # # Check to see if a sequence is specified
+            # if len(parts) > 4:
+            #     domain_sequence = list(parts[4])
+            # else:
+            #     domain_sequence = list('N' * domain_length)
 
             # Create the new domains
-            new_dom = utils.PepperDomain(domain_sequence, name=domain_name)
-            new_dom_comp = new_dom.get_ComplementDomain(list('N' * domain_length))
-
-            #print new_dom, new_dom_comp
-
-            #new_dom = utils.Domain(domain_name, domain_length,
-            #                       sequence=domain_sequence)
-            #new_dom_comp = utils.Domain(domain_name, domain_length,
-            #                            sequence=domain_sequence,
-            #                            is_complement=True)
+            new_dom = PepperDomain(domain_name, dtype = domain_type, length = domain_length)
+            new_dom_comp = ~new_dom
 
             domains[domain_name] = new_dom
             domains["%s*" % domain_name] = new_dom_comp
@@ -121,9 +110,7 @@ def input_enum(filename):
             strand_doms = []
             for domain_name in parts[3:]:
                 if domain_name not in domains:
-                    logging.error(
-                        "Invalid domain name %s encountered in input line %d" %
-                        (domain_name, line_counter))
+                    logging.error( "Invalid domain name %s encountered in input line %d" % (domain_name, line_counter))
                     raise Exception()
 
                 strand_doms.append(domains[domain_name])
@@ -131,8 +118,7 @@ def input_enum(filename):
             if len(strand_doms) == 0:
                 logging.warn("0-length strand encountered in input line %d")
 
-            new_strand = utils.Strand(strand_name, strand_doms)
-            strands[strand_name] = new_strand
+            strands[strand_name] = strand_doms
 
         # This is the beginning of a complex
         elif line.startswith("complex"):
@@ -145,285 +131,104 @@ def input_enum(filename):
 
             complex_name = parts[1]
             if complex_name in complexes:
-                logging.error(
-                    "Duplicate complex name encountered in input line %d" %
-                    line_counter)
+                logging.error( "Duplicate complex name encountered in input line %d" % line_counter)
                 raise Exception()
 
             if not re.match(r'\w+$', complex_name):
-                logging.warn(
-                    "Non-alphanumeric complex name %s encountered in input line %d" %
-                    (complex_name, line_counter))
+                logging.warn( "Non-alphanumeric complex name %s encountered in input line %d" % (complex_name, line_counter))
 
-            complex_strands = []
+            complex_sequence = []
 
             strands_line = fin.readline()
             strands_line = strands_line.strip()
             strands_line_parts = strands_line.split()
             for strand_name in strands_line_parts:
                 if strand_name not in strands:
-                    logging.error(
-                        "Invalid strand name %s encountered in input line %d" %
-                        (strand_name, line_counter))
+                    logging.error( "Invalid strand name %s encountered in input line %d" % (strand_name, line_counter))
                     raise Exception()
                 else:
-                    complex_strands.append(strands[strand_name])
+                    complex_sequence.extend(strands[strand_name] + ['+'])
+
+            complex_sequence = complex_sequence[:-1] # remove last strandbreak
 
             structure_line = fin.readline()
             structure_line = structure_line.strip()
 
-            complex_structure = utils.parse_dot_paren(structure_line)
-
-            struct_length = sum(map(len, complex_structure))
-            domains_length = sum(map(len, complex_strands))
-            if(struct_length != domains_length):
-                logging.error(
-                    "Complex %(name)s has %(doms)d domains but structure size %(struct_length)d. (structure was %(struct)s)" % {
-                        "name": complex_name,
-                        "doms": domains_length,
-                        "struct_length": struct_length,
-                        "struct": structure_line})
-                raise Exception()
-
-            complex = utils.Complex(
-                complex_name, complex_strands, complex_structure)
-            complex.check_structure()
-            complexes[complex_name] = complex
-
+            complexes[complex_name] = PepperComplex(complex_sequence, list(structure_line.replace(' ','')), name=complex_name)
         else:
-            logging.error("Unexpected characters encountered in input line %d"
-                          % line_counter)
+            logging.error("Unexpected characters encountered in input line %d" % line_counter)
             raise Exception()
         line = fin.readline()
         line_counter += 1
 
-    domains = domains.values()
-    strands = strands.values()
-    complexes = complexes.values()
+    return peppercornenumerator.Enumerator(complexes.values())
 
-    enumerator = peppercornenumerator.Enumerator(complexes, strands, domains)
-    return enumerator
+def complexes_from_kernel(kernel_string, ddlen = 15):
+    parsed_kernel = parse_kernel_string(kernel_string)
+    complexes = build_pepper_complexes(parsed_kernel, ddlen)
+    return complexes
 
+def build_pepper_complexes(parsed_kernel, ddlen = 15):
+    def resolve_loops(loop):
+        """ Return a sequence, structure pair from kernel format with parenthesis. """
+        sequen = []
+        struct = []
+        for dom in loop :
+            if isinstance(dom, str):
+                sequen.append(dom)
+                if dom == '+' :
+                    struct.append('+')
+                else :
+                    struct.append('.')
+            elif isinstance(dom, list):
+                struct[-1] = '('
+                old = sequen[-1]
+                se, ss = resolve_loops(dom)
+                sequen.extend(se)
+                struct.extend(ss)
+                sequen.append(old + '*' if old[-1] != '*' else old[:-1])
+                struct.append(')')
+        return sequen, struct
 
-def parse_kernel(line):
-    from pyparsing import Group, Forward, Word, Combine, Literal, Optional, Suppress, ZeroOrMore, OneOrMore, StringEnd, delimitedList, nestedExpr, alphanums
-    # letter = (* any alphanumeric character *)
-    # identifier = letter, {letter}, [*]
-    # pattern = expression, {space, expression}
-    # expression = domain | loop | wildcard | break
-    # domain = identifier
-    # loop = identifier, "(", [pattern] ,")"
-    # wildcard = "?" | "_" | "~" (* ... etc.*)
-    # break = "+"
+    # Do domains first, just in case...
+    domains = {}
+    for line in parsed_kernel:
+        if line[0] == 'domain':
+            domains[line[1]] = PepperDomain(line[1], length = int(line[2]))
 
-    identifier = Word(alphanums + "_-").setName("identifier")
-    domain = Combine(identifier + Optional(Literal("^")) +
-                     Optional(Literal("*"))).setName("domain")
-    sbreak = Literal("+").setName("strand break")
-    wildcard = Literal("?").setName("wildcard")
+    complexes = {}
+    for line in parsed_kernel:
+        if line[0] == 'complex':
+            name = line[1]
+            sequence, structure = resolve_loops(line[2])
 
-    pattern = Forward()
-    expression = Forward()
+            # Replace names with domain objects.
+            # If Domain is not in domains, it has default-domain length = ddlen
+            for e in range(len(sequence)):
+              dname = sequence[e]
+              if dname == '+':
+                  continue
 
-    loop = (domain + Suppress("(") + Group(Optional(pattern)) +
-            Suppress(")")).setName("loop")
-    expression << (loop | wildcard | sbreak | domain)
-    pattern << OneOrMore(expression)
+              if dname[-1] == '*' : # complement domain
+                  if dname[:-1] in domains :
+                      dom = ~domains[dname[:-1]]
+                  else :
+                      dom = PepperDomain(dname, length = ddlen)
+                      domains[dname[:-1]] = ~dom
+              else : # non-complement domain
+                  if dname in domains :
+                      dom = domains[dname]
+                  else :
+                      dom = PepperDomain(dname, length = ddlen)
+                      domains[dname] = dom
+              sequence[e] = dom
+            complexes[name] = PepperComplex(sequence, structure, name=name)
+    return complexes
 
-    rule = pattern + StringEnd()
+def from_kernel(lines, ddlen = 15):
+    """ Tranlsate a list of kernel strings. """
+    print DeprecationWarning('use new function: complexes_from_kernel') 
 
-    return rule.parseString(line)
-
-
-def parse_identifier(identifier):
-    """
-    Parse an identifier (e.g. `a^*`) to figure out the name,
-    polarity (+1 or -1) and the length ('long' or 'short').
-
-    Returns: (name, polarity, length)
-    """
-
-    polarity = 1
-    length = 'long'
-    if identifier[-1] == '*':
-        polarity = -1
-        identifier = identifier[:-1]
-    if identifier[-1] == '^':
-        identifier = identifier[:-1]
-        length = 'short'
-    return (identifier, polarity, length)
-
-
-def auto_domain(name, polarity, domains):
-    """
-    Finds or automatically generates a domain and/or its complement.
-    """
-    # Dirty hack to fix unittest-errors
-    from peppercornenumerator.dsdobjects import DSD_Domain
-    domains.update(DSD_Domain.dictionary)
-
-    # figure name, polarity, length
-    identity, plrt, length = parse_identifier(name)
-    polarity *= plrt
-
-    # handle complements
-    identifier = identity + ('*' if polarity == -1 else '')
-
-    # search for existing domain
-    if identifier in domains:
-        dom = domains[identifier]
-        # if (length == 'short') != (dom.length == utils.SHORT_DOMAIN_LENGTH):
-        # 	error(("Domain '%s' should be %s, but there is a already a domain %s that is not. "+ \
-        # 		"I assume this was a mistake; please give all domains '%s' a caret (^), "+ \
-        # 		"or remove the caret from all domain") % (name, length, dom.name, dom.name))
-        return dom
-
-    # generate new domain
-    else:
-        if identity in domains:
-            raise "Error!"
-        if "*" in identity:
-            raise "Error!"
-
-        sequence = 'N' * utils.resolve_length(length)
-
-        print 'XXX', identity, polarity, domains
-        new_dom = utils.PepperDomain(list(sequence), name=identity)
-        new_dom_comp = new_dom.get_ComplementDomain(list(sequence))
-
-        #new_dom = utils.Domain(identity, length, sequence=sequence)
-        #new_dom_comp = utils.Domain(identity, length, is_complement=True, sequence=sequence)
-        domains[identity] = new_dom
-        domains[identity + '*'] = new_dom_comp
-
-        # return domain or complement depending on requested polarity
-        return new_dom if polarity == 1 else new_dom_comp
-
-
-def auto_strand(doms, strands, structures_to_strands):
-    """
-    Finds or automatically generates a strand from a list of
-    domains.
-    """
-
-    # look up whether any strand with this structure exists
-    tdoms = tuple(doms)
-    if tdoms in structures_to_strands:
-        return structures_to_strands[tdoms]
-
-    # if not, make up a name
-    else:
-        auto_name = initial_auto_name = "_".join(d.name for d in doms)
-
-        # if another strand exists with this name but not this
-        # structure, generate a new, uglier name
-        if auto_name in strands:
-            auto_name += "_%d"
-            index = 2
-            while (auto_name % index) in strands:
-                index += 1
-            auto_name = auto_name % index
-
-            # TODO: warn about this
-            warning(
-                "Auto-generated strand name %s already taken by a strand with different structure. Auto-generated strand will be named %s." %
-                (initial_auto_name, auto_name))
-
-        # generate new strand object
-        strand = utils.Strand(auto_name, doms)
-        strands[auto_name] = strand
-        structures_to_strands[tuple(doms)] = strand
-        return strand
-
-
-def auto_complex(strands, structure, complexes, name=None):
-    """
-    Generates a complex from a list of strands and a structure
-    """
-    if name is None:
-        name = get_auto_name()
-    complex = utils.Complex(name, strands, structure)
-    complexes[complex.name] = complex
-    return complex
-
-
-def resolve_kernel(lines, domains, strands, structures_to_strands, complexes):
-    def resolve(parts, strands, structure):
-        """
-        Recursively parse a list of `parts` generated by parse_kernel,
-        populating the `strands` and `structure` list
-        """
-        for part in parts:
-
-            # strand break
-            if part == '+':
-                strands.append([])
-                structure.append([])
-            # ignore
-            elif part == '(':
-                pass
-            elif part == ')':
-                pass
-
-            # unpaired domain
-            elif isinstance(part, basestring):
-                strands[-1].append(auto_domain(part, 1, domains))
-                structure[-1].append(None)
-
-            # paired domain
-            else:
-                # remember opening domain (last domain of last strand)
-                last_dom = strands[-1][-1]
-                last_index = (len(strands) - 1, len(strands[-1]) - 1)
-
-                # resolve loop
-                resolve(part, strands, structure)
-
-                # add closing domain
-                strands[-1].append(auto_domain(str(last_dom), -1, domains))
-                structure[-1].append(last_index)
-                structure[last_index[0]][last_index[1]] = (
-                    len(strands) - 1, len(strands[-1]) - 1)
-                # I was sad that this didn't work without numpy...
-                # structure[last_index] = ...
-
-    for line in lines:
-        cname = None
-        parameters = None
-        parts = re.match(r"(\w+)\s*(\[[^\]]+\])?\s*=\s*(.*)", line)
-        if parts is not None:
-            cname, parameters, line = parts.groups()
-
-        # parse parameters
-        if parameters is None:
-            parameters = ""
-        params = utils.parse_parameters(parameters)
-
-        # parse the structure portion
-        kparts = parse_kernel(line)
-
-        stack = []
-        kstrands = [[]]
-        kstructure = [[]]
-
-        resolve(kparts, kstrands, kstructure)
-
-        # build strands
-        kstrands = [auto_strand(doms, strands, structures_to_strands)
-                    for doms in kstrands]
-
-        # build complex
-        complex = auto_complex(kstrands, kstructure, complexes, name=cname)
-
-        # check structure is valid
-        complex.check_structure()
-
-        # apply parameters
-        if params['concentration'] is not None:
-            complex.concentration = params['concentration']
-
-
-def from_kernel(lines):
     # split string into lines if necessary
     if isinstance(lines, basestring):
         lines = lines.split("\n")
@@ -431,21 +236,21 @@ def from_kernel(lines):
     # remove blank lines
     lines = filter(None, lines)
 
-    domains = {}
-    strands = {}
-    structures_to_strands = {}
-    complexes = {}
-    resolve_kernel(lines, domains, strands, structures_to_strands, complexes)
-    return (domains, strands, complexes)
+    parsed_kernel = []
+    for l in lines:
+        parsed_kernel.extend(parse_kernel_string(l))
 
+    complexes = build_pepper_complexes(parsed_kernel, ddlen)
 
-def enum_from_kernel(lines):
-    (domains, strands, complexes) = from_kernel(lines)
-    #return peppercornenumerator.Enumerator(domains, strands, complexes)
-    return peppercornenumerator.Enumerator(complexes, strands, domains)
+    return (PepperDomain.MEMORY, None, complexes)
 
+def input_kernel(filename, ddlen=15):
+    parsed_kernel = parse_kernel_file(filename)
+    complexes = build_pepper_complexes(parsed_kernel, ddlen)
+    return peppercornenumerator.Enumerator(complexes.values())
 
 def input_pil(filename):
+    raise DeprecationWarning('no support for regular pil format')
     """
     Initializes and returns an enumerator from an input file in the Pepper Intermediate Language (PIL)
     """
@@ -494,20 +299,10 @@ def input_pil(filename):
                     (domain_name, line_counter))
 
             domain_length = int(domain_length)
-            domain_sequence = "N" * domain_length
 
             # Create the new domains
-            rev_comp = SequenceConstraint(domain_sequence).reverse_complement
-            print 'a', domain_sequence
-            print 'b', rev_comp
-            new_dom = utils.PepperDomain(list(domain_sequence), name=domain_name)
-            new_dom_comp = new_dom.get_ComplementDomain(list(rev_comp))
-
-            #new_dom = utils.Domain(domain_name, domain_length,
-            #                       sequence=domain_sequence)
-            #new_dom_comp = utils.Domain(domain_name, domain_length,
-            #                            sequence=domain_sequence,
-            #                            is_complement=True)
+            new_dom = PepperDomain(domain_name, length = domain_length)
+            new_dom_comp = ~new_dom
 
             domains[domain_name] = new_dom
             domains["%s*" % domain_name] = new_dom_comp
@@ -543,16 +338,8 @@ def input_pil(filename):
             # domain_sequence = parts[1]
             domain_length = len(domain_sequence)
 
-
-            rev_comp = SequenceConstraint(domain_sequence).reverse_complement
-            new_dom = utils.PepperDomain(list(domain_sequence), name=domain_name)
-            new_dom_comp = new_dom.get_ComplementDomain(list(rev_comp))
-
-            #new_dom = utils.Domain(domain_name, domain_length,
-            #                       sequence=domain_sequence)
-            #new_dom_comp = utils.Domain(domain_name, domain_length,
-            #                            sequence=domain_sequence,
-            #                            is_complement=True)
+            new_dom = PepperDomain(domain_name, length = domain_length)
+            new_dom_comp = ~new_dom
 
             domains[domain_name] = new_dom
             domains["%s*" % domain_name] = new_dom_comp
@@ -614,14 +401,8 @@ def input_pil(filename):
             domain_length = len(sequence)
 
             # Create the new domains
-            rev_comp = SequenceConstraint(domain_sequence).reverse_complement
-            new_dom = utils.PepperDomain(list(domain_sequence), name=domain_name)
-            new_dom_comp = new_dom.get_ComplementDomain(list(rev_comp))
-            #new_dom = utils.Domain(domain_name, domain_length,
-            #                       sequence=domain_sequence)
-            #new_dom_comp = utils.Domain(domain_name, domain_length,
-            #                            sequence=domain_sequence,
-            #                            is_complement=True)
+            new_dom = PepperDomain(domain_name, length = domain_length)
+            new_dom_comp = ~new_dom
 
             domains[domain_name] = new_dom
             domains["%s*" % domain_name] = new_dom_comp
@@ -648,16 +429,8 @@ def input_pil(filename):
             source_domain = domains[source_domain_name]
 
             for target_domain_name in target_domain_names:
-                new_dom = utils.PepperDomain(source_domain.sequence, name=target_domain_name)
-                new_dom_comp = new_dom.get_ComplementDomain(source_domain.get_ComplementDomain.sequence)
-
-                #new_dom = utils.Domain(target_domain_name, len(source_domain),
-                #                       sequence=source_domain.sequence)
-                #new_dom_comp = utils.Domain(
-                #    target_domain_name,
-                #    len(source_domain),
-                #    sequence=source_domain.sequence,
-                #    is_complement=True)
+                new_dom = PepperDomain(target_domain_name, length = source_domain.length)
+                new_dom_comp = ~new_dom
 
                 domains[target_domain_name] = new_dom
                 domains["%s*" % target_domain_name] = new_dom_comp
@@ -935,7 +708,7 @@ def load_json(filename):
         for product in saved_reaction['products']:
             products.append(complexes[product])
 
-        reaction = ReactionPathway(saved_reaction['name'], reactants, products)
+        reaction = PepperReaction(reactants, products, saved_reaction['name'])
         reactions.append(reaction)
 
     resting_states = []
@@ -944,7 +717,7 @@ def load_json(filename):
         comps = []
         for complex in resting_state['complexes']:
             comps.append(complexes[complex])
-        resting_states.append(utils.RestingState(resting_state['name'], comps))
+        resting_states.append(PepperRestingState(comps, name=resting_state['name']))
 
     initial_complexes = {}
     for saved_complex in saved['initial_complexes']:
@@ -977,7 +750,7 @@ def load_json(filename):
 
 text_input_functions = {
     'enum': input_enum,
-    'pil': input_pil
+    'pil': input_kernel
 }
 
 load_input_functions = {

@@ -8,8 +8,10 @@
 
 import copy
 
-from peppercornenumerator.utils import PepperComplex, Loop, wrap
-from peppercornenumerator.dsdobjects import make_pair_table, pair_table_to_dot_bracket, DSDObjectsError
+from peppercornenumerator.utils import Loop, wrap
+
+from peppercornenumerator.objects import PepperComplex, PepperReaction, DSDDuplicationError
+from peppercornenumerator.objects import make_pair_table, pair_table_to_dot_bracket
 
 
 auto_name = 0
@@ -21,133 +23,6 @@ def get_auto_name(prefix=''):
     global auto_name
     auto_name += 1
     return prefix + str(auto_name)
-
-class ReactionPathway(object):
-    """
-    Represents a reaction node on a reaction graph. Has a list of reactants
-    and a list of products, along with a name field to denote the type of
-    reaction involved.
-    """
-
-    def __init__(self, name, reactants, products):
-        """
-        Default constructor. Takes a name, a list of reactants (Complexes) and
-        a list of products (Complexes).
-        """
-        self._name = name
-        self._reactants = reactants
-        self._reactants.sort()
-        self._products = products
-        self._products.sort()
-        self._const = 1
-
-        for x in self._reactants:
-            if isinstance(x, PepperComplex):
-                assert x.is_connected
-                assert x.is_domainlevel_complement
-
-        for x in self._products:
-            if isinstance(x, PepperComplex):
-                assert x.is_connected
-                assert x.is_domainlevel_complement
-
-    def __repr__(self):
-        return self.full_string()
-
-    def __str__(self):
-        return self.name
-
-    def full_string(self):
-        # return "ReactionPathway(%s): %s -> %s" % (self.name,
-        # str(self.reactants), str(self.products))
-        return "ReactionPathway(\"%s\",%s,%s)" % (
-            self.name, str(self.reactants), str(self.products))
-
-    @property
-    def name(self):
-        """
-        Gives the name of the move type (reaction function) that generated the ReactionPathway
-        """
-        return self._name
-
-    @property
-    def reactants(self):
-        """
-        Gives the list of reactants of the ReactionPathway
-        """
-        return self._reactants
-
-    @property
-    def products(self):
-        """
-        Gives the list of products of the ReactionPathway
-        """
-        return self._products
-
-    @property
-    def arity(self):
-        """
-        Gives a pair containing the number of reactants and the number of products in the reaction
-        """
-        return (len(self._reactants), len(self._products))
-
-    def __eq__(self, other):
-        """
-        ReactionPathway objects are equal if they have the same name, reactants, and products.
-        """
-        return (self.name == other.name) and \
-            (self.reactants == other.reactants) and \
-            (self.products == other.products)
-
-    def __hash__(self):
-        return hash(self.name) + hash(frozenset(self.reactants)) + \
-            hash(frozenset(self.products))
-
-    def __cmp__(self, other):
-        """
-        ReactionPathway objects are sorted by name, then by reactants, then by products.
-        """
-        out = cmp(self.name, other.name)
-        if (out != 0):
-
-            return out
-
-        out = cmp(self.reactants, other.reactants)
-        if (out != 0):
-            return out
-
-        return cmp(self.products, other.products)
-
-    def normalize(self):
-        """
-        Ensures that complexes appear on only one side of the reaction by
-        removing them evenly from both sides until only one side has any.
-        """
-        for reactant in self.reactants:
-            while (reactant in self.reactants and
-                   reactant in self.products):
-                self.reactants.remove(reactant)
-                self.products.remove(reactant)
-
-    @property
-    def rate(self):
-        """
-        Gives the rate constant for this reaction
-        """
-        return self._const
-
-    def simple_string(self):
-        return \
-            "  +  ".join(str(r) for r in self.reactants) + \
-            "  ->  " + \
-            "  +  ".join(str(p) for p in self.products)
-
-    def kernel_string(self):
-        return \
-            "  +  ".join(r.kernel_string for r in self.reactants) + \
-            "  ->  " + \
-            "  +  ".join(p.kernel_string for p in self.products)
-
 
 # Rate constant formulae
 # ----------------------------------------------------------------------------
@@ -385,13 +260,17 @@ def bind11(reactant, max_helix=True, remote=None):
             # build products
             for (loc1s, loc2s, before, after) in locs:
                 product = do_bind11(reactant, loc1s.locs, loc2s.locs)
-                reaction = ReactionPathway('bind11', [reactant], [product])
+
+                try :
+                    reaction = PepperReaction([reactant], [product], 'bind11')
+                except DSDDuplicationError, e :
+                    reaction = e.existing
 
                 # length of invading domain
                 length = len(loc1s)
 
                 # calculate reaction constant
-                reaction._const = binding_rate(length, before, after)
+                reaction.rate = binding_rate(length, before, after)
 
                 reactions.append(reaction)
 
@@ -407,8 +286,8 @@ def do_bind11(reactant, loc1s, loc2s):
     newstr = pair_table_to_dot_bracket(struct)
     try:
         product = PepperComplex(reactant.sequence, newstr)
-    except DSDObjectsError, e:
-        product = PepperComplex.dictionary[e.solution]
+    except DSDDuplicationError, e:
+        product = e.existing
     return product
 
 def bind21(reactant1, reactant2, max_helix = True, remote=None):
@@ -456,11 +335,15 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
                     before.parts, after.parts, 1, None, None, filter_bind21)
 
         product = do_bind11(complex, loc1s.locs, loc2s.locs)
-        
-        reaction = ReactionPathway('bind21', [reactant1, reactant2], [product])
+
+        try :
+            reaction = PepperReaction(sorted([reactant1, reactant2]), [product], 'bind21')
+        except DSDDuplicationError, e :
+            #assert opening_rate(length) == PepperReaction.dictionary[e.solution].rate
+            reaction = e.existing
 
         length = len(loc1s)
-        reaction._const = bimolecular_binding_rate(length)
+        reaction.rate = bimolecular_binding_rate(length)
 
         output.append(reaction)
 
@@ -484,7 +367,7 @@ def join_complexes_21(complex1, location1, complex2, location2):
         ptb1[loc1[0]][loc1[1]] = (maxlen,maxlen) # add an additional '(' 
     else :
         seen = False # don't break, otherwise you might lose the original strand ordering...
-        for e, rot in enumerate(complex1.rotate,1):
+        for e, rot in enumerate(complex1.rotate(),1):
             tmp = complex1.rotate_location(location1, -e)
             if not seen and complex1.get_loop_index(tmp) == 0 :
                 seq1 = complex1.sequence
@@ -500,7 +383,7 @@ def join_complexes_21(complex1, location1, complex2, location2):
         ptb2[loc2[0]][loc2[1]] = (-1,-1) # add an additional ')' 
     else :
         seen = False # don't break, otherwise you might lose the original strand ordering...
-        for e, rot in enumerate(complex2.rotate,1):
+        for e, rot in enumerate(complex2.rotate(),1):
             tmp = complex2.rotate_location(location2, -e)
             if not seen and complex2.get_loop_index(tmp) == 0 :
                 seq2 = complex2.sequence
@@ -526,8 +409,8 @@ def join_complexes_21(complex1, location1, complex2, location2):
 
     try :
         new_complex = PepperComplex(newseq, newstr)
-    except DSDObjectsError, e:
-        new_complex = PepperComplex.dictionary[e.solution]
+    except DSDDuplicationError, e:
+        new_complex = e.existing
         # strands may be re-ordered in new complex, so we need to back
         # out where the new strands ended up
         loc1 = new_complex.rotate_location(loc1, e.rotations)
@@ -663,15 +546,18 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
 
                     try:
                         release_reactant = PepperComplex(reactant.sequence, newstr)
-                    except DSDObjectsError, e:
-                        release_reactant = PepperComplex.dictionary[e.solution]
+                    except DSDDuplicationError, e:
+                        release_reactant = e.existing
 
                     product_set = release_reactant.split()
                     reactions.append((product_set, helix_length))
 
     output = []
     for product_set, length in reactions:
-        reaction = ReactionPathway('open', [reactant], sorted(product_set))
+        try :
+            reaction = PepperReaction([reactant], sorted(product_set), 'open')
+        except DSDDuplicationError, e :
+            reaction = e.existing
 
         # discard reactions where the release cutoff is greater than the threshold
         if len(reaction.products) == 1 and length > release_11:
@@ -679,7 +565,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
         elif len(reaction.products) > 1 and length > release_1N:
             continue
 
-        reaction._const = opening_rate(length)
+        reaction.rate = opening_rate(length)
         output.append(reaction)
 
     return sorted(list(set(output)))
@@ -694,8 +580,8 @@ def do_single_open(reactant, loc):
     newstr = pair_table_to_dot_bracket(new_struct)
     try:
         out = PepperComplex(reactant.sequence, newstr)
-    except DSDObjectsError, e:
-        out = PepperComplex.dictionary[e.solution]
+    except DSDDuplicationError, e:
+        out = e.existing
     return out
 
 def branch_3way(reactant, max_helix = True, remote=True):
@@ -740,14 +626,19 @@ def branch_3way(reactant, max_helix = True, remote=True):
                 except AssertionError:
                     products = do_3way_migration(reactant, displacing.revlocs, bound.revlocs)
 
-                reaction = ReactionPathway('branch_3way', [reactant], products)
+
+                try :
+                    reaction = PepperReaction([reactant], products, 'branch-3way')
+                except DSDDuplicationError, e :
+                    #assert opening_rate(length) == PepperReaction.dictionary[e.solution].rate
+                    reaction = e.existing
 
                 # length of invading domain
                 length = len(displacing)
 
                 # calculate reaction constant
                 (after, before) = (before, after)
-                reaction._const = branch_3way_remote_rate(length, before, after)
+                reaction.rate = branch_3way_remote_rate(length, before, after)
 
                 # skip remote toehold reactions if directed
                 if not remote :
@@ -789,8 +680,8 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
     newstr = pair_table_to_dot_bracket(struct)
     try:
          product = PepperComplex(reactant.sequence, newstr)
-    except DSDObjectsError, e:
-         product = PepperComplex.dictionary[e.solution]
+    except DSDDuplicationError, e:
+         product = e.existing
   
     return product.split()
 
@@ -844,13 +735,17 @@ def branch_4way(reactant, max_helix = False, remote=True):
                                 for bound_loc in displaced.locs), 
                             displaced.locs)
 
-                reaction = ReactionPathway('branch_4way', [reactant], products)
+                try :
+                    reaction = PepperReaction([reactant], products, 'branch-4way')
+                except DSDDuplicationError, e :
+                    #assert opening_rate(length) == PepperReaction.dictionary[e.solution].rate
+                    reaction = e.existing
 
                 # length of invading domain
                 length = len(displacing)
 
                 # calculate reaction constant
-                reaction._const = branch_4way_remote_rate(length, before, after)
+                reaction.rate = branch_4way_remote_rate(length, before, after)
 
                 # skip remote toehold reactions
                 if not remote:
@@ -887,8 +782,8 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
     newstr = pair_table_to_dot_bracket(struct)
     try:
          product = PepperComplex(reactant.sequence, newstr)
-    except DSDObjectsError, e:
-         product = PepperComplex.dictionary[e.solution]
+    except DSDDuplicationError, e:
+         product = e.existing
     return product.split()
 
 def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way = False):
@@ -1227,5 +1122,4 @@ def breathing(reactant, ends = 1):
     # every complex reacts by opening one dummy nucleotide at the end
     # add an universal dummy-domain to each helix-end.
     pass
-
 

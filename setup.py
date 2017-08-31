@@ -21,7 +21,7 @@ setup(
     # url='http://www.dna.caltech.edu/peppercorn/',
     license=license,
     test_suite='tests',
-    install_requires=['argparse>=1.2.1', 'nose', 'pyparsing', 'numpy'],
+    install_requires=['argparse>=1.2.1', 'nose', 'pyparsing', 'numpy', 'dsdobjects'],
     packages=['peppercornenumerator'],
     scripts=['scripts/peppercorn']
 )

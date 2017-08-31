@@ -9,6 +9,7 @@ import sys
 import logging
 import itertools
 
+from peppercornenumerator.objects import PepperRestingState
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactions
 
@@ -299,8 +300,7 @@ class Enumerator(object):
         """
         self._complexes = self.initial_complexes[:]
         self._resting_complexes = self._complexes[:]
-        self._resting_states = [utils.RestingState(
-            complex.name, [complex]) for complex in self._complexes]
+        self._resting_states = [PepperRestingState([complex], name=complex.name) for complex in self._complexes]
         self._transient_complexes = []
         self._reactions = []
 
@@ -826,7 +826,7 @@ class Enumerator(object):
 
             if is_resting_state:
                 resting_state_complexes += (scc)
-                resting_state = utils.RestingState(self.get_auto_name(), scc[:])
+                resting_state = PepperRestingState(scc[:])
                 resting_states.append(resting_state)
 
             else:

@@ -5,110 +5,13 @@
 import copy
 import unittest
 
-
+from peppercornenumerator.objects import PepperReaction, clear_memory
 from peppercornenumerator import Enumerator
-from peppercornenumerator.pil_parser import parse_pil_string
+from peppercornenumerator.input import complexes_from_kernel
+
 import peppercornenumerator.reactions as rxn
 
-# Input parsing stuff
-from peppercornenumerator.utils import PepperDomain, PepperComplex
-from peppercornenumerator.dsdobjects import reset_names
-from peppercornenumerator.input import from_kernel
-
 SKIP = False
-
-def nuskell_parser(pil_string, ddlen=15):
-    # snatched from nuskell.objects.TestTube.load_pil_kernel
-    ppil = parse_pil_string(pil_string)
-
-    #for p in ppil: print p
-
-    def resolve_loops(loop):
-      """ Return a sequence, structure pair from kernel format with parenthesis. """
-      sequen = []
-      struct = []
-      for dom in loop :
-        if isinstance(dom, str):
-          sequen.append(dom)
-          if dom == '+' :
-            struct.append('+')
-          else :
-            struct.append('.')
-        elif isinstance(dom, list):
-          struct[-1] = '('
-          old = sequen[-1]
-          se, ss = resolve_loops(dom)
-          sequen.extend(se)
-          struct.extend(ss)
-          sequen.append(old + '*' if old[-1] != '*' else old[:-1])
-          struct.append(')')
-      return sequen, struct
-
-    domains = {}
-    strands = {}
-    complexes = {}
-    for line in ppil :
-      if line[0] == 'domain':
-          #domains[line[1]] = PepperDomain(line[1], int(line[2]), sequence = 'N'* int(line[2]))
-          domains[line[1]] = PepperDomain(list('N'* int(line[2])), name=line[1])
-      elif line[0] == 'complex':
-        name = line[1]
-        sequence, structure = resolve_loops(line[2])
-
-        strand = [] # construct a strand
-        cplx_strands = [] # store strands for Complex
-        for e in range(len(sequence)):
-          d = sequence[e]
-          if d == '+': 
-              sid = '_'.join(tuple(map(str,strand)))
-              if sid not in strands :
-                  strands[sid] = None
-              cplx_strands.append(strands[sid])
-              strand = [] # construct a strand
-              continue
-          if d[-1] == '*' : 
-            dname = d[:-1]
-            if dname in domains :
-                cdom = domains[dname]
-                #dom = PepperDomain(cdom.name, len(cdom), , is_complement=True)
-                dom = cdom.get_ComplementDomain(list(sequence = 'N'* len(cdom)))
-            else :
-                #cdom = PepperDomain(dname, ddlen, sequence = 'N'* ddlen, is_complement=False)
-                cdom = PepperDomain(list('N'* ddlen), name=dname)
-                domains[dname] = cdom
-                #dom = Domain(dname, ddlen, sequence = 'N'* ddlen, is_complement=True)
-                dom = cdom.get_ComplementDomain(list(sequence = 'N'* len(cdom)))
-          else :
-            dname = d
-            if dname in domains :
-                dom = domains[dname]
-            else :
-                #dom = Domain(dname, ddlen, sequence = 'N'* ddlen)
-                dom = PepperDomain(list('N'* ddlen), name=dname)
-                domains[dname] = dom
-          strand.append(dom)
-
-        sid = '_'.join(tuple(map(str,strand)))
-        if sid not in strands :
-            strands[sid] = None
-        cplx_strands.append(strands[sid])
-        strand = [] # construct a strand
-
-        for e, dom in enumerate(sequence):
-            if dom == '+':
-                domain = '+'
-            elif dom[-1] == '*' : 
-                domain = ~domains[dom[:-1]]
-            else :
-                domain = domains[dom]
-            sequence[e] = domain
-
-        complex = PepperComplex(sequence, structure, name=name)
-        complexes[name] = complex
-      else :
-        raise NotImplementedError('Weird expression returned from pil_parser!')
-
-    return (domains, strands, complexes)
 
 @unittest.skipIf(SKIP, "skipping tests")
 class NewOpenTests(unittest.TestCase):
@@ -116,7 +19,7 @@ class NewOpenTests(unittest.TestCase):
         pass
 
     def tearDown(self):
-        reset_names()
+        clear_memory()
 
     def test_basic_open(self):
         """ 
@@ -125,7 +28,7 @@ class NewOpenTests(unittest.TestCase):
         Testing max-helix-semantics and release-cutoff 5, 8, 13
         """
         # INPUT
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         length a = 8
         length t = 5
 
@@ -146,18 +49,26 @@ class NewOpenTests(unittest.TestCase):
         output = rxn.open(reactant, max_helix=True, release_11=8, release_1N=8)
         self.assertEqual(output, [])
 
-        forward = rxn.ReactionPathway('open', [reactant], product_set)
+        forward = PepperReaction([reactant], product_set, 'open', memorycheck=False)
+        forward.rate = rxn.opening_rate(13)
+
+        forward = PepperReaction([reactant], product_set, 'open', memorycheck=False)
         output = rxn.open(reactant, max_helix=True, release_11=13, release_1N=13)
-        #for o in output: print 'ow', o.kernel_string()
+        #for o in output: print 'ow', o.kernel_string
         self.assertEqual(output, [forward])
 
         # max helix semantics OFF -> domains dissociate, but at most one at a time
-        forward1 = rxn.ReactionPathway('open', [reactant], [product1])
-        forward2 = rxn.ReactionPathway('open', [reactant], [product2])
+        forward1 = PepperReaction([reactant], [product1], 'open', memorycheck=False)
+        forward1.rate = rxn.opening_rate(5)
+        forward2 = PepperReaction([reactant], [product2], 'open', memorycheck=False)
+        forward2.rate = rxn.opening_rate(8)
+
         output = rxn.open(reactant, max_helix=False, release_11=7, release_1N=7)
         self.assertEqual(output, [forward1])
+
         output = rxn.open(reactant, max_helix=False, release_11=8, release_1N=8)
         self.assertEqual(output, sorted([forward2, forward1]))
+
         output = rxn.open(reactant, max_helix=False, release_11=13, release_1N=13)
         self.assertEqual(output, sorted([forward2, forward1]))
 
@@ -173,7 +84,7 @@ class NewOpenTests(unittest.TestCase):
         # That means, should release-cutoff of 4 mean "max-helix-semantics up
         # to length 4"? What would that mean if you start in 
         # "a b c( + ) b* a*" vs "ab c( + ) ab*"
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         length a = 3
         length b = 1
         length c = 3
@@ -191,10 +102,10 @@ class NewBindTests(unittest.TestCase):
         pass
 
     def tearDown(self):
-        reset_names()
+        clear_memory()
 
     def test_binding(self):
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         length a = 10
         length t = 5
 
@@ -227,12 +138,12 @@ class NewBindTests(unittest.TestCase):
         SI2 = complexes['SI2']
         SI3 = complexes['SI3']
 
-        path = rxn.ReactionPathway('bind11', [X], [Z])
+        path = PepperReaction([X], [Z], 'bind11', memorycheck=False)
         output = rxn.bind11(X, max_helix=True)
         #for o in output: print 'mh', o.kernel_string()
         self.assertEqual(output, [path])
 
-        path = rxn.ReactionPathway('bind11', [Y], [Z])
+        path = PepperReaction([Y], [Z], 'bind11', memorycheck=False)
         output = rxn.bind11(Y, max_helix=True)
         #for o in output: print 'mh', o.kernel_string()
         self.assertEqual(output, [path])
@@ -241,29 +152,29 @@ class NewBindTests(unittest.TestCase):
         #for o in output: print 'mh', o.kernel_string()
         self.assertEqual(output, [])
 
-        path1 = rxn.ReactionPathway('bind21', [S2, S1], [X])
-        path2 = rxn.ReactionPathway('bind21', [S2, S1], [Y])
+        path1 = PepperReaction([S2, S1], [X], 'bind21', memorycheck=False)
+        path2 = PepperReaction([S2, S1], [Y], 'bind21', memorycheck=False)
         output = rxn.bind21(S1, S2, max_helix=False)
         #for o in output: print 'bind21', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2]))
 
-        path = rxn.ReactionPathway('bind21', [S2, S1], [Z])
+        path = PepperReaction([S2, S1], [Z], 'bind21', memorycheck=False)
         output = rxn.bind21(S1, S2, max_helix=True)
         #for o in output: print 'bind21g', o.kernel_string()
         self.assertEqual(output, [path])
 
-        path1 = rxn.ReactionPathway('bind11', [SB], [SG1])
-        path2 = rxn.ReactionPathway('bind11', [SB], [SG2])
-        path3 = rxn.ReactionPathway('bind11', [SB], [SG3])
+        path1 = PepperReaction([SB], [SG1], 'bind11', memorycheck=False)
+        path2 = PepperReaction([SB], [SG2], 'bind11', memorycheck=False)
+        path3 = PepperReaction([SB], [SG3], 'bind11', memorycheck=False)
         output = rxn.bind11(SB, max_helix=True)
         #for o in output: print 'open11g', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2, path3]))
 
-        path1 = rxn.ReactionPathway('bind11', [SB], [SG1])
-        path2 = rxn.ReactionPathway('bind11', [SB], [SG2])
-        path3 = rxn.ReactionPathway('bind11', [SB], [SI1])
-        path4 = rxn.ReactionPathway('bind11', [SB], [SI2])
-        path5 = rxn.ReactionPathway('bind11', [SB], [SI3])
+        #path1 = PepperReaction([SB], [SG1], 'bind11', memorycheck=False)
+        #path2 = PepperReaction([SB], [SG2], 'bind11', memorycheck=False)
+        path3 = PepperReaction([SB], [SI1], 'bind11', memorycheck=False)
+        path4 = PepperReaction([SB], [SI2], 'bind11', memorycheck=False)
+        path5 = PepperReaction([SB], [SI3], 'bind11', memorycheck=False)
         output = rxn.bind11(SB, max_helix=False)
         #for o in output: print 'open11f', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2, path3, path4, path5]))
@@ -278,14 +189,14 @@ class NewBranch3WayTests(unittest.TestCase):
         pass
 
     def tearDown(self):
-        reset_names()
+        clear_memory()
 
     def test_single_migration(self):
         """ 
         A single 3-way branch migration reaction.
         """
         # INPUT
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         X = a( b x + b( d( + ) ) )
         Y = a( b( x + b d( + ) ) )
         """)
@@ -293,8 +204,8 @@ class NewBranch3WayTests(unittest.TestCase):
         product = complexes['Y']
 
         # OUTPUT
-        forward = rxn.ReactionPathway('branch_3way', [reactant], [product])
-        backward = rxn.ReactionPathway('branch_3way', [product], [reactant])
+        forward  = PepperReaction([reactant], [product], 'branch-3way', memorycheck=False)
+        backward = PepperReaction([product], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(reactant, max_helix=True)
         #print output[0].kernel_string()
@@ -317,7 +228,7 @@ class NewBranch3WayTests(unittest.TestCase):
         A series of 3-way branch migration reactions.
         """
         # INPUT
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         X  = a( x y z + x( y( z( b( + ) ) ) ) )
         I1 = a( x( y z + x y( z( b( + ) ) ) ) )
         I2 = a( x( y( z + x y z( b( + ) ) ) ) )
@@ -331,8 +242,8 @@ class NewBranch3WayTests(unittest.TestCase):
         # ~~~~~~~~~~~~~~~~ #
         # OUTPUT max-helix #
         # ~~~~~~~~~~~~~~~~ #
-        forward = rxn.ReactionPathway('branch_3way', [reactant], [product])
-        backward = rxn.ReactionPathway('branch_3way', [product], [reactant])
+        forward =  PepperReaction([reactant], [product], 'branch-3way', memorycheck=False)
+        backward = PepperReaction([product], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(reactant, max_helix=True)
         #print output[0].kernel_string()
@@ -342,8 +253,8 @@ class NewBranch3WayTests(unittest.TestCase):
         #print output[0].kernel_string()
         self.assertEqual(output, [backward])
 
-        forward = rxn.ReactionPathway('branch_3way', [inter1], [product])
-        backward = rxn.ReactionPathway('branch_3way', [inter1], [reactant])
+        forward = PepperReaction([inter1], [product], 'branch-3way', memorycheck=False)
+        backward = PepperReaction([inter1], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(inter1, max_helix=True)
         #for o in output: print 'max_helix', o.kernel_string()
@@ -352,8 +263,8 @@ class NewBranch3WayTests(unittest.TestCase):
         # ~~~~~~~~~~~~~~~~~~~ #
         # OUTPUT NO-MAX-HELIX #
         # ~~~~~~~~~~~~~~~~~~~ #
-        forward = rxn.ReactionPathway('branch_3way', [reactant], [inter1])
-        backward = rxn.ReactionPathway('branch_3way', [product], [inter2])
+        forward = PepperReaction([reactant], [inter1], 'branch-3way', memorycheck=False)
+        backward = PepperReaction([product], [inter2], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(reactant, max_helix=False)
         #print output[0].kernel_string()
@@ -364,8 +275,8 @@ class NewBranch3WayTests(unittest.TestCase):
         self.assertEqual(output, [backward])
 
         # OUTPUT NO-MAX-HELIX
-        forward = rxn.ReactionPathway('branch_3way', [inter1], [inter2])
-        backward = rxn.ReactionPathway('branch_3way', [inter1], [reactant])
+        forward = PepperReaction([inter1], [inter2], 'branch-3way', memorycheck=False)
+        backward = PepperReaction([inter1], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(inter1, max_helix=False)
         #for o in output: print 'nmheli', o.kernel_string()
@@ -376,7 +287,7 @@ class NewBranch3WayTests(unittest.TestCase):
         A remote 3way branch migration reaction.
         """
         # INPUT
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         X  = a( b x y z + x( y( z( c( + ) ) ) ) )
         I1 = a( b x( y z + x y( z( c( + ) ) ) ) )
         I2 = a( b x( y( z + x y z( c( + ) ) ) ) )
@@ -390,8 +301,8 @@ class NewBranch3WayTests(unittest.TestCase):
         # ~~~~~~~~~~~~~ #
         # OUTPUT REMOTE #
         # ~~~~~~~~~~~~~ #
-        forward = rxn.ReactionPathway('branch_3way', [reactant], [product])
-        backward = rxn.ReactionPathway('branch_3way', [product], [reactant])
+        forward = PepperReaction([reactant], [product], 'branch-3way', memorycheck=False)
+        backward = PepperReaction([product], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(reactant, max_helix=True, remote=True)
         #print output[0].kernel_string()
@@ -401,17 +312,17 @@ class NewBranch3WayTests(unittest.TestCase):
         #print output[0].kernel_string()
         self.assertEqual(output, [backward])
 
-        forward = rxn.ReactionPathway('branch_3way', [inter1], [product])
-        backward = rxn.ReactionPathway('branch_3way', [inter1], [reactant])
+        forward = PepperReaction([inter1], [product], 'branch-3way', memorycheck=False)
+        backward = PepperReaction([inter1], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(inter1, max_helix=True, remote=True)
         #for o in output: print 'max_helix', o.kernel_string()
-        self.assertEqual(sorted(output), sorted([forward, backward]))
+        self.assertEqual(sorted(output), sorted([backward, forward]))
  
         # ~~~~~~~~~~~~~~~~~~~~ #
         # OUTPUT REJECT REMOTE #
         # ~~~~~~~~~~~~~~~~~~~~ #
-        backward = rxn.ReactionPathway('branch_3way', [product], [reactant])
+        backward = PepperReaction([product], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(reactant, max_helix=True, remote=False)
         #print output[0].kernel_string()
@@ -421,12 +332,12 @@ class NewBranch3WayTests(unittest.TestCase):
         #for o in output: print 'max_helix', o.kernel_string()
         self.assertEqual(output, [backward])
 
-        forward = rxn.ReactionPathway('branch_3way', [inter1], [product])
-        backward = rxn.ReactionPathway('branch_3way', [inter1], [reactant])
+        forward = PepperReaction([inter1], [product], 'branch-3way', memorycheck=False)
+        backward = PepperReaction([inter1], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(inter1, max_helix=True, remote=False)
         #for o in output: print 'max_helix', o.kernel_string()
-        self.assertEqual(sorted(output), sorted([forward, backward]))
+        self.assertEqual(sorted(map(str,output)), sorted(map(str,[forward, backward])))
  
     def test_multiple_choice(self):
         """ 
@@ -450,7 +361,7 @@ class NewBranch3WayTests(unittest.TestCase):
 
         """
         # INPUT
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         X  = a( x b y z x y + x( y( z( c( + ) ) ) ) )
         I1 = a( x( b y z x y + x y( z( c( + ) ) ) ) )
         I2 = a( x( b y( z x y + x y z( c( + ) ) ) ) ) # no-max-helix
@@ -470,40 +381,40 @@ class NewBranch3WayTests(unittest.TestCase):
         # ~~~~~~ #
         # OUTPUT #
         # ~~~~~~ #
-        forward = rxn.ReactionPathway('branch_3way', [reactant], [inter1])
+        forward = PepperReaction([reactant], [inter1], 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(reactant, max_helix=True, remote=False)
         self.assertEqual(output, [forward])
 
         # NOTE: NO max_helix REMOTE TOEHOLDS!
-        forward1b = rxn.ReactionPathway('branch_3way', [reactant], [inter1])
-        forward2 = rxn.ReactionPathway('branch_3way', [reactant], [product2])
+        forward1b = PepperReaction([reactant], [inter1], 'branch-3way', memorycheck=False)
+        forward2 = PepperReaction([reactant], [product2], 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(reactant, max_helix=True, remote=True)
-        self.assertEqual(output, sorted([forward2, forward1b]))
+        self.assertEqual(sorted(map(str,output)), sorted(map(str,[forward2, forward1b])))
 
-        backward1 = rxn.ReactionPathway('branch_3way', [product1], [reactant])
+        backward1 = PepperReaction([product1], [reactant], 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(product1, max_helix=True, remote=True)
         self.assertEqual(output, [backward1])
 
         # NOTE: THIS behavior changed!
-        backward2 = rxn.ReactionPathway('branch_3way', [product2], [reactant])
-        #backward2b = rxn.ReactionPathway('branch_3way', [product2], [product4])
-        backward2b = rxn.ReactionPathway('branch_3way', [product2], [product3])
+        backward2 = PepperReaction([product2], [reactant], 'branch-3way', memorycheck=False)
+        #backward2b = PepperReaction([product2], [product4], 'branch-3way', memorycheck=False)
+        backward2b = PepperReaction([product2], [product3], 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(product2, max_helix=True, remote=True)
         #for o in output: print 'ow', o.kernel_string()
         self.assertEqual(output, sorted([backward2, backward2b]))
 
         # NOTE: max_helix zippering cannot involve different strands than the initial step
-        backward = rxn.ReactionPathway('branch_3way', [inter1], [reactant]) #1
-        forward  = rxn.ReactionPathway('branch_3way', [inter1], [product1]) #4
-        forward2 = rxn.ReactionPathway('branch_3way', [inter1], [product3])
-        forward3 = rxn.ReactionPathway('branch_3way', [inter1], [product4])
+        backward = PepperReaction([inter1], [reactant], 'branch-3way', memorycheck=False) #1
+        forward  = PepperReaction([inter1], [product1], 'branch-3way', memorycheck=False) #4
+        forward2 = PepperReaction([inter1], [product3], 'branch-3way', memorycheck=False)
+        forward3 = PepperReaction([inter1], [product4], 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(inter1, max_helix=True, remote=True)
         #for o in output: print 'fixme', o.kernel_string()
         self.assertEqual(output, sorted([backward, forward, forward2, forward3]))
 
     def test_multiple_choice_2(self):
         # INPUT
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         N = a( x( b x y + y( z( + ) ) ) )
         P1 = a( x b x( y + y( z( + ) ) ) )
         P2 = a( x( b x y( + y z( + ) ) ) )
@@ -512,11 +423,11 @@ class NewBranch3WayTests(unittest.TestCase):
         P1 = complexes['P1']
         P2 = complexes['P2']
 
-        forward1 = rxn.ReactionPathway('branch_3way', [N], [P1])
-        forward2 = rxn.ReactionPathway('branch_3way', [N], [P2])
+        forward1 = PepperReaction([N], [P1], 'branch-3way', memorycheck=False)
+        forward2 = PepperReaction([N], [P2], 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(N, max_helix=True, remote=True)
-        #for o in output: print 'new-max', o.kernel_string()
-        self.assertEqual(output, sorted([forward1, forward2]))
+        #for o in output: print 'new-max', o.kernel_string
+        self.assertEqual(sorted(output), sorted([forward1, forward2]))
 
 
 @unittest.skipIf(SKIP, "skipping tests")
@@ -525,12 +436,12 @@ class NewBranch4WayTests(unittest.TestCase):
         pass
 
     def tearDown(self):
-        reset_names()
+        clear_memory()
 
     def test_break_casey_4way(self):
         # Note the new max-helix semantics also fixes the old 4way error,
         # so this test can be safely removed...
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         A1 = t0*( d3*( d4*( + ) ) + d3*( t0* d3*( d4*( + ) ) + ) )
         """)
 
@@ -540,8 +451,7 @@ class NewBranch4WayTests(unittest.TestCase):
 
     def test_4wayfilter_bugfix(self):
         # a test to ensure the 4way filter includes struct1
-        (domains, strands, complexes) = nuskell_parser("""
-
+        complexes = complexes_from_kernel("""
         # Domain Specifications
         length d1 = 15
         length d2 = 15
@@ -557,14 +467,14 @@ class NewBranch4WayTests(unittest.TestCase):
         BUG = complexes['BUG']
         FIX = complexes['FIX']
 
-        path = rxn.ReactionPathway('branch_4way', [BUG], [FIX])
+        path = PepperReaction([BUG], [FIX], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(BUG, max_helix=True, remote=True)
         #for o in output: print 'branch_4way_bug', o.kernel_string()
         self.assertEqual(output, [path])
 
     def test_branch4_way(self):
         # Standard 3state 4way junction, no end-dissociation
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         A1 = a( b( c( + ) ) x*( + ) b( c( y( + ) ) ) )
         A2 = a( b( c( + ) b*( x*( + ) ) c( y( + ) ) ) )
         A3 = a( b( c( + c*( b*( x*( + ) ) ) y( + ) ) ) )
@@ -573,35 +483,35 @@ class NewBranch4WayTests(unittest.TestCase):
         A2 = complexes['A2']
         A3 = complexes['A3']
 
-        path = rxn.ReactionPathway('branch_4way', [A1], [A2])
+        path = PepperReaction([A1], [A2], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=False)
-        #for o in output: print 'branch_4way one-step', o.kernel_string(), o.rate
+        #for o in output: print 'branch_4way one-step', o.kernel_string, o.rate
         self.assertEqual(output, [path])
 
-        path = rxn.ReactionPathway('branch_4way', [A3], [A2])
+        path = PepperReaction([A3], [A2], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A3, max_helix=False)
         #for o in output: print 'branch_4way one-step', o.kernel_string(), o.rate
         self.assertEqual(output, [path])
 
-        path1 = rxn.ReactionPathway('branch_4way', [A2], [A1])
-        path2 = rxn.ReactionPathway('branch_4way', [A2], [A3])
+        path1 = PepperReaction([A2], [A1], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A2], [A3], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A2, max_helix=False)
         #for o in output: print 'branch_4way one-step', o.kernel_string(), o.rate
         self.assertEqual(output, sorted([path1, path2]))
 
-        path = rxn.ReactionPathway('branch_4way', [A1], [A3])
+        path = PepperReaction([A1], [A3], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=True)
         #for o in output: print 'branch_4way_two-step', o.kernel_string(), o.rate
         self.assertEqual(output, [path])
 
-        path = rxn.ReactionPathway('branch_4way', [A3], [A1])
+        path = PepperReaction([A3], [A1], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A3, max_helix=True)
         #for o in output: print 'branch_4way_two-step', o.kernel_string(), o.rate
         self.assertEqual(output, [path])
 
     def test_branch4_way_2(self):
         # Unconventional multi-state 4way junction, no end-dissociation
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         A1 = a( a*( b( + ) ) a*( x*( + ) ) b( c( + ) ) )
         A2 = a( ) b( + ) a( a*( x*( + ) ) b( c( + ) ) )
         A3 = a( a*( b( + ) a( ) x*( + ) ) b( c( + ) ) )
@@ -612,23 +522,23 @@ class NewBranch4WayTests(unittest.TestCase):
         A3 = complexes['A3']
         A4 = complexes['A4']
 
-        path1 = rxn.ReactionPathway('branch_4way', [A1], [A2])
-        path2 = rxn.ReactionPathway('branch_4way', [A1], [A3])
-        path3 = rxn.ReactionPathway('branch_4way', [A1], [A4])
+        path1 = PepperReaction([A1], [A2], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A1], [A3], 'branch-4way', memorycheck=False)
+        path3 = PepperReaction([A1], [A4], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=False)
         #for o in output: print 'branch_4way_next', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2, path3]))
 
-        path1 = rxn.ReactionPathway('branch_4way', [A1], [A2])
-        path2 = rxn.ReactionPathway('branch_4way', [A1], [A3])
-        path3 = rxn.ReactionPathway('branch_4way', [A1], [A4])
+        path1 = PepperReaction([A1], [A2], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A1], [A3], 'branch-4way', memorycheck=False)
+        path3 = PepperReaction([A1], [A4], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=True)
         #for o in output: print 'branch_4way_next_mh', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2, path3]))
 
     def test_branch4_way_long(self):
         # Unconventional multi-state 4way junction, no end-dissociation
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         A1 = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d z( y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
 
         A2 = a( x*( y*( z*( b ) y( x( c( + ) ) ) z*( d z( y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
@@ -659,22 +569,22 @@ class NewBranch4WayTests(unittest.TestCase):
         A6m = complexes['A6m']
         A7m = complexes['A7m']
 
-        path1 = rxn.ReactionPathway('branch_4way', [A1], [A2])
-        path2 = rxn.ReactionPathway('branch_4way', [A1], [A3])
-        path3 = rxn.ReactionPathway('branch_4way', [A1], [A4])
-        path4 = rxn.ReactionPathway('branch_4way', [A1], [A5])
-        path5 = rxn.ReactionPathway('branch_4way', [A1], [A6])
-        path6 = rxn.ReactionPathway('branch_4way', [A1], [A7])
+        path1 = PepperReaction([A1], [A2], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A1], [A3], 'branch-4way', memorycheck=False)
+        path3 = PepperReaction([A1], [A4], 'branch-4way', memorycheck=False)
+        path4 = PepperReaction([A1], [A5], 'branch-4way', memorycheck=False)
+        path5 = PepperReaction([A1], [A6], 'branch-4way', memorycheck=False)
+        path6 = PepperReaction([A1], [A7], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=False)
         #for o in output: print 'b_4way', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2, path3, path4, path5, path6]))
 
-        path1 = rxn.ReactionPathway('branch_4way', [A1], [A2m])
-        path2 = rxn.ReactionPathway('branch_4way', [A1], [A3m])
-        path3 = rxn.ReactionPathway('branch_4way', [A1], [A4m])
-        path4 = rxn.ReactionPathway('branch_4way', [A1], [A5m])
-        path5 = rxn.ReactionPathway('branch_4way', [A1], [A6m])
-        path6 = rxn.ReactionPathway('branch_4way', [A1], [A7m])
+        path1 = PepperReaction([A1], [A2m], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A1], [A3m], 'branch-4way', memorycheck=False)
+        path3 = PepperReaction([A1], [A4m], 'branch-4way', memorycheck=False)
+        path4 = PepperReaction([A1], [A5m], 'branch-4way', memorycheck=False)
+        path5 = PepperReaction([A1], [A6m], 'branch-4way', memorycheck=False)
+        path6 = PepperReaction([A1], [A7m], 'branch-4way', memorycheck=False)
 
         output = rxn.branch_4way(A1, max_helix=True)
         #for o in output: print 'b_4way_mh', o.kernel_string()
@@ -682,7 +592,7 @@ class NewBranch4WayTests(unittest.TestCase):
 
     def test_branch4_way_no_remote(self):
         # Standard 4state 4way junction, no end-dissociation
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         A0 = a( x( y( z( b(  + ) ) ) ) c*( + ) x( y( z( d( + ) ) ) ) )
         A1 = a( x( y( z( b(  + ) ) ) x*( c*( + ) ) y( z( d( + ) ) ) ) )
         A2 = a( x( y( z( b(  + ) ) y*( x*( c*( + ) ) ) z( d( + ) ) ) ) )
@@ -693,37 +603,37 @@ class NewBranch4WayTests(unittest.TestCase):
         A2 = complexes['A2']
         A3 = complexes['A3']
 
-        path1 = rxn.ReactionPathway('branch_4way', [A1], [A3])
-        path2 = rxn.ReactionPathway('branch_4way', [A1], [A0])
+        path1 = PepperReaction([A1], [A3], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A1], [A0], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=True, remote = False)
-        #for o in output: print 'branch_4way', o.kernel_string()
+        #for o in output: print 'branch-4way', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2]))
-        path1 = rxn.ReactionPathway('branch_4way', [A2], [A0])
-        path2 = rxn.ReactionPathway('branch_4way', [A2], [A3])
+        path1 = PepperReaction([A2], [A0], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A2], [A3], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A2, max_helix=True, remote = False)
-        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        #for o in output: print 'branch-4way', o.kernel_string(), o.rate
         self.assertEqual(output, sorted([path1, path2]))
 
-        path = rxn.ReactionPathway('branch_4way', [A3], [A0])
+        path = PepperReaction([A3], [A0], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A3, max_helix=True, remote = False)
-        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        #for o in output: print 'branch-4way', o.kernel_string(), o.rate
         self.assertEqual(output, [path])
 
-        path1 = rxn.ReactionPathway('branch_4way', [A2], [A0])
-        path2 = rxn.ReactionPathway('branch_4way', [A2], [A3])
+        path1 = PepperReaction([A2], [A0], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A2], [A3], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A2, max_helix=True, remote = False)
-        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        #for o in output: print 'branch-4way', o.kernel_string(), o.rate
         self.assertEqual(output, sorted([path1, path2]))
 
-        path1 = rxn.ReactionPathway('branch_4way', [A1], [A3])
-        path2 = rxn.ReactionPathway('branch_4way', [A1], [A0])
+        path1 = PepperReaction([A1], [A3], 'branch-4way', memorycheck=False)
+        path2 = PepperReaction([A1], [A0], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=True, remote = True)
-        #for o in output: print 'branch_4way', o.kernel_string()
+        #for o in output: print 'branch-4way', o.kernel_string()
         self.assertEqual(output, sorted([path1, path2]))
 
-        path = rxn.ReactionPathway('branch_4way', [A3], [A0])
+        path = PepperReaction([A3], [A0], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A3, max_helix=True, remote = False)
-        #for o in output: print 'branch_4way', o.kernel_string(), o.rate
+        #for o in output: print 'branch-4way', o.kernel_string(), o.rate
         self.assertEqual(output, [path])
 
 
@@ -748,11 +658,11 @@ class DSD_PathwayTests(unittest.TestCase):
         self._k_slow = 0.0
 
     def tearDown(self):
-        reset_names()
+        clear_memory()
 
     def test_bind_and_displace3way(self):
         # Skip the outer loop of the enumerator...
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         length a = 10
         length t = 5
 
@@ -769,12 +679,12 @@ class DSD_PathwayTests(unittest.TestCase):
         D = complexes['D']
 
         # DSD-pathway "bind21"
-        path1 = rxn.ReactionPathway('bind21', sorted([I, C]), [B])
+        path1 = PepperReaction(sorted([I, C]), [B], 'bind21', memorycheck=False)
         output = rxn.bind21(I, C, max_helix=True)
         self.assertEqual(output, [path1])
 
         # DSD-pathway "branch3way"
-        path2 = rxn.ReactionPathway('branch_3way', [B], sorted([D, J]))
+        path2 = PepperReaction([B], sorted([D, J]), 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(B, max_helix=True)
         #for o in output: print 'test', o.kernel_string()
         self.assertEqual(output, [path2])
@@ -785,7 +695,7 @@ class DSD_PathwayTests(unittest.TestCase):
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2]))
 
     def test_cooperative_binding(self):
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         length a = 5
         length x = 10
         length y = 10
@@ -822,11 +732,11 @@ class DSD_PathwayTests(unittest.TestCase):
         self.k_fast = float('inf')
         self.k_slow = 0
 
-        path1 = rxn.ReactionPathway('bind21', sorted([L, C]), [LC])
-        path1r = rxn.ReactionPathway('open', [LC], sorted([L, C]))
-        path2 = rxn.ReactionPathway('branch_3way', [LC], [LCF])
-        path3 = rxn.ReactionPathway('bind21', sorted([R, LCF]), [LCRF1])
-        path4 = rxn.ReactionPathway('branch_3way', [LCRF1], sorted([LR, T]))
+        path1 = PepperReaction(sorted([L, C]), [LC], 'bind21', memorycheck=False)
+        path1r= PepperReaction([LC], sorted([L, C]), 'open', memorycheck=False)
+        path2 = PepperReaction([LC], [LCF], 'branch-3way', memorycheck=False)
+        path3 = PepperReaction(sorted([R, LCF]), [LCRF1], 'bind21', memorycheck=False)
+        path4 = PepperReaction([LCRF1], sorted([LR, T]), 'branch-3way', memorycheck=False)
 
         enum = Enumerator(complexes.values())
         enum.k_fast = self.k_fast
@@ -866,11 +776,11 @@ class IsomorphicSets(unittest.TestCase):
         pass
 
     def tearDown(self):
-        reset_names()
+        clear_memory()
 
     def test_simple(self):
         # works just fine
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         length a = 6
         length a1 = 2
         length a2 = 2
@@ -919,7 +829,7 @@ class IsomorphicSets(unittest.TestCase):
         pass
 
     def test_erik_max_helix_examples_3way(self):
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
 
         # should be one reaction, is one
         A1 = x( y z + y( z( + ) ) )
@@ -966,9 +876,9 @@ class IsomorphicSets(unittest.TestCase):
         enum.max_helix_migration = True
         enum.enumerate()
 
-        path1 = rxn.ReactionPathway('branch_3way', [A1], sorted([A1_2, YZ]))
-        path2 = rxn.ReactionPathway('branch_3way', [A2], sorted([A2_1, Y1]))
-        path3 = rxn.ReactionPathway('branch_3way', [A2_1], sorted([A1_2, Z1]))
+        path1 = PepperReaction([A1], sorted([A1_2, YZ]), 'branch-3way', memorycheck=False)
+        path2 = PepperReaction([A2], sorted([A2_1, Y1]), 'branch-3way', memorycheck=False)
+        path3 = PepperReaction([A2_1], sorted([A1_2, Z1]), 'branch-3way', memorycheck=False)
 
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
         #for r in enum.reactions:
@@ -990,9 +900,9 @@ class IsomorphicSets(unittest.TestCase):
         enum.max_helix_migration = True
         enum.enumerate()
 
-        path1 = rxn.ReactionPathway('branch_3way', [B1], sorted([B1_2, YZ2]))
-        path2 = rxn.ReactionPathway('branch_3way', [B2], sorted([B2_1, Y2]))
-        path3 = rxn.ReactionPathway('branch_3way', [B2_1], sorted([B1_2, Z2]))
+        path1 = PepperReaction([B1], sorted([B1_2, YZ2]), 'branch-3way', memorycheck=False)
+        path2 = PepperReaction([B2], sorted([B2_1, Y2]), 'branch-3way', memorycheck=False)
+        path3 = PepperReaction([B2_1], sorted([B1_2, Z2]), 'branch-3way', memorycheck=False)
         #for r in enum.reactions:
         #    print 'invade', r, r.kernel_string(), r.rate
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
@@ -1003,10 +913,10 @@ class Compare_MaxHelix(unittest.TestCase):
         pass
 
     def tearDown(self):
-        reset_names()
+        clear_memory()
 
     def test_self_displacement_bug(self):
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         B1 = x( y( x( y x + ) ) )
         B2 = x y x( y( x( + ) ) )
 
@@ -1018,16 +928,16 @@ class Compare_MaxHelix(unittest.TestCase):
         B3 = complexes['B3']
         B4 = complexes['B4']
 
-        forward = rxn.ReactionPathway('branch_3way', [B1], [B2])
-        backward= rxn.ReactionPathway('branch_3way', [B2], [B1])
+        forward = PepperReaction([B1], [B2], 'branch-3way', memorycheck=False)
+        backward= PepperReaction([B2], [B1], 'branch-3way', memorycheck=False)
 
-        path1  = rxn.ReactionPathway('branch_3way', [B1], [B4])
-        path1r  = rxn.ReactionPathway('branch_3way', [B4], [B1])
-        path2 = rxn.ReactionPathway('branch_3way', [B4], [B2])
+        path1  = PepperReaction([B1], [B4], 'branch-3way', memorycheck=False)
+        path1r = PepperReaction([B4], [B1], 'branch-3way', memorycheck=False)
+        path2  = PepperReaction([B4], [B2], 'branch-3way', memorycheck=False)
 
-        path3  = rxn.ReactionPathway('branch_3way', [B2], [B3])
-        path3r = rxn.ReactionPathway('branch_3way', [B3], [B2])
-        path4 = rxn.ReactionPathway('branch_3way', [B3], [B1])
+        path3  = PepperReaction([B2], [B3], 'branch-3way', memorycheck=False)
+        path3r = PepperReaction([B3], [B2], 'branch-3way', memorycheck=False)
+        path4  = PepperReaction([B3], [B1], 'branch-3way', memorycheck=False)
 
         enum = Enumerator([B1])
         enum.max_helix_migration = True
@@ -1037,7 +947,7 @@ class Compare_MaxHelix(unittest.TestCase):
         self.assertEqual(sorted([forward, backward]), sorted(enum.reactions))
 
     def test_self_displacement_bug_iso(self):
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         B1 = x1( x2( y1( y2( x1( x2( y1 y2 x1 x2 + ) ) ) ) ) )
         B2 = x1 x2 y1 y2 x1( x2( y1( y2( x1( x2( + ) ) ) ) ) )
 
@@ -1045,8 +955,8 @@ class Compare_MaxHelix(unittest.TestCase):
         B1 = complexes['B1']
         B2 = complexes['B2']
 
-        forward = rxn.ReactionPathway('branch_3way', [B1], [B2])
-        backward= rxn.ReactionPathway('branch_3way', [B2], [B1])
+        forward = PepperReaction([B1], [B2], 'branch-3way', memorycheck=False)
+        backward= PepperReaction([B2], [B1], 'branch-3way', memorycheck=False)
 
         enum = Enumerator([B1])
         enum.max_helix_migration = True
@@ -1056,7 +966,7 @@ class Compare_MaxHelix(unittest.TestCase):
 
 
     def test_self_displacement(self):
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         T = x( y x + ) y* x*
 
         T1 = x( y x + x* y* )
@@ -1075,25 +985,25 @@ class Compare_MaxHelix(unittest.TestCase):
         enum.max_helix_migration = True
         enum.enumerate()
 
-        path1  = rxn.ReactionPathway('branch_3way', [T], [T1])
-        path1r = rxn.ReactionPathway('branch_3way', [T1], [T])
-        path2  = rxn.ReactionPathway('branch_3way', [T], [T2])
-        path2r = rxn.ReactionPathway('branch_3way', [T2], [T])
+        path1  = PepperReaction([T], [T1], 'branch-3way', memorycheck=False)
+        path1r = PepperReaction([T1], [T], 'branch-3way', memorycheck=False)
+        path2  = PepperReaction([T], [T2], 'branch-3way', memorycheck=False)
+        path2r = PepperReaction([T2], [T], 'branch-3way', memorycheck=False)
 
-        path3 = rxn.ReactionPathway('bind11', [T1], [T3])
-        path4 = rxn.ReactionPathway('bind11', [T2], [T3])
+        path3 = PepperReaction([T1], [T3], 'bind11', memorycheck=False)
+        path4 = PepperReaction([T2], [T3], 'bind11', memorycheck=False)
 
-        path5  = rxn.ReactionPathway('branch_3way', [T1], [T4])
-        path5r = rxn.ReactionPathway('branch_3way', [T4], [T1])
-        path6  = rxn.ReactionPathway('branch_3way', [T2], [T4])
-        path6r = rxn.ReactionPathway('branch_3way', [T4], [T2])
+        path5  = PepperReaction([T1], [T4], 'branch-3way', memorycheck=False)
+        path5r = PepperReaction([T4], [T1], 'branch-3way', memorycheck=False)
+        path6  = PepperReaction([T2], [T4], 'branch-3way', memorycheck=False)
+        path6r = PepperReaction([T4], [T2], 'branch-3way', memorycheck=False)
 
         self.assertEqual(sorted([path1, path1r, path2, path2r, path3, path4, 
                                  path5, path5r, path6, path6r]), sorted(enum.reactions))
 
 
     def test_compare_semantics(self):
-        (domains, strands, complexes) = nuskell_parser("""
+        complexes = complexes_from_kernel("""
         length d1 = 15
         length d4 = 15
         length d6 = 15
@@ -1134,18 +1044,19 @@ class Compare_MaxHelix(unittest.TestCase):
  
         enum = Enumerator([B2, helper, PR_FL_B2])
         enum.max_helix_migration = True
+
+        path1  = PepperReaction(sorted([PR_FL_B2, helper]), [PR_FLh1B2], 'bind21', memorycheck=False)
+        path1r = PepperReaction([PR_FLh1B2], sorted([PR_FL_B2, helper]), 'open', memorycheck=False)
+        path2  = PepperReaction(sorted([PR_FL_B2, helper]), [PR_FLh2B2], 'bind21', memorycheck=False)
+        path2r = PepperReaction([PR_FLh2B2], sorted([PR_FL_B2, helper]), 'open', memorycheck=False)
+        path3  = PepperReaction([PR_FLh1B2], sorted([PR_FL_h1w, B2]), 'branch-3way', memorycheck=False)
+        path4  = PepperReaction(sorted([PR_FL_B2, B2]), [PR_FLB2B2], 'bind21', memorycheck=False)
+        path4r = PepperReaction([PR_FLB2B2], sorted([PR_FL_B2, B2]), 'open', memorycheck=False)
+
+        path5  = PepperReaction([PR_FLh1B2], [PR_FLh2B2], 'branch-3way', memorycheck=False)
+        path6  = PepperReaction([PR_FLh2B2], [PR_FLh1B2], 'branch-3way', memorycheck=False)
+
         enum.enumerate()
-
-        path1  = rxn.ReactionPathway('bind21', sorted([PR_FL_B2, helper]), [PR_FLh1B2])
-        path1r = rxn.ReactionPathway('open', [PR_FLh1B2], sorted([PR_FL_B2, helper]))
-        path2  = rxn.ReactionPathway('bind21', sorted([PR_FL_B2, helper]), [PR_FLh2B2])
-        path2r = rxn.ReactionPathway('open', [PR_FLh2B2], sorted([PR_FL_B2, helper]))
-        path3  = rxn.ReactionPathway('branch_3way', [PR_FLh1B2], sorted([PR_FL_h1w, B2]))
-        path4  = rxn.ReactionPathway('bind21', sorted([PR_FL_B2, B2]), [PR_FLB2B2])
-        path4r = rxn.ReactionPathway('open', [PR_FLB2B2], sorted([PR_FL_B2, B2]))
-
-        path5  = rxn.ReactionPathway('branch_3way', [PR_FLh1B2], [PR_FLh2B2])
-        path6  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2], [PR_FLh1B2])
 
         self.assertTrue(path1 in enum.reactions)
         self.assertTrue(path1r in enum.reactions)
@@ -1158,13 +1069,13 @@ class Compare_MaxHelix(unittest.TestCase):
         self.assertTrue(path6 in enum.reactions)
 
         # CASEY Semantics after fix
-        #path6  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2], sorted([PR_FL_h1w, B2]))
+        #path6  = PepperReaction([PR_FLh2B2], sorted([PR_FL_h1w, B2]), 'branch-3way', memorycheck=False)
 
-        #path10  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2], [PR_FLh2B2_v2])
-        #path11  = rxn.ReactionPathway('open', [PR_FLh2B2_v2], sorted([PR_FLh2w, B2]))
-        #path12  = rxn.ReactionPathway('bind11', [PR_FLh2w], [PR_FL_h1w])
-        #path13  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2_v2], [PR_FLh1B2])
-        #path14  = rxn.ReactionPathway('branch_3way', [PR_FLh2B2_v2], sorted([PR_FL_h1w, B2]))
+        #path10  = PepperReaction([PR_FLh2B2], [PR_FLh2B2_v2], 'branch-3way', memorycheck=False)
+        #path11  = PepperReaction([PR_FLh2B2_v2], sorted([PR_FLh2w, B2]), 'open', memorycheck=False)
+        #path12  = PepperReaction([PR_FLh2w], [PR_FL_h1w], 'bind11', memorycheck=False)
+        #path13  = PepperReaction([PR_FLh2B2_v2], [PR_FLh1B2], 'branch-3way', memorycheck=False)
+        #path14  = PepperReaction([PR_FLh2B2_v2], sorted([PR_FL_h1w, B2]), 'branch-3way', memorycheck=False)
         #self.assertTrue(path10 not in enum.reactions)
         #self.assertTrue(path11 not in enum.reactions)
         #self.assertTrue(path12 not in enum.reactions)

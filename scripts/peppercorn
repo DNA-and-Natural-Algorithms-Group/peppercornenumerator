@@ -172,7 +172,7 @@ def main(cl_opts):
     # Print initial complexes
     logging.info("Initial complexes: ")
     for c in enum.initial_complexes:
-        logging.info(c.kernel_string())
+        logging.info(c.kernel_string)
 
     # Transfer options to enumerator object
     enum.max_complex_size = cl_opts.max_complex_size
@@ -293,10 +293,11 @@ def main(cl_opts):
                 enum,
                 output_filename,
                 output_condensed=condensed,
-                output_rates=cl_opts.compute_rates,
-                condense_options={
-                    'k_fast': enum.k_fast,
-                    'compute_rates': cl_opts.compute_rates})
+                k_fast = enum.k_fast)
+                #output_rates=cl_opts.compute_rates,
+                #condense_options={
+                #    'k_fast': enum.k_fast,
+                #    'compute_rates': cl_opts.compute_rates})
         else:
             msg = "Unrecognized output format '%s'. Exiting." % output_format
             logging.error(msg)
