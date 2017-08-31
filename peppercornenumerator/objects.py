@@ -1,5 +1,6 @@
 
 #from __future__ import absolute_import, division, print_function, unicode_literals
+import copy
 
 from dsdobjects import clear_memory
 from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingState
@@ -68,6 +69,14 @@ class PepperComplex(DSD_Complex):
 
     #def __hash__(self):
     #    return hash(self.canonical_form)
+
+    @property
+    def pair_table(self):
+        return super(PepperComplex, self).pair_table
+    
+    @pair_table.setter
+    def pair_table(self, pt):
+        self._pair_table = pt
 
     def full_string(self):
         return "Complex(%s): %s %s" % (

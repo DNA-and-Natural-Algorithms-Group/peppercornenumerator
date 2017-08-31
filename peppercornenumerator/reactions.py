@@ -286,6 +286,7 @@ def do_bind11(reactant, loc1s, loc2s):
     newstr = pair_table_to_dot_bracket(struct)
     try:
         product = PepperComplex(reactant.sequence, newstr)
+        product.pair_table = struct
     except DSDDuplicationError, e:
         product = e.existing
     return product
@@ -358,7 +359,7 @@ def join_complexes_21(complex1, location1, complex2, location2):
     """
 
     # make sure that this value is larger than any possible loc in the pair_table
-    maxlen = len(complex1.strands) + len(complex2.strands) + 1
+    maxlen = complex1.size + complex2.size + 1
 
     if complex1.get_loop_index(location1) == 0 :
         seq1 = complex1.sequence
@@ -438,7 +439,6 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
 
     reactions = []
     structure = reactant.pair_table
-    strands = reactant.lol_sequence
 
     # for no-max-helix mode:
     if not max_helix:
@@ -495,9 +495,9 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                     helix_endB[1] -= 1
 
                     # If one of the strands has broken, the helix has ended
-                    if (helix_endA[1] >= len(strands[helix_endA[0]])):
+                    if helix_endA[1] >= reactant.strand_length(helix_endA[0]) :
                         break
-                    elif (helix_endB[1] < 0):
+                    elif helix_endB[1] < 0 :
                         break
 
                     # If these domains aren't bound to each other, the helix has ended
@@ -514,13 +514,13 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                     helix_startB[1] += 1
 
                     # If one of the strands has broken, the helix has ended
-                    if (helix_startA[1] < 0):
+                    if helix_startA[1] < 0 :
                         break
-                    elif (helix_startB[1] >= len(strands[helix_startB[0]])):
+                    elif helix_startB[1] >= reactant.strand_length(helix_startB[0]):
                         break
 
                     # If these domains aren't bound to each other, the helix has ended
-                    if (tuple(helix_startA) != structure[helix_startB[0]][helix_startB[1]]):
+                    if tuple(helix_startA) != structure[helix_startB[0]][helix_startB[1]] :
                         break
 
                     # Add the current domain to the current helix
@@ -571,18 +571,19 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
     return sorted(list(set(output)))
 
 def do_single_open(reactant, loc):
-    new_struct = reactant.pair_table
+    struct = reactant.pair_table
     loc1 = loc
-    loc2 = new_struct[loc1[0]][loc1[1]]
-    assert new_struct[loc2[0]][loc2[1]] == loc1
-    new_struct[loc1[0]][loc1[1]] = None
-    new_struct[loc2[0]][loc2[1]] = None
-    newstr = pair_table_to_dot_bracket(new_struct)
+    loc2 = struct[loc1[0]][loc1[1]]
+    assert struct[loc2[0]][loc2[1]] == loc1
+    struct[loc1[0]][loc1[1]] = None
+    struct[loc2[0]][loc2[1]] = None
+    newstr = pair_table_to_dot_bracket(struct)
     try:
-        out = PepperComplex(reactant.sequence, newstr)
+        product = PepperComplex(reactant.sequence, newstr)
+        product.pair_table = struct
     except DSDDuplicationError, e:
-        out = e.existing
-    return out
+        product = e.existing
+    return product
 
 def branch_3way(reactant, max_helix = True, remote=True):
     """
@@ -679,9 +680,10 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
         update_structure(struct, displacing_loc, new_bound_loc)
     newstr = pair_table_to_dot_bracket(struct)
     try:
-         product = PepperComplex(reactant.sequence, newstr)
+        product = PepperComplex(reactant.sequence, newstr)
+        product.pair_table = struct
     except DSDDuplicationError, e:
-         product = e.existing
+        product = e.existing
   
     return product.split()
 
@@ -781,9 +783,10 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
         update_structure(struct, loc1, loc2, loc3, loc4)
     newstr = pair_table_to_dot_bracket(struct)
     try:
-         product = PepperComplex(reactant.sequence, newstr)
+        product = PepperComplex(reactant.sequence, newstr)
+        product.pair_table = struct
     except DSDDuplicationError, e:
-         product = e.existing
+        product = e.existing
     return product.split()
 
 def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way = False):
@@ -894,16 +897,16 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way =
         if (bound_loc[1] == -1):
 
             # Continue to next strand
-            bound_loc = (wrap(bound_loc[0] - 1, len(reactant.strands)),)
-            bound_loc = (bound_loc[0], len(reactant.lol_sequence[bound_loc[0]]))
+            bound_loc = (wrap(bound_loc[0] - 1, reactant.size),)
+            bound_loc = (bound_loc[0], reactant.strand_length(bound_loc[0]))
             loop.append(None)  # EW
             continue
 
         # if we've reached the end of the strand (3')
-        elif (bound_loc[1] == len(reactant.lol_sequence[bound_loc[0]])):
+        elif (bound_loc[1] == reactant.strand_length(bound_loc[0])):
 
             # Continue to next strand
-            bound_loc = (wrap(bound_loc[0] + 1, len(reactant.strands)), -1)
+            bound_loc = (wrap(bound_loc[0] + 1, reactant.size), -1)
             loop.append(None)  # EW
             continue
 
@@ -962,7 +965,7 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way =
                     if (top_loc[1] == -1):
                         top_loop.append(None)
                         break
-                    elif (top_loc[1] == len(reactant.lol_sequence[top_loc[0]])):
+                    elif (top_loc[1] == reactant.strand_length(top_loc[0])):
                         top_loop.append(None)
                         break
                     else :
@@ -972,9 +975,9 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way =
                 bottom_loop = []
                 bottom_loc = (bound_loc[0], bound_loc[1] + direction)
                 while True:
-                    if (bottom_loc[1] == -1):
+                    if bottom_loc[1] == -1 :
                         break
-                    elif (bottom_loc[1] == len(reactant.lol_sequence[bottom_loc[0]])):
+                    elif bottom_loc[1] == reactant.strand_length(bottom_loc[0]) :
                         break
                     else :
                         bottom_loop.append(triple(bottom_loc))
@@ -1040,10 +1043,10 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand
                 bdomain -= direction
 
             # if ddomain is still on dstrand
-            if ((ddomain < len(reactant.lol_sequence[dstrand]) and ddomain >= 0) and
+            if ((ddomain < reactant.strand_length(dstrand) and ddomain >= 0) and
 
                     # and bdomain is still on bstrand
-                    (bdomain < len(reactant.lol_sequence[bstrand]) and bdomain >= 0) and
+                    (bdomain < reactant.strand_length(bstrand) and bdomain >= 0) and
 
                     # and ddomain hasn't passed bound_loc
                     (cmp((dstrand, ddomain), bound_loc) == cmp(start_loc, bound_loc)) and
