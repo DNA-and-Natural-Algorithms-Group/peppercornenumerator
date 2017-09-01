@@ -1,11 +1,12 @@
-import itertools as it
+
+import logging
 import operator
 import collections
-import logging
+import itertools as it
 import numpy as np
+from functools import reduce
 
 from peppercornenumerator.objects import PepperReaction, PepperRestingState, DSDDuplicationError
-from functools import reduce
 
 
 class SetOfFates(object):
@@ -129,7 +130,8 @@ def get_reactions_consuming(complexes, reactions):
     Returns a dict mapping each passed complex C to a list of reactions for which
     C is a reactant.
     """
-    return dict((c, [r for r in reactions if (c in r.reactants)]) for c in complexes)
+    return dict((c, [r for r in reactions if (c in r.reactants)])
+                for c in complexes)
 
 
 def get_reactions_producing(complexes, reactions):
@@ -202,21 +204,18 @@ def tarjans(complexes, reactions, reactions_consuming, is_fast):
 
     # Outer loop ensures that no complexes get left behind by the DFS
     for complex in complexes:
-        if complex._index is None :
+        if(complex._index is None):
             index = strongconnect(complex, index)
 
     return SCCs
+
 
 def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
     """
     Condenses the reaction graph for the given `enumerator`.
 
-    :param enumerator.Enumerator enumerator: 
-        The enumerator object to condense; 
-        `enumerate` must already have been called.
-    :param bool compute_rates: 
-        True to compute rates for the condensed reactions; 
-        requires numpy and slows calculation.
+    :param enumerator.Enumerator enumerator: The enumerator object to condense; `enumerate` must already have been called.
+    :param bool compute_rates: True to compute rates for the condensed reactions; requires numpy and slows calculation.
 
     Returns an object of the following form::
 
@@ -224,8 +223,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
             'resting_states': list of resting states
             'resting_state_map': dict mapping names to resting states,
             'resting_state_targets': dict mapping each complex to its fate,
-            'condensed_reactions': list of PepperReaction objects representing 
-                the condensed reactions,
+            'condensed_reactions': list of PepperReaction objects representing the condensed reactions,
             'reactions': same as 'condensed_reactions'
          }
 
@@ -268,23 +266,27 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
     #
     # ------------------------------------------------------------------------
 
-    # F(x) : Stores mapping between a complex x and the set of its possible fates
+    # F(x) : Stores mapping between a complex x and the set of its possible
+    # fates
     complex_fates = {}
 
     # Stores mappings between an SCC and the associated resting state
     resting_states = {}
 
-    # S(x) : Stores mappings between each complex x and the SCC S(x) which contains x
+    # S(x) : Stores mappings between each complex x and the SCC S(x) which
+    # contains x
     SCC_containing = {}
 
-    # Remembers which SCCs we've processed (those SCCs for which we've computed the fates)
+    # Remembers which SCCs we've processed (those SCCs for which we've
+    # computed the fates)
     processed_SCCs = set()
 
     # The following dicts map SCCs to the various matrices used to
     # calculate the condensed reaction rates:
 
     # For resting state SCCs:
-    # stationary_distributions[SCC] =  s^ : maps complexes to stationary probabilities
+    # stationary_distributions[SCC] =  s^ : maps complexes to stationary
+    # probabilities
     stationary_distributions = {}
 
     # For transient SCCs:
@@ -292,12 +294,15 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
     # probabilities
     exit_probabilities = {}
 
-    # decay_probabilities[(x,F)] = P( x decays to F ) = P( x -> F ), where F is a fate of complex x
-    decay_probabilities = collections.defaultdict(float)  # default to zero if no entry
+    # decay_probabilities[(x,F)] = P( x decays to F ) = P( x -> F ), where F is a fate of
+    # complex x
+    decay_probabilities = collections.defaultdict(
+        float)  # default to zero if no entry
 
     # reaction_decay_probabilities[(r,F)] = P( products of r decay to F ) = P( r -> F )
     # where F is a fate of reaction r
-    reaction_decay_probabilities = collections.defaultdict(float)  # default to zero if no entry
+    reaction_decay_probabilities = collections.defaultdict(
+        float)  # default to zero if no entry
 
     # Define helper functions for calculating condensed reaction rates
     def get_stationary_distribution(scc):
@@ -468,17 +473,11 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         return resting_states[scc_set]
 
     def calculate_reaction_decay_probabilities(r, fate, combinations=None):
-
         if combinations is None:
             combinations = cartesian_product(map(get_fates, r.products))
 
-        #print 'reaction', r, 'fate', map(str, fate)
-
-        for combo in combinations:
-            combo = tuple_sum(combo)
-            if combo != fate: continue
-        #for fates in (combination 
-        #        for combination in combinations if tuple_sum(combination) == fate):
+        for fates in (combination for combination in combinations if tuple_sum(
+                combination) == fate):
 
             # each combination (`fates`) that sums to `fate`
             # constitutes a possible way this reaction can
@@ -486,21 +485,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
             # P(r -> fate). This contribution is the joint
             # probability that each product `d` of r decays to
             # the corresponding fate `f` in `fates`.
-
-            #print 'combo/fate', combo
-            #print 'combo/fate', map(str,combo)
-
-            #prod = 1
-            #for (d,f) in zip(r.products, combo):
-            #    print (d,f)
-            #    #assert (d, f) in decay_probabilities
-            #    prod * decay_probabilities[(d,f)]
-            #print 'product', prod
-
-
-
-            reaction_decay_probabilities[(r, fate)] += times(decay_probabilities[(d, f)] 
-                    for (d, f) in zip(r.products, combo))
+            reaction_decay_probabilities[(
+                r, fate)] += times(decay_probabilities[(d, f)] for (d, f) in zip(r.products, fates))
 
     def compute_fates(scc):
         """
@@ -606,14 +592,13 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                             # P(x decays to F) = P(SCC exits via r | SCC was
                             # entered via c) * P(r decays to F)
 
-                            #if (c, fate) not in decay_probabilities:
-                            #    decay_probabilities[(c, fate)] = 0
+                            if (c, fate) not in decay_probabilities:
+                                decay_probabilities[(c, fate)] = 0
 
-                            decay_probabilities[(c, fate)] += exit_probabilities[scc_set][
-                                    (c, r)] * reaction_decay_probabilities[(r, fate)]
-                            #print exit_probabilities[scc_set][(c,r)]
-                            #print reaction_decay_probabilities[(r, fate)]
-                            #assert decay_probabilities[(c, fate)] != 0
+                            decay_probabilities[(c,
+                                fate)] += exit_probabilities[scc_set][(c,
+                                    r)] * reaction_decay_probabilities[(r,
+                                                                                                                            fate)]
 
             # The set of fates for the complexes in this SCC is the union of
             # the fates for all outgoing reactions.
@@ -693,57 +678,49 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         for (reactants, products) in new_reactant_product_combinations:
             reactants = tuple(sorted(reactants))
             products = tuple(sorted(products))
+            #print 'r', reactants
+            #print 'p', products
 
             # Prune trivial reactions
             if(reactants != products):
                 try :
                     reaction = PepperReaction(list(reactants), list(products), rtype='condensed')
-                    reaction.rate = 0.0
                 except DSDDuplicationError, e:
+                    logging.info('duplicating PepperReaction: {}'.format(e.existing))
                     reaction = e.existing
-
-                #print 'reation', reaction.full_string
 
                 if compute_rates:
 
                     # calculate reaction rate by summing over all
                     # representative detailed reactions
                     detailed_reactions_consuming = set(
-                        [r for reactant in reactants 
-                            for c in reactant.complexes 
-                            for r in reactions_consuming[c]])
-
+                        [r for reactant in reactants for c in reactant.complexes for r in reactions_consuming[c]])
                     reaction_rate = 0.0
                     for r in detailed_reactions_consuming:
-                        #print r
 
-                        # calculate the probability that this detailed reaction
-                        # decays to the products P(r -> F), where F = products.
-                        # Used in next step
+                        # calculate the probability that this detailed reaction decays to the products
+                        # P(r -> F), where F = products. Used in next step
                         calculate_reaction_decay_probabilities(r, products)
 
-                        # probability that the products of this detailed
-                        # reaction decay into fates that yield the condensed
-                        # reaction
-                        product_probability = reaction_decay_probabilities[(r, products)]
+                        # probability that the products of this detailed reaction decay into fates
+                        # that yield the condensed reaction
+                        product_probability = reaction_decay_probabilities[(
+                            r, products)]
                         assert product_probability >= 0
 
-                        # probability that the resting states comprising the
-                        # reactants of the condensed reaction will be in the
-                        # right configuration to perform the detailed reaction
-                        reactant_probabilities = times(stationary_distributions[
-                            resting_states[frozenset(SCC_containing[a])]][a] for a in r.reactants)
+                        # probability that the resting states comprising the reactants of the condensed reaction will be in the right
+                        # configuration to perform the detailed reaction
+                        reactant_probabilities = times(stationary_distributions[resting_states[frozenset(
+                            SCC_containing[a])]][a] for a in r.reactants)
                         assert reactant_probabilities >= 0
 
                         # rate of the detailed reaction
                         k = r.rate
                         assert k >= 0
 
-                        # overall contribution of detailed reaction r to rate
-                        # of the condensed reaction ^r =
+                        # overall contribution of detailed reaction r to rate of the condensed reaction ^r =
                         # P(reactants of ^r are present as reactants of r) *
                         # k_r * P(products of r decay to products of ^r)
-                        #print reactant_probabilities, k, product_probability
                         reaction_rate += reactant_probabilities * k * product_probability
 
                         if isinstance(reaction_rate, complex):

@@ -23,30 +23,6 @@ class PeppercornUsageError(Exception):
             self.message += " ({})".format(val)
         super(PeppercornUsageError, self).__init__(self.message) 
 
-class colors:
-    RED = '\033[91m'
-    YELLOW = '\033[93m'
-    GREEN = '\033[92m'
-    BLUE = '\033[94m'
-    PINK = '\033[95m'
-    CYAN = '\033[96m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    colors = [RED, YELLOW, GREEN, CYAN, BLUE, PINK]
-
-    @staticmethod
-    def color(string):
-        pass
-
-    @staticmethod
-    def legend(keys=None):
-        if keys is None:
-            l = enumerate(colors.colors)
-        else:
-            l = zip(keys, colors.colors)
-        return "\n".join([(c + str(i) + colors.ENDC) for i, c in l])
-
 
 def wrap(x, m):
     """

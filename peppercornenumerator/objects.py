@@ -64,8 +64,11 @@ class PepperComplex(DSD_Complex):
     """
 
     #def __init__(self, *kargs, **kwargs):
-    def __init__(self, sequence, structure, name='', prefix='e', memorycheck=True):
-        super(PepperComplex, self).__init__(sequence, structure, name, prefix, memorycheck)
+    def __init__(self, sequence, structure, name='', memorycheck=True):
+        try :
+            super(PepperComplex, self).__init__(sequence, structure, name, 'e', memorycheck)
+        except DSDObjectsError :
+            super(PepperComplex, self).__init__(sequence, structure, name, 'enum', memorycheck)
 
     #def __hash__(self):
     #    return hash(self.canonical_form)
@@ -145,6 +148,17 @@ class PepperReaction(DSD_Reaction):
         ReactionPathway objects are sorted by their canonical form.
         """
         return cmp(self.canonical_form, other.canonical_form)
+
+    @property
+    def full_string(self):
+        """prints the formal chemical reaction."""
+        if self.rtype :
+            return '[{:14s} = {:12g} {:4s} ] {} -> {}'.format(self.rtype, self.rate, self.rateunits,
+                    " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
+        else :
+            return '[{:12g} {:4s} ] {} -> {}'.format(self.rate, self.rateunits,
+                    " + ".join(map(str, self.reactants)), " + ".join(map(str,
+                        self.products)))
 
 class PepperRestingState(DSD_RestingState):
     def __init__(self, *kargs, **kwargs):

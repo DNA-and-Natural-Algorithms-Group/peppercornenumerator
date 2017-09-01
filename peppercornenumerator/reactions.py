@@ -74,8 +74,7 @@ def polymer_link_rate(linker_length):
     a = 1e6        # per second; Kuznetsov et al 2008, Nayak et al 2012, Tsukanov et al 2013ab, all say at least 10x slower
     # fit from data in Bonnet et al 1998, consistent with Kuznetsov et al 2008
     b = -2.5
-    # hairpin closing adapted (simplified) from data in Bonnet et al 1998,
-    # modified as above
+    # hairpin closing adapted (simplified) from data in Bonnet et al 1998, modified as above
     k = a * linker_length**b
     # hairpins shorter than about 4 nt can't close any faster.
     return min(k, 33000)
@@ -90,12 +89,10 @@ def binding_rate(length, before, after):
     if not before.is_open and before.stems == 1 and before.bases == 0:
         if not after.is_open and after.stems == 1 and after.bases == 0:
             return 1e4  # bubble closing rate from Altan-Bonnet 2003
-        # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et
-        # al 2013, low end
+        # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et al 2013, low end
         return (1e6) / length
     if not after.is_open and after.stems == 1 and after.bases == 0:
-        # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et
-        # al 2013, low end
+        # zippering from Wetmur&Davidson 1968, Gueron&Leroy 1995, Srinivas et al 2013, low end
         return (1e6) / length
 
     # bulge closing assumed to be similar to faster of two hairpin closings
@@ -644,7 +641,7 @@ def branch_3way(reactant, max_helix = True, remote=True):
                 # skip remote toehold reactions if directed
                 if not remote :
                     if not (not after.is_open and after.stems == 1 and after.bases == 0):
-                        # print "Rejecting... " + reaction.kernel_string()
+                        # print "Rejecting... " + reaction.kernel_string
                         # import pdb; pdb.set_trace()
                         continue
 

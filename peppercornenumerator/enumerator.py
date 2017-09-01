@@ -59,7 +59,7 @@ class Enumerator(object):
     enumerator. Enumerators have immutable starting conditions. 
     """
 
-    def __init__(self, initial_complexes, strands=None, domains=None):
+    def __init__(self, initial_complexes, initial_reactions=None):
         """
         Initializes the enumerator with a list of initial complexes.
 
@@ -72,10 +72,14 @@ class Enumerator(object):
         """
         # System initialization
         self._initial_complexes = initial_complexes
-        self._strands = strands if strands else self.get_strands(self._initial_complexes)
-        self._domains = domains if domains else self.get_domains(self._initial_complexes)
+        self._strands = self.get_strands(self._initial_complexes)
+        self._domains = self.get_domains(self._initial_complexes)
 
-        self._reactions = None
+        if initial_reactions:
+            self._reactions = initial_reactions
+        else :
+            self._reactions = []
+
         self._resting_states = None
         self._complexes = None
         self._transient_complexes = None
@@ -228,7 +232,7 @@ class Enumerator(object):
         """
         if self._reactions is None:
             raise utils.PeppercornUsageError("enumerate not yet called!")
-        return self._reactions[:]
+        return list(set(self._reactions))
 
     @property
     def resting_states(self):
@@ -302,7 +306,7 @@ class Enumerator(object):
         self._resting_complexes = self._complexes[:]
         self._resting_states = [PepperRestingState([complex], name=complex.name) for complex in self._complexes]
         self._transient_complexes = []
-        self._reactions = []
+        #self._reactions = []
 
     def enumerate(self):
         """
@@ -356,7 +360,7 @@ class Enumerator(object):
                     if reaction_ok:
                         new_reactions.append(reaction)
 
-                self._reactions = new_reactions
+                self._reactions += new_reactions
 
         # List E contains enumerated resting state complexes. Only cross-
         # reactions  with other end states need to be considered for these
@@ -390,7 +394,7 @@ class Enumerator(object):
         # 'neighborhood' is to be considered.
         self._B = self.initial_complexes[:]
 
-        self._reactions = []
+        #self._reactions = []
         self._complexes = []
         self._resting_states = []
 
@@ -473,10 +477,10 @@ class Enumerator(object):
         input before continuing.
         """
         if self.interactive:
-            print "%s = %s (%s)" % (root.name, root.kernel_string(), type)
+            print "%s = %s (%s)" % (root.name, root.kernel_string, type)
             print
             for r in reactions:
-                print r.kernel_string()
+                print r.kernel_string
             if len(reactions) is 0:
                 print "(No %s reactions)" % type
             print

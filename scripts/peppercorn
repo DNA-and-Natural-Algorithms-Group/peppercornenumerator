@@ -4,87 +4,123 @@ import os
 import sys
 import logging
 import argparse
+import contextlib
 
 # Import global default variables from peppercornenumerator library
-from peppercornenumerator import __version__
-from peppercornenumerator.reactions import branch_3way, branch_4way
+from peppercornenumerator import Enumerator, __version__
+from peppercornenumerator.input import read_kernel, read_pil, ParseException
+from peppercornenumerator.output import write_kernel
 
-# Import wrapper functions to initialize the Enumerator object.
-from peppercornenumerator.input import text_input_functions, load_input_functions
-# Import wrapper functions to output enumeration results
-from peppercornenumerator.output import text_output_functions, graph_output_functions
-from peppercornenumerator.utils import colors
+from peppercornenumerator.reactions import branch_3way, branch_4way
 
 version = __import__('peppercornenumerator').__version__
 
+class colors:
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    GREEN = '\033[92m'
+    BLUE = '\033[94m'
+    PINK = '\033[95m'
+    CYAN = '\033[96m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    colors = [RED, YELLOW, GREEN, CYAN, BLUE, PINK]
+
+    @staticmethod
+    def color(string):
+        pass
+
+    @staticmethod
+    def legend(keys=None):
+        if keys is None:
+            l = enumerate(colors.colors)
+        else:
+            l = zip(keys, colors.colors)
+        return "\n".join([(c + str(i) + colors.ENDC) for i, c in l])
+
+class ColorFormatter(logging.Formatter):
+    def __init__(self, msg, use_color=True):
+        logging.Formatter.__init__(self, msg)
+        self.use_color = use_color
+        self.COLORS = {
+            'DEBUG': colors.CYAN,
+            'INFO': colors.BLUE,
+            'WARNING': colors.YELLOW,
+            'ERROR': colors.RED,
+            'Exception': colors.PINK,
+        }
+        self.RESET = colors.ENDC
+
+    def format(self, record):
+        levelname = record.levelname
+        if self.use_color:
+            record.levelname = self.COLORS[levelname] + \
+                levelname + self.RESET
+        return logging.Formatter.format(self, record)
+
+
 def add_peppercorn_args(parser):
+    output    = parser.add_argument_group('Peppercorn output format')
+    semantics = parser.add_argument_group('Peppercorn reaction semantics')
+    limits    = parser.add_argument_group('Peppercorn polymerization parameters')
+    devel     = parser.add_argument_group('Peppercorn performance analysis')
+
+
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
-    parser.add_argument( '-v', action='count', dest='verbose', default=0,
+    parser.add_argument( '-v', '--verbose', action='count', default=0,
         help="Print more output (-vv for extra debugging information)")
 
-    parser.add_argument('input_filename', action='store', default=None,
-            nargs='?', help="Path to the input file (same as --infile)")
-    parser.add_argument('--infile', action='store', default=None, 
-        help="""Path to the input file (same as listing the input filename
-        after all arguments)""")
-    parser.add_argument('--outfile', action='store', dest='output_filename',
-            default=None, help="""Path to the output file (default: use the
-            input filename, + '-enum', then add an extension based on the
-            output type)""")
-    parser.add_argument('-i', action='store', dest='input_format', default=None,
-        help="Parse the input file using this format; one of: " +
-        ", ".join(text_input_functions.keys() + load_input_functions.keys()) +
-        ". (default: guess from the extension of --infile)")
-    parser.add_argument('-o', action='store', dest='output_format', default='',
-        help="Write the output file using this format; one or more (comma-separated) of: " +
-        ", ".join( text_output_functions.keys() + graph_output_functions.keys()) +
-        ". (default: guess from the extension of --outfile)")
-    parser.add_argument( '-c', '--condensed', action='store_true',
+    parser.add_argument('input_filename', default=None, nargs='?', metavar='<str>',
+            help="Path to the input file (same as --infile)")
+
+    output.add_argument('-o', '--output', dest='output_filename', default=None, metavar='<str>',
+        help="""Redirect output to a file""")
+    output.add_argument( '-c', '--condensed', action='store_true',
         help="Condense reactions into only resting complexes.")
 
-    # WHY??
-    parser.add_argument( '--no-rates', action='store_false', dest='compute_rates',
-        help="Don not compute reaction rates.")
-    parser.add_argument( '--dry-run', action='store_true', 
-        help="Dry run: read input, write output. Do not enumerate any reactions.")
-    parser.add_argument( '--interactive', action='store_true', 
-        help="Interactive---display new reactions after each step.")
-
-    parser.add_argument( '--max-complex-size', action='store', type=int, default=6, metavar='<int>',
-        help="Maximum number of strands allowed in a complex (used to prevent polymerization).")
-    parser.add_argument( '--max-complex-count', action='store', type=int, default=200, metavar='<int>',
-        help="Maximum number of complexes that may be enumerated before the enumerator halts.")
-    parser.add_argument( '--max-reaction-count', action='store', type=int, default=1000, metavar='<int>',
+    limits.add_argument( '--max-complex-size', type=int, default=6, metavar='<int>',
+        help="""Maximum number of strands allowed in a complex (used to prevent
+        polymerization).""")
+    limits.add_argument( '--max-complex-count', type=int, default=200, metavar='<int>',
+        help="""Maximum number of complexes that may be enumerated before the
+        enumerator halts.""")
+    limits.add_argument( '--max-reaction-count', type=int, default=1000, metavar='<int>',
         help="Maximum number of reactions that may be enumerated before the enumerator halts.")
 
-    parser.add_argument( '--release-cutoff-1-1', action='store', type=int, default=6, metavar='<int>',
-        help="Maximum number of bases that will be released spontaneously in a 1-1 `open` reaction.")
-    parser.add_argument( '--release-cutoff-1-N', action='store', type=int, default=6, metavar='<int>',
-        help="Maximum number of bases that will be released spontaneously in a 1-n `open` reaction.")
-    parser.add_argument( '--release-cutoff', action='store', default=None, type=int, metavar='<int>',
+    semantics.add_argument( '--release-cutoff-1-1', type=int, default=6, metavar='<int>',
+        help="""Maximum number of bases that will be released spontaneously in
+        a 1-1 `open` reaction.""")
+    semantics.add_argument( '--release-cutoff-1-N', type=int, default=6, metavar='<int>',
+        help="""Maximum number of bases that will be released spontaneously in
+        a 1-n `open` reaction.""")
+    semantics.add_argument( '--release-cutoff', default=None, type=int, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         an `open` reaction, for either 1-1 or 1-n reactions (overwrites both
         --release-cutoff-1-1 and --release-cutoff-1-n to the same value)""")
 
-    parser.add_argument( '--k-slow', dest='k_slow', default=0.0, type=float, metavar='<flt>',
+    semantics.add_argument( '--no-max-helix', action='store_true', 
+        help="Do not apply 'max helix at a time' semantics.")
+    semantics.add_argument( '--ignore-branch-3way', action='store_true', dest='ignore_branch_3way',
+        help="Ignore 3-way branch migration events during enumeration.")
+    semantics.add_argument( '--ignore-branch-4way', action='store_true', dest='ignore_branch_4way',
+        help="Ignore 4-way branch migration events during enumeration.")
+    semantics.add_argument( '--reject-remote', action='store_true', 
+        help="Discard remote toehold mediated 3-way and 4-way branch migration reactions.")
+
+    semantics.add_argument( '--k-slow', dest='k_slow', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be discarded.")
-    parser.add_argument( '--k-fast', dest='k_fast', default=0.0, type=float, metavar='<flt>',
+    semantics.add_argument( '--k-fast', dest='k_fast', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be marked as slow.")
 
-    parser.add_argument( '--reject-remote', action='store_true', 
-        help="Discard remote toehold mediated 3-way and 4-way branch migration reactions.")
-    parser.add_argument( '--no-max-helix', action='store_true', 
-        help="Do not apply 'max helix at a time' semantics.")
-
-    parser.add_argument( '--bfs-ish', action='store_true', dest='bfs',
+    devel.add_argument( '--interactive', action='store_true', 
+        help="Interactive - show new reactions after each step.")
+    devel.add_argument( '--bfs-ish', action='store_true', dest='bfs',
         help="When searching for bimolecular reactions, look to the oldest complexes first.")
-    parser.add_argument( '--ignore-branch-3way', action='store_true', dest='ignore_branch_3way',
-        help="Ignore 3-way branch migration events during enumeration.")
-    parser.add_argument( '--ignore-branch-4way', action='store_true', dest='ignore_branch_4way',
-        help="Ignore 4-way branch migration events during enumeration.")
-
-    parser.add_argument('--profile', action='store_true', dest='profile',
-                        help="Enable statistical profiling")
+    devel.add_argument( '--dry-run', action='store_true', 
+        help="Dry run: read input, write output. Do not enumerate any reactions.")
+    devel.add_argument('--profile', action='store_true', dest='profile',
+        help="Enable statistical profiling")
 
     return
 
@@ -100,29 +136,8 @@ def main(cl_opts):
 
     ch = logging.StreamHandler()
 
-    class ColorFormatter(logging.Formatter):
-        def __init__(self, msg, use_color=True):
-            logging.Formatter.__init__(self, msg)
-            self.use_color = use_color
-            self.COLORS = {
-                'DEBUG': colors.CYAN,
-                'INFO': colors.BLUE,
-                'WARNING': colors.YELLOW,
-                'ERROR': colors.RED,
-                'Exception': colors.PINK,
-            }
-            self.RESET = colors.ENDC
-
-        def format(self, record):
-            levelname = record.levelname
-            if self.use_color:
-                record.levelname = self.COLORS[levelname] + \
-                    levelname + self.RESET
-            return logging.Formatter.format(self, record)
-
     # logging.Formatter('%(levelname)s - %(message)s')
-    formatter = ColorFormatter(
-        '%(levelname)s %(message)s', use_color=sys.stdout.isatty())
+    formatter = ColorFormatter('%(levelname)s %(message)s', use_color=sys.stdout.isatty())
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
@@ -136,45 +151,42 @@ def main(cl_opts):
               (" (%s)" % version))
     logging.info(banner)
 
-    if cl_opts.infile:
-        cl_opts.input_filename = cl_opts.infile
+    systeminput = cl_opts.input_filename
+    if not systeminput :
+        if sys.stdout.isatty():
+            logging.warning("Reading file from STDIN, Ctrl-D to stop")
+        systeminput = ''
+        for l in sys.stdin:
+            systeminput += l
 
-    if(cl_opts.input_filename is None):
-        msg = "No input file specified. Exiting."
-        logging.error(msg)
-        raise SystemExit(msg)
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+    # Load an input parser to generate complexes for enumeration #
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+    try:
+        logging.info("Parsing input.")
+        complexes, reactions = read_kernel(systeminput, cl_opts.input_filename is not None) 
+        logging.info("Parsed input format: kernel")
+    except ParseException, e:
+        logging.info('Using non-standard input: "{}"'.format(e.line))
+        logging.info('                           {} '.format(' ' * (e.col-1) + '^'))
+        try :
+            complexes, reactions = read_pil(systeminput, cl_opts.input_filename is not None)
+            logging.warning("Used deprecated input format: (pil, enum)")
+        except ParseException, e:
+            logging.error('Cannot parse line {:5d}: "{}"'.format(e.lineno, e.line))
+            logging.error('                          {} '.format(' ' * (e.col-1) + '^'))
+            raise SystemExit
 
-    # If there was no input format given, guess from the file extension
-    if (cl_opts.input_format is None):
-        ext = os.path.splitext(cl_opts.input_filename)[1]
-        cl_opts.input_format = ext.replace('.', '')
-        if cl_opts.input_format is '':
-            cl_opts.input_format = "pil"
-            logging.info("No input format; assuming %s." %
-                         cl_opts.input_format)
-        else:
-            logging.info("Guessing input format from input filename: %s" %
-                         cl_opts.input_format)
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    # Attempt to load an input parser to generate an enumerator object #
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    cl_opts.input_format = cl_opts.input_format.lower()
-    if (cl_opts.input_format in text_input_functions):
-        logging.info("Reading input file : %s" % cl_opts.input_filename)
-        enum = text_input_functions[cl_opts.input_format](
-            cl_opts.input_filename)
-    else:
-        msg = "Unrecognized input format '%s'. Exiting." % cl_opts.input_format
-        logging.error(msg)
-        raise SystemExit(msg)
+    enum = Enumerator(complexes.values(), reactions)
 
     # Print initial complexes
     logging.info("Initial complexes: ")
     for c in enum.initial_complexes:
         logging.info(c.kernel_string)
 
-    # Transfer options to enumerator object
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+    # Transfer options to enumerator object #
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     enum.max_complex_size = cl_opts.max_complex_size
     enum.max_complex_count = cl_opts.max_complex_count
     enum.max_reaction_count = cl_opts.max_reaction_count
@@ -213,11 +225,10 @@ def main(cl_opts):
     else:
         logging.info("Enumerating reactions...")
         if cl_opts.interactive:
-            logging.info()
-            logging.info("Interactive mode enabled: fast and slow reactions will be printed for each ")
-            logging.info("complex as enumerated. Press ^C at any time to terminate and write accumulated")
-            logging.info("complexes to output.")
-            logging.info()
+            logging.info("Interactive mode enabled: Fast and slow reactions " + \
+                        "will be printed for each complex as enumerated." + \
+                        "Press ^C at any time to terminate and write accumulated" + \
+                        "complexes to output.")
         if cl_opts.profile:
             import statprof
             statprof.start()
@@ -230,77 +241,21 @@ def main(cl_opts):
             enum.enumerate()
         logging.info("Done.")
 
-    # Handle condensed reactions
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+    # Handle output condensation #
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     condensed = cl_opts.condensed
     if(condensed):
         logging.info("Output will be condensed to remove transient complexes.")
 
-    # More robustly/conveniently guess the output filename(s)
-    output_filename = cl_opts.output_filename
-    output_formats = [of.strip().lower()
-                      for of in cl_opts.output_format.split(",")]
+    if cl_opts.output_filename is None:
+        write_kernel(enum, sys.stdout, 
+                condensed = condensed, k_fast = cl_opts.k_fast)
+    else :
+        with open(cl_opts.output_filename, 'w') as pil :
+            write_kernel(enum, pil,
+                condensed = condensed, k_fast = cl_opts.k_fast)
 
-    # if there were multiple output formats requested
-    if(len(output_formats) > 1):
-
-        # if there was no output filename given, tack a new suffix on the input
-        # filename
-        if output_filename is None:
-            output_prefix = os.path.splitext(
-                cl_opts.input_filename)[0] + "-enum"
-        else:
-            # we're going to ignore the suffix of the provided
-            output_prefix = os.path.splitext(output_filename)[0]
-
-        # come up with a list of (format, filename) pairs
-        outputs = [(fmt, output_prefix + "." + fmt) for fmt in output_formats]
-    else:
-        # if there was no output format given but there was an output filename
-        if output_filename is not None and len(output_formats) == 0:
-            output_formats = [os.path.splitext(cl_opts.input_filename)[1]]
-
-        # if there was no output filename given, tack a suffix on to the input
-        # filename
-        elif output_filename is None:
-            if len(output_formats) == 0 or output_formats[0] == '':
-                output_formats = ['pil']
-                logging.info(
-                    "No output format specified; assuming %s." %
-                    output_formats[0])
-            output_filename = os.path.splitext(cl_opts.input_filename)[
-                0] + "-enum" + "." + output_formats[0]
-
-        # one output format
-        outputs = [(output_formats[0], output_filename)]
-
-    # Print each requested output format
-    for (output_format, output_filename) in outputs:
-
-        # Attempt to load an output generator to serialize the enumerator
-        # object to an output file
-        mode = None
-        if (output_format in text_output_functions):
-            logging.info("Writing text output to file : %s as %s" %
-                         (output_filename, output_format))
-            mode = text_output_functions[output_format]
-        elif (output_format in graph_output_functions):
-            logging.info("Writing graph output to file : %s as %s" %
-                         (output_filename, output_format))
-            mode = graph_output_functions[output_format]
-
-        if mode is not None:
-            mode(
-                enum,
-                output_filename,
-                output_condensed=condensed,
-                k_fast = enum.k_fast)
-                #output_rates=cl_opts.compute_rates,
-                #condense_options={
-                #    'k_fast': enum.k_fast,
-                #    'compute_rates': cl_opts.compute_rates})
-        else:
-            msg = "Unrecognized output format '%s'. Exiting." % output_format
-            logging.error(msg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
