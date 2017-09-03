@@ -1,12 +1,12 @@
-import itertools as it
+
+import logging
 import operator
 import collections
-import logging
+import itertools as it
 import numpy as np
-
-from peppercornenumerator.reactions import get_auto_name, ReactionPathway
-from peppercornenumerator.utils import Complex, Domain, Strand, RestingState
 from functools import reduce
+
+from peppercornenumerator.objects import PepperReaction, PepperRestingState, DSDDuplicationError
 
 
 class SetOfFates(object):
@@ -58,7 +58,7 @@ class SetOfFates(object):
 
 def is_outgoing(reaction, SCC_set):
     """
-    Determines if the passed ReactionPathway leads out of the passed SCC
+    Determines if the passed PepperReaction leads out of the passed SCC
     """
     if SCC_set is not set:
         SCC_set = set(SCC_set)
@@ -223,7 +223,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
             'resting_states': list of resting states
             'resting_state_map': dict mapping names to resting states,
             'resting_state_targets': dict mapping each complex to its fate,
-            'condensed_reactions': list of ReactionPathway objects representing the condensed reactions,
+            'condensed_reactions': list of PepperReaction objects representing the condensed reactions,
             'reactions': same as 'condensed_reactions'
          }
 
@@ -329,7 +329,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
             # T_{b,a} = rate(r : a -> b)
             a = r.reactants[0]
             b = r.products[0]
-            T[complex_indices[b]][complex_indices[a]] = r.rate()
+            T[complex_indices[b]][complex_indices[a]] = r.rate
 
         T0 = np.copy(T)
 
@@ -396,13 +396,13 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         for r in r_internal:
             a = r.reactants[0]
             b = r.products[0]
-            T[complex_indices[a]][complex_indices[b]] = r.rate()
+            T[complex_indices[a]][complex_indices[b]] = r.rate
 
         # add transition rates for each outgoing reaction
         Te = np.zeros((L, e))
         for r in r_outgoing:
             a = r.reactants[0]
-            Te[complex_indices[a]][exit_indices[r]] = r.rate()
+            Te[complex_indices[a]][exit_indices[r]] = r.rate
 
         # the full transition matrix P_{L+e x L+e} would be
         #
@@ -449,8 +449,8 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         AND rate constant > k_fast
         """
         # return (reaction.arity == (1,1) or reaction.arity == (1,2)) and
-        # reaction.rate() > k_fast
-        return (reaction.arity[0] == 1) and reaction.rate() > k_fast
+        # reaction.rate > k_fast
+        return (reaction.arity[0] == 1) and reaction.rate > k_fast
 
     def get_fates(complex):
         """
@@ -514,7 +514,11 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         if(len(outgoing_reactions) == 0):
 
             # build new resting state
-            resting_state = RestingState(get_auto_name(), scc)
+            try : #TODO check if that is a bug!
+                resting_state = PepperRestingState(scc)
+            except DSDDuplicationError, e:
+                resting_state = e.existing
+
             resting_states[scc_set] = resting_state
 
             # calculate stationary distribution
@@ -674,11 +678,16 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
         for (reactants, products) in new_reactant_product_combinations:
             reactants = tuple(sorted(reactants))
             products = tuple(sorted(products))
+            #print 'r', reactants
+            #print 'p', products
 
             # Prune trivial reactions
             if(reactants != products):
-                reaction = ReactionPathway(
-                    'condensed', list(reactants), list(products))
+                try :
+                    reaction = PepperReaction(list(reactants), list(products), rtype='condensed')
+                except DSDDuplicationError, e:
+                    logging.info('duplicating PepperReaction: {}'.format(e.existing))
+                    reaction = e.existing
 
                 if compute_rates:
 
@@ -706,7 +715,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                         assert reactant_probabilities >= 0
 
                         # rate of the detailed reaction
-                        k = r.rate()
+                        k = r.rate
                         assert k >= 0
 
                         # overall contribution of detailed reaction r to rate of the condensed reaction ^r =
@@ -721,7 +730,10 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                                      " to condensed reaction %s.") %
                                     (r, reaction_rate.real, reaction_rate.imag, reaction))
 
-                    reaction._const = reaction_rate
+                    reaction.rate = reaction_rate
+                    #if reaction.rate == 0:
+                    #    print reaction.full_string
+                    #    raise Exception
                 condensed_reactions.add(reaction)
 
     return {

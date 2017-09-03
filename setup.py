@@ -9,19 +9,22 @@ with open('README.md') as f:
 with open('LICENSE') as f:
     license = f.read()
 
-version = __import__('peppercornenumerator').__version__
-
 setup(
     name='peppercornenumerator',
-    version=version,
+    version='0.1',
     description='Domain-level nucleic acid reaction enumerator)',
     long_description=readme,
-    author='Karthik Sarma, Casey Grun, and Erik Winfree',
+    author='Karthik Sarma, Casey Grun, Stefan Badelt and Erik Winfree',
     author_email='winfree@caltech.edu',
-    # url='http://www.dna.caltech.edu/peppercorn/',
     license=license,
     test_suite='tests',
-    install_requires=['argparse>=1.2.1', 'nose', 'pyparsing', 'numpy'],
+    install_requires=[
+        'pyparsing>=1.5.5', 
+        'crnsimulator>=0.2',
+        'numpy',
+        'dsdobjects>=0.1'],
+    dependency_links=['http://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects/tarball/master#egg=dsdobjects-0.1'],
     packages=['peppercornenumerator'],
     scripts=['scripts/peppercorn']
 )
+

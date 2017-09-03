@@ -14,6 +14,7 @@ from peppercornenumerator.utils import *
 from peppercornenumerator.enumerator import *
 from peppercornenumerator.input import *
 from peppercornenumerator.output import *
+from peppercornenumerator.dsdobjects import reset_names
 
 
 class OutputTests(unittest.TestCase):
@@ -41,8 +42,11 @@ class OutputTests(unittest.TestCase):
             self.SLC_enumerator)
 
         self.SLC_enumerator_reduced = Enumerator(
-            self.SLC_enumerator.domains, self.SLC_enumerator.strands, [
-                self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']])
+                [self.complexes['Cat'], self.complexes['C1'], self.complexes['C2']],
+                self.SLC_enumerator.strands, 
+                self.SLC_enumerator.domains)
+
+        reset_names()
 
         self.three_arm_enumerator = input_enum(
             'tests/files/test_input_standard_3arm_junction.in')
@@ -51,11 +55,16 @@ class OutputTests(unittest.TestCase):
             self.complexes[complex.name] = complex
 
         self.three_arm_enumerator_reduced = Enumerator(
-            self.three_arm_enumerator.domains, self.three_arm_enumerator.strands, [
-                self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']])
+                [self.complexes['I'], self.complexes['A'], self.complexes['B'], self.complexes['C']],
+                self.three_arm_enumerator.strands, 
+                self.three_arm_enumerator.domains)
+
+        reset_names()
 
         self.simple_enumerator = input_enum(
             'tests/files/test_input_standard_simple.in')
+
+        reset_names()
 
         self.simple2_enumerator = input_enum(
             'tests/files/test_input_standard_simple2.in')
@@ -66,6 +75,9 @@ class OutputTests(unittest.TestCase):
         self.three_arm_enumerator_reduced.enumerate()
         self.simple_enumerator.enumerate()
         self.simple2_enumerator.enumerate()
+
+    def tearDown(self):
+        reset_names()
 
     def testOutputLegacy(self):
         output_legacy(
@@ -312,6 +324,7 @@ class OutputTests(unittest.TestCase):
     def testOutputJSON2(self):
         output_json(self.three_arm_enumerator_reduced,
                     'tests/files/expected_output/test_output_JSON2.json')
+        reset_names()
         enumerator = load_json(
             'tests/files/expected_output/test_output_JSON2.json')
         assert enumerator == self.three_arm_enumerator_reduced
@@ -330,6 +343,7 @@ class OutputTests(unittest.TestCase):
             self.three_arm_enumerator_reduced,
             'tests/files/expected_output/test_output_JSONCondensed2.json',
             output_condensed=True)
+        reset_names()
         enumerator = load_json(
             'tests/files/expected_output/test_output_JSON2.json')
         assert enumerator == self.three_arm_enumerator_reduced

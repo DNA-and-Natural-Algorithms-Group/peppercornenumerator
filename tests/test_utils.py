@@ -9,6 +9,7 @@ import unittest
 from nose.tools import *
 import copy
 from peppercornenumerator.utils import *
+from peppercornenumerator.dsdobjects import reset_names
 import peppercornenumerator.input as input
 
 
@@ -108,17 +109,31 @@ class LoopTests(unittest.TestCase):
 
 class DomainTests(unittest.TestCase):
     def setUp(self):
-        self.d1 = Domain('d1', 5)
-        self.d2 = Domain('d2', 4, True)
-        self.d3 = Domain('d3', 'short')
-        self.d4 = Domain('d4', 'long')
-        self.d5 = Domain('d5', 6, sequence='ATGCGA')
-        self.d6 = Domain('d6', 6, is_complement=True, sequence='ATGCGA')
-        self.d6a = Domain('d6', 6, is_complement=False, sequence='ATGCGA')
-        self.d6b = Domain('d6', 7, sequence='ATGCGA')
+        reset_names()
+        self.d1 = PepperDomain(list('N' * 5), 'd1')
+        #self.d2 = Domain('d2', 4, True)
+        self.d2 = PepperDomain(list('N' * 4), 'd2*', is_complement=True)
+        #self.d2 = self.d2c.get_ComplementDomain(list('N' * 4))
+        #self.d3 = Domain('d3', 'short')
+        self.d3 = PepperDomain(list('N' * 5), 'd3')
+        #self.d4 = Domain('d4', 'long')
+        self.d4 = PepperDomain(list('N' * 12), 'd4')
+        #self.d5 = Domain('d5', 6, sequence='ATGCGA')
+        self.d5 = PepperDomain(list('ATGCGA'), 'd5')
 
-        self.d7 = Domain('d1', 5, False)
-        self.d8 = Domain('d2', 4)
+        #self.d6 = Domain('d6', 6, is_complement=True, sequence='ATGCGA')
+        comp = SequenceConstraint('ATGCGA').reverse_wc_complement
+        self.d6 = PepperDomain(list(comp), 'd6*', is_complement=True)
+        self.d6a = PepperDomain(list('ATGCGA'), 'd6')
+        #self.d6a = Domain('d6', 6, is_complement=False, sequence='ATGCGA')
+        #self.d6a = PepperDomain(list('ATGCGA'), 'd6')
+        #self.d6b = Domain('d6', 7, sequence='ATGCGA')
+
+        #self.d7 = Domain('d1', 5, False)
+        #self.d8 = Domain('d2', 4)
+
+    def tearDown(self):
+        reset_names()
 
     def testRepr(self):
         assert self.d1.__repr__() == "Domain(d1)"
@@ -131,7 +146,7 @@ class DomainTests(unittest.TestCase):
     def testIdentity(self):
         assert self.d1.identity == 'd1'
         assert self.d2.identity == 'd2'
-        assert self.d7.identity == 'd1'
+        #assert self.d7.identity == 'd1'
         assert self.d6.identity == 'd6'
 
         def assnId(self):
@@ -148,8 +163,8 @@ class DomainTests(unittest.TestCase):
 
     def testEq(self):
         assert not (self.d1 == self.d2)
-        assert self.d1 == self.d7
-        assert not (self.d2 == self.d8)
+        #assert self.d1 == self.d7
+        #assert not (self.d2 == self.d8)
 
     def testCmp(self):
         assert self.d1 < self.d2  # different name
@@ -157,7 +172,7 @@ class DomainTests(unittest.TestCase):
         assert self.d6 > self.d5  # different name
         assert self.d6 > self.d6a  # same name, different complement
         assert self.d6a < self.d6  # same name, different complement
-        assert self.d6a < self.d6b  # same name, different length
+        #assert self.d6a < self.d6b  # same name, different length
 
     def testStr(self):
         assert self.d1.__str__() == self.d1.name
@@ -169,17 +184,19 @@ class DomainTests(unittest.TestCase):
         assert self.d2.length == 4
         assert len(self.d2) == 4
 
-        assert self.d3.length == SHORT_DOMAIN_LENGTH
-        assert self.d4.length == LONG_DOMAIN_LENGTH
+        #assert self.d3.length == SHORT_DOMAIN_LENGTH
+        #assert self.d4.length == LONG_DOMAIN_LENGTH
 
         def assnLen(self):
             self.d1.length = 1
         assert_raises(AttributeError, assnLen, self)
 
     def testSequence(self):
-        assert self.d1.sequence is None
-        assert self.d5.sequence == 'ATGCGA'
-        assert self.d6.sequence == 'TCGCAT'
+        #assert self.d1.sequence is None
+        print self.d5.sequence
+        assert ''.join(self.d5.sequence) == 'ATGCGA'
+        print self.d6.sequence
+        assert ''.join(self.d6.sequence) == 'TCGCAT'
 
         def assnSeq(self):
             self.d1.sequence = 'ATCG'
@@ -188,7 +205,7 @@ class DomainTests(unittest.TestCase):
     def testIsComplement(self):
         assert not self.d1.is_complement
         assert self.d2.is_complement
-        assert not self.d7.is_complement
+        #assert not self.d7.is_complement
 
         def assnIC(self):
             self.d1.is_complement = True
@@ -198,43 +215,60 @@ class DomainTests(unittest.TestCase):
 
 
 def setUpSLC(self):
+    reset_names()
     self.domains = {}
-    self.domains['1'] = Domain('1', 'short')
-    self.domains['1*'] = Domain('1', 'short', True)
-    self.domains['2'] = Domain('2', 'short')
-    self.domains['2*'] = Domain('2', 'short', True)
-    self.domains['3'] = Domain('3', 'short')
-    self.domains['3*'] = Domain('3', 'short', True)
-    self.domains['4'] = Domain('4', 'long')
-    self.domains['4*'] = Domain('4', 'long', True)
-    self.domains['5'] = Domain('5', 'short')
-    self.domains['5*'] = Domain('5', 'short', True)
-    self.domains['6'] = Domain('6', 'long')
-    self.domains['6*'] = Domain('6', 'long', True)
-    self.domains['7'] = Domain('7', 'short')
-    self.domains['7*'] = Domain('7', 'short', True)
+    sdom = list('N' * 5)
+    ldom = list('N' * 12)
+    #self.domains['d1']  = Domain('1', 'short')
+    #self.domains['d1*'] = Domain('1', 'short', True)
+    self.domains['d1']  = PepperDomain(sdom, 'd1')
+    self.domains['d1*'] = self.domains['d1'].get_ComplementDomain(sdom)
+    #self.domains['d2']  = Domain('2', 'short')
+    #self.domains['d2*'] = Domain('2', 'short', True)
+    self.domains['d2']  = PepperDomain(sdom, 'd2')
+    self.domains['d2*'] = self.domains['d2'].get_ComplementDomain(sdom)
+    #self.domains['d3']  = Domain('3', 'short')
+    #self.domains['d3*'] = Domain('3', 'short', True)
+    self.domains['d3']  = PepperDomain(sdom, 'd3')
+    self.domains['d3*'] = self.domains['d3'].get_ComplementDomain(sdom)
+    #self.domains['d4']  = Domain('4', 'long')
+    #self.domains['d4*'] = Domain('4', 'long', True)
+    self.domains['d4']  = PepperDomain(ldom, 'd4')
+    self.domains['d4*'] = self.domains['d4'].get_ComplementDomain(ldom)
+    #self.domains['d5']  = Domain('5', 'short')
+    #self.domains['d5*'] = Domain('5', 'short', True)
+    self.domains['d5']  = PepperDomain(sdom, 'd5')
+    self.domains['d5*'] = self.domains['d5'].get_ComplementDomain(sdom)
+    #self.domains['d6']  = Domain('6', 'long')
+    #self.domains['d6*'] = Domain('6', 'long', True)
+    self.domains['d6']  = PepperDomain(ldom, 'd6')
+    self.domains['d6*'] = self.domains['d6'].get_ComplementDomain(ldom)
+    #self.domains['d7']  = Domain('7', 'short')
+    #self.domains['d7*'] = Domain('7', 'short', True)
+    self.domains['d7']  = PepperDomain(sdom, 'd7')
+    self.domains['d7*'] = self.domains['d7'].get_ComplementDomain(sdom)
 
     self.strands = {}
     self.strands['PS'] = Strand('PS',
-                                [self.domains['3*'],
-                                 self.domains['2*'],
-                                    self.domains['1*'],
-                                    self.domains['5'],
-                                    self.domains['6']])
+                                [self.domains['d3*'],
+                                 self.domains['d2*'],
+                                    self.domains['d1*'],
+                                    self.domains['d5'],
+                                    self.domains['d6']])
     self.strands['OP'] = Strand('OP',
-                                [self.domains['1'],
-                                 self.domains['2'],
-                                 self.domains['3'],
-                                 self.domains['4']])
-    self.strands['SP'] = Strand('SP', [self.domains['5'], self.domains['6']])
+                                [self.domains['d1'],
+                                 self.domains['d2'],
+                                 self.domains['d3'],
+                                 self.domains['d4']])
+    self.strands['SP'] = Strand('SP', [self.domains['d5'], self.domains['d6']])
     self.strands['BS'] = Strand('BS',
-                                [self.domains['7*'],
-                                 self.domains['6*'],
-                                    self.domains['5*'],
-                                    self.domains['1'],
-                                    self.domains['2'],
-                                    self.domains['3']])
-    self.strands['Cat'] = Strand('Cat', [self.domains['6'], self.domains['7']])
+                                [self.domains['d7*'],
+                                 self.domains['d6*'],
+                                    self.domains['d5*'],
+                                    self.domains['d1'],
+                                    self.domains['d2'],
+                                    self.domains['d3']])
+    self.strands['Cat'] = Strand('Cat', [self.domains['d6'], self.domains['d7']])
 
     self.complexes = {}
     self.complexes['C1'] = Complex('C1', [self.strands['PS'], self.strands['OP']], [
@@ -267,35 +301,35 @@ class StrandTests(unittest.TestCase):
     def testEq(self):
         assert not self.strands['PS'] == self.strands['OP']
         PSfake = Strand('PS',
-                        [self.domains['3*'],
-                         self.domains['2'],
-                            self.domains['1*'],
-                            self.domains['5'],
-                            self.domains['6']])
+                        [self.domains['d3*'],
+                         self.domains['d2'],
+                            self.domains['d1*'],
+                            self.domains['d5'],
+                            self.domains['d6']])
         assert not self.strands['PS'] == PSfake
         PS = Strand('PS',
-                    [self.domains['3*'],
-                     self.domains['2*'],
-                        self.domains['1*'],
-                        self.domains['5'],
-                        self.domains['6']])
+                    [self.domains['d3*'],
+                     self.domains['d2*'],
+                        self.domains['d1*'],
+                        self.domains['d5'],
+                        self.domains['d6']])
         assert self.strands['PS'] == PS
 
     def testHash(self):
         assert not hash(self.strands['PS']) == hash(self.strands['OP'])
         PSfake = Strand('PS',
-                        [self.domains['3*'],
-                         self.domains['2'],
-                            self.domains['1*'],
-                            self.domains['5'],
-                            self.domains['6']])
+                        [self.domains['d3*'],
+                         self.domains['d2'],
+                            self.domains['d1*'],
+                            self.domains['d5'],
+                            self.domains['d6']])
         assert not hash(self.strands['PS']) == hash(PSfake)
         PS = Strand('PS',
-                    [self.domains['3*'],
-                     self.domains['2*'],
-                        self.domains['1*'],
-                        self.domains['5'],
-                        self.domains['6']])
+                    [self.domains['d3*'],
+                     self.domains['d2*'],
+                        self.domains['d1*'],
+                        self.domains['d5'],
+                        self.domains['d6']])
         assert hash(self.strands['PS']) == hash(PS)
 
     def testName(self):
@@ -307,11 +341,11 @@ class StrandTests(unittest.TestCase):
 
     def testDomains(self):
         assert self.strands['PS'].domains == [
-            self.domains['3*'],
-            self.domains['2*'],
-            self.domains['1*'],
-            self.domains['5'],
-            self.domains['6']]
+            self.domains['d3*'],
+            self.domains['d2*'],
+            self.domains['d1*'],
+            self.domains['d5'],
+            self.domains['d6']]
 
         def assnDoms(self):
             self.strands['PS'].domains = []
@@ -336,6 +370,8 @@ class ComplexTests(unittest.TestCase):
         # not a feasible structure; just for testing __hash__ing
         self.complexes['C3'] = Complex('C3', [self.strands['OP'], self.strands['OP']], [
                                        [None, (1, 1), (1, 0), None], [(0, 2), (0, 1), None, None, None]])
+    def tearDown(self):
+        reset_names()
 
     def testConstructor(self):
         assert self.complexes['C1'].strands == [
@@ -378,13 +414,13 @@ class ComplexTests(unittest.TestCase):
 
     def testGetDomain(self):
         print self.complexes['C1'].get_domain((0, 0))
-        assert self.complexes['C1'].get_domain((0, 0)) == self.domains['1']
+        assert self.complexes['C1'].get_domain((0, 0)) == self.domains['d1']
 
         print self.complexes['C1'].get_domain((0, 1))
-        assert self.complexes['C1'].get_domain((0, 1)) == self.domains['2']
+        assert self.complexes['C1'].get_domain((0, 1)) == self.domains['d2']
 
         print self.complexes['C1'].get_domain((1, 0))
-        assert self.complexes['C1'].get_domain((1, 0)) == self.domains['3*']
+        assert self.complexes['C1'].get_domain((1, 0)) == self.domains['d3*']
 
     def testName(self):
         assert self.complexes['C1'].name == 'C1'
@@ -415,31 +451,32 @@ class ComplexTests(unittest.TestCase):
         assert_raises(AttributeError, assnStructure, self)
 
     def testAvailableDomains(self):
-        C1doms = [(self.domains['4'], 0, 3),
-                  (self.domains['5'], 1, 3), (self.domains['6'], 1, 4)]
+        C1doms = [(self.domains['d4'], 0, 3),
+                  (self.domains['d5'], 1, 3), (self.domains['d6'], 1, 4)]
         C1doms.sort(key=lambda dom: dom[0].name)
         assert self.complexes['C1'].available_domains == C1doms
 
-        I1doms = [(self.domains['1'], 0, 3), (self.domains['2'], 0, 4),
-                  (self.domains['3'], 0, 5), (self.domains['6'], 2, 0)]
+        I1doms = [(self.domains['d1'], 0, 3), (self.domains['d2'], 0, 4),
+                  (self.domains['d3'], 0, 5), (self.domains['d6'], 2, 0)]
         I1doms.sort(key=lambda dom: dom[0].name)
         assert self.complexes['I1'].available_domains == I1doms
 
-        t1 = Strand('t1', [self.domains['1'],
-                           self.domains['2'], self.domains['1*']])
+        t1 = Strand('t1', [self.domains['d1'],
+                           self.domains['d2'], self.domains['d1*']])
         ct1 = Complex('ct1', [t1], [[(0, 2), None, (0, 0)]])
         assert ct1.available_domains == []
 
-        t2 = Strand('t2', [self.domains['1'],
-                           self.domains['2'], self.domains['3']])
-        t3 = Strand('t3', [self.domains['3*'],
-                           self.domains['2'], self.domains['1*']])
+        t2 = Strand('t2', [self.domains['d1'],
+                           self.domains['d2'], self.domains['d3']])
+        t3 = Strand('t3', [self.domains['d3*'],
+                           self.domains['d2'], self.domains['d1*']])
         ct2 = Complex('ct2', [t2, t3], [
                       [(1, 2), None, (1, 0)], [(0, 2), None, (0, 0)]])
         assert ct2.available_domains == []
 
     def testAvailableDomains2(self):
         from peppercornenumerator.input import input_enum
+        reset_names()
 
         # Example from 3-arm junction
 
@@ -463,11 +500,11 @@ class ComplexTests(unittest.TestCase):
         C24 = Complex('24', [strands['n2'], strands['n3']], [
                       [None, None, (1, 1), (1, 0)], [(0, 3), (0, 2), None, None]])
         assert sorted(C24.available_domains) == sorted(
-            [(domains['1'], 0, 0), (domains['1*'], 1, 2), (domains['2'], 0, 1), (domains['3*'], 1, 3)])
+            [(domains['d1'], 0, 0), (domains['d1*'], 1, 2), (domains['d2'], 0, 1), (domains['d3*'], 1, 3)])
 
         C24_ = Complex('C24_', [strands['n2'], strands['n3']], [
                        [(1, 2), None, (1, 1), (1, 0)], [(0, 3), (0, 2), (0, 0), None]])
-        assert C24_.available_domains == [(domains['3*'], 1, 3)]
+        assert C24_.available_domains == [(domains['d3*'], 1, 3)]
 
         # Original test case
         #rxns = bind11(C24)
@@ -527,17 +564,17 @@ class ComplexTests(unittest.TestCase):
 
     def testKernelString(self):
         assert self.complexes['I4'].kernel_string(
-        ) == "7*( 6*( 5*( 1 2 3 + 1( 2( 3( 4 + ) ) ) ) 6 + ) )"
+        ) == "d7*( d6*( d5*( d1 d2 d3 + d1( d2( d3( d4 + ) ) ) ) d6 + ) )"
 
     def testCheckStructure(self):
         # 0                 1                 2                 3
         # 4
         s1 = Strand('S1',
-                    [self.domains['1'],
-                     self.domains['2'],
-                        self.domains['3'],
-                        self.domains['1*'],
-                        self.domains['2*']])
+                    [self.domains['d1'],
+                     self.domains['d2'],
+                        self.domains['d3'],
+                        self.domains['d1*'],
+                        self.domains['d2*']])
         c1 = Complex('C1', [s1], [(0, 4), (0, 3), None, (0, 1), (0, 0)])
 
         def checkStruct1():

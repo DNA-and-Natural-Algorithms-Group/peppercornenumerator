@@ -9,14 +9,9 @@ import sys
 import logging
 import itertools
 
+from peppercornenumerator.objects import PepperRestingState
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactions
-
-
-# These are sanity checks to prevent infinite looping
-MAX_COMPLEX_SIZE = 6
-MAX_REACTION_COUNT = 1000
-MAX_COMPLEX_COUNT = 200
 
 # There should be better control of this limit -- only set it when
 # necessary (Erik Winfree based on Chris Thachuk's advice...)
@@ -61,48 +56,165 @@ class Enumerator(object):
     """
     Represents a single enumerator instance, consisting of all the information
     required for a reaction graph. This class is the coordinator for the state
-    enumerator. Enumerators have immutable starting conditions. If unzip is true,
-    all 3-way branch migrations are greedy.
+    enumerator. Enumerators have immutable starting conditions. 
     """
 
-    def __init__(self, domains, strands, initial_complexes):
+    def __init__(self, initial_complexes, initial_reactions=None):
         """
-        Initializes the enumerator. Takes a list of domains, a list of strands
-        made up of those domains, and a list of the initial complexes, made
-        of the strands.
+        Initializes the enumerator with a list of initial complexes.
 
-        :param list domains: Domain objects in the ensemble
-        :param list strands: Strand objects in the ensemble
-        :param list initial_complexes: Complex objects in the system starting configuration.
+        Note: The optional arguments 'strands' and 'domains' are there for
+        backwards-compatibility and will be remove at some point. Ignoring them
+        below breaks unit-tests - why? (1) sometimes complementary domains are
+        specified that are actually not present in any of the complexes, (2)
+        conflicts with strand names in the original kernel format (where
+        explicit strand specifications are supported).
         """
-        self._domains = domains
-        self._strands = strands
+        # System initialization
         self._initial_complexes = initial_complexes
-        self._reactions = None
+        self._strands = self.get_strands(self._initial_complexes)
+        self._domains = self.get_domains(self._initial_complexes)
+
+        if initial_reactions:
+            self._reactions = initial_reactions
+        else :
+            self._reactions = []
+
         self._resting_states = None
         self._complexes = None
         self._transient_complexes = None
         self._resting_complexes = None
 
-        global MAX_COMPLEX_SIZE
-        global MAX_REACTION_COUNT
-        global MAX_COMPLEX_COUNT
-        self.MAX_COMPLEX_SIZE = MAX_COMPLEX_SIZE
-        self.MAX_REACTION_COUNT = MAX_REACTION_COUNT
-        self.MAX_COMPLEX_COUNT = MAX_COMPLEX_COUNT
         self.DFS = True
-        self.FAST_REACTIONS = fast_reactions[1]
         self.interruptible = True
         self.interactive = False
-        self.k_slow = 0  # float("-inf")
-        self.k_fast = 0  # float("-inf")
+        self.FAST_REACTIONS = fast_reactions[1]
+        
+        # Polymerization settings to prevent infinite looping
+        self.max_complex_size = 6
+        self.max_complex_count = 200
+        self.max_reaction_count = 1000
 
+        #
+        # Set separation of timescales for *unimolecular* reactions.
+        #
+        #  ignore-reaction | resting-state | transient-state
+        # -----------------|---------------|---------------> rate
+        #                k_slow          k_fast
+        #
+        # Default: All unimolecular reactions are transient, none are ignored.
+        #
+        self._k_slow = 0 
+        self._k_fast = 0
+
+        # Settings for reaction enumeration. 
+        self._max_helix = True
+        self._remote = True
+        self._release_11 = 6
+        self._release_1N = 6
+
+    @property
+    def max_complex_size(self):
+        return self._max_complex_size
+
+    @max_complex_size.setter
+    def max_complex_size(self, value):
+        self._max_complex_size = value
+
+    @property
+    def max_reaction_count(self):
+        return self._max_reaction_count
+
+    @max_reaction_count.setter
+    def max_reaction_count(self, value):
+        self._max_reaction_count = value
+
+    @property
+    def max_complex_count(self):
+        return self._max_complex_count
+
+    @max_complex_count.setter
+    def max_complex_count(self, value):
+        self._max_complex_count = value
+
+    @property
+    def k_slow(self):
+        return self._k_slow
+
+    @k_slow.setter
+    def k_slow(self, value):
+        self._k_slow = value
+
+    @property
+    def k_fast(self):
+        return self._k_fast
+
+    @k_fast.setter
+    def k_fast(self, value):
+        self._k_fast = value
+
+    @property
+    def release_cutoff(self):
+        if self._release_11 != self._release_1N :
+            raise PeppercornUsageError('Ambiguous release cutoff request.')
+        return self._release_11
+
+    @release_cutoff.setter
+    def release_cutoff(self, value):
+        assert isinstance(value, int)
+        self._release_11 = value
+        self._release_1N = value
+
+    @property
+    def release_cutoff_1_1(self):
+        return self._release_11
+
+    @release_cutoff_1_1.setter
+    def release_cutoff_1_1(self, value):
+        assert isinstance(value, int)
+        self._release_11 = value
+
+    @property
+    def release_cutoff_1_N(self):
+        return self._release_1N
+
+    @release_cutoff_1_N.setter
+    def release_cutoff_1_N(self, value):
+        assert isinstance(value, int)
+        self._release_1N = value
+
+    @property
+    def remote_migration(self):
+        return self._remote
+
+    @remote_migration.setter
+    def remote_migration(self, remote):
+        assert isinstance(remote, bool)
+        self._remote = remote
+
+    @property
+    def max_helix_migration(self):
+        """ """
+        return self._max_helix
+
+    @max_helix_migration.setter
+    def max_helix_migration(self, max_helix):
+      self._max_helix = max_helix
+
+    # ------------
     @property
     def auto_name(self):
         return reactions.auto_name
 
     def get_auto_name(self):
         return reactions.get_auto_name()
+
+    @property
+    def initial_complexes(self):
+        """
+        Complexes present in the system's initial configuration
+        """
+        return self._initial_complexes[:]
 
     @property
     def domains(self):
@@ -113,13 +225,6 @@ class Enumerator(object):
         return self._strands[:]
 
     @property
-    def initial_complexes(self):
-        """
-        Complexes present in the system's initial configuration
-        """
-        return self._initial_complexes[:]
-
-    @property
     def reactions(self):
         """
         List of reactions enumerated. :py:meth:`.enumerate` must be
@@ -127,7 +232,7 @@ class Enumerator(object):
         """
         if self._reactions is None:
             raise utils.PeppercornUsageError("enumerate not yet called!")
-        return self._reactions[:]
+        return list(set(self._reactions))
 
     @property
     def resting_states(self):
@@ -181,60 +286,27 @@ class Enumerator(object):
             (sorted(self.transient_complexes) ==
              sorted(object.transient_complexes))
 
+    def get_domains(self, initial_complexes):
+        domains = set()
+        for cplx in initial_complexes:
+            map(lambda d: domains.add(d), cplx.domains)
+        return list(domains)
+
+    def get_strands(self, initial_complexes):
+        strands = set()
+        for cplx in initial_complexes:
+            map(lambda s: strands.add(s), cplx.strands)
+        return list(strands)
+
     def dry_run(self):
         """
         Make it look like you've enumerated, but actually do nothing.
         """
         self._complexes = self.initial_complexes[:]
         self._resting_complexes = self._complexes[:]
-        self._resting_states = [utils.RestingState(
-            complex.name, [complex]) for complex in self._complexes]
+        self._resting_states = [PepperRestingState([complex], name=complex.name) for complex in self._complexes]
         self._transient_complexes = []
-        self._reactions = []
-
-    def set_reaction_options(self):
-        # handle release cutoff
-        self.old = {}
-        self.old['release_cutoff_1_1'] = reactions.RELEASE_CUTOFF_1_1
-        self.old['release_cutoff_1_N'] = reactions.RELEASE_CUTOFF_1_N
-        self.old['unzip'] = reactions.UNZIP
-        self.old['legacy_unzip'] = reactions.LEGACY_UNZIP
-        self.old['reject_remote'] = reactions.REJECT_REMOTE
-        if (hasattr(self, 'RELEASE_CUTOFF')):
-            reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF
-            reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF
-
-        if (hasattr(self, 'RELEASE_CUTOFF_1_1')):
-            reactions.RELEASE_CUTOFF_1_1 = self.RELEASE_CUTOFF_1_1
-
-        if (hasattr(self, 'RELEASE_CUTOFF_1_N')):
-            reactions.RELEASE_CUTOFF_1_N = self.RELEASE_CUTOFF_1_N
-
-        if (hasattr(self, 'UNZIP')):
-            reactions.UNZIP = self.UNZIP
-            if reactions.UNZIP:
-                logging.info("Using max-helix semantics")
-
-        if (hasattr(self, 'LEGACY_UNZIP')):
-            reactions.LEGACY_UNZIP = self.LEGACY_UNZIP
-            if reactions.LEGACY_UNZIP:
-                logging.info("Using legacy unzipping mode")
-            if not reactions.UNZIP:
-                logging.debug(
-                    "Note: legacy unzip mode will have no effect, since max helix semantics are disabled")
-
-        if (hasattr(self, 'REJECT_REMOTE')):
-            reactions.REJECT_REMOTE = self.REJECT_REMOTE
-            if reactions.REJECT_REMOTE:
-                logging.info(
-                    "Ignoring remote toehold-mediated branch migration")
-
-    def reset_reaction_options(self):
-        reactions.RELEASE_CUTOFF_1_1 = self.old['release_cutoff_1_1']
-        reactions.RELEASE_CUTOFF_1_N = self.old['release_cutoff_1_N']
-        reactions.UNZIP = self.old['unzip']
-        reactions.LEGACY_UNZIP = self.old['legacy_unzip']
-        reactions.REJECT_REMOTE = self.old['reject_remote']
+        #self._reactions = []
 
     def enumerate(self):
         """
@@ -244,16 +316,16 @@ class Enumerator(object):
         class.
         """
 
-        self.set_reaction_options()
-        logging.info("Release cutoff 1-1: %d nt" %
-                     reactions.RELEASE_CUTOFF_1_1)
-        logging.info("Release cutoff 1-n: %d nt" %
-                     reactions.RELEASE_CUTOFF_1_N)
+        #self.set_reaction_options()
+        #logging.info("Release cutoff 1-1: %d nt" %
+        #             reactions.RELEASE_CUTOFF_1_1)
+        #logging.info("Release cutoff 1-n: %d nt" %
+        #             reactions.RELEASE_CUTOFF_1_N)
 
         # Will be called once enumeration halts, either because it's finished or
         # because too many complexes/reactions have been enumerated
         def finish(premature=False):
-            self.reset_reaction_options()
+            #self.reset_reaction_options()
 
             # copy E and T into #complexes
             self._complexes += (self._E)
@@ -288,7 +360,7 @@ class Enumerator(object):
                     if reaction_ok:
                         new_reactions.append(reaction)
 
-                self._reactions = new_reactions
+                self._reactions += new_reactions
 
         # List E contains enumerated resting state complexes. Only cross-
         # reactions  with other end states need to be considered for these
@@ -322,7 +394,7 @@ class Enumerator(object):
         # 'neighborhood' is to be considered.
         self._B = self.initial_complexes[:]
 
-        self._reactions = []
+        #self._reactions = []
         self._complexes = []
         self._resting_states = []
 
@@ -368,12 +440,12 @@ class Enumerator(object):
                 while len(self._B) > 0:
 
                     # Check whether too many complexes have been generated
-                    if (len(self._E) + len(self._T) + len(self._S) > self.MAX_COMPLEX_COUNT):
+                    if (len(self._E) + len(self._T) + len(self._S) > self._max_complex_count):
                         raise PolymerizationError("Too many complexes enumerated!", 
                                 len(self._E) + len(self._T) + len(self._S))
 
                     # Check whether too many reactions have been generated
-                    if (len(self._reactions) > self.MAX_REACTION_COUNT):
+                    if (len(self._reactions) > self._max_reaction_count):
                         raise PolymerizationError("Too many reactions enumerated!", 
                                 len(self._reactions))
 
@@ -405,28 +477,14 @@ class Enumerator(object):
         input before continuing.
         """
         if self.interactive:
-            print "%s = %s (%s)" % (root.name, root.kernel_string(), type)
+            print "%s = %s (%s)" % (root.name, root.kernel_string, type)
             print
             for r in reactions:
-                print r.kernel_string()
+                print r.kernel_string
             if len(reactions) is 0:
                 print "(No %s reactions)" % type
             print
             utils.wait_for_input()
-
-    # def partition_reactions(self, reactions):
-    # 	too_slow = []
-    # 	slow = []
-    # 	fast = []
-
-    # 	for r in self.reactions:
-    # 		if r.rate() < self.k_slow: too_slow.append(r)
-    # 		elif self.k_slow < r.rate() < self.k_fast: slow.append(r)
-    # 		elif self.k_fast < r.rate(): fast.append(r)
-    # 		else:
-    # 			raise Exception("Unable to classify reaction as fast (k > %(k_fast)d) or slow (%(k_slow)d > k > %(k_fast)d)" % { k_slow: self.k_slow, k_fast: self.k_fast })
-
-    # 	return (too_slow, slow, fast)
 
     def process_neighborhood(self, source):
         """
@@ -542,13 +600,24 @@ class Enumerator(object):
 
         # Do unimolecular reactions that are always slow
         for move in slow_reactions[1]:
-            reactions += (move(complex))
+            if move.__name__ == 'open':
+                reactions += (move(complex, 
+                        max_helix=self._max_helix, 
+                        release_11 = self._release_11,
+                        release_1N = self._release_1N))
+            else :
+                reactions += (move(complex, max_helix=self._max_helix, remote=self._remote))
 
         # Do unimolecular reactions that are sometimes slow
         for move in self.FAST_REACTIONS:
-            move_reactions = move(complex)
-            reactions += (r for r in move_reactions if self.k_fast >
-                          r.rate() > self.k_slow)
+            if move.__name__ == 'open':
+                move_reactions = move(complex, 
+                        max_helix=self._max_helix, 
+                        release_11 = self._release_11,
+                        release_1N = self._release_1N)
+            else :
+                move_reactions = move(complex, max_helix=self._max_helix, remote=self._remote)
+            reactions += (r for r in move_reactions if self._k_fast > r.rate > self._k_slow)
 
         # Do bimolecular reactions
         for move in slow_reactions[2]:
@@ -570,9 +639,15 @@ class Enumerator(object):
 
         # Do unimolecular reactions
         for move in self.FAST_REACTIONS:
-            move_reactions = move(complex)
-            # reactions += (r for r in move_reactions if r.rate() > self.k_slow)
-            reactions += (r for r in move_reactions if r.rate() > self.k_fast)
+            if move.__name__ == 'open':
+                move_reactions = move(complex, 
+                        max_helix=self._max_helix, 
+                        release_11 = self._release_11,
+                        release_1N = self._release_1N)
+            else :
+                move_reactions = move(complex, max_helix=self._max_helix, remote=self._remote)
+            # reactions += (r for r in move_reactions if r.rate > self.k_slow)
+            reactions += (r for r in move_reactions if r.rate > self._k_fast)
 
         return reactions
 
@@ -583,7 +658,7 @@ class Enumerator(object):
         returns the new complexes in a list.
 
         Additionally, prunes passed reactions to remove those with excessively
-        large complexes (len(complex) > self.MAX_COMPLEX_SIZE)
+        large complexes (len(complex) > self._max_complex_size)
         """
         new_products = []
         new_reactions = []
@@ -601,12 +676,10 @@ class Enumerator(object):
             # Check every product of the reaction to see if it is new
             for (i, product) in enumerate(reaction.products):
 
-                if (len(product.strands) > self.MAX_COMPLEX_SIZE):
+                if (len(product.strands) > self._max_complex_size):
                     logging.warning(
                         "Complex %(name)s (%(strands)d strands) too large, ignoring!" % {
-                            "name": product.name,
-                            "strands": len(
-                                product.strands)})
+                            "name": product.name, "strands": len(product.strands)})
                     complex_size_ok = False
                     break
 
@@ -757,7 +830,7 @@ class Enumerator(object):
 
             if is_resting_state:
                 resting_state_complexes += (scc)
-                resting_state = utils.RestingState(self.get_auto_name(), scc[:])
+                resting_state = PepperRestingState(scc[:])
                 resting_states.append(resting_state)
 
             else:
@@ -806,6 +879,5 @@ class Enumerator(object):
 
             # Add the SCC to the list of SCCs
             self._SCC_stack.append(scc)
-
 
 

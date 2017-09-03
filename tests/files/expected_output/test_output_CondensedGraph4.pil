@@ -1,20 +1,20 @@
 ###### Enumerated Output ######
 
 # Domains 
-sequence 1 = NNNNNN : 6
-sequence 2 = NNNNNN : 6
-sequence 3 = NNNNNN : 6
-sequence 4 = NNNNNNNNNNNN : 12
-sequence 5 = NNNNNN : 6
-sequence 6 = NNNNNNNNNNNN : 12
-sequence 7 = NNNNNN : 6
+sequence d1 = NNNNNN : 6
+sequence d2 = NNNNNN : 6
+sequence d3 = NNNNNN : 6
+sequence d4 = NNNNNNNNNNNN : 12
+sequence d5 = NNNNNN : 6
+sequence d6 = NNNNNNNNNNNN : 12
+sequence d7 = NNNNNN : 6
 
 # Strands 
-strand BS = 7* 6* 5* 1 2 3
-strand Cat = 6 7
-strand OP = 1 2 3 4
-strand PS = 3* 2* 1* 5 6
-strand SP = 5 6
+strand BS = d7* d6* d5* d1 d2 d3
+strand Cat = d6 d7
+strand OP = d1 d2 d3 d4
+strand PS = d3* d2* d1* d5 d6
+strand SP = d5 d6
 
 # Resting-state Complexes 
 structure C1 = OP + PS : (((.+)))..

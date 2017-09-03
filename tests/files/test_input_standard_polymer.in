@@ -1,12 +1,12 @@
-domain 1 : long
-domain 2 : long
-domain 3 : long
-domain 4 : long
+domain d1 : long
+domain d2 : long
+domain d3 : long
+domain d4 : long
 
-strand s1 : 1 2
-strand s2 : 1* 2*
-strand s3 : 3 4
-strand s4 : 3* 4*
+strand s1 : d1 d2
+strand s2 : d1* d2*
+strand s3 : d3 d4
+strand s4 : d3* d4*
 
 
 complex A :
