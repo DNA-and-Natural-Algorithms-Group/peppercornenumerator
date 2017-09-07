@@ -72,7 +72,6 @@ class Enumerator(object):
         """
         # System initialization
         self._initial_complexes = initial_complexes
-        self._strands = self.get_strands(self._initial_complexes)
         self._domains = self.get_domains(self._initial_complexes)
 
         if initial_reactions:
@@ -221,10 +220,6 @@ class Enumerator(object):
         return self._domains[:]
 
     @property
-    def strands(self):
-        return self._strands[:]
-
-    @property
     def reactions(self):
         """
         List of reactions enumerated. :py:meth:`.enumerate` must be
@@ -277,7 +272,6 @@ class Enumerator(object):
 
     def __eq__(self, object):
         return (sorted(self.domains) == sorted(object.domains)) and \
-            (sorted(self.strands) == sorted(object.strands)) and \
             (sorted(self.initial_complexes) == sorted(object.initial_complexes)) and \
             (sorted(self.reactions) == sorted(object.reactions)) and \
             (sorted(self.resting_states) == sorted(object.resting_states)) and \
@@ -291,12 +285,6 @@ class Enumerator(object):
         for cplx in initial_complexes:
             map(lambda d: domains.add(d), cplx.domains)
         return list(domains)
-
-    def get_strands(self, initial_complexes):
-        strands = set()
-        for cplx in initial_complexes:
-            map(lambda s: strands.add(s), cplx.strands)
-        return list(strands)
 
     def dry_run(self):
         """
@@ -676,10 +664,10 @@ class Enumerator(object):
             # Check every product of the reaction to see if it is new
             for (i, product) in enumerate(reaction.products):
 
-                if (len(product.strands) > self._max_complex_size):
+                if (product.size > self._max_complex_size):
                     logging.warning(
                         "Complex %(name)s (%(strands)d strands) too large, ignoring!" % {
-                            "name": product.name, "strands": len(product.strands)})
+                            "name": product.name, "strands": product.size})
                     complex_size_ok = False
                     break
 

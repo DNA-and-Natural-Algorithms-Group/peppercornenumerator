@@ -1,6 +1,6 @@
 
-#from __future__ import absolute_import, division, print_function, unicode_literals
-import copy
+from __future__ import absolute_import, division, print_function, unicode_literals
+import logging
 
 from dsdobjects import clear_memory
 from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingState
@@ -10,6 +10,18 @@ from dsdobjects.utils import split_complex
 # not needed here, but passing it on...
 from dsdobjects.utils import make_pair_table, pair_table_to_dot_bracket 
 
+class PepperObjectsError(Exception):
+    """
+    pepperobjects error class.
+    """
+
+    def __init__(self, message, *kargs):
+        if kargs:
+            self.message = "{} [{}]".format(message, ', '.join(map(str,kargs)))
+        else :
+            self.message = message
+        super(PepperObjectsError, self).__init__(self.message)
+
 class PepperDomain(DL_Domain):
     """
     Represents a single domain. We allow several options for specifying domain
@@ -18,10 +30,25 @@ class PepperDomain(DL_Domain):
     the relevant constant as the integer domain length.
     """
 
+    def __new__(cls, name, dtype=None, length=None):
+        # The new method returns the present instance of an object, if it exists
+        self = DL_Domain.__new__(cls)
+        try:
+            super(PepperDomain, self).__init__(name, dtype, length)
+        except DSDDuplicationError, e :
+            other = e.existing
+            if dtype and (other.dtype != dtype) :
+                raise PepperObjectsError('Conflicting dtype assignments for {}: "{}" vs. "{}"'.format(
+                    name, dtype, other.dtype))
+            elif length and (other.length != length) :
+                raise PepperObjectsError('Conflicting length assignments for {}: "{}" vs. "{}"'.format(
+                    name, length, other.length))
+            return e.existing
+        return self
+
     def __init__(self, name, dtype=None, length=None):
-        super(PepperDomain, self).__init__(name, dtype, length)
-    #def __init__(self, *kargs, **kwargs):
-    #    super(PepperDomain, self).__init__(*kargs, **kwargs)
+        # Remove default initialziation to get __new__ to work
+        pass
 
     @property
     def complement(self):
@@ -63,15 +90,26 @@ class PepperComplex(DSD_Complex):
     Overwrites some functions with new names, adds some convenient stuff..
     """
 
-    #def __init__(self, *kargs, **kwargs):
-    def __init__(self, sequence, structure, name='', memorycheck=True):
-        try :
-            super(PepperComplex, self).__init__(sequence, structure, name, 'e', memorycheck)
-        except DSDObjectsError :
-            super(PepperComplex, self).__init__(sequence, structure, name, 'enum', memorycheck)
+    PREFIX = 'e'
 
-    #def __hash__(self):
-    #    return hash(self.canonical_form)
+    @staticmethod
+    def clear_memory(memory=True, names=True, ids=True):
+        if memory:
+            DSD_Complex.MEMORY = dict()
+        if names:
+            DSD_Complex.NAMES = dict()
+        if ids:
+            DSD_Complex.ID = dict()
+
+    def __init__(self, sequence, structure, name='', prefix='', memorycheck=True):
+        try :
+            if not prefix :
+                prefix = PepperComplex.PREFIX
+            super(PepperComplex, self).__init__(sequence, structure, name, prefix, memorycheck)
+        except DSDObjectsError :
+            backup = 'enum' if prefix != 'enum' else 'pepper'
+            super(PepperComplex, self).__init__(sequence, structure, name, backup, memorycheck)
+            logging.warning('Complex name existed, prefix has been changed to: {}'.format(backup))
 
     @property
     def pair_table(self):
@@ -129,7 +167,6 @@ class PepperComplex(DSD_Complex):
             return sorted(cplxs)
 
 class PepperReaction(DSD_Reaction):
-
     RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
 
     def __init__(self, *kargs, **kwargs):

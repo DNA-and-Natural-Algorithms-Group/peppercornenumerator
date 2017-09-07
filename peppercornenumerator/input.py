@@ -243,7 +243,7 @@ def read_kernel(data, is_file = False):
 
 def from_kernel(lines):
     """ Tranlsate a list of kernel strings. """
-    print DeprecationWarning('use new function: complexes_from_kernel') 
+    logging.warn('deprecated function: read_kernel') 
 
     # split string into lines if necessary
     if isinstance(lines, basestring):
@@ -252,7 +252,8 @@ def from_kernel(lines):
     # remove blank lines
     lines = filter(None, lines)
 
-    complexes = complexes_from_kernel('\n'.join(lines))
+    # reading pil in case of non-alphanumeric names
+    complexes, _ = read_pil('\n'.join(lines))
 
     return (PepperDomain.MEMORY, None, complexes)
 
