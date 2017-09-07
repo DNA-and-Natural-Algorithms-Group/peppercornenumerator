@@ -304,12 +304,6 @@ class Enumerator(object):
         class.
         """
 
-        #self.set_reaction_options()
-        #logging.info("Release cutoff 1-1: %d nt" %
-        #             reactions.RELEASE_CUTOFF_1_1)
-        #logging.info("Release cutoff 1-n: %d nt" %
-        #             reactions.RELEASE_CUTOFF_1_N)
-
         # Will be called once enumeration halts, either because it's finished or
         # because too many complexes/reactions have been enumerated
         def finish(premature=False):
@@ -333,7 +327,7 @@ class Enumerator(object):
                 self._complexes += self._S
                 complexes = set(self._complexes)
 
-                new_reactions = []
+                rm_reactions = []
                 for reaction in self.reactions:
                     reaction_ok = all(
                         (product in complexes) for product in reaction.products) and all(
@@ -346,9 +340,11 @@ class Enumerator(object):
                     # 		reaction_ok = False
 
                     if reaction_ok:
-                        new_reactions.append(reaction)
+                        pass
+                    else :
+                        rm_reactions.append(reaction)
 
-                self._reactions += new_reactions
+                self._reactions = [x for x in self._reactions if x not in rm_reactions]
 
         # List E contains enumerated resting state complexes. Only cross-
         # reactions  with other end states need to be considered for these

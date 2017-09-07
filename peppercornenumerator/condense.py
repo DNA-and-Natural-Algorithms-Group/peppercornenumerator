@@ -686,7 +686,7 @@ def condense_graph(enumerator, compute_rates=True, k_fast=0.0):
                 try :
                     reaction = PepperReaction(list(reactants), list(products), rtype='condensed')
                 except DSDDuplicationError, e:
-                    logging.info('duplicating PepperReaction: {}'.format(e.existing))
+                    logging.debug('duplicating PepperReaction: {}'.format(e.existing))
                     reaction = e.existing
 
                 if compute_rates:
