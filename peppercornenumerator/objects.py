@@ -166,6 +166,13 @@ class PepperComplex(DSD_Complex):
                     cplxs.append(e.existing)
             return sorted(cplxs)
 
+    def __cmp__(self, other):
+        """
+        Two complexes are compared on the basis of their complexes
+        """
+        return cmp(self.canonical_form, other.canonical_form)
+
+
 class PepperReaction(DSD_Reaction):
     RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
 
@@ -194,17 +201,28 @@ class PepperReaction(DSD_Reaction):
                     " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
         else :
             return '[{:12g} {:4s} ] {} -> {}'.format(self.rate, self.rateunits,
-                    " + ".join(map(str, self.reactants)), " + ".join(map(str,
-                        self.products)))
+                    " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
+
+    @property
+    def reactants(self):
+        return sorted(self._reactants)
+
+    @property
+    def products(self):
+        return sorted(self._products)
+
 
 class PepperRestingState(DSD_RestingState):
     def __init__(self, *kargs, **kwargs):
         super(PepperRestingState, self).__init__(*kargs, **kwargs)
 
+    def __str__(self):
+        return self.name
+
     def __cmp__(self, other):
         """
         Two resting states are compared on the basis of their complexes
         """
-        return cmp(self.complexes, other.complexes)
+        return cmp(self.canonical_form, other.canonical_form)
 
 

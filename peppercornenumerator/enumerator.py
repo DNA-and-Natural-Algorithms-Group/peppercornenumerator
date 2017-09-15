@@ -292,7 +292,8 @@ class Enumerator(object):
         """
         self._complexes = self.initial_complexes[:]
         self._resting_complexes = self._complexes[:]
-        self._resting_states = [PepperRestingState([complex], name=complex.name) for complex in self._complexes]
+        # This is not nice, the input might not be a resting state... so for now we turn of memorycheck...
+        self._resting_states = []#[PepperRestingState([complex], name=complex.name, memorycheck=False) for complex in self._complexes]
         self._transient_complexes = []
         #self._reactions = []
 

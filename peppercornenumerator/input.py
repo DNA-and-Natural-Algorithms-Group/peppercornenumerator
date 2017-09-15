@@ -16,7 +16,7 @@ from dsdobjects.parser import ParseException
 
 from peppercornenumerator.objects import PepperDomain, PepperComplex, PepperReaction
 
-def read_pil(data, is_file = False):
+def read_pil(data, is_file = False, alpha = ''):
     """ Old input standard. 
 
     Supports a variety of formats, including enum and pil. Sequences and sanity
@@ -55,6 +55,9 @@ def read_pil(data, is_file = False):
     reactions = []
     for line in parsed_file :
         name = line[1]
+        if alpha and 'domain' in line[0] :
+            logging.warning("Renaming {} to {}.".format(line[1], alpha + line[1]))
+            name = alpha + name
         if line[0] == 'dl-domain':
             if line[2] == 'short':
                 (dtype, dlen) = ('short', None)
@@ -84,12 +87,12 @@ def read_pil(data, is_file = False):
                 domains[cname] = ~domains[name]
 
         elif line[0] == 'composite-domain':
-            sequences[name] = map(lambda x: domains[x], line[2])
+            sequences[name] = map(lambda x: domains[alpha + x], line[2])
 
         elif line[0] == 'strand-complex':
             sequence = []
             for strand in line[2]:
-                sequence += sequences[strand] + ['+']
+                sequence += sequences[alpha + strand] + ['+']
             sequence = sequence[:-1]
             structure = line[3].replace(' ','')
             complexes[name] = PepperComplex(sequence, list(structure), name=name)
@@ -99,15 +102,15 @@ def read_pil(data, is_file = False):
 
             # Replace names with domain objects.
             try :
-                sequence = map(lambda d : domains[d], sequence)
+                sequence = map(lambda d : domains[alpha + d], sequence)
             except KeyError:
                 for e, d in enumerate(sequence):
-                    if d not in domains :
-                        logging.warning("Assuming {} is a long domain.".format(d))
-                        domains[d] = PepperDomain(d, 'long')
-                        cdom = ~domains[d]
+                    if alpha + d not in domains :
+                        logging.warning("Assuming {} is a long domain.".format(alpha + d))
+                        domains[alpha + d] = PepperDomain(alpha + d, 'long')
+                        cdom = ~domains[alpha + d]
                         domains[cdom.name] = cdom
-                    sequence[e] = domains[d]
+                    sequence[e] = domains[alpha + d]
 
             if len(line) > 3 :
                 logging.warning("Ignoring complex concentration for {}".format(name))

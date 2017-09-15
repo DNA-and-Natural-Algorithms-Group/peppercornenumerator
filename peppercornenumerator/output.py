@@ -5,15 +5,15 @@
 #  Created by Karthik Sarma on 6/21/10.
 #
 
-import copy
 import json
 import subprocess
 import collections
 
 from peppercornenumerator import __version__
 import peppercornenumerator.utils as utils
-import peppercornenumerator.reactions as reactions
-from peppercornenumerator.reactions import PepperReaction, auto_name
+from peppercornenumerator.condense import ReactionGraph
+
+#deprecated
 from peppercornenumerator.condense import condense_resting_states
 
 def write_kernel(enumerator, pil, condensed = False, k_fast = 0.):
@@ -46,7 +46,8 @@ def write_kernel(enumerator, pil, condensed = False, k_fast = 0.):
  
     if condensed :
         # Print Resting Sets
-        condensed = condense_resting_states(enumerator, k_fast = k_fast)
+        enumCG = ReactionGraph(enumerator)
+        enumCG.condense()
         pil.write("\n# Resting-state sets \n")
         for resting in utils.natural_sort(enumerator.resting_states):
             pil.write("state {:s} = [{}]\n".format(resting, 
@@ -54,7 +55,7 @@ def write_kernel(enumerator, pil, condensed = False, k_fast = 0.):
 
         # Print Reactions
         pil.write("\n# Condensed Reactions \n")
-        for reaction in utils.natural_sort(condensed['reactions']):
+        for reaction in utils.natural_sort(enumCG.condensed_reactions):
             pil.write("reaction {:s}\n".format(reaction.full_string))
     else :
         # Print Transient Complexes
