@@ -9,7 +9,7 @@ import sys
 import logging
 import itertools
 
-from peppercornenumerator.objects import PepperRestingState
+from peppercornenumerator.objects import PepperRestingSet
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactions
 
@@ -79,7 +79,7 @@ class Enumerator(object):
         else :
             self._reactions = []
 
-        self._resting_states = None
+        self._resting_sets = None
         self._complexes = None
         self._transient_complexes = None
         self._resting_complexes = None
@@ -97,7 +97,7 @@ class Enumerator(object):
         #
         # Set separation of timescales for *unimolecular* reactions.
         #
-        #  ignore-reaction | resting-state | transient-state
+        #  ignore-reaction | resting-set | transient-state
         # -----------------|---------------|---------------> rate
         #                k_slow          k_fast
         #
@@ -230,14 +230,14 @@ class Enumerator(object):
         return list(set(self._reactions))
 
     @property
-    def resting_states(self):
+    def resting_sets(self):
         """
         List of resting states enumerated. :py:meth:`.enumerate` must be
         called before access.
         """
-        if self._resting_states is None:
+        if self._resting_sets is None:
             raise utils.PeppercornUsageError("enumerate not yet called!")
-        return self._resting_states[:]
+        return self._resting_sets[:]
 
     @property
     def complexes(self):
@@ -262,7 +262,7 @@ class Enumerator(object):
     @property
     def transient_complexes(self):
         """
-        List of complexes enumerated that are not within resting states (e.g.
+        List of complexes enumerated that are not within resting sets (e.g.
         complexes which are transient). :py:meth:`.enumerate` must be
         called before access.
         """
@@ -274,7 +274,7 @@ class Enumerator(object):
         return (sorted(self.domains) == sorted(object.domains)) and \
             (sorted(self.initial_complexes) == sorted(object.initial_complexes)) and \
             (sorted(self.reactions) == sorted(object.reactions)) and \
-            (sorted(self.resting_states) == sorted(object.resting_states)) and \
+            (sorted(self.resting_sets) == sorted(object.resting_sets)) and \
             (sorted(self.complexes) == sorted(object.complexes)) and \
             (sorted(self.resting_complexes) == sorted(object.resting_complexes)) and \
             (sorted(self.transient_complexes) ==
@@ -292,8 +292,8 @@ class Enumerator(object):
         """
         self._complexes = self.initial_complexes[:]
         self._resting_complexes = self._complexes[:]
-        # This is not nice, the input might not be a resting state... so for now we turn of memorycheck...
-        self._resting_states = []#[PepperRestingState([complex], name=complex.name, memorycheck=False) for complex in self._complexes]
+        # This is not nice, the input might not be a resting set... so for now we turn of memorycheck...
+        self._resting_sets = []#[PepperRestingSet([complex], name=complex.name, memorycheck=False) for complex in self._complexes]
         self._transient_complexes = []
         #self._reactions = []
 
@@ -301,7 +301,7 @@ class Enumerator(object):
         """
         Generates the reaction graph consisting of all complexes reachable from
         the initial set of complexes. Produces a full list of :py:meth:`complexes`, resting
-        states, and :py:meth:`reactions, which are stored in the associated members of this
+        sets, and :py:meth:`reactions, which are stored in the associated members of this
         class.
         """
 
@@ -347,13 +347,13 @@ class Enumerator(object):
 
                 self._reactions = [x for x in self._reactions if x not in rm_reactions]
 
-        # List E contains enumerated resting state complexes. Only cross-
+        # List E contains enumerated resting set complexes. Only cross-
         # reactions  with other end states need to be considered for these
         # complexes. These complexes will remain in this list throughout
         # function execution.
         self._E = []
 
-        # List S contains resting state complexes which have not yet had cross-
+        # List S contains resting set complexes which have not yet had cross-
         # reactions with set E enumerated yet. All self-interactions for these
         # complexes have been enumerated
         self._S = []
@@ -366,7 +366,7 @@ class Enumerator(object):
         # List N contains self-enumerated components of the current
         # 'neighborhood'---consisting of states which are connected via fast
         # reactions to the current complex of interest, but have not yet been
-        # characterized as transient or resting states.
+        # characterized as transient or resting sets.
         self._N = []
 
         # List F contains components of the current 'neighborhood' which have
@@ -381,7 +381,7 @@ class Enumerator(object):
 
         #self._reactions = []
         self._complexes = []
-        self._resting_states = []
+        self._resting_sets = []
 
         def do_enumerate():
 
@@ -393,8 +393,8 @@ class Enumerator(object):
                 source = self._B.pop()
                 self.process_neighborhood(source)
 
-            # Consider slow reactions between resting state complexes
-            logging.debug("Slow reactions between resting state complexes...")
+            # Consider slow reactions between resting set complexes
+            logging.debug("Slow reactions between resting set complexes...")
             while len(self._S) > 0:
 
                 # Find slow reactions from `element`
@@ -475,7 +475,7 @@ class Enumerator(object):
         """
         Takes a single complex, generates the 'neighborhood' of complexes
         reachable from that complex through fast reactions, classifies these
-        complexes as transient or resting state, and modifies the lists and
+        complexes as transient or resting set, and modifies the lists and
         list of reactions accordingly.
 
         :param utils.Complex source: Complex from which to generate a neighborhood
@@ -536,20 +536,20 @@ class Enumerator(object):
             logging.debug("Segmenting %d complexes and %d reactions" %
                           (len(self._N), len(N_reactions)))
 
-            # Now segment the neighborhood into transient and resting states
+            # Now segment the neighborhood into transient and resting sets
             # by finding the strongly connected components
             segmented_neighborhood = self.segment_neighborhood(
                 self._N, N_reactions)
             # segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions_fast)
 
-            # Resting state complexes are added to S
-            self._S += (segmented_neighborhood['resting_state_complexes'])
+            # Resting set complexes are added to S
+            self._S += (segmented_neighborhood['resting_set_complexes'])
 
             # Transient state complexes are added to T
             self._T += (segmented_neighborhood['transient_state_complexes'])
 
             # Resting states are added to the list
-            self._resting_states += (segmented_neighborhood['resting_states'])
+            self._resting_sets += (segmented_neighborhood['resting_sets'])
 
             # # Filter slow reactions to only include those whose reactants are resting set complexes
             # S = set(self._S)
@@ -567,9 +567,9 @@ class Enumerator(object):
                 (len(
                     self._N), len(
                     segmented_neighborhood['transient_state_complexes']), len(
-                    segmented_neighborhood['resting_state_complexes'])))
-            logging.debug("Generated %d resting states" %
-                          len(segmented_neighborhood['resting_states']))
+                    segmented_neighborhood['resting_set_complexes'])))
+            logging.debug("Generated %d resting sets" %
+                          len(segmented_neighborhood['resting_sets']))
             logging.debug("Done processing neighborhood: %s" % source)
 
     def get_slow_reactions(self, complex):
@@ -732,16 +732,16 @@ class Enumerator(object):
     def segment_neighborhood(self, complexes, reactions):
         """
         Segments a set of complexes and reactions between them representing a
-        neighborhood into resting states and transient states. Returns the set
+        neighborhood into resting sets and transient states. Returns the set
         of complexes which are transient states, complexes which are in resting
-        states, and the set of resting states, all in a dictionary.
+        sets, and the set of resting sets, all in a dictionary.
 
         :param complexes: set of complexes
         :param reactions: set of reactions
         :returns: dictionary with keys:
 
-                *	``resting_states``: set of resting states
-                *	``resting_state_complexes``: set of resting state complexes
+                *	``resting_sets``: set of resting sets
+                *	``resting_set_complexes``: set of resting set complexes
                 *	``transient_state_complexes``: set of transient complexes
 
         """
@@ -788,13 +788,13 @@ class Enumerator(object):
             if node._index == -1:
                 self.tarjans(node)
 
-        # Now check to see which of the SCCs are resting states
-        resting_states = []
-        resting_state_complexes = []
+        # Now check to see which of the SCCs are resting sets
+        resting_sets = []
+        resting_set_complexes = []
         transient_state_complexes = []
         for scc in self._SCC_stack:
             scc_products = []
-            is_resting_state = True
+            is_resting_set = True
 
             for node in scc:
                 for product in node._full_outward_edges:
@@ -808,24 +808,24 @@ class Enumerator(object):
                         break
 
                 # If the product is not in the SCC, then there is a fast edge
-                # leading out of the SCC, so this is not a resting state
+                # leading out of the SCC, so this is not a resting set
                 if not product_in_scc:
-                    is_resting_state = False
+                    is_resting_set = False
                     break
 
-            if is_resting_state:
-                resting_state_complexes += (scc)
-                resting_state = PepperRestingState(scc[:])
-                resting_states.append(resting_state)
+            if is_resting_set:
+                resting_set_complexes += (scc)
+                resting_set = PepperRestingSet(scc[:])
+                resting_sets.append(resting_set)
 
             else:
                 transient_state_complexes += (scc)
-        resting_states.sort()
-        resting_state_complexes.sort()
+        resting_sets.sort()
+        resting_set_complexes.sort()
         transient_state_complexes.sort()
         return {
-            'resting_states': resting_states,
-            'resting_state_complexes': resting_state_complexes,
+            'resting_sets': resting_sets,
+            'resting_set_complexes': resting_set_complexes,
             'transient_state_complexes': transient_state_complexes
         }
 

@@ -249,12 +249,10 @@ def main(cl_opts):
         logging.info("Output will be condensed to remove transient complexes.")
 
     if cl_opts.output_filename is None:
-        write_kernel(enum, sys.stdout, 
-                condensed = condensed, k_fast = cl_opts.k_fast)
+        write_kernel(enum, sys.stdout, condensed = condensed)
     else :
         with open(cl_opts.output_filename, 'w') as pil :
-            write_kernel(enum, pil,
-                condensed = condensed, k_fast = cl_opts.k_fast)
+            write_kernel(enum, pil, condensed = condensed)
 
 
 if __name__ == '__main__':

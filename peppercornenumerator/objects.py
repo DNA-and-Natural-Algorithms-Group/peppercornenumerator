@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 from dsdobjects import clear_memory
-from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingState
+from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingSet
 from dsdobjects import DSDObjectsError, DSDDuplicationError
 from dsdobjects.utils import split_complex 
 
@@ -203,25 +203,16 @@ class PepperReaction(DSD_Reaction):
             return '[{:12g} {:4s} ] {} -> {}'.format(self.rate, self.rateunits,
                     " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
 
-    @property
-    def reactants(self):
-        return sorted(self._reactants)
-
-    @property
-    def products(self):
-        return sorted(self._products)
-
-
-class PepperRestingState(DSD_RestingState):
+class PepperRestingSet(DSD_RestingSet):
     def __init__(self, *kargs, **kwargs):
-        super(PepperRestingState, self).__init__(*kargs, **kwargs)
+        super(PepperRestingSet, self).__init__(*kargs, **kwargs)
 
     def __str__(self):
         return self.name
 
     def __cmp__(self, other):
         """
-        Two resting states are compared on the basis of their complexes
+        Two resting sets are compared on the basis of their complexes
         """
         return cmp(self.canonical_form, other.canonical_form)
 

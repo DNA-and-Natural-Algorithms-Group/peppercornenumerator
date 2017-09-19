@@ -22,6 +22,12 @@ def read_pil(data, is_file = False, alpha = ''):
     Supports a variety of formats, including enum and pil. Sequences and sanity
     checks for domain-length are not supported.  
 
+    Args:
+        data (str): Is either the PIL file in string format or the path to a file.
+        is_file (bool): True if data is a path to a file, False otherwise
+        alpha (str, optiona): Is a prefix that can be applied to rename every domain
+            in the system. Useful to convert non-alphanumeric domain names into 
+            the alphanumeric kernel standard.
     """
     if is_file :
         parsed_file = parse_pil_file(data)
@@ -55,9 +61,6 @@ def read_pil(data, is_file = False, alpha = ''):
     reactions = []
     for line in parsed_file :
         name = line[1]
-        if alpha and 'domain' in line[0] :
-            logging.warning("Renaming {} to {}.".format(line[1], alpha + line[1]))
-            name = alpha + name
         if line[0] == 'dl-domain':
             if line[2] == 'short':
                 (dtype, dlen) = ('short', None)
@@ -182,8 +185,16 @@ def read_kernel(data, is_file = False):
     domains = {'+' : '+'} # saves some code
     for line in parsed_file:
         name = line[1]
-        if line[0] == 'domain':
-            domains[name] = PepperDomain(name, length = int(line[2]))
+        if line[0] == 'dl-domain':
+            if line[2] == 'short':
+                (dtype, dlen) = ('short', None)
+            elif line[2] == 'long':
+                (dtype, dlen) = ('long', None)
+            else :
+                (dtype, dlen) = (None, int(line[2]))
+            if name not in domains:
+                domains[name] = PepperDomain(name, dtype = dtype, length = dlen)
+            logging.info('Domain {} with length {}'.format(domains[name], len(domains[name])))
             cname = name[:-1] if domains[name].is_complement else name + '*'
             if cname in domains:
                 assert domains[cname] == ~domains[name]
@@ -194,7 +205,7 @@ def read_kernel(data, is_file = False):
     reactions = []
     for line in parsed_file:
         name = line[1]
-        if line[0] == 'domain':
+        if line[0] == 'dl-domain':
             pass
         elif line[0] == 'complex':
             sequence, structure = resolve_loops(line[2])

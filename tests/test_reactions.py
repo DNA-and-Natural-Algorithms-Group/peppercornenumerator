@@ -7,9 +7,9 @@ import unittest
 import logging
 logging.disable(logging.CRITICAL)
 
-from peppercornenumerator.objects import PepperReaction, clear_memory
 from peppercornenumerator import Enumerator
 from peppercornenumerator.input import read_kernel
+from peppercornenumerator.objects import PepperReaction, clear_memory
 
 import peppercornenumerator.reactions as rxn
 
@@ -760,18 +760,174 @@ class DSD_PathwayTests(unittest.TestCase):
         #        print r.kernel_string(), r.rate
         self.assertEqual(len(enum.reactions), 22)
 
-        # NOTE: condensation has no effect for cooperative binding with k_fast 
-        from peppercornenumerator.condense import condense_resting_states
-        condensed = condense_resting_states(enum, compute_rates = True, k_fast=self.k_fast)
-        #for r in condensed['reactions']:
-        #    print r.kernel_string(), r.rate
-        self.assertEqual(len(enum.reactions), 22)
+
+class ReactionMatchingTests (unittest.TestCase):
+    # A selection of Casey's reaction tests.
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        clear_memory()
+
+    def testBind11A(self):
+
+        # bind11: a ? a* ? -> a( ? ) ?
+        complexes, _ = read_kernel("""
+        A1 = x( ) a  x( ) a* x( )
+        A2 = x( ) a( x( ) )  x( )
+
+        A3 = x( ) a  b  x( ) b* a* x( )
+        A4 = x( ) a( b( x( ) )  )  x( )
+        """)
+
+        # No zipping possible
+        rxns = rxn.bind11(complexes['A1'])
+        self.assertEqual(rxns,
+        [PepperReaction([complexes['A1']], [complexes['A2']], 'bind11', memorycheck=False)])
+
+        # Zipping possible
+        rxns = rxn.bind11(complexes['A3'])
+        self.assertEqual(rxns,
+        [PepperReaction([complexes['A3']], [complexes['A4']], 'bind11', memorycheck=False)])
+
+    def testBind21A(self):
+        # bind11: a ? a* ? -> a( ? ) ?
+        complexes, _ = read_kernel("""
+        A1 = w( ) a  x( )
+        A2 = y( ) a* z( )
+        A3 = w( ) a( x( ) + y( ) ) z( )
+        """)
+
+        # No zipping possible
+        rxns = rxn.bind21(complexes['A1'], complexes['A2'])
+        self.assertEqual(rxns,
+            [PepperReaction([complexes['A1'], complexes['A2']], 
+            [complexes['A3']], 'bind21', memorycheck=False)])
+
+    def testOpenA(self):
+        # open:  ? a( ? ) ? -> ? a ? a* ?
+        complexes, _ = read_kernel("""
+        length a = 5
+        length b = 5
+
+        A1 = x( ) a( x )  x( )
+        A2 = x( ) a  x a* x( )
+
+        A3 = x a( b( y )  )  z
+        A4 = x a  b  y b* a* z
+        """)
+
+        # No zipping possible
+        self.assertEqual(rxn.open(complexes['A1']),
+            [PepperReaction([complexes['A1']], [complexes['A2']], 'open', memorycheck=False)])
+
+        # Zipping possible
+        self.assertEqual(rxn.open(complexes['A3'], release_11 = 13, release_1N=13),
+            [PepperReaction([complexes['A3']], [complexes['A4']], 'open', memorycheck=False)])
+
+    def testOpenB(self):
+        # open:  ? a( ? ) ? -> ? a ? a* ?
+        complexes, _ = read_kernel("""
+        length a = 5
+        length b = 5
+
+        A1 = x a( y )   z
+        A2 = x a  y a* z
+
+        A3 = x a( b( y )  )  z
+        A4 = x a  b( y )  a* z
+        A5 = x a( b  y b* )  z
+        """)
+
+        # No zipping possible
+        rxns = rxn.open(complexes['A1'], max_helix=False, release_11 = 7, release_1N=7)
+        self.assertEqual(rxns,
+        [PepperReaction([complexes['A1']], [complexes['A2']], 'open', memorycheck=False)])
+
+        # Zipping possible
+        rxns = rxn.open(complexes['A3'], max_helix=False, release_11 = 7, release_1N=7)
+        self.assertEqual(rxns, sorted([
+            PepperReaction([complexes['A3']], [complexes['A4']], 'open', memorycheck=False),
+            PepperReaction([complexes['A3']], [complexes['A5']], 'open', memorycheck=False)]))
+
+    def testOpenNoMaxHelix(self):
+        # open:  ? a( ? ) ? -> ? a ? a* ?
+        complexes, _ = read_kernel("""
+        length a = 5
+        length b = 5
+
+        # A1 = a( b( ) )
+        A1 = a( b( ) )
+        A2 = a( b b* )
+        A3 = a b( ) a*
+        """)
+
+        # Zipping possible
+        rxns = rxn.open(complexes['A1'], max_helix=False, release_11 = 10, release_1N=10)
+        self.assertEqual(rxns, sorted([
+            PepperReaction([complexes['A1']], [complexes['A2']], 'open', memorycheck=False),
+            PepperReaction([complexes['A1']], [complexes['A3']], 'open', memorycheck=False)]))
+
+    def testBranch3wayA(self):
+        # 3wayA: ? b ? b(?) ? <-> ? b(? b ?) ?
+        complexes, _ = read_kernel("""
+        A1 = d1( ) b  d2( ) b( d3( ) ) d4( )
+        A2 = d1( ) b( d2( ) b  d3( ) ) d4( )
+        """)
+        forward = rxn.branch_3way(complexes['A1'])
+
+        self.assertEqual(forward,
+        [PepperReaction([complexes['A1']], [complexes['A2']], 'branch-3way', memorycheck=False)])
+
+        reverse = rxn.branch_3way(complexes['A2'])
+        self.assertEqual(reverse,
+        [PepperReaction([complexes['A2']], [complexes['A1']], 'branch-3way', memorycheck=False)])
+
+    def testBranch3wayB(self):
+        # 3wayB: ? b(?) ? b ? <-> ? b ? b*(?) ?
+        complexes, _ = read_kernel("""
+        A1 = d1( ) b( d2( )  )  d3( ) b d4( )
+        A2 = d1( ) b  d2( ) b*( d3( ) ) d4( )
+        """)
+        forward = rxn.branch_3way(complexes['A1'])
+        self.assertEqual(forward,
+        [PepperReaction([complexes['A1']], [complexes['A2']], 'branch-3way', memorycheck=False)])
+
+        reverse = rxn.branch_3way(complexes['A2'])
+        self.assertEqual(reverse,
+        [PepperReaction([complexes['A2']], [complexes['A1']], 'branch-3way', memorycheck=False)])
+
+    def testBranch3wayC(self):
+        # 3wayC: ? b*(?) ? b ? <-> ? b*(? b ?) ?
+        complexes, _ = read_kernel("""
+        A1 = d1( ) b*( d2( ) ) d3( ) b d4( )
+        A2 = d1( ) b*( d2( ) b d3( ) ) d4( )
+        """)
+        forward = rxn.branch_3way(complexes['A1'])
+        self.assertEqual(forward,
+        [PepperReaction([complexes['A1']], [complexes['A2']], 'branch-3way', memorycheck=False)])
+
+        reverse = rxn.branch_3way(complexes['A2'])
+        self.assertEqual(reverse,
+        [PepperReaction([complexes['A2']], [complexes['A1']], 'branch-3way', memorycheck=False)])
+
+    def testBranch4wayA(self):
+        # 4way: b( ? ) ? b ( ? ) --> b( ? b*( ? ) ? )
+        complexes, _ = read_kernel("""
+        A1 = d1( ) b( d2( )  )  d3( ) b( d4( ) ) d5( )
+        A2 = d1( ) b( d2( ) b*( d3( ) )  d4( ) ) d5( )
+        """)
+
+        forward = rxn.branch_4way(complexes['A1'])
+        self.assertEqual(forward,
+        [PepperReaction([complexes['A1']], [complexes['A2']], 'branch-4way', memorycheck=False)])
+
+        reverse = rxn.branch_4way(complexes['A2'])
+        self.assertEqual(reverse,
+        [PepperReaction([complexes['A2']], [complexes['A1']], 'branch-4way', memorycheck=False)])
 
 
-class NeighborhoodSearch(unittest.TestCase):
-    # Test a basic move set and enumerate using k-fast/k-slow
-    pass
-
+        
 @unittest.skipIf(SKIP, "skipping tests")
 class IsomorphicSets(unittest.TestCase):
     def setUp(self):

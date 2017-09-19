@@ -4,7 +4,7 @@
 .PHONY: README
 
 tests:
-	python -m nose -v --with-coverage --cover-package=enumerator --cover-html tests/test_reactions_SB.py tests/test_utils.py tests/test_objects.py
+	python -m nose -v --with-coverage --cover-package=enumerator --cover-html tests/test_reactions.py tests/test_utils.py tests/test_objects.py tests/test_condense.py
 
 profile:
 	nosetests -v --with-profile --profile-stats-file stats.pf
