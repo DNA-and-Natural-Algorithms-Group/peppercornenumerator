@@ -1,6 +1,6 @@
 .PHONY: tests
 .PHONY: profile
-.PHONY: docs
+#.PHONY: docs
 .PHONY: README
 
 tests:
@@ -9,8 +9,8 @@ tests:
 profile:
 	nosetests -v --with-profile --profile-stats-file stats.pf
 
-docs: 
-	cd docs && $(MAKE) html
+#docs: 
+#	cd docs && $(MAKE) html
 
 README: README.pdf README.html
 	
