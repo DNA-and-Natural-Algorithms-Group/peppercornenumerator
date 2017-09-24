@@ -1,0 +1,48 @@
+# Thachuk, Winfree, Soloveichik (2015) 
+# Figure 9
+
+length a1a = 5
+length a1b = 5
+length a1c = 5
+length a2a = 5
+length a2b = 5
+length a2c = 5
+length a3a = 5
+length a3b = 5
+length a3c = 5
+
+length b1a = 5
+length b1b = 5
+length b1c = 5
+length b2a = 5
+length b2b = 5
+length b2c = 5
+length b3a = 5
+length b3b = 5
+length b3c = 5
+
+length x1 = 15
+length x2 = 15
+length x3a = 5
+length x3b = 5
+length x3c = 5
+
+length y1 = 15
+length y2 = 15
+length y3a = 5
+length y3b = 5
+length y3c = 5
+
+length zero = 5
+
+A = a1a a1b a1c a2a a2b a2c a3a a3b a3c
+B = b1a b1b b1c b2a b2b b2c b3a b3b b3c
+X = x1 x2 x3a x3b x3c a3a a3b a3c
+Y = y1 y2 y3a y3b y3c b3a b3b b3c
+
+F1 = b2a( b2b( x2( x3a( x3b( x3c( a2c* a2b*( a2a*( a1c*( a1b*( a1a*( zero*( + ) ) ) ) ) ) y2 y3a y3b + ) ) ) ) ) ) b1c* @initial 100 nM
+F2 = a2a( a2b( y2( y3a( y3b( y3c( b2c* b2b*( b2a*( b1c*( b1b*( b1a*( zero*( + ) ) ) ) ) ) x2 x3a x3b + ) ) ) ) ) ) a1c* @initial 100 nM
+
+F3 = x1 x2( x3a( x3b( x3c( a3a( a3b( a3c( + ) ) ) ) ) ) ) b2b* @initial 100 nM
+F4 = y1 y2( y3a( y3b( y3c( b3a( b3b( b3c( + ) ) ) ) ) ) ) a2b* @initial 100 nM
+

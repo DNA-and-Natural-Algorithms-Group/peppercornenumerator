@@ -1,0 +1,35 @@
+# Thachuk, Winfree, Soloveichik (2015) 
+# Figure 5
+
+length a1a = 5
+length a1b = 5
+length a1c = 5
+length a2 = 15
+length a3a = 5
+length a3b = 5
+length a3c = 5
+
+length b1a = 5
+length b1b = 5
+length b1c = 5
+length b2a = 5
+length b2b = 5
+length b2c = 5
+length b3a = 5
+length b3b = 5
+length b3c = 5
+
+length x1 = 15
+length x2 = 15
+length x3 = 15
+
+A = a1a a1b a1c a2 a3a a3b a3c
+B = b1a b1b b1c b2a b2b b2c b3a b3b b3c
+X = x1 x2 x3
+
+F1 = a3c* a3b*( a3a*( a2*( b2c*( b2b*( b2a*( b1c*( b1b*( b1a*( + ) ) ) ) ) + ) ) ) )
+F2 = a1b( a1c( b3a( b3b( b3c( x1 + ) ) ) ) ) a1a*
+F3 = b3b( b3c( x1( x3 + ) ) ) b3a*
+F4 = x1( x2 x3( + ) ) b3c*
+
+

@@ -1,0 +1,27 @@
+# Shohei Kotani and William L. Hughes (2017)
+# Multi-Arm Junctions for Dynamic DNA Nanotechnology
+# 
+# Figure 2A: Single-layer catalytic system with three-arm junction substrates.
+
+length a = long
+length b = long
+length c = long
+length d1s = long
+length d2 = long
+
+length T2 = short
+length t1 = short # name = 1 in Figure 
+length t2 = short # name = 2 in Figure
+length t3 = short # name = 3 in Figure
+
+S1 = d1s T2 b( a( t2( + ) ) c*( t1* + ) )
+S2 = t1( c( a( + t2* ) b*( d2 t3 + ) ) )
+C1 = t1 c a
+
+P1 = t2* a*( c*( t1*( + ) ) )
+I1 = d1s T2 b( a t2 + c )
+I2 = d1s T2 b( a( t2( + ) ) b*( d2 t3 + ) c*( t1* + ) )
+
+P2 = d1s T2 b( a( t2( + ) ) ) d2 t3
+P3 = b( c*( t1* + ) )
+
