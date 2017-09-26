@@ -12,7 +12,7 @@ with open('LICENSE') as f:
 setup(
     name='peppercornenumerator',
     version='0.5',
-    description='Domain-level nucleic acid reaction enumerator)',
+    description='Domain-level nucleic acid reaction enumerator',
     long_description=readme,
     author='Casey Grun, Stefan Badelt, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree',
     author_email='winfree@caltech.edu',
