@@ -127,6 +127,11 @@ class ReactionGraph(object):
         if combinations is None:
             combinations = cartesian_product(map(self.get_fates, rxn.products))
 
+        # NOTE: introdcued as a consequence of a bug discovered in the cooperative
+        # binding case. Before you calculate (add to) reaction decay
+        # probabilities, make sure that the dictionary is empty.
+        self._reaction_decay_probabilities = collections.defaultdict(float)
+
         for fates in combinations :
             if tuple_sum_sort(fates) != fate:
                 continue
@@ -252,6 +257,7 @@ class ReactionGraph(object):
                     raise CondensationError('complex should not be assigned yet')
                 complex_fates[c] = SetOfFates(set_of_fates)
 
+    # Main function!
     def condense(self):
         """
         Reaction condensation.
@@ -346,6 +352,7 @@ class ReactionGraph(object):
             # that yield the condensed reaction
             product_probability = self._reaction_decay_probabilities[(r, products)]
             assert product_probability >= 0
+            assert product_probability <= 1.000001
 
             # probability that the resting sets comprising the reactants of
             # the condensed reaction will be in the right configuration to
@@ -360,6 +367,7 @@ class ReactionGraph(object):
             reactant_probabilities = times(self._stationary_distributions[self._set_to_fate[
                 frozenset(self.SCC_containing(a))]][a] for a in r.reactants)
             assert reactant_probabilities >= 0
+            assert reactant_probabilities <= 1.000001
 
             # rate of the detailed reaction
             k = r.rate
@@ -378,6 +386,12 @@ class ReactionGraph(object):
         return reaction_rate
 
     def get_stationary_distribution(self, scc):
+        """
+        Take a strongly connected component and calculate the stationary distribution.
+
+        Returns:
+            [:obj:`dict()`]: Stationary distributions: dict['cplx'] = sdist (flt)
+        """
         scc_set = frozenset(scc)
         scc_list = sorted(scc)
         L = len(scc)
@@ -506,7 +520,7 @@ class ReactionGraph(object):
     
         # calculate the absorption matrix (B = NR)
         B = np.dot(N, R)
-    
+
         # --- added by EW as a weaker surrugate for the above, when necessary
         # assert (B >= 0).all()
     
