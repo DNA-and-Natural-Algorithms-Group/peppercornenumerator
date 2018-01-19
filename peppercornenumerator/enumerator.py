@@ -9,9 +9,11 @@ import sys
 import logging
 import itertools
 
-from peppercornenumerator.objects import PepperRestingSet
+from peppercornenumerator.objects import PepperMacrostate
+from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactions
+
 
 # There should be better control of this limit -- only set it when
 # necessary (Erik Winfree based on Chris Thachuk's advice...)
@@ -102,6 +104,7 @@ class Enumerator(object):
         #
         self._k_slow = 0 
         self._k_fast = 0
+        self.resting_threshold = 0
 
         # Settings for reaction enumeration. 
         self._max_helix = True
@@ -355,7 +358,7 @@ class Enumerator(object):
         self._N = []
 
         # List F contains components of the current 'neighborhood' which have
-        # not yet been reactants for potential fast reactions. They will be
+        # not yet been reactants for potential fast reactions.  They will be
         # moved to N once they were enumerated.
         self._F = []
 
@@ -468,10 +471,12 @@ class Enumerator(object):
         N_reactions = []
 
         logging.debug("Processing neighborhood: %s" % source)
+        M = set()   # A set of exhaustively enumerated metastable complexes.
+                    # That means "resting complexes" within fast reactions.
 
         try:
-            # First find all of the complexes accessible through fast
-            # reactions starting with the source
+            # First find all of the complexes accessible through horizontal or
+            # downhill reactions starting with the source
             while len(self._F) > 0 :
 
                 # Find fast reactions from `element`
@@ -479,7 +484,8 @@ class Enumerator(object):
                 logging.debug("Fast reactions from {:s}... ({:d} remaining in F)".format(
                     element, len(self._F)))
 
-                reactions = self.get_fast_reactions(element)
+                # Return *all* horizontal or downhill reactions:
+                reactions = self.get_instant_reactions(element)
 
                 # Add new products to F
                 new_products = self.get_new_products(reactions)
@@ -492,46 +498,67 @@ class Enumerator(object):
                 logging.debug("Generated {:d} new fast reactions.".format(len(reactions)))
                 logging.debug("Generated {:d} new products.".format(len(new_products)))
 
+                if len(self._F) == 0:
+                    # Now enumerate all uphill reactions from metastable states.
+                    while True:
+                        segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
+                                min_occupancy=self.resting_threshold,
+                                check_transients=False)
+
+                        new_reactions = False
+                        for resting in segmented_neighborhood['resting_complexes']:
+                            if resting not in M:
+                                # Return *all* horizontal or downhill reactions:
+                                reactions = self.get_uphill_reactions(resting)
+                                if reactions:
+                                    new_reactions = True
+                                    new_products = self.get_new_products(reactions)
+                                    self._F += (new_products)
+                                    N_reactions += (reactions)
+                                M.add(resting)
+                        if len(self._F) or not new_reactions:
+                            break
+
                 # Display new reactions in interactive mode
                 if self.interactive:
                     self.reactions_interactive(element, reactions, 'fast')
 
+
         except KeyboardInterrupt:
             logging.debug("Exiting neighborhood %s prematurely..." % source)
 
-        finally:
+        logging.debug("In neighborhood %s..." % source)
+        logging.debug("Segmenting %d complexes and %d reactions" %
+                      (len(self._N), len(N_reactions)))
 
-            logging.debug("In neighborhood %s..." % source)
-            logging.debug("Segmenting %d complexes and %d reactions" %
-                          (len(self._N), len(N_reactions)))
+        # Now segment the neighborhood into transient and resting complexes
+        # by finding the strongly connected components.
+        segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
+                min_occupancy=self.resting_threshold)
 
-            # Now segment the neighborhood into transient and resting complexes
-            # by finding the strongly connected components.
-            segmented_neighborhood = self.segment_neighborhood(self._N, N_reactions)
+        # TODO: check using sets instead
+        # Resting complexes are added to S
+        self._S += (segmented_neighborhood['resting_complexes'])
 
-            # TODO: check using sets instead
-            # Resting complexes are added to S
-            self._S += (segmented_neighborhood['resting_complexes'])
+        # Transient complexes are added to T
+        self._T += (segmented_neighborhood['transient_complexes'])
 
-            # Transient complexes are added to T
-            self._T += (segmented_neighborhood['transient_complexes'])
+        # Resting macrostates are added to global list
+        self._resting_macrostates += (segmented_neighborhood['resting_macrostates'])
 
-            # Resting macrostates are added to global list
-            self._resting_macrostates += (segmented_neighborhood['resting_macrostates'])
+        # Reactions from this neighborhood are added to the list
+        self._reactions += (N_reactions)
 
-            # Reactions from this neighborhood are added to the list
-            self._reactions += (N_reactions)
+        # Reset neighborhood
+        logging.debug("Generated {:d} new fast reactions".format(len(N_reactions)))
+        logging.debug("Generated {:d} new complexes: ({:d} transient, {:d} resting)".format(
+            len(self._N), len(segmented_neighborhood['transient_complexes']), 
+                len(segmented_neighborhood['resting_complexes'])))
+        self._N = []
 
-            # Reset neighborhood
-            logging.debug("Generated {:d} new fast reactions".format(len(N_reactions)))
-            logging.debug("Generated {:d} new complexes: ({:d} transient, {:d} resting)".format(
-                len(self._N), len(segmented_neighborhood['transient_complexes']), 
-                    len(segmented_neighborhood['resting_complexes'])))
-            self._N = []
-
-            logging.debug("Generated {:d} resting macrostates".format(
-                len(segmented_neighborhood['resting_macrostates'])))
-            logging.debug("Done processing neighborhood: {:s}".format(source))
+        logging.debug("Generated {:d} resting macrostates".format(
+            len(segmented_neighborhood['resting_macrostates'])))
+        logging.debug("Done processing neighborhood: {:s}".format(source))
 
     def get_slow_reactions(self, complex):
         """
@@ -571,13 +598,75 @@ class Enumerator(object):
         for rxn in reactions: 
             # It could be that k_slow is set, but k_fast is not....
             if maxsize and not all(p.size <= maxsize for p in rxn.products) :
-                logging.warning("Product complex size (={}) larger than \
-                --max-complex-size(={}). Ignoring slow reaction {}!".format(
-                    max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
                 continue
             valid_reactions.append(rxn)
 
         return valid_reactions
+
+    def get_instant_reactions(self, cplx):
+        """ Returns a list of energetically neutral or favorable reactions
+        using complex as a reagent.
+
+        Args:
+            cplx (:obj:`PepperComplex`): A 
+
+        """
+
+        maxsize = self._max_complex_size
+
+        reactions = []
+
+        # Do unimolecular reactions
+        for move in FAST_REACTIONS[1]:
+            if move.__name__ != 'open':
+                # all of the same type (bind, 3-way or 4-way)
+                move_reactions = move(cplx, max_helix=self._max_helix, remote=self._remote)
+
+                for rxn in move_reactions: 
+                    # It could be that k_slow is set, but k_fast is not....
+                    if rxn.rate >= max(self._k_fast, self._k_slow):
+                        if maxsize and not all(p.size <= maxsize for p in rxn.products) :
+                            logging.warning("Product complex size (={}) larger than \
+                            --max-complex-size(={}). Ignoring fast reaction {}!".format(
+                                max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                            continue
+                        reactions.append(rxn)
+
+        return reactions
+
+    def get_uphill_reactions(self, cplx):
+        """
+        Returns a list of fast reactions possible using complex as a reagent.
+
+        This only supports unimolecular reactions. Could be extended to support
+        arbitrary reactions.
+        """
+
+        maxsize = self._max_complex_size
+
+        reactions = []
+
+        # Do unimolecular reactions
+        for move in FAST_REACTIONS[1]:
+            if move.__name__ == 'open':
+                move_reactions = move(cplx, 
+                        max_helix=self._max_helix, 
+                        release_11 = self._release_11,
+                        release_1N = self._release_1N)
+
+                for rxn in move_reactions: 
+                    # It could be that k_slow is set, but k_fast is not....
+                    if rxn.rate >= max(self._k_fast, self._k_slow):
+                        if maxsize and not all(p.size <= maxsize for p in rxn.products) :
+                            logging.warning("Product complex size (={}) larger than \
+                            --max-complex-size(={}). Ignoring fast reaction {}!".format(
+                                max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                            continue
+                        reactions.append(rxn)
+
+        return reactions
+
 
     def get_fast_reactions(self, complex):
         """
@@ -648,143 +737,134 @@ class Enumerator(object):
 
         return list(new_products)
 
-    def segment_neighborhood(self, complexes, reactions):
-        """Classify resting and transient complexes.
 
-        Segments a neighborhood of complexes and reactions into resting and
-        transient macrostates. Complexes in resting macrostates are resting
-        complexes, complexes in transient macrostates are transient complexes.
+def segment_neighborhood(complexes, reactions, min_occupancy=None,
+        check_transients=False):
+    """
+    Segmentation of a potentially incomplete neighborhood. That means only
+    the specified complexes are interesting, all others should not be
+    returned.
 
-        Args:
-            complexes (list): list of complexes
-            reactions (list): list of reactions
+    Beware: Complexes must contain all reactants in reactions *and* there
+    must not be any incoming fast reactions into complexes, other than
+    those specified in reactions. Thus, we can be sure that the SCCs found here
+    are consistent with SCCs found in a previous iteration.
 
-        Returns:
-            [dict]: 
-                ``resting_macrostates``: list of resting macrostates
-                ``resting_complexes``: list of resting complexes
-                ``transient_complexes``: list of transient complexes
-        """
+    Args:
+        complexes(list[:obj:`PepperComplex`])
+    """
+    index = 0
+    S = []
+    SCCs = []
 
-        # First we initialize the graph variables that will be used for
-        # Tarjan's algorithm
+    total = complexes[:]
+    for rxn in reactions: 
+        total += rxn.products
 
-        self._tarjan_index = 0
-        self._tarjan_stack = []
-        self._SCC_stack = []
+    total = list(set(total))
 
-        # Set up for Tarjan's algorithm
-        for node in complexes:
-            node._outward_edges = []
-            node._full_outward_edges = []
-            node._index = -1
-        for reaction in reactions:
-            for product in reaction.products:
-                product._outward_edges = []
-                product._full_outward_edges = []
-                product._index = -1
+    # Set up for Tarjan's algorithm
+    for c in total: c._index = None
 
-        # Detect which products are actually in the neighborhood
-        for reaction in reactions:
-            for product in reaction.products:
-                product_in_N = False
+    # filters reaction products such that there are only species from within complexes
+    # this is ok, because it must not change the assignment of SCCs.
+    rxns_within = {k: [] for k in complexes}
+    rxns_consuming = {k: [r for r in reactions if (k in r.reactants)] for k in total}
+    for rxn in reactions:
+        assert len(rxn.reactants) == 1
+        for product in rxn.products:
+            if product in complexes:
+                rxns_within[rxn.reactants[0]].append(product)
+        rxns_consuming[rxn.reactants[0]]
 
-                for complex in complexes:
-                    if (complex == product):
-                        product_in_N = True
-                        break
-
-                # If this product is in the neighborhood, we have an edge
-                if product_in_N:
-                    # We know all these reactions are unimolecular
-                    reaction.reactants[0]._outward_edges.append(product)
-                reaction.reactants[0]._full_outward_edges += (
-                    reaction.products)
-
-            node._lowlink = -1
-
-        # We now perform Tarjan's algorithm, marking nodes as appropriate
-        for node in complexes:
-            if node._index == -1:
-                self.tarjans(node)
-
-        # Now check to see which of the SCCs are resting sets
-        resting_sets = []
-        resting_set_complexes = []
-        transient_state_complexes = []
-        for scc in self._SCC_stack:
-            scc_products = []
-            is_resting_set = True
-
-            for node in scc:
-                for product in node._full_outward_edges:
-                    scc_products.append(product)
-
-            for product in scc_products:
-                product_in_scc = False
-                for complex in scc:
-                    if product == complex:
-                        product_in_scc = True
-                        break
-
-                # If the product is not in the SCC, then there is a fast edge
-                # leading out of the SCC, so this is not a resting set
-                if not product_in_scc:
-                    is_resting_set = False
-                    break
-
-            if is_resting_set:
-                resting_set_complexes += (scc)
-                resting_set = PepperRestingSet(scc[:])
-                resting_sets.append(resting_set)
-
-            else:
-                transient_state_complexes += (scc)
-
-        # TODO: Remove unlikely complexes from resting macrostates and make them transient
-        resting_sets.sort()
-        resting_set_complexes.sort()
-        transient_state_complexes.sort()
-        return {
-            'resting_macrostates': resting_sets,
-            'resting_complexes': resting_set_complexes,
-            'transient_complexes': transient_state_complexes
-        }
-
-    def tarjans(self, node):
+    def tarjans_scc(cplx, index):
         """
         Executes an iteration of Tarjan's algorithm (a modified DFS) starting
         at the given node.
         """
         # Set this node's tarjan numbers
-        node._index = self._tarjan_index
-        node._lowlink = self._tarjan_index
-        self._tarjan_index += 1
-        self._tarjan_stack.append(node)
-        node._onStack = True
+        cplx._index = index
+        cplx._lowlink = index
+        index += 1
+        S.append(cplx)
 
-        # Process all connected nodes, setting lowlink as needed
-        for next in node._outward_edges:
-            if next._index == -1:
-                self.tarjans(next)
-                node._lowlink = min(node._lowlink, next._lowlink)
-            else:
-                if next._onStack:
-                    node._lowlink = min(node._lowlink, next._lowlink)
+        for product in rxns_within[cplx]:
+            # Product hasn't been traversed; recurse
+            if product._index is None :
+                index = tarjans_scc(product, index)
+                cplx._lowlink = min(cplx._lowlink, product._lowlink)
 
-        # This indicates that this node is a 'root' node, and children are
-        # part of an SCC
-        if node._lowlink == node._index:
-            stop_flag = False
+            # Product is in the current neighborhood
+            elif product in S:
+                cplx._lowlink = min(cplx._lowlink, product._index)
+    
+        if cplx._lowlink == cplx._index:
             scc = []
-            while stop_flag == False:
-                nextNode = self._tarjan_stack.pop()
-                nextNode._onStack = False
-                scc.append(nextNode)
-                if nextNode == node:
-                    stop_flag = True
+            while True:
+                next = S.pop()
+                scc.append(next)
+                if next == cplx:
+                    break
+            SCCs.append(scc)
+        return index
 
-            # Add the SCC to the list of SCCs
-            self._SCC_stack.append(scc)
+    # We now perform Tarjan's algorithm, marking nodes as appropriate
+    for cplx in complexes:
+        if cplx._index is None:
+            tarjans_scc(cplx, index)
 
+    resting_macrostates = []
+    transient_macrostates = []
+    resting_complexes = []
+    transient_complexes = []
+
+    for scc in SCCs:
+        try:
+            ms = PepperMacrostate(scc[:], prefix='')
+        except DSDDuplicationError, e:
+            assert set(e.existing.complexes) == set(scc)
+            ms = e.existing
+        except DSDObjectsError, e:
+            assert set(e.existing.complexes) <= set(scc)
+            del PepperMacrostate.MEMORY[e.existing.canonical_form]
+            del PepperMacrostate.NAMES[e.existing.name]
+            ms = PepperMacrostate(scc[:], prefix='')
+
+        for c in scc:
+            for rxn in rxns_consuming[c]:
+                ms.add_reaction(rxn)
+
+        if ms.is_transient:
+            transient_complexes += (scc)
+            if check_transients and min_occupancy:
+                for (c, s) in sorted(ms.get_stationary_distribution(warnings=False),
+                        key=lambda x:x[1], reverse = True):
+                    if s < min_occupancy or ms.is_exit(c) :
+                        break
+                    else :
+                        #print 'found resting in tranient set', c
+                        transient_complexes.remove(c)
+                        resting_complexes.append(c)
+
+        else :
+            resting_macrostates.append(ms)
+
+            if min_occupancy:
+                for (c, s) in ms.get_stationary_distribution():
+                    if s < min_occupancy:
+                        transient_complexes.append(c)
+                    else :
+                        resting_complexes.append(c)
+            else:
+                resting_complexes += (scc)
+
+    resting_macrostates.sort()
+    resting_complexes.sort()
+    transient_complexes.sort()
+
+    return {
+        'resting_macrostates': resting_macrostates,
+        'resting_complexes': resting_complexes,
+        'transient_complexes': transient_complexes
+    }
 

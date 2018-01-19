@@ -8,7 +8,7 @@ from functools import reduce
 
 from peppercornenumerator.objects import PepperComplex
 from peppercornenumerator.objects import PepperReaction
-from peppercornenumerator.objects import PepperRestingSet
+from peppercornenumerator.objects import PepperMacrostate
 from peppercornenumerator.objects import DSDDuplicationError
 
 class CondensationError(Exception):
@@ -178,7 +178,7 @@ class ReactionGraph(object):
         if len(outgoing_reactions) == 0 :
             # build new resting set
             try :
-                resting_set = PepperRestingSet(scc)
+                resting_set = PepperMacrostate(scc)
             except DSDDuplicationError, e:
                 resting_set = e.existing
 
@@ -669,48 +669,36 @@ def tarjans(complexes, reactions, reactions_consuming, is_fast):
     Implementation of tarjans algorithm which segments SCCs of fast reactions
     """
 
-    def strongconnect(complex, index):
+    def strongconnect(cplx, index):
         """
         Traverse a complex and all outgoing reactions
         """
-        complex._index = index
-        complex._lowlink = index
-        # print "<"+str(complex)+" i='"+str(complex._index)+"'>"
+        cplx._index = index
+        cplx._lowlink = index
         index += 1
-        S.append(complex)
+        S.append(cplx)
 
-        for reaction in reactions_consuming[complex]:
-            if (reaction.arity == (1, 1)) and is_fast(reaction):
-                # if is_fast(reaction):
-                # print '<rxn>' + repr(reaction) + '</rxn>'
+        for reaction in reactions_consuming[cplx]:
+            if reaction.arity == (1, 1) and is_fast(reaction):
                 for product in reaction.products:
 
                     # Product hasn't been traversed; recurse
-                    if(product._index is None):
+                    if product._index is None :
                         index = strongconnect(product, index)
-                        complex._lowlink = min(
-                            product._lowlink, complex._lowlink)
+                        cplx._lowlink = min(product._lowlink, cplx._lowlink)
 
                     # Product is in the current neighborhood
                     elif product in S:
-                        complex._lowlink = min(product._index, complex._lowlink)
-                # print "<ll
-                # complex='"+str(complex)+"'>"+str(complex._lowlink)+"</ll>"
+                        cplx._lowlink = min(product._index, cplx._lowlink)
 
-        if(complex._lowlink == complex._index):
+        if cplx._lowlink == cplx._index:
             scc = []
-            while(True):
+            while True:
                 next = S.pop()
                 scc.append(next)
-                if(next == complex):
+                if next == cplx:
                     break
-
             SCCs.append(scc)
-            # print "<scc>" + str(scc) + "</scc>"
-
-        # print "<index i='"+str(index)+"' />"
-        # print "</"+str(complex)+">"
-
         return index
 
     index = 0
@@ -729,3 +717,55 @@ def tarjans(complexes, reactions, reactions_consuming, is_fast):
 
     return SCCs
 
+# NOTE: temporary -- mainly a copy of ReactionGraph.get_stationary_distribution(scc)
+def stationary_distribution(T, nodes = None):
+    """
+    Take a strongly connected component and calculate the stationary distribution.
+
+    Args:
+        T (numpy.matrix): a rate matrix 
+        nodes (list, optional): A list of objects for which stationary distribution is to
+            be determined.
+
+    Returns:
+        [:obj:`dict()`]: Stationary distributions: dict['cplx'] = sdist (flt)
+    """
+    L = len(T)
+    T0 = np.copy(T)
+
+    # compute diagonal elements of T
+    T_diag = np.sum(T, axis=0)  # sum over columns
+    for i in xrange(L):
+        T[i][i] = -T_diag[i]
+
+    # calculate eigenvalues
+    (w, v) = np.linalg.eig(T)
+    # w is array of eigenvalues
+    # v is array of eigenvectors, where column v[:,i] is eigenvector
+    # corresponding to the eigenvalue w[i].
+
+    # find eigenvector corresponding to eigenvalue zero (or nearly 0)
+    epsilon = 1e-5
+    i = np.argmin(np.abs(w))
+    if abs(w[i]) > epsilon:
+        logging.warn(
+            ("Bad stationary distribution for resting set transition matrix. " +
+             "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
+             "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
+            (w(i), epsilon, str(w)))
+    s = v[:, i]
+
+    # check that the stationary distribution is good
+    if not ((s >= 0).all() or (s <= 0).all()) : 
+        #for x,y in zip(s, nodes):
+        #    print y, '"', y.kernel_string, x
+        logging.error('Stationary distribution of resting set complex should not be an eigenvector of mixed sign. Condensed reaction rates may be incorrect.')
+
+    s = s / np.sum(s)
+    if not (abs(np.sum(s) - 1) < epsilon) :
+        logging.error('Stationary distribution of resting set complex should sum to 1 after normalization. Condensed reaction rates may be incorrect.')
+
+    return s
+    ## return dict mapping complexes to stationary probabilities
+    #return {c: s[i] for (c, i) in complex_indices.iteritems()}
+    

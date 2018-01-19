@@ -6,7 +6,7 @@ from peppercornenumerator.enumerator import Enumerator
 from peppercornenumerator.objects import PepperDomain
 from peppercornenumerator.objects import PepperComplex 
 from peppercornenumerator.objects import PepperReaction
-from peppercornenumerator.objects import PepperRestingSet
+from peppercornenumerator.objects import PepperMacrostate
 from peppercornenumerator.objects import clear_memory
 
 from peppercornenumerator.condense import SetOfFates, ReactionGraph
@@ -185,18 +185,18 @@ class CondenseTests(unittest.TestCase):
         # (rs2) c2                c5 (rs4)
 
         # RestingSet representation
-        rs1 = PepperRestingSet([complexes['c1']], memorycheck=False)
-        rs2 = PepperRestingSet([complexes['c2']], memorycheck=False)
-        rs3 = PepperRestingSet([complexes['c4']], memorycheck=False)
-        rs4 = PepperRestingSet([complexes['c5']], memorycheck=False)
+        rs1 = PepperMacrostate([complexes['c1']], memorycheck=False)
+        rs2 = PepperMacrostate([complexes['c2']], memorycheck=False)
+        rs3 = PepperMacrostate([complexes['c4']], memorycheck=False)
+        rs4 = PepperMacrostate([complexes['c5']], memorycheck=False)
 
-        # Frozensets instead of restingsets
+        # Frozensets instead of RestingMacrostates
         fs1 = frozenset([complexes['c1']])
         fs2 = frozenset([complexes['c2']])
         fs3 = frozenset([complexes['c4']])
         fs4 = frozenset([complexes['c5']])
 
-        cplx_to_state = { # maps Complex to its RestingSet
+        cplx_to_state = { # maps Complex to its RestingMacrostate
                 complexes['c1'] : rs1,
                 complexes['c2'] : rs2,
                 complexes['c4'] : rs3, 
@@ -218,7 +218,7 @@ class CondenseTests(unittest.TestCase):
                 complexes['c5'] : fs4
                 }
 
-        set_to_fate = { # maps frozenset to the RestingSet
+        set_to_fate = { # maps frozenset to the RestingMacrostate
                 fs1 : rs1,
                 fs2 : rs2,
                 fs3 : rs3,
@@ -318,13 +318,13 @@ class CondenseTests(unittest.TestCase):
         
         L1 = complexes['L1']
         L2 = complexes['L2']
-        rL2 = PepperRestingSet([L2, L1], memorycheck=False)
+        rL2 = PepperMacrostate([L2, L1], memorycheck=False)
         Out = complexes['Out']
-        rOut = PepperRestingSet([Out], memorycheck=False)
+        rOut = PepperMacrostate([Out], memorycheck=False)
         Waste = complexes['Waste']
-        rWaste = PepperRestingSet([Waste], memorycheck=False)
+        rWaste = PepperMacrostate([Waste], memorycheck=False)
         T2 = complexes['T2']
-        rT2 = PepperRestingSet([T2], memorycheck=False)
+        rT2 = PepperMacrostate([T2], memorycheck=False)
 
         # calculated by hand...
         cr1  = PepperReaction([rL2, rT2], [rWaste, rOut], 'condensed', rate = 2.4e6, memorycheck=False)
@@ -412,14 +412,14 @@ class CondenseTests(unittest.TestCase):
         LCRF2 = complexes['LCRF2']
 
         # always resting sets
-        rs1 = PepperRestingSet([L], memorycheck=False)
-        rs2 = PepperRestingSet([C], memorycheck=False)
-        rs3 = PepperRestingSet([R], memorycheck=False)
-        rs4 = PepperRestingSet([T], memorycheck=False)
-        rs5 = PepperRestingSet([LR], memorycheck=False)
+        rs1 = PepperMacrostate([L], memorycheck=False)
+        rs2 = PepperMacrostate([C], memorycheck=False)
+        rs3 = PepperMacrostate([R], memorycheck=False)
+        rs4 = PepperMacrostate([T], memorycheck=False)
+        rs5 = PepperMacrostate([LR], memorycheck=False)
 
-        rs6 = PepperRestingSet([CR, CRF], memorycheck=False)
-        rs7 = PepperRestingSet([LC, LCF], memorycheck=False)
+        rs6 = PepperMacrostate([CR, CRF], memorycheck=False)
+        rs7 = PepperMacrostate([LC, LCF], memorycheck=False)
 
         cplx_to_fate = { # maps Complex to its SetOfFates
                 L  : SetOfFates([[rs1]]), 
@@ -563,8 +563,8 @@ class CondenseTests(unittest.TestCase):
         reaction [branch-3way    =     0.122307 /s   ] e0 -> gate
         reaction [branch-3way    =      41.6667 /s   ] e5 -> e7
         reaction [branch-3way    =      41.6667 /s   ] e5 -> e18
-        reaction [open           =      306.345 /s   ] e5 -> t23 + gate
-        reaction [open           =      306.345 /s   ] e7 -> e0 + t23
+        #reaction [open           =      306.345 /s   ] e5 -> t23 + gate
+        #reaction [open           =      306.345 /s   ] e7 -> e0 + t23
         reaction [branch-3way    =     0.122307 /s   ] e7 -> e5
         reaction [branch-3way    =      41.6667 /s   ] e7 -> e12 + e13
         reaction [branch-3way    =     0.122307 /s   ] e18 -> e5
@@ -579,6 +579,7 @@ class CondenseTests(unittest.TestCase):
         t23 = complexes['t23']
         enum = Enumerator(complexes.values())
         enum.enumerate() # or enum.dry_run()
+
         self.assertEqual(sorted(enum.reactions), sorted(reactions))
 
         """
@@ -743,7 +744,7 @@ class CondenseCRNs(unittest.TestCase):
        self.reactions.add(PepperReaction(reactants, products, rtype.strip(), rate=k))
 
     def rs(self, names):
-        return PepperRestingSet(map(self.cplx, names), memorycheck=False)
+        return PepperMacrostate(map(self.cplx, names), memorycheck=False)
 
     # Tests start here... 
     def test_CondenseGraphCRN_01(self):

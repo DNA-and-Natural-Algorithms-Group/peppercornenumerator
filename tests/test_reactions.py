@@ -1217,9 +1217,9 @@ class Compare_MaxHelix(unittest.TestCase):
         enum.enumerate()
 
         self.assertTrue(path1 in enum.reactions)
-        self.assertTrue(path1r in enum.reactions)
+        #self.assertTrue(path1r in enum.reactions)
         self.assertTrue(path2 in enum.reactions)
-        self.assertTrue(path2r in enum.reactions)
+        #self.assertTrue(path2r in enum.reactions)
         self.assertTrue(path3 in enum.reactions)
         self.assertTrue(path4 in enum.reactions)
         self.assertTrue(path4r in enum.reactions)

@@ -1,6 +1,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 import logging
+import numpy as np
 
 from dsdobjects import clear_memory
 from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingSet
@@ -172,7 +173,6 @@ class PepperComplex(DSD_Complex):
         """
         return cmp(self.canonical_form, other.canonical_form)
 
-
 class PepperReaction(DSD_Reaction):
     RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
 
@@ -203,9 +203,11 @@ class PepperReaction(DSD_Reaction):
             return '[{:12g} {:4s} ] {} -> {}'.format(self.rate, self.rateunits,
                     " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
 
-class PepperRestingSet(DSD_RestingSet):
+class PepperMacrostate(DSD_RestingSet):
     def __init__(self, *kargs, **kwargs):
-        super(PepperRestingSet, self).__init__(*kargs, **kwargs)
+        super(PepperMacrostate, self).__init__(*kargs, **kwargs)
+        self._internal_reactions = set()
+        self._exit_reactions = set()
 
     def __str__(self):
         return self.name
@@ -216,4 +218,104 @@ class PepperRestingSet(DSD_RestingSet):
         """
         return cmp(self.canonical_form, other.canonical_form)
 
+    def __len__(self):
+        """
+        The number of species in a resting set
+        """
+        return len(self._complexes)
+
+
+    def add_reaction(self, rxn):
+        assert len(rxn.reactants) == 1
+        assert rxn.reactants[0] in self._complexes
+        is_internal = rxn.products[0] in self._complexes
+        if is_internal:
+            assert len(rxn.products) == 1
+            self._internal_reactions.add(rxn)
+        else :
+            self._exit_reactions.add(rxn)
+
+    #def reactions_within(self):
+    #    raise NotImplementedError
+
+    #def reactions_outgoing(self):
+    #    # Should be empty!
+    #    raise NotImplementedError
+    
+    @property
+    def is_resting(self):
+        return len(self._exit_reactions) == 0
+
+    @property
+    def is_transient(self):
+        return not self.is_resting
+
+    def is_exit(self, cplx):
+        return any(map(lambda r: cplx in r.reactants, self._exit_reactions))
+
+    def get_stationary_distribution(self, warnings=True):
+        """
+        Take a strongly connected component and calculate the stationary distribution.
+
+        Args:
+            T (numpy.matrix): a rate matrix 
+            nodes (list, optional): A list of objects for which stationary distribution is to
+                be determined.
+
+        Returns:
+            [:obj:`dict()`]: Stationary distributions: dict['cplx'] = sdist (flt)
+        """
+        reactions = self._internal_reactions
+
+        # Initialize a Transition Matrix where numerical index corresponds to each complex
+        L = len(self._complexes)
+        indices = {c: i for (i, c) in enumerate(self._complexes)}
+        T = np.zeros((L, L))
+
+        for rxn in reactions:
+            # r : a -> b
+            # T_{b,a} = rate(r : a -> b)
+            #if rxn.reactants[0] in indices and rxn.products[0] in indices:
+            a = rxn.reactants[0]
+            b = rxn.products[0]
+            T[indices[b]][indices[a]] = rxn.rate
+
+        # compute diagonal elements of T
+        T_diag = np.sum(T, axis=0)  # sum over columns
+        for i in xrange(L):
+            T[i][i] = -T_diag[i]
+
+        # calculate eigenvalues
+        (w, v) = np.linalg.eig(T)
+        # w is array of eigenvalues
+        # v is array of eigenvectors, where column v[:,i] is eigenvector
+        # corresponding to the eigenvalue w[i].
+
+        # find eigenvector corresponding to eigenvalue zero (or nearly 0)
+        epsilon = 1e-5
+        i = np.argmin(np.abs(w))
+        if abs(w[i]) > epsilon:
+            logging.warn(
+                ("Bad stationary distribution for resting set transition matrix. " +
+                 "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
+                 "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
+                (w(i), epsilon, str(w)))
+        s = v[:, i]
+
+        # check that the stationary distribution is good
+        if warnings and not ((s >= 0).all() or (s <= 0).all()) : 
+            #for cl,sd in zip(self._complexes, s):
+            #    print(cl, '=', cl.kernel_string, sd)
+            #for rxn in reactions:
+            #    print(rxn, rxn.rate)
+            logging.error('Stationary distribution of resting set complex' +
+                    'should not be an eigenvector of mixed sign.')
+
+        s = s / np.sum(s)
+        if not (abs(np.sum(s) - 1) < epsilon) :
+            logging.error('Stationary distribution of resting set complex' +
+                    'should sum to 1 after normalization. Condensed reaction' +
+                    'rates may be incorrect.')
+
+        return zip(self._complexes, s)
 

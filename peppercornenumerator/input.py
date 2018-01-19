@@ -141,8 +141,8 @@ def read_pil(data, is_file = False, alpha = ''):
             reaction = PepperReaction(reactants, products, rtype=rtype, rate=rate)
             reactions.append(reaction)
 
-        elif line[0] == 'resting-state':
-            logging.warning("Ignoring resting-state specification: {}".format(name))
+        elif line[0] == 'resting-macrostate':
+            logging.warning("Ignoring resting-macrostate specification: {}".format(name))
 
         else :
             raise NotImplementedError('cannot interpret keyword:', line[0])
@@ -248,8 +248,8 @@ def read_kernel(data, is_file = False):
             reaction = PepperReaction(reactants, products, rtype=rtype, rate=rate)
             reactions.append(reaction)
 
-        elif line[0] == 'resting-state':
-            logging.warning("Ignoring resting-state specification: {}".format(name))
+        elif line[0] == 'resting-macrostate':
+            logging.warning("Ignoring resting-macrostate specification: {}".format(name))
         else :
             raise NotImplementedError('cannot interpret keyword:', line[0])
 
