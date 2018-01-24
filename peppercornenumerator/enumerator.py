@@ -104,7 +104,7 @@ class Enumerator(object):
         #
         self._k_slow = 0 
         self._k_fast = 0
-        self.resting_threshold = 0
+        self._min_p_steady = 0
 
         # Settings for reaction enumeration. 
         self._max_helix = True
@@ -326,6 +326,7 @@ class Enumerator(object):
 
                 rm_reactions = []
                 for reaction in self.reactions:
+                    #NOTE: This should only matter in the Ctrl-C case, right?
                     reaction_ok = all((prod in complexes) for prod in reaction.products) and \
                                   all((reac in complexes) for reac in reaction.reactants)
 
@@ -502,7 +503,7 @@ class Enumerator(object):
                     # Now enumerate all uphill reactions from metastable states.
                     while True:
                         segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
-                                min_occupancy=self.resting_threshold,
+                                min_occupancy=self._min_p_steady,
                                 check_transients=False)
 
                         new_reactions = False
@@ -534,7 +535,7 @@ class Enumerator(object):
         # Now segment the neighborhood into transient and resting complexes
         # by finding the strongly connected components.
         segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
-                min_occupancy=self.resting_threshold)
+                min_occupancy=self._min_p_steady)
 
         # TODO: check using sets instead
         # Resting complexes are added to S
@@ -836,13 +837,20 @@ def segment_neighborhood(complexes, reactions, min_occupancy=None,
 
         if ms.is_transient:
             transient_complexes += (scc)
+            
+            # NOTE: this is insufficient, it fixes only bm12 reactions we would
+            # need a better model where the overall exit rate is computed
+            # starting from ! So if
+            # we have a k-slow, then sthg like: while k_exit < k_slow ...
             if check_transients and min_occupancy:
+                print 'begin', map(str, ms.complexes)
                 for (c, s) in sorted(ms.get_stationary_distribution(warnings=False),
                         key=lambda x:x[1], reverse = True):
                     if s < min_occupancy or ms.is_exit(c) :
+                        print 'b', c
                         break
                     else :
-                        #print 'found resting in tranient set', c
+                        print 'found resting in tranient set', c
                         transient_complexes.remove(c)
                         resting_complexes.append(c)
 

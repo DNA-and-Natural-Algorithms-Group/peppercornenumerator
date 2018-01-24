@@ -195,7 +195,7 @@ def main(cl_opts):
 
     enum.k_slow = cl_opts.k_slow
     enum.k_fast = cl_opts.k_fast
-    enum.resting_threshold = cl_opts.min_occupancy
+    enum._min_p_steady = cl_opts.min_occupancy
 
     enum.release_cutoff_1_1 = cl_opts.release_cutoff_1_1
     enum.release_cutoff_1_N = cl_opts.release_cutoff_1_N
