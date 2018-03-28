@@ -377,7 +377,6 @@ class ReactionGraph(object):
             reaction_rate += reactant_probabilities * k * product_probability
 
             if isinstance(reaction_rate, complex):
-                raise Exception('before we continue, see when that happens...')
                 if reaction_rate.imag > 0:
                     logging.warn("Detailed reaction {} contributes a complex rate of {} + {} " + \
                          " to condensed reaction {}.".format( 

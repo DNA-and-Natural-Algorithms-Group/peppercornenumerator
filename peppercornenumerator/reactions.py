@@ -13,17 +13,6 @@ from peppercornenumerator.utils import Loop, wrap
 from peppercornenumerator.objects import PepperComplex, PepperReaction, DSDDuplicationError
 from peppercornenumerator.objects import make_pair_table, pair_table_to_dot_bracket
 
-
-auto_name = 0
-
-def get_auto_name(prefix=''):
-    """
-    Returns a new unique name
-    """
-    global auto_name
-    auto_name += 1
-    return prefix + str(auto_name)
-
 # Rate constant formulas
 # ----------------------------------------------------------------------------
 
@@ -51,9 +40,9 @@ def polymer_link_length(before, after):
     """
     L_stem = 2.0 / 0.43  # rough equivalent number of single-stranded nucleotides to span a stem
     if not before.is_open:
-        L_before = 1 + before.bases + L_stem * before.stems
+        L_before = 1 + before.bases + before.stems + L_stem * before.stems
     if not after.is_open:
-        L_after = 1 + after.bases + L_stem * after.stems
+        L_after = 1 + after.bases + after.stems + L_stem * after.stems
     # for both closed & open cases, assume shorter length matters most
     if not after.is_open and not before.is_open:
         return min(L_before, L_after)
@@ -126,7 +115,7 @@ def show_loops(before, after, message):
     for step in after.parts:
         print " | " if step is None else step[0].name + ("!" if step[1] is not None else "") + " ",
     print " ] is_open = %r, stems = %d, bases = %d" % (after.is_open, after.stems, after.bases)
-    raw_input(message)
+    print(message)
 
 
 def branch_3way_remote_rate(length, before, after, debug = False):

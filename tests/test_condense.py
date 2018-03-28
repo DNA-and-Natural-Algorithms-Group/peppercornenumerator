@@ -563,8 +563,8 @@ class CondenseTests(unittest.TestCase):
         reaction [branch-3way    =     0.122307 /s   ] e0 -> gate
         reaction [branch-3way    =      41.6667 /s   ] e5 -> e7
         reaction [branch-3way    =      41.6667 /s   ] e5 -> e18
-        #reaction [open           =      306.345 /s   ] e5 -> t23 + gate
-        #reaction [open           =      306.345 /s   ] e7 -> e0 + t23
+        reaction [open           =      306.345 /s   ] e5 -> t23 + gate
+        reaction [open           =      306.345 /s   ] e7 -> e0 + t23
         reaction [branch-3way    =     0.122307 /s   ] e7 -> e5
         reaction [branch-3way    =      41.6667 /s   ] e7 -> e12 + e13
         reaction [branch-3way    =     0.122307 /s   ] e18 -> e5

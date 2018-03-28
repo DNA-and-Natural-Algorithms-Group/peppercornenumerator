@@ -7,7 +7,6 @@ from dsdobjects import clear_memory
 from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingSet
 from dsdobjects import DSDObjectsError, DSDDuplicationError
 from dsdobjects.utils import split_complex 
-
 # not needed here, but passing it on...
 from dsdobjects.utils import make_pair_table, pair_table_to_dot_bracket 
 
@@ -187,11 +186,34 @@ class PepperReaction(DSD_Reaction):
             raise DSDObjectsError('Reaction type not supported! ' + 
             'Set supported reaction types using PepperReaction.RTYPES')
 
+        self._reverse_reaction = None
+
     def __cmp__(self, other):
         """
         ReactionPathway objects are sorted by their canonical form.
         """
         return cmp(self.canonical_form, other.canonical_form)
+
+    @property
+    def reverse_reaction(self):
+        return self._reverse_reaction
+
+    @reverse_reaction.setter
+    def reverse_reaction(self, rxn):
+        def rev_rtype(rtype, arity):
+            """Returns the reaction type of a corresponding reverse reaction. """
+            if rtype == 'open' and arity == (1,1):
+                return 'bind11'
+            elif rtype == 'open' and arity == (1,2):
+                return 'bind21'
+            elif rtype == 'bind11' or rtype == 'bind21':
+                return 'open'
+            else:
+                return rtype
+
+        if rxn is not False:
+            assert rxn.rtype == rev_rtype(self.rtype, self.arity)
+        self._reverse_reaction = rxn
 
     @property
     def full_string(self):
@@ -209,6 +231,44 @@ class PepperMacrostate(DSD_RestingSet):
         self._internal_reactions = set()
         self._exit_reactions = set()
 
+        # all reactions consuming a particular species
+        #self._reactions_consuming = dict()
+        self._stationary_distribution = []
+        self._exit_probabilities = []
+
+    @property
+    def is_resting(self):
+        """True iff it is a resting macrostate. """
+        return len(self._exit_reactions) == 0
+
+    @property
+    def is_transient(self):
+        """True iff it is a transient macrostate. """
+        return not self.is_resting
+
+    #@property
+    #def reactions(self):
+    #    return self._exit_reactions + self._internal_reactions
+
+    def add_reaction(self, rxn):
+        """Adds a reaction to the macrostate. """
+        assert len(rxn.reactants) == 1
+        assert rxn.reactants[0] in self._complexes
+        is_internal = rxn.products[0] in self._complexes
+        if is_internal:
+            assert len(rxn.products) == 1
+            self._internal_reactions.add(rxn)
+        else :
+            self._exit_reactions.add(rxn)
+
+        #if rxn.reactants[0] in self._reactions_consuming:
+        #    self._reactions_consuming[rxn.reactants[0]].add(rxn)
+        #else :
+        #    self._reactions_consuming[rxn.reactants[0]] = set([rxn])
+
+        self._stationary_distribution = []
+        self._exit_probabilities = []
+
     def __str__(self):
         return self.name
 
@@ -224,34 +284,81 @@ class PepperMacrostate(DSD_RestingSet):
         """
         return len(self._complexes)
 
+    #def is_exit(self, cplx):
+    #    return any(map(lambda r: cplx in r.reactants, self._exit_reactions))
 
-    def add_reaction(self, rxn):
-        assert len(rxn.reactants) == 1
-        assert rxn.reactants[0] in self._complexes
-        is_internal = rxn.products[0] in self._complexes
-        if is_internal:
-            assert len(rxn.products) == 1
-            self._internal_reactions.add(rxn)
-        else :
-            self._exit_reactions.add(rxn)
-
-    #def reactions_within(self):
-    #    raise NotImplementedError
-
-    #def reactions_outgoing(self):
-    #    # Should be empty!
-    #    raise NotImplementedError
+    def get_exit_probabilities(self, warnings=True):
+        """
+        """
+        # build set and list of elements in SCC; assign a numerical index to each complex
+        scc_set = frozenset(self._complexes)
+        complex_indices = {c: i for (i, c) in enumerate(self._complexes)}
     
-    @property
-    def is_resting(self):
-        return len(self._exit_reactions) == 0
+        # sort reactions into internal and outgoing; assign a numerical index to each reaction
+        r_outgoing = self._exit_reactions
+        r_internal = self._internal_reactions
+        exit_indices = {r: i for (i, r) in enumerate(r_outgoing)}
+    
+        # L = # of complexes in SCC
+        L = len(self._complexes)
+    
+        # e = # of exit pathways
+        e = len(r_outgoing)
+    
+        # add transition rates for each internal reaction
+        T = np.zeros((L, L))
+        for r in r_internal:
+            assert len(r.reactants) == 1
+            assert len(r.products) == 1
+            a = r.reactants[0]
+            b = r.products[0]
+            T[complex_indices[a]][complex_indices[b]] = r.rate
 
-    @property
-    def is_transient(self):
-        return not self.is_resting
+        # add transition rates for each outgoing reaction
+        Te = np.zeros((L, e))
+        for r in r_outgoing:
+            a = r.reactants[0]
+            Te[complex_indices[a]][exit_indices[r]] = r.rate
+    
+        # the full transition matrix P_{L+e x L+e} would be
+        #
+        # P = ( Q_{LxL}  R_{Lxe}   )
+        #     ( 0_{exL}  I_{exe}   )
+        #
+        # but we really only care about Q to calculate the fundamental matrix,
+        # so we construct
+        #
+        # P = (T_{LxL} Te_{Lxe})
+        P = np.hstack((T, Te))
+    
+        # then normalize P along each row, to get the overall transition
+        # probabilities, e.g. P_ij = P(i -> j), where i,j in 0...L+e
+        P = P / np.sum(P, 1)[:, np.newaxis]
+    
+        # extract the interior transition probabilities (Q_{LxL})
+        Q = P[:, 0:L]
+    
+        # extract the exit probabilities (R_{Lxe})
+        R = P[:, L:L + e]
+    
+        # calculate the fundamental matrix (N = (I_L - Q)^-1)
+        N = np.linalg.inv(np.eye(L) - Q)
 
-    def is_exit(self, cplx):
-        return any(map(lambda r: cplx in r.reactants, self._exit_reactions))
+        # make sure all elements of fundamental matrix are >= 0
+        if not (N >= 0).all() :  # --- commented out by EW (temporarily)
+            logging.error('Negative elements in fundamental matrix. Condensed reaction rates may be incorrect.')
+    
+        # calculate the absorption matrix (B = NR)
+        B = np.dot(N, R)
+
+        # --- added by EW as a weaker surrugate for the above, when necessary
+        # assert (B >= 0).all()
+    
+        # return dict mapping tuples of (incoming complex, outgoing reaction)
+        # to exit probabilities
+        return {(c, r): B[i, j] for (c, i) in complex_indices.iteritems()
+                for (r, j) in exit_indices.iteritems()}
+
 
     def get_stationary_distribution(self, warnings=True):
         """
@@ -265,57 +372,60 @@ class PepperMacrostate(DSD_RestingSet):
         Returns:
             [:obj:`dict()`]: Stationary distributions: dict['cplx'] = sdist (flt)
         """
-        reactions = self._internal_reactions
+        if not self._stationary_distribution :
 
-        # Initialize a Transition Matrix where numerical index corresponds to each complex
-        L = len(self._complexes)
-        indices = {c: i for (i, c) in enumerate(self._complexes)}
-        T = np.zeros((L, L))
+            reactions = self._internal_reactions
 
-        for rxn in reactions:
-            # r : a -> b
-            # T_{b,a} = rate(r : a -> b)
-            #if rxn.reactants[0] in indices and rxn.products[0] in indices:
-            a = rxn.reactants[0]
-            b = rxn.products[0]
-            T[indices[b]][indices[a]] = rxn.rate
+            # Initialize a Transition Matrix where numerical index corresponds to each complex
+            L = len(self._complexes)
+            indices = {c: i for (i, c) in enumerate(self._complexes)}
+            T = np.zeros((L, L))
 
-        # compute diagonal elements of T
-        T_diag = np.sum(T, axis=0)  # sum over columns
-        for i in xrange(L):
-            T[i][i] = -T_diag[i]
+            for rxn in reactions:
+                # r : a -> b
+                # T_{b,a} = rate(r : a -> b)
+                #if rxn.reactants[0] in indices and rxn.products[0] in indices:
+                a = rxn.reactants[0]
+                b = rxn.products[0]
+                T[indices[b]][indices[a]] = rxn.rate
 
-        # calculate eigenvalues
-        (w, v) = np.linalg.eig(T)
-        # w is array of eigenvalues
-        # v is array of eigenvectors, where column v[:,i] is eigenvector
-        # corresponding to the eigenvalue w[i].
+            # compute diagonal elements of T
+            T_diag = np.sum(T, axis=0)  # sum over columns
+            for i in xrange(L):
+                T[i][i] = -T_diag[i]
 
-        # find eigenvector corresponding to eigenvalue zero (or nearly 0)
-        epsilon = 1e-5
-        i = np.argmin(np.abs(w))
-        if abs(w[i]) > epsilon:
-            logging.warn(
-                ("Bad stationary distribution for resting set transition matrix. " +
-                 "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
-                 "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
-                (w(i), epsilon, str(w)))
-        s = v[:, i]
+            # calculate eigenvalues
+            (w, v) = np.linalg.eig(T)
+            # w is array of eigenvalues
+            # v is array of eigenvectors, where column v[:,i] is eigenvector
+            # corresponding to the eigenvalue w[i].
 
-        # check that the stationary distribution is good
-        if warnings and not ((s >= 0).all() or (s <= 0).all()) : 
-            #for cl,sd in zip(self._complexes, s):
-            #    print(cl, '=', cl.kernel_string, sd)
-            #for rxn in reactions:
-            #    print(rxn, rxn.rate)
-            logging.error('Stationary distribution of resting set complex' +
-                    'should not be an eigenvector of mixed sign.')
+            # find eigenvector corresponding to eigenvalue zero (or nearly 0)
+            epsilon = 1e-5
+            i = np.argmin(np.abs(w))
+            if abs(w[i]) > epsilon:
+                logging.warn(
+                    ("Bad stationary distribution for resting set transition matrix. " +
+                     "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
+                     "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
+                    (w(i), epsilon, str(w)))
+            s = v[:, i]
 
-        s = s / np.sum(s)
-        if not (abs(np.sum(s) - 1) < epsilon) :
-            logging.error('Stationary distribution of resting set complex' +
-                    'should sum to 1 after normalization. Condensed reaction' +
-                    'rates may be incorrect.')
+            # check that the stationary distribution is good
+            if warnings and not ((s >= 0).all() or (s <= 0).all()) : 
+                #for cl,sd in zip(self._complexes, s):
+                #    print(cl, '=', cl.kernel_string, sd)
+                #for rxn in reactions:
+                #    print(rxn, rxn.rate)
+                logging.error('Stationary distribution of resting set complex' +
+                        'should not be an eigenvector of mixed sign.')
 
-        return zip(self._complexes, s)
+            self._stationary_distribution = s / np.sum(s)
+
+            if not (abs(np.sum(self._stationary_distribution) - 1) < epsilon) :
+                logging.error('Stationary distribution of resting set complex' +
+                        'should sum to 1 after normalization. Condensed reaction' +
+                        'rates may be incorrect.')
+
+        return zip(self._complexes, self._stationary_distribution)
 

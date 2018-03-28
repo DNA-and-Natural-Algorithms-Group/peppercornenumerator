@@ -92,8 +92,10 @@ def add_peppercorn_args(parser):
         help="Unimolecular reactions slower than this rate will be discarded.")
     semantics.add_argument( '--k-fast', dest='k_fast', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be marked as slow.")
-    semantics.add_argument( '--min-occupancy', default=0.0, type=float, metavar='<flt>',
+    semantics.add_argument( '--p-min', default=0.0, type=float, metavar='<flt>',
         help="""Minimal occupancy of a complex in steady state to engage into further reactions.""")
+    semantics.add_argument( '--p-loc', default=0.0, type=float, metavar='<flt>',
+        help="""Local probability threshold to accept an unfavorable reaction.""")
 
     semantics.add_argument( '--release-cutoff-1-1', type=int, default=6, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
@@ -195,7 +197,8 @@ def main(cl_opts):
 
     enum.k_slow = cl_opts.k_slow
     enum.k_fast = cl_opts.k_fast
-    enum._min_p_steady = cl_opts.min_occupancy
+    enum._p_min = cl_opts.p_min
+    enum._p_loc = cl_opts.p_loc
 
     enum.release_cutoff_1_1 = cl_opts.release_cutoff_1_1
     enum.release_cutoff_1_N = cl_opts.release_cutoff_1_N

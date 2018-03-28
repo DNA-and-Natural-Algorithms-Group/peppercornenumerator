@@ -12,7 +12,7 @@ import itertools
 from peppercornenumerator.objects import PepperMacrostate
 from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
 import peppercornenumerator.utils as utils
-import peppercornenumerator.reactions as reactions
+import peppercornenumerator.reactions as reactlib
 
 
 # There should be better control of this limit -- only set it when
@@ -20,8 +20,8 @@ import peppercornenumerator.reactions as reactions
 sys.setrecursionlimit(20000)
 
 
-FAST_REACTIONS = {1: [reactions.bind11, reactions.open,
-                      reactions.branch_3way, reactions.branch_4way]}
+FAST_REACTIONS = {1: [reactlib.bind11, reactlib.open,
+                      reactlib.branch_3way, reactlib.branch_4way]}
 """
 Dictionary of reaction functions considered *fast* for a given "arity".
 Keys are arities (e.g. 1 = unimolecular, 2 = bimolecular, 3 = trimolecular,
@@ -31,7 +31,7 @@ unimolecular fast reactions (arity = 1) are supported.
 
 SLOW_REACTIONS = {
     1: [],
-    2: [reactions.bind21]
+    2: [reactlib.bind21]
 }
 """
 A dictionary of reaction functions considered *slow* for a given "arity".
@@ -71,6 +71,9 @@ class Enumerator(object):
         """
         # System initialization
         self._initial_complexes = initial_complexes
+        for cplx in initial_complexes:
+            if not cplx.is_connected:
+                raise ValueError('Initial complex is not connected: {}'.format(cplx))
         self._domains = self.get_domains(self._initial_complexes)
 
         # list containing all detailed reactions after enumeration
@@ -104,7 +107,8 @@ class Enumerator(object):
         #
         self._k_slow = 0 
         self._k_fast = 0
-        self._min_p_steady = 0
+        self._p_min = 0
+        self._p_loc = 0
 
         # Settings for reaction enumeration. 
         self._max_helix = True
@@ -202,13 +206,6 @@ class Enumerator(object):
 
     # ------------
     @property
-    def auto_name(self):
-        return reactions.auto_name
-
-    def get_auto_name(self):
-        return reactions.get_auto_name()
-
-    @property
     def initial_complexes(self):
         """
         Complexes present in the system's initial configuration
@@ -256,6 +253,17 @@ class Enumerator(object):
         if self._resting_complexes is None:
             raise utils.PeppercornUsageError("enumerate not yet called!")
         return self._resting_complexes[:]
+
+    @property
+    def improbable_resting_complexes(self):
+        """
+        List of complexes enumerated that are within resting states.
+        :py:meth:`.enumerate` must be called before access.
+        """
+        if self._resting_complexes is None:
+            raise utils.PeppercornUsageError("enumerate not yet called!")
+        return self._resting_complexes[:]
+
 
     @property
     def transient_complexes(self):
@@ -472,8 +480,6 @@ class Enumerator(object):
         N_reactions = []
 
         logging.debug("Processing neighborhood: %s" % source)
-        M = set()   # A set of exhaustively enumerated metastable complexes.
-                    # That means "resting complexes" within fast reactions.
 
         try:
             # First find all of the complexes accessible through horizontal or
@@ -485,8 +491,11 @@ class Enumerator(object):
                 logging.debug("Fast reactions from {:s}... ({:d} remaining in F)".format(
                     element, len(self._F)))
 
-                # Return *all* horizontal or downhill reactions:
-                reactions = self.get_instant_reactions(element)
+                # Return valid fast reactions:
+                if self._p_loc:
+                    reactions = self.get_limited_fast_reactions(element, self._p_loc)
+                else :
+                    reactions = self.get_fast_reactions(element)
 
                 # Add new products to F
                 new_products = self.get_new_products(reactions)
@@ -498,28 +507,7 @@ class Enumerator(object):
 
                 logging.debug("Generated {:d} new fast reactions.".format(len(reactions)))
                 logging.debug("Generated {:d} new products.".format(len(new_products)))
-
-                if len(self._F) == 0:
-                    # Now enumerate all uphill reactions from metastable states.
-                    while True:
-                        segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
-                                min_occupancy=self._min_p_steady,
-                                check_transients=False)
-
-                        new_reactions = False
-                        for resting in segmented_neighborhood['resting_complexes']:
-                            if resting not in M:
-                                # Return *all* horizontal or downhill reactions:
-                                reactions = self.get_uphill_reactions(resting)
-                                if reactions:
-                                    new_reactions = True
-                                    new_products = self.get_new_products(reactions)
-                                    self._F += (new_products)
-                                    N_reactions += (reactions)
-                                M.add(resting)
-                        if len(self._F) or not new_reactions:
-                            break
-
+                   
                 # Display new reactions in interactive mode
                 if self.interactive:
                     self.reactions_interactive(element, reactions, 'fast')
@@ -535,7 +523,7 @@ class Enumerator(object):
         # Now segment the neighborhood into transient and resting complexes
         # by finding the strongly connected components.
         segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
-                min_occupancy=self._min_p_steady)
+                                                      p_min=self._p_min)
 
         # TODO: check using sets instead
         # Resting complexes are added to S
@@ -605,38 +593,61 @@ class Enumerator(object):
 
         return valid_reactions
 
-    def get_instant_reactions(self, cplx):
-        """ Returns a list of energetically neutral or favorable reactions
-        using complex as a reagent.
+    def get_limited_fast_reactions(self, cplx, p_loc):
+        reactions = self.get_fast_reactions(cplx)
 
-        Args:
-            cplx (:obj:`PepperComplex`): A 
+        def rev_rtype(rtype, arity):
+            """Returns the reaction type of a corresponding reverse reaction. """
+            if rtype == 'open' and arity == (1,1):
+                return 'bind11'
+            elif rtype == 'open' and arity == (1,2):
+                return 'bind21'
+            elif rtype == 'bind11' or rtype == 'bind21':
+                return 'open'
+            elif rtype == 'branch-3way':
+                return 'branch_3way'
+            elif rtype == 'branch-4way':
+                return 'branch_4way'
 
-        """
+        uphill = []
+        filtered = []
+        sum_of_rates = 0
+        for rxn in reactions:
+            sum_of_rates += rxn.rate
 
-        maxsize = self._max_complex_size
+            if rxn.reverse_reaction is None:
+                if rxn.arity != (1,1) :
+                    rxn.reverse_reaction = False
+                else :
+                    rr = rev_rtype(rxn.rtype, rxn.arity)
+                    r = self.get_fast_reactions(rxn.products[0], rtypes = [rr])
+                    r = filter(lambda x: sorted(x.products) == sorted(rxn.reactants), r)
+                    assert len(r) <= 1
+                    if len(r) == 1:
+                        rxn.reverse_reaction = r[0]
+                        r[0].reverse_reaction = rxn
+                    else :
+                        rxn.reverse_reaction = False
 
-        reactions = []
+            # find uphill reactions
+            if rxn.reverse_reaction:
+                if rxn.rate < rxn.reverse_reaction.rate:
+                    #rev = rxn.reverse_reaction
+                    #print 'r', rxn, rxn.rtype, rxn.rate, 'v', rev, rev.rtype, rev.rate
+                    uphill.append(rxn)
+                else:
+                    filtered.append(rxn)
+            else :
+                assert rxn.reverse_reaction is False
+                filtered.append(rxn)
 
-        # Do unimolecular reactions
-        for move in FAST_REACTIONS[1]:
-            if move.__name__ != 'open':
-                # all of the same type (bind, 3-way or 4-way)
-                move_reactions = move(cplx, max_helix=self._max_helix, remote=self._remote)
+        for rxn in uphill:
+            if rxn.rate / sum_of_rates > p_loc:
+                filtered.append(rxn)
 
-                for rxn in move_reactions: 
-                    # It could be that k_slow is set, but k_fast is not....
-                    if rxn.rate >= max(self._k_fast, self._k_slow):
-                        if maxsize and not all(p.size <= maxsize for p in rxn.products) :
-                            logging.warning("Product complex size (={}) larger than \
-                            --max-complex-size(={}). Ignoring fast reaction {}!".format(
-                                max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
-                            continue
-                        reactions.append(rxn)
+        return filtered
 
-        return reactions
-
-    def get_uphill_reactions(self, cplx):
+    def get_fast_reactions(self, cplx, rtypes = None):
         """
         Returns a list of fast reactions possible using complex as a reagent.
 
@@ -648,57 +659,28 @@ class Enumerator(object):
 
         reactions = []
 
+        total = 0
         # Do unimolecular reactions
         for move in FAST_REACTIONS[1]:
+            if rtypes and move.__name__ not in rtypes:
+                continue
             if move.__name__ == 'open':
                 move_reactions = move(cplx, 
                         max_helix=self._max_helix, 
                         release_11 = self._release_11,
                         release_1N = self._release_1N)
-
-                for rxn in move_reactions: 
-                    # It could be that k_slow is set, but k_fast is not....
-                    if rxn.rate >= max(self._k_fast, self._k_slow):
-                        if maxsize and not all(p.size <= maxsize for p in rxn.products) :
-                            logging.warning("Product complex size (={}) larger than \
-                            --max-complex-size(={}). Ignoring fast reaction {}!".format(
-                                max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
-                            continue
-                        reactions.append(rxn)
-
-        return reactions
-
-
-    def get_fast_reactions(self, complex):
-        """
-        Returns a list of fast reactions possible using complex as a reagent.
-
-        This only supports unimolecular reactions. Could be extended to support
-        arbitrary reactions.
-        """
-
-        maxsize = self._max_complex_size
-
-        reactions = []
-
-        # Do unimolecular reactions
-        for move in FAST_REACTIONS[1]:
-            if move.__name__ == 'open':
-                move_reactions = move(complex, 
-                        max_helix=self._max_helix, 
-                        release_11 = self._release_11,
-                        release_1N = self._release_1N)
             else :
-                move_reactions = move(complex, max_helix=self._max_helix, remote=self._remote)
+                move_reactions = move(cplx, max_helix=self._max_helix, remote=self._remote)
 
             for rxn in move_reactions: 
                 # It could be that k_slow is set, but k_fast is not....
                 if rxn.rate >= max(self._k_fast, self._k_slow):
-                    if maxsize and not all(p.size <= maxsize for p in rxn.products) :
+                    if maxsize and not all(p.size <= maxsize for p in rxn.products):
                         logging.warning("Product complex size (={}) larger than \
                         --max-complex-size(={}). Ignoring fast reaction {}!".format(
                             max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
                         continue
+                    total += rxn.rate
                     reactions.append(rxn)
 
         return reactions
@@ -739,8 +721,7 @@ class Enumerator(object):
         return list(new_products)
 
 
-def segment_neighborhood(complexes, reactions, min_occupancy=None,
-        check_transients=False):
+def segment_neighborhood(complexes, reactions, p_min=None):
     """
     Segmentation of a potentially incomplete neighborhood. That means only
     the specified complexes are interesting, all others should not be
@@ -825,11 +806,11 @@ def segment_neighborhood(complexes, reactions, min_occupancy=None,
         except DSDDuplicationError, e:
             assert set(e.existing.complexes) == set(scc)
             ms = e.existing
-        except DSDObjectsError, e:
-            assert set(e.existing.complexes) <= set(scc)
-            del PepperMacrostate.MEMORY[e.existing.canonical_form]
-            del PepperMacrostate.NAMES[e.existing.name]
-            ms = PepperMacrostate(scc[:], prefix='')
+        #except DSDObjectsError, e:
+        #    assert set(e.existing.complexes) <= set(scc)
+        #    del PepperMacrostate.MEMORY[e.existing.canonical_form]
+        #    del PepperMacrostate.NAMES[e.existing.name]
+        #    ms = PepperMacrostate(scc[:], prefix='')
 
         for c in scc:
             for rxn in rxns_consuming[c]:
@@ -837,29 +818,12 @@ def segment_neighborhood(complexes, reactions, min_occupancy=None,
 
         if ms.is_transient:
             transient_complexes += (scc)
-            
-            # NOTE: this is insufficient, it fixes only bm12 reactions we would
-            # need a better model where the overall exit rate is computed
-            # starting from ! So if
-            # we have a k-slow, then sthg like: while k_exit < k_slow ...
-            if check_transients and min_occupancy:
-                print 'begin', map(str, ms.complexes)
-                for (c, s) in sorted(ms.get_stationary_distribution(warnings=False),
-                        key=lambda x:x[1], reverse = True):
-                    if s < min_occupancy or ms.is_exit(c) :
-                        print 'b', c
-                        break
-                    else :
-                        print 'found resting in tranient set', c
-                        transient_complexes.remove(c)
-                        resting_complexes.append(c)
-
         else :
             resting_macrostates.append(ms)
 
-            if min_occupancy:
+            if p_min:
                 for (c, s) in ms.get_stationary_distribution():
-                    if s < min_occupancy:
+                    if s < p_min:
                         transient_complexes.append(c)
                     else :
                         resting_complexes.append(c)

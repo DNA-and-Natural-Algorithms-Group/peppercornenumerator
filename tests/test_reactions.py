@@ -688,7 +688,6 @@ class DSD_PathwayTests(unittest.TestCase):
         # DSD-pathway "branch3way"
         path2 = PepperReaction([B], sorted([D, J]), 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(B, max_helix=True)
-        #for o in output: print 'test', o.kernel_string()
         self.assertEqual(output, [path2])
 
         #enum = Enumerator(domains.values(), strands.values(), complexes.values())
@@ -1217,9 +1216,9 @@ class Compare_MaxHelix(unittest.TestCase):
         enum.enumerate()
 
         self.assertTrue(path1 in enum.reactions)
-        #self.assertTrue(path1r in enum.reactions)
+        self.assertTrue(path1r in enum.reactions)
         self.assertTrue(path2 in enum.reactions)
-        #self.assertTrue(path2r in enum.reactions)
+        self.assertTrue(path2r in enum.reactions)
         self.assertTrue(path3 in enum.reactions)
         self.assertTrue(path4 in enum.reactions)
         self.assertTrue(path4r in enum.reactions)
