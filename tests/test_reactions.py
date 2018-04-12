@@ -15,6 +15,301 @@ import peppercornenumerator.reactions as rxn
 
 SKIP = False
 
+# Helper functions
+def filter_bind11((dom1, struct1, loc1), (dom2, struct2, loc2)):
+    return struct1 is None and struct2 is None and dom2.can_pair(dom1)
+
+def filter_3way((dom1, struct1, loc1), (dom2, struct2, loc2)):
+    return (struct1 is None) and (struct2 is not None) and dom1.can_pair(dom2)
+
+def filter_4way((dom1, struct1, loc1), (dom2, struct2, loc2)):
+    return struct1 is not None and struct2 is not None and dom1 == dom2
+
+def triple(reactant, loc):
+    return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
+
+@unittest.skipIf(SKIP, "skipping tests")
+class FindOnLoop(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        clear_memory()
+
+    def test_bind11(self):
+        complexes, reaction = read_kernel("""
+        A = a( b c d e( ) d* c* b* c* )
+        """)
+        A = complexes['A']
+
+        folA = rxn.find_on_loop(A, (0,1), filter_bind11, direction=1)
+        [s,x,t,y] = folA[0]
+        self.assertEqual(s, [triple(A, (0,1))]) # b
+        self.assertEqual(x, [triple(A, (0,2)),  # c
+                             triple(A, (0,3)),  # d
+                             triple(A, (0,4)),  # e
+                             triple(A, (0,6)),  # d*
+                             triple(A, (0,7))]) # c*
+        self.assertEqual(t, [triple(A, (0,8))]) # b*
+        self.assertEqual(y, [triple(A, (0,9)),  # c*
+                             triple(A, (0,10))])# a*
+
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_bind11)
+        self.assertEqual(s, [triple(A, (0,1)),  # b
+                             triple(A, (0,2)),  # c
+                             triple(A, (0,3))]) # d
+        self.assertEqual(x, [triple(A, (0,4))]) # e
+        self.assertEqual(t, [triple(A, (0,8)),  # b*
+                             triple(A, (0,7)),  # c*
+                             triple(A, (0,6))]) # d*
+        self.assertEqual(y, [triple(A, (0,9)),  # c*
+                             triple(A, (0,10))])# a*
+
+        folA = rxn.find_on_loop(A, (0,2), filter_bind11, direction=1)
+        [s,x,t,y] = folA[0]
+        self.assertEqual(s, [triple(A, (0,2))]) # c
+        self.assertEqual(x, [triple(A, (0,3)),  # d
+                             triple(A, (0,4)),  # e
+                             triple(A, (0,6))]) # d*
+        self.assertEqual(t, [triple(A, (0,7))]) # c*
+        self.assertEqual(y, [triple(A, (0,8)),  # b*
+                             triple(A, (0,9)),  # c*
+                             triple(A, (0,10)), # a*
+                             triple(A, (0,1))]) # b
+
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_bind11)
+        self.assertEqual(s, [triple(A, (0,1)),  # b
+                             triple(A, (0,2)),  # c
+                             triple(A, (0,3))]) # d
+        self.assertEqual(x, [triple(A, (0,4))]) # e
+        self.assertEqual(t, [triple(A, (0,8)),  # b*
+                             triple(A, (0,7)),  # c*
+                             triple(A, (0,6))]) # d*
+        self.assertEqual(y, [triple(A, (0,9)),  # c*
+                             triple(A, (0,10))])# a*
+
+        [s,x,t,y] = folA[1]
+        self.assertEqual(s, [triple(A, (0,2))]) # c
+        self.assertEqual(x, [triple(A, (0,3)),  # d
+                             triple(A, (0,4)),  # e
+                             triple(A, (0,6)),  # d*
+                             triple(A, (0,7)),  # c*
+                             triple(A, (0,8))]) # b*
+        self.assertEqual(t, [triple(A, (0,9))]) # c*
+        self.assertEqual(y, [triple(A, (0,10)), # a*
+                             triple(A, (0,1))]) # b
+
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_bind11)
+        self.assertEqual(s, [triple(A, (0,2))]) # c
+        self.assertEqual(x, [triple(A, (0,3)),  # d
+                             triple(A, (0,4)),  # e
+                             triple(A, (0,6)),  # d*
+                             triple(A, (0,7)),  # c*
+                             triple(A, (0,8))]) # b*
+        self.assertEqual(t, [triple(A, (0,9))]) # c*
+        self.assertEqual(y, [triple(A, (0,10)), # a*
+                             triple(A, (0,1))]) # b
+
+    def test_bind11_ms(self):
+        complexes, reaction = read_kernel("""
+        B = a( b c d e( + ) d* + c* b* c* )
+        """)
+        B = complexes['B']
+        folB = rxn.find_on_loop(B, (0,1), filter_bind11, direction=1)
+
+        # Find on Loop results
+        [s,x,t,y] = folB[0]
+        self.assertEqual(s, [triple(B, (0,1))]) # b
+        self.assertEqual(x, [triple(B, (0,2)),  # c
+                             triple(B, (0,3)),  # d
+                             triple(B, (0,4)),  # e
+                             triple(B, (1,1)),  # d*
+                             None,              # +
+                             triple(B, (2,0))]) # c*
+        self.assertEqual(t, [triple(B, (2,1))]) # b*
+        self.assertEqual(y, [triple(B, (2,2)),  # c*
+                             triple(B, (2,3))]) # a*
+
+        # Zipper results
+        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, filter_bind11)
+        self.assertEqual(s, [triple(B, (0,1)),  # b
+                             triple(B, (0,2))]) # c
+        self.assertEqual(x, [triple(B, (0,3)),  # d
+                             triple(B, (0,4)),  # e
+                             triple(B, (1,1)),  # d*
+                             None])             # +
+        self.assertEqual(t, [triple(B, (2,1)),  # b*
+                             triple(B, (2,0))]) # c*
+        self.assertEqual(y, [triple(B, (2,2)),  # c*
+                             triple(B, (2,3))]) # a*
+
+        folB = rxn.find_on_loop(B, (0,2), filter_bind11, direction=1)
+
+        self.assertEqual(len(folB), 2)
+
+        [s,x,t,y] = folB[0]
+        self.assertEqual(s, [triple(B, (0,2))]) # c
+        self.assertEqual(x, [triple(B, (0,3)),  # d
+                             triple(B, (0,4)),  # e
+                             triple(B, (1,1)),  # d*
+                             None])             # +
+        self.assertEqual(t, [triple(B, (2,0))]) # c*
+        self.assertEqual(y, [triple(B, (2,1)),  # b*
+                             triple(B, (2,2)),  # c*
+                             triple(B, (2,3)),  # a*
+                             triple(B, (0,1))]) # b
+
+        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, filter_bind11)
+        self.assertEqual(s, [triple(B, (0,1)),  # b
+                             triple(B, (0,2))]) # c
+        self.assertEqual(x, [triple(B, (0,3)),  # d
+                             triple(B, (0,4)),  # e
+                             triple(B, (1,1)),  # d*
+                             None])             # +
+        self.assertEqual(t, [triple(B, (2,1)),  # b*
+                             triple(B, (2,0))]) # c*
+        self.assertEqual(y, [triple(B, (2,2)),  # c*
+                             triple(B, (2,3))]) # a*
+
+        [s,x,t,y] = folB[1]
+        self.assertEqual(s, [triple(B, (0,2))]) # c
+        self.assertEqual(x, [triple(B, (0,3)),  # d
+                             triple(B, (0,4)),  # e
+                             triple(B, (1,1)),  # d*
+                             None,              # +
+                             triple(B, (2,0)),  # c*
+                             triple(B, (2,1))]) # b*
+        self.assertEqual(t, [triple(B, (2,2))]) # c*
+        self.assertEqual(y, [triple(B, (2,3)),  # a*
+                             triple(B, (0,1))]) # b
+
+        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, filter_bind11)
+        self.assertEqual(s, [triple(B, (0,2))]) # c
+        self.assertEqual(x, [triple(B, (0,3)),  # d
+                             triple(B, (0,4)),  # e
+                             triple(B, (1,1)),  # d*
+                             None,              # +
+                             triple(B, (2,0)),  # c*
+                             triple(B, (2,1))]) # b*
+        self.assertEqual(t, [triple(B, (2,2))]) # c*
+        self.assertEqual(y, [triple(B, (2,3)),  # a*
+                             triple(B, (0,1))]) # b
+
+    def test_3way_matching(self):
+        complexes, reaction = read_kernel("""
+        A = a( b( c( x a b c b y c( b( + ) ) + b c ) ) )
+        #                  ^(0.6)                  ^(2,2)
+        """)
+        A = complexes['A']
+        folA = rxn.find_on_loop(A, (0,6), filter_3way, direction=1)
+        self.assertEqual(len(folA), 1)
+        [s,x,t,y] = folA[0]
+        self.assertEqual(s, [triple(A, (0,6))]) # c
+        self.assertEqual(x, [triple(A, (0,7)),  # b
+                             triple(A, (0,8)),  # y
+                             triple(A, (0,9)),  # c
+                             None,              # +
+                             triple(A, (2,0)),  # b
+                             triple(A, (2,1))]) # c
+        self.assertEqual(t, [triple(A, (2,2))]) # c*
+        self.assertEqual(y, [triple(A, (0,3)),  # x
+                             triple(A, (0,4)),  # a
+                             triple(A, (0,5))]) # b
+
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_3way)
+        self.assertEqual(s, [triple(A, (0,4)),  # a
+                             triple(A, (0,5)),  # b
+                             triple(A, (0,6))]) # c
+
+        self.assertEqual(x, [triple(A, (0,7)),  # b
+                             triple(A, (0,8)),  # y
+                             triple(A, (0,9)),  # c
+                             None,              # +
+                             triple(A, (2,0)),  # b
+                             triple(A, (2,1))]) # c
+
+        self.assertEqual(t, [triple(A, (2,4)),  # a*
+                             triple(A, (2,3)),  # b*
+                             triple(A, (2,2))]) # c*
+        self.assertEqual(y, [triple(A, (0,3))]) # x
+
+
+
+        folA = rxn.find_on_loop(A, (0,6), filter_3way, direction=-1)
+        self.assertEqual(len(folA), 1)
+        [s,x,t,y] = folA[0]
+        self.assertEqual(s, [triple(A, (0,6))]) # c
+        self.assertEqual(x, [triple(A, (0,5)),  # b
+                             triple(A, (0,4)),  # a
+                             triple(A, (0,3)),  # x
+                             triple(A, (0,2)),  # c
+                             triple(A, (2,1)),  # c
+                             triple(A, (2,0)),  # b
+                             None])             # +
+        self.assertEqual(t, [triple(A, (1,1))]) # c*
+        self.assertEqual(y, [triple(A, (0,8)),  # y
+                             triple(A, (0,7))]) # b
+
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_3way)
+        self.assertEqual(s, [triple(A, (0,6)),  # c
+                             triple(A, (0,7))]) # b
+        self.assertEqual(x, [triple(A, (0,5)),  # b
+                             triple(A, (0,4)),  # a
+                             triple(A, (0,3)),  # x
+                             triple(A, (0,2)),  # c
+                             triple(A, (2,1)),  # c
+                             triple(A, (2,0)),  # b
+                             None])             # +
+
+        self.assertEqual(t, [triple(A, (1,1)),  # c*
+                             triple(A, (1,0))]) # b*
+        self.assertEqual(y, [triple(A, (0,8)),  # y
+                             triple(A, (0,7))]) # b
+
+    def test_4way_matching(self):
+        complexes, reaction = read_kernel("""
+        A = c* b*( X2*( X1*( + ) ) ) c y* b*( a* Y1* + a ) c( + ) b*( X2*( X1*( + ) ) ) c y* b*( a*( Y1* + ) ) c
+        #      ^(0,1)                     ^(1,5)                  ^(3,3)
+        """)
+        A = complexes['A']
+        folA = rxn.find_on_loop(A, (0,1), filter_4way)
+        self.assertEqual(len(folA), 3)
+
+        [s,x,t,y] = folA[0]
+        self.assertEqual(s, [triple(A, (0, 1))])
+        self.assertEqual(x, [triple(A, (1, 3)), triple(A, (1, 4))])
+        self.assertEqual(t, [triple(A, (1, 5))])
+        self.assertEqual(y, [triple(A, (2, 2)), 
+                             triple(A, (3, 1)), 
+                             triple(A, (4, 3)), 
+                             triple(A, (4, 4)), 
+                             triple(A, (4, 5)), 
+                             triple(A, (5, 2)), 
+                             None, 
+                             triple(A, (0, 0))])
+
+        [s,x,t,y] = folA[1]
+        self.assertEqual(s, [triple(A, (0, 1))] )
+        self.assertEqual(t, [triple(A, (3, 1))] )
+
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_4way)
+        self.assertEqual(s, [triple(A, (0, 1)), 
+                             triple(A, (0, 2)), 
+                             triple(A, (0, 3))])
+        self.assertEqual(x, [triple(A, (1, 3)), 
+                             triple(A, (1, 4)), 
+                             triple(A, (1, 5)), 
+                             triple(A, (2, 2))])
+        self.assertEqual(t, [triple(A, (3, 1)), 
+                             triple(A, (3, 2)), 
+                             triple(A, (3, 3))])
+        self.assertEqual(y, [triple(A, (4, 3)), 
+                             triple(A, (4, 4)), 
+                             triple(A, (4, 5)), 
+                             triple(A, (5, 2)), 
+                             None, 
+                             triple(A, (0, 0))])
+
 @unittest.skipIf(SKIP, "skipping tests")
 class NewOpenTests(unittest.TestCase):
     def setUp(self):
@@ -193,6 +488,16 @@ class NewBranch3WayTests(unittest.TestCase):
     def tearDown(self):
         clear_memory()
 
+    def test_break_3way(self):
+        complexes, reactions = read_kernel("""
+        length b = 7
+        A = b( b*( b b*( + ) b* ) )
+        """)
+
+        A1 = complexes['A']
+        output = rxn.branch_3way(A1, max_helix=False, remote=True)
+        #for o in output: print 'branch_3way', o.kernel_string, o.rate
+
     def test_single_migration(self):
         """ 
         A single 3-way branch migration reaction.
@@ -248,7 +553,7 @@ class NewBranch3WayTests(unittest.TestCase):
         backward = PepperReaction([product], [reactant], 'branch-3way', memorycheck=False)
 
         output = rxn.branch_3way(reactant, max_helix=True)
-        #print output[0].kernel_string()
+        #print output[0].kernel_string
         self.assertEqual(output, [forward])
 
         output = rxn.branch_3way(product, max_helix=True)
@@ -393,8 +698,10 @@ class NewBranch3WayTests(unittest.TestCase):
         output = rxn.branch_3way(reactant, max_helix=True, remote=True)
         self.assertEqual(sorted(map(str,output)), sorted(map(str,[forward2, forward1b])))
 
-        backward1 = PepperReaction([product1], [reactant], 'branch-3way', memorycheck=False)
+        # NOTE: THIS behavior changed now!!!
+        backward1 = PepperReaction([product1], [inter1], 'branch-3way', memorycheck=False)
         output = rxn.branch_3way(product1, max_helix=True, remote=True)
+        #for o in output: print 'ow', o, o.kernel_string
         self.assertEqual(output, [backward1])
 
         # NOTE: THIS behavior changed!
@@ -450,6 +757,21 @@ class NewBranch4WayTests(unittest.TestCase):
         A1 = complexes['A1']
         output = rxn.branch_4way(A1, max_helix=True, remote=True)
         #for o in output: print 'branch_4way_bug', o.kernel_string()
+
+    def test_break_reverse_4way(self):
+        complexes, reactions = read_kernel("""
+        B = y*( b*( a*( Y1* + ) b( c( + ) ) Y2* Y1*( + ) a ) )
+        A = c* b* X2* X1*( + ) X2 b c y*( b*( a*( Y1* + ) b( c( + ) ) Y2* Y1*( + ) a ) )
+        R = c* b* X2* X1*( + ) X2 b c y*( b*( a*( Y1* + ) ) c( + ) b*( Y2* Y1*( + ) a ) )
+        """)
+
+        A1 = complexes['A']
+        R1 = complexes['R']
+        output = rxn.branch_4way(A1, max_helix=True, remote=True)
+        oR = rxn.branch_4way(R1, max_helix=True, remote=True)
+        #for o in output: print 'branch_4way_reverse', o.kernel_string, o.rate
+        #for o in oR: print 'branch_4way_reverse', o.kernel_string, o.rate
+
 
     def test_4wayfilter_bugfix(self):
         # a test to ensure the 4way filter includes struct1
@@ -618,7 +940,7 @@ class NewBranch4WayTests(unittest.TestCase):
 
         path = PepperReaction([A3], [A0], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A3, max_helix=True, remote = False)
-        #for o in output: print 'branch-4way', o.kernel_string(), o.rate
+        #for o in output: print 'branch-4way', o, o.kernel_string, o.rate
         self.assertEqual(output, [path])
 
         path1 = PepperReaction([A2], [A0], 'branch-4way', memorycheck=False)
@@ -760,6 +1082,7 @@ class DSD_PathwayTests(unittest.TestCase):
         self.assertEqual(len(enum.reactions), 22)
 
 
+@unittest.skipIf(SKIP, "skipping tests")
 class ReactionMatchingTests (unittest.TestCase):
     # A selection of Casey's reaction tests.
     def setUp(self):
@@ -925,8 +1248,6 @@ class ReactionMatchingTests (unittest.TestCase):
         self.assertEqual(reverse,
         [PepperReaction([complexes['A2']], [complexes['A1']], 'branch-4way', memorycheck=False)])
 
-
-        
 @unittest.skipIf(SKIP, "skipping tests")
 class IsomorphicSets(unittest.TestCase):
     def setUp(self):
@@ -1100,26 +1421,40 @@ class Compare_MaxHelix(unittest.TestCase):
         enum.max_helix_migration = True
         enum.enumerate()
         #for r in sorted(enum.reactions): print 'max-helix', r, r.kernel_string(), r.rate
-        #self.assertEqual(sorted([path1, path1r, path2, path3, path3r, path4]), sorted(enum.reactions))
-        self.assertEqual(sorted([forward, backward]), sorted(enum.reactions))
+        self.assertEqual(sorted([path1, path1r, path2, path3, path3r, path4]), sorted(enum.reactions))
+        #self.assertEqual(sorted([forward, backward]), sorted(enum.reactions))
 
     def test_self_displacement_bug_iso(self):
         complexes, reactions = read_kernel("""
         B1 = x1( x2( y1( y2( x1( x2( y1 y2 x1 x2 + ) ) ) ) ) )
         B2 = x1 x2 y1 y2 x1( x2( y1( y2( x1( x2( + ) ) ) ) ) )
+        i1 = x1( x2( y1 y2 x1 x2 y1( y2( x1( x2( + ) ) ) ) ) )
+        i2 = x1( x2( y1( y2( x1 x2 y1 y2 x1( x2( + ) ) ) ) ) )
 
         """)
         B1 = complexes['B1']
         B2 = complexes['B2']
+        i1 = complexes['i1']
+        i2 = complexes['i2']
 
         forward = PepperReaction([B1], [B2], 'branch-3way', memorycheck=False)
+        backward= PepperReaction([B2], [B1], 'branch-3way', memorycheck=False)
+
+        path1 = PepperReaction([B1], [i1], 'branch-3way', memorycheck=False)
+        path1r = PepperReaction([i1], [B1], 'branch-3way', memorycheck=False)
+        path1f = PepperReaction([i1], [B2], 'branch-3way', memorycheck=False)
+        path2 = PepperReaction([B2], [i2], 'branch-3way', memorycheck=False)
+        path2r = PepperReaction([i2], [B2], 'branch-3way', memorycheck=False)
+        path2f = PepperReaction([i2], [B1], 'branch-3way', memorycheck=False)
+
         backward= PepperReaction([B2], [B1], 'branch-3way', memorycheck=False)
 
         enum = Enumerator([B1])
         enum.max_helix_migration = True
         enum.enumerate()
-        #for r in sorted(enum.reactions): print 'max-helix', r, r.kernel_string(), r.rate
-        self.assertEqual(sorted([forward, backward]), sorted(enum.reactions))
+        #for r in sorted(enum.reactions): print 'max-helix', r, r.kernel_string, r.rtype, r.rate
+        self.assertEqual(sorted([path1, path1r, path1f, path2, path2r, path2f]), sorted(enum.reactions))
+        #self.assertEqual(sorted([forward, backward]), sorted(enum.reactions))
 
 
     def test_self_displacement(self):

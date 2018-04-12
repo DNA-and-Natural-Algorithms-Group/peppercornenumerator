@@ -11,7 +11,7 @@ from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.input import read_kernel, read_pil, ParseException
 from peppercornenumerator.output import write_kernel
 
-from peppercornenumerator.reactions import branch_3way, branch_4way
+from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
 
 version = __import__('peppercornenumerator').__version__
 
@@ -200,6 +200,21 @@ def main(cl_opts):
     enum._p_min = cl_opts.p_min
     enum._p_loc = cl_opts.p_loc
 
+    if cl_opts.k_slow:
+        rc = 0
+        k_rc = None
+        while True:
+            rc += 1
+            k_rc = opening_rate(rc)
+            if k_rc < cl_opts.k_slow:
+                break
+        cl_opts.release_cutoff = 99
+        logging.info('Corresponding release-cutoff between {} and {}'.format(rc-1, rc))
+        logging.warning('Setting release_cutoff to {}'.format(cl_opts.release_cutoff))
+    else :
+        logging.info('Dissociation at release-cutoff {} corresponds to a k-slow < {}'.format(
+            cl_opts.release_cutoff_1_1, opening_rate(cl_opts.release_cutoff_1_1)))
+
     enum.release_cutoff_1_1 = cl_opts.release_cutoff_1_1
     enum.release_cutoff_1_N = cl_opts.release_cutoff_1_N
 
@@ -207,6 +222,10 @@ def main(cl_opts):
         enum.release_cutoff = cl_opts.release_cutoff
 
     enum.remote_migration = not cl_opts.reject_remote 
+
+    if cl_opts.p_loc:
+        logging.warning('Turning off max-helix mode, since you are using: p-loc')
+        cl_opts.no_max_helix = True
     enum.max_helix_migration = not cl_opts.no_max_helix
 
     enum.DFS = not cl_opts.bfs

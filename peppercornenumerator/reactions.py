@@ -220,10 +220,6 @@ def bind11(reactant, max_helix=True, remote=None):
     Note: Remote is ineffective, but may be set for convencience
     """
     
-    # Filter function for find_on_loop()
-    def filter_bind11(dom1, struct1, loc1, dom2, struct2, loc2, freed):
-        return struct1 is None and struct2 is None and dom2.can_pair(dom1)
-
     reactions = []
     structure = reactant.pair_table
 
@@ -235,19 +231,34 @@ def bind11(reactant, max_helix=True, remote=None):
             if structure[strand_index][domain_index] is not None :
                 continue
 
-            loc1 = (strand_index, domain_index)
+            start_loc = (strand_index, domain_index)
 
             # search both directions around the loop for a bound domain that
             # has the same sequence (and therefore can be displaced)
-            locs = find_on_loop(reactant, loc1, -1, filter_bind11, max_helix=max_helix) + \
-                   find_on_loop(reactant, loc1, +1, filter_bind11, max_helix=max_helix)  
+            results = find_on_loop(reactant, start_loc, filter_bind11)
+
+            if results:
+                assert len(results) == \
+                        len(find_on_loop(reactant, start_loc, filter_bind11, direction=-1))
+
+            for e, (invader, xlinker, target, ylinker) in enumerate(results):
+                if max_helix:
+                    invader, xlinker, target, ylinker = zipper(
+                            reactant, invader[0], xlinker, target[0], ylinker, filter_bind11)
+                results[e] = map(Loop, [invader, xlinker, target, ylinker])
 
             # build products
-            for (loc1s, loc2s, before, after) in locs:
-                product = do_bind11(reactant, loc1s.locs, loc2s.locs)
+            for (loc1s, before, loc2s, after) in results:
+
+                try :
+                    (product,rotations) = do_bind11(reactant, loc1s.locs, loc2s.locs)
+                except AssertionError:
+                    continue
 
                 try :
                     reaction = PepperReaction([reactant], [product], 'bind11')
+                    reaction.meta = (loc1s, loc2s, before, after)
+                    reaction.rotations = rotations
                 except DSDDuplicationError, e :
                     reaction = e.existing
 
@@ -262,19 +273,23 @@ def bind11(reactant, max_helix=True, remote=None):
     # remove any duplicate reactions
     return sorted(list(set(reactions)))
 
-def do_bind11(reactant, loc1s, loc2s):
+def do_bind11(reactant, loc1s, loc2s, sanitycheck = False):
     """ Returns PepperComplex after the bind11 reaction. """
     struct = reactant.pair_table
     for loc1, loc2 in zip(loc1s, loc2s):
+        assert struct[loc1[0]][loc1[1]] is None
+        assert struct[loc2[0]][loc2[1]] is None
         struct[loc1[0]][loc1[1]] = loc2
         struct[loc2[0]][loc2[1]] = loc1
     newstr = pair_table_to_dot_bracket(struct)
     try:
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
+        rotations = 0
     except DSDDuplicationError, e:
         product = e.existing
-    return product
+        rotations = e.rotations
+    return (product, rotations)
 
 def bind21(reactant1, reactant2, max_helix = True, remote=None):
     """
@@ -288,9 +303,6 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
     """
     r1_doms = reactant1.available_domains
     r2_doms = reactant2.available_domains
-
-    def filter_bind21(dom1, struct1, loc1, dom2, struct2, loc2, freed):
-        return struct1 is None and struct2 is None and dom1.can_pair(dom2)
 
     reactions = []
 
@@ -309,18 +321,20 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
     output = []
     for complex, location1, location2 in reactions:
         # build "before" and "after" loop structures via find_on_loop ...
-        out = find_on_loop(complex, location1, 1,
-            lambda dom1, struct1, loc1, dom2, struct2, loc2, freed: 
-                loc1 == location1 and loc2 == location2, max_helix=False)
+        out = find_on_loop(complex, location1, 
+            lambda (dom1, struct1, loc1), (dom2, struct2, loc2) : 
+                loc1 == location1 and loc2 == location2)
 
-        [(loc1s, loc2s, before, after)] = out
+        [(loc1s, before, loc2s, after)] = out
 
         # zipper for max-helix semantics
         if max_helix :
-            (loc1s, loc2s, before, after) = zipper(complex, location1, location2, 
-                    before.parts, after.parts, 1, None, None, filter_bind21)
+            loc1s, before, loc2s, after = zipper(
+                    complex, loc1s[0], before, loc2s[0], after, filter_bind11)
 
-        product = do_bind11(complex, loc1s.locs, loc2s.locs)
+        [loc1s, before, loc2s, after] = map(Loop, [loc1s, before, loc2s, after])
+
+        (product,rotations) = do_bind11(complex, loc1s.locs, loc2s.locs)
 
         try :
             reaction = PepperReaction(sorted([reactant1, reactant2]), [product], 'bind21')
@@ -425,6 +439,9 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
     reactions = []
     structure = reactant.pair_table
 
+    def triple(loc):
+        return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
+
     # for no-max-helix mode:
     if not max_helix:
         # We iterate through all the domains
@@ -438,9 +455,12 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                 bound_loc = (strand_index, domain_index)
                 bound_domain = reactant.get_domain(bound_loc)
 
-                release_reactant = do_single_open(reactant, bound_loc)
+                (release_reactant, rotations) = do_single_open(reactant, bound_loc)
                 product_set = release_reactant.split()
-                reactions.append((product_set, len(bound_domain)))
+                meta = (Loop([triple(bound_loc)]),
+                        Loop([triple(reactant.get_structure(bound_loc))]), None, None)
+                reactions.append((product_set, rotations, len(bound_domain),
+                    meta))
 
     # for max-helix mode:
     else:
@@ -531,16 +551,21 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
 
                     try:
                         release_reactant = PepperComplex(reactant.sequence, newstr)
+                        rotations = 0
                     except DSDDuplicationError, e:
                         release_reactant = e.existing
+                        rotations = e.rotations
 
                     product_set = release_reactant.split()
-                    reactions.append((product_set, helix_length))
+                    meta = None
+                    reactions.append((product_set, rotations, helix_length, meta))
 
     output = []
-    for product_set, length in reactions:
+    for product_set, rotations, length, meta in reactions:
         try :
             reaction = PepperReaction([reactant], sorted(product_set), 'open')
+            reaction.rotations = rotations
+            reaction.meta = meta
         except DSDDuplicationError, e :
             reaction = e.existing
 
@@ -566,9 +591,11 @@ def do_single_open(reactant, loc):
     try:
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
+        rotations = 0
     except DSDDuplicationError, e:
         product = e.existing
-    return product
+        rotations = e.rotations
+    return (product, rotations)
 
 def branch_3way(reactant, max_helix = True, remote=True):
     """
@@ -578,9 +605,7 @@ def branch_3way(reactant, max_helix = True, remote=True):
     complexes).
     """
 
-    def filter_3way(dom1, struct1, loc1, dom2, struct2, loc2, freed):
-        return (struct1 is None or struct1 in freed) \
-                and struct2 is not None and dom1.can_pair(dom2)
+    reactions = []
 
     reactions = []
     structure = reactant.pair_table
@@ -593,42 +618,50 @@ def branch_3way(reactant, max_helix = True, remote=True):
             if (structure[strand_index][domain_index] is not None):
                 continue
 
-            displacing_loc = (strand_index, domain_index)
-
             # search 5'->3' and 3'->5' directions around the loop for a bound
             # domain that is complementary (and therefore can be displaced)
 
-            bound_doms = (find_on_loop(reactant, displacing_loc, -1, filter_3way, 
-                                max_helix=max_helix) +
-                          find_on_loop(reactant, displacing_loc, +1, filter_3way, 
-                                max_helix=max_helix))
+            start_loc = (strand_index, domain_index)
 
-            for (displacing, bound, before, after) in bound_doms:
-                # Sometimes, the direction of 3-way branch migration matters, 
-                # and we don't want to allow invalid intermediate states:
-                # x( y( x( y x + ) ) ) -> x y x( y( x( + ) ) )
-                try :
-                    products = do_3way_migration(reactant, displacing.locs, bound.locs)
-                except AssertionError:
-                    products = do_3way_migration(reactant, displacing.revlocs, bound.revlocs)
+            # build products
+            fwresults = find_on_loop(reactant, start_loc, filter_3way, direction=1)
+            bwresults = find_on_loop(reactant, start_loc, filter_3way, direction=-1)
 
+            results = []
+            for (invader, xlinker, target, ylinker) in fwresults:
+                if max_helix:
+                    invader, xlinker, target, ylinker = zipper(
+                            reactant, invader[0], xlinker, target[0], ylinker, filter_3way)
+                ylinker += invader
+                results.append(map(Loop, [invader[::-1], xlinker, target[::-1], ylinker]))
+
+            for (invader, xlinker, target, ylinker) in bwresults:
+                if max_helix:
+                    invader, xlinker, target, ylinker = zipper(
+                            reactant, invader[0], xlinker, target[0], ylinker, filter_3way)
+                ylinker += invader[::-1]
+                results.append(map(Loop, [invader, xlinker, target, ylinker]))
+
+            for (displacing, before, bound, after) in results:
+                (products, rotations) = do_3way_migration(reactant,
+                        list(displacing.locs), list(bound.locs))
 
                 try :
                     reaction = PepperReaction([reactant], products, 'branch-3way')
+                    reaction.meta = (displacing, bound, before, after)
+                    reaction.rotations = rotations
                 except DSDDuplicationError, e :
-                    #assert opening_rate(length) == PepperReaction.dictionary[e.solution].rate
                     reaction = e.existing
 
                 # length of invading domain
                 length = len(displacing)
 
                 # calculate reaction constant
-                (after, before) = (before, after)
                 reaction.rate = branch_3way_remote_rate(length, before, after)
 
                 # skip remote toehold reactions if directed
                 if not remote :
-                    if not (not after.is_open and after.stems == 1 and after.bases == 0):
+                    if not (not before.is_open and before.stems == 1 and before.bases == 0):
                         # print "Rejecting... " + reaction.kernel_string
                         # import pdb; pdb.set_trace()
                         continue
@@ -661,16 +694,29 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
         struct[displaced_loc[0]][displaced_loc[1]] = None
 
     struct = reactant.pair_table
+
     for displacing_loc, new_bound_loc in zip(displacing_locs, bound_locs):
         update_structure(struct, displacing_loc, new_bound_loc)
+
     newstr = pair_table_to_dot_bracket(struct)
+
     try:
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
+        rotations = 0
+        for e, s in enumerate(product.pair_table):
+            for e2, tup in enumerate(s):
+                if tup != struct[e][e2]:
+                    print reactant, reactant.kernel_string
+                    print product, product.kernel_string
+                    print struct
+                    print product.pair_table
+                    raise Exception
     except DSDDuplicationError, e:
         product = e.existing
+        rotations = e.rotations
   
-    return product.split()
+    return (product.split(), rotations)
 
 def branch_4way(reactant, max_helix = False, remote=True):
     """
@@ -679,11 +725,6 @@ def branch_4way(reactant, max_helix = False, remote=True):
     result from the iteration; more than one molecule may result because branch
     migration can liberate strands and complexes).
     """
-
-    def filter_4way(dom1, struct1, loc1, dom2, struct2, loc2, freed):
-        """ A filter function for *find_on_loop()* """
-        # struct1 is necessary within the zipper function...
-        return struct1 is not None and struct2 is not None and dom1 == dom2
 
     reactions = []
     structure = reactant.pair_table
@@ -696,7 +737,7 @@ def branch_4way(reactant, max_helix = False, remote=True):
             if (structure[strand_index][domain_index] is None):
                 continue
 
-            displacing_loc = (strand_index, domain_index)
+            start_loc = (strand_index, domain_index)
 
             # searches only 5'->3' direction around the loop for a bound domain that
             # has the same sequence (and therefore can be displaced)
@@ -709,21 +750,25 @@ def branch_4way(reactant, max_helix = False, remote=True):
             #   z*  ~   z
             #
 
-            bound_doms = find_on_loop(reactant, displacing_loc, +1, 
-                    filter_4way, max_helix=max_helix, b4way = True)
-
             # build products
-            for (displacing, displaced, before, after) in bound_doms:
+            results = find_on_loop(reactant, start_loc, filter_4way)
 
-                products = do_4way_migration(reactant, displacing.locs,
-                            (structure[displacing_loc[0]][displacing_loc[1]] 
-                                for displacing_loc in displacing.locs),
-                            (structure[bound_loc[0]][bound_loc[1]]
-                                for bound_loc in displaced.locs), 
+            for e, (invader, xlinker, target, ylinker) in enumerate(results):
+                if max_helix:
+                    invader, _, target, _ = zipper(
+                            reactant, invader[0], None, target[0], None, filter_4way)
+                results[e] = map(Loop, [invader, xlinker, target, ylinker])
+
+            for (displacing, before, displaced, after) in results:
+                (products,rotations) = do_4way_migration(reactant, displacing.locs,
+                            (structure[dl[0]][dl[1]] for dl in displacing.locs),
+                            (structure[bl[0]][bl[1]] for bl in displaced.locs), 
                             displaced.locs)
 
                 try :
                     reaction = PepperReaction([reactant], products, 'branch-4way')
+                    reaction.meta = (displacing, displaced, before, after)
+                    reaction.rotations = rotations
                 except DSDDuplicationError, e :
                     #assert opening_rate(length) == PepperReaction.dictionary[e.solution].rate
                     reaction = e.existing
@@ -758,6 +803,12 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
     
         loc1:loc2, loc3:loc4 -> loc1:loc3, loc2:loc4
         """
+        assert None not in (loc1, loc2, loc3, loc4)
+        assert struct[loc1[0]][loc1[1]] == loc2
+        assert struct[loc3[0]][loc3[1]] == loc4
+        assert struct[loc2[0]][loc2[1]] == loc1
+        assert struct[loc4[0]][loc4[1]] == loc3
+
         struct[loc1[0]][loc1[1]] = loc3
         struct[loc3[0]][loc3[1]] = loc1
         struct[loc2[0]][loc2[1]] = loc4
@@ -770,45 +821,40 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
     try:
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
+        rotations = 0
+        for e, s in enumerate(product.pair_table):
+            for e2, tup in enumerate(s):
+                if tup != struct[e][e2]:
+                    print reactant, reactant.kernel_string
+                    print product, product.kernel_string
+                    print struct
+                    print product.pair_table
+                    raise Exception
     except DSDDuplicationError, e:
         product = e.existing
-    return product.split()
+        rotations = e.rotations
+    return (product.split(), rotations)
 
-def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way = False):
-    """
-    Finds the next domain within `reactant` that's on the same inner loop as
-    `start_loc` and matches the passed `filter` function. Looks in either the
-    5'->3' (+1) or 3'->5' (-1) `direction`.
+# Filter functions for find_on_loop()
+def filter_bind11((dom1, struct1, loc1), (dom2, struct2, loc2)):
+    return struct1 is None and struct2 is None and dom2.can_pair(dom1)
 
-    Filter should accept the following arguments and return True or False:
-      -	dom (utils.Domain) : the domain at `loc`
-      -	struct (tuple or None): a (strand index, domain index) pair
-              indicating what `dom` is bound to, or None if `dom` is unpaired.
-      -	loc (tuple) : a (strand index, domain index) pair
-      -       Note that while every single-stranded domain is tested,
-              only the "first" domain of a stem helix (in the direction of
-              search) will be passed to the filter.
+def filter_3way((dom1, struct1, loc1), (dom2, struct2, loc2)):
+    return (struct1 is None) and (struct2 is not None) and dom1.can_pair(dom2)
 
+def filter_4way((dom1, struct1, loc1), (dom2, struct2, loc2)):
+    return struct1 is not None and struct2 is not None and dom1 == dom2
 
-    Returns an array of tuples: `(loc, before, after)`, where:
-      -	`loc` is a (strand index, domain index) pair indicating the
-              position of the matched domain
-      -	`before` is a list of (domain, struct, loc) triples giving the
-              domains after `start_loc` but before the matched domain on the loop
-              (or None instead of triple where there is a break in the loop)
-      -	`after` is a list of (domain, struct, loc) triples giving the
-              domains after the matched domain but before `start_loc` on the loop
-              (or None instead of triple where there is a break in the loop)
-
-    Where a loop involves stems, only one of the complementary domains will be
-    listed in the array of tuples, specifically, the "first" one in the search
-    direction. Thus, a multiloop with n unpaired domains and m stems will
-    result, for closed loops, in `len(before+after) == n+m-2`, as the match
-    location and `start_loc` are omitted.
-
-    `before` and `after` are converted to Loop objects (see utils.py) prior
-    to being returned, so that the number of bases and number of stems and
-    open/closed status is readily accessible.
+def find_on_loop(reactant, start_loc, pattern, direction=1):
+    """Find a reaction pattern within a loop.
+    
+    Starts at a particular locus and searches for every possible pattern that
+    preseves secondary structure (matches within the "loop").  Where a loop
+    involves stems, only one of the complementary domains will be listed in the
+    array of tuples, specifically, the "first" one in the search direction.
+    Thus, a multiloop with n unpaired domains and m stems will result, for
+    closed loops, in `len(before+after) == n+m-2`, as the match location and
+    `start_loc` are omitted.
 
     Note 1: `before` and `after` refer to the partial loops between `start_loc`
     and each of the results, _in the `direction`_ of the search. For example:
@@ -824,8 +870,7 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way =
 
     If `start_loc` pointed to `x` and `direction` is +1, then `before` would
     be `A` and `after` would be `B`. If instead `direction` is -1, then
-    `before` is `B` and `after` is `A`.
-
+    `before` is `B` and `after` is `A`.  
     Note 2: If the domain passed to `start_loc` is a duplex, the results may
     be unexpected:
 
@@ -842,16 +887,25 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way =
     attempt to be consistent with the case where you pass an unpaired domain
     (and therefore the internal loop searched is the one which encloses the
     unpaired domain).
+  
+    Args:
+        reactant (:obj:) = The reactant complex object.
+        start_loc ((int,int)) = A tuple pointing to the respective strand and
+            domain indices for reactant.pair_table
+        pattern (function) = A pointer to a pattern match function which
+            determines if there exists a valid binding partner for the start locus.
+            The function takes two arguments containing (domain, paired, locus)
+            and returns True or False.
+        directions (optional: -1,+1): Searching for binding partners in 
+            5'->3' (+1) or 3'->5' (-1) direction.
 
-    Returns a list of [(4xLoop() Objects), ...] for every reaction matching
-    the filter function. 4xLoop = The 
-
+    Returns:
+        TODO
 
     """
+
     results = []
     loop = []
-    freed = set()
-
     def triple(loc):
         return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
 
@@ -871,7 +925,7 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way =
     #  immediately continue to the next domain, we'll go to 1*
     if reactant.get_structure(bound_loc) is not None:
         bound_loc = reactant.get_structure(bound_loc)
-
+    
     # Follow the external loop to the end
     while True:
         # move to the next domain in the indicated direction
@@ -880,109 +934,49 @@ def find_on_loop(reactant, start_loc, direction, filter, max_helix=True, b4way =
 
         # if we've reached the end of the strand (5')
         if (bound_loc[1] == -1):
-
             # Continue to next strand
             bound_loc = (wrap(bound_loc[0] - 1, reactant.size),)
             bound_loc = (bound_loc[0], reactant.strand_length(bound_loc[0]))
-            loop.append(None)  # EW
+            loop.append(None)
             continue
 
         # if we've reached the end of the strand (3')
-        elif (bound_loc[1] == reactant.strand_length(bound_loc[0])):
-
+        if (bound_loc[1] == reactant.strand_length(bound_loc[0])):
             # Continue to next strand
             bound_loc = (wrap(bound_loc[0] + 1, reactant.size), -1)
-            loop.append(None)  # EW
+            loop.append(None)
             continue
 
         if bound_loc == start_loc:
-            # We've returned to the original location of the
-            # displacing domain
+            # We've returned to the original location of the displacing domain
             break
 
-        # try to match the filter function
-        elif (filter(
-                reactant.get_domain(start_loc),
-                reactant.get_structure(start_loc),
-                start_loc,
-                reactant.get_domain(bound_loc),
-                reactant.get_structure(bound_loc),
-                bound_loc, freed)):
-
-            # store the id(s) of the displaced strand
-            disp_strands = [None, None]
-            if reactant.get_structure(start_loc) is not None:
-                disp_strands[0] = reactant.get_structure(start_loc)[0]
-            if reactant.get_structure(bound_loc) is not None:
-                disp_strands[1] = reactant.get_structure(bound_loc)[0]
-                freed.add(bound_loc)
-
+        # try to match the pattern function
+        if pattern(triple(start_loc), triple(bound_loc)):
             # append the location
-            results.append((bound_loc, len(loop), disp_strands))
+            results.append((bound_loc, len(loop)))
 
         # store unpaired domains and "first" domain of each stem
-        loop.append(triple(bound_loc))  # EW
-        #if filtered and not b4way and reactant.structure[bound_loc[0]][bound_loc[1]] is not None:
-        #    loop.append(triple(reactant.structure[bound_loc[0]][bound_loc[1]]))
-        
+        loop.append(triple(bound_loc))
+ 
         # if the domain at bound_loc is unbound
-        if (reactant.get_structure(bound_loc) is None):
+        if reactant.get_structure(bound_loc) is None:
             # look to the next domain
             continue
+        else :
+            # follow the structure to stay on the same loop
+            bound_loc = reactant.get_structure(bound_loc)
 
-        # so it's bound to something: follow the structure to stay on the same loop
-        bound_loc = reactant.get_structure(bound_loc)
+    return [([triple(start_loc)],   # invading domain
+             loop[:i],              # first linker 
+             [triple(bound_loc)],   # target domain
+             loop[i+1:]) for (bound_loc, i) in results]
 
-    if max_helix: 
+def zipper(reactant, start_trp, before, bound_trp, after, filter):
+    """Max-helix mode zipping to extend a given move type.
 
-        zipped_results = []
-        for (bound_loc, i, disp_strands) in results:
+    TODO: explain why before/after will not change...
 
-            if b4way :
-                # for 4-way we don't zip along before/after, but along top/bottom...
-                # both top and bottom have to mach -- i.d. eht filter function has
-                # to compare top and bottom.
-
-                # 4-way zipper
-                top_loop = []
-                top_loc = (start_loc[0], start_loc[1] + direction)
-                while True:
-                    if (top_loc[1] == -1):
-                        top_loop.append(None)
-                        break
-                    elif (top_loc[1] == reactant.strand_length(top_loc[0])):
-                        top_loop.append(None)
-                        break
-                    else :
-                        top_loop.append(triple(top_loc))
-                        top_loc = (top_loc[0], top_loc[1] + direction)
-
-                bottom_loop = []
-                bottom_loc = (bound_loc[0], bound_loc[1] + direction)
-                while True:
-                    if bottom_loc[1] == -1 :
-                        break
-                    elif bottom_loc[1] == reactant.strand_length(bottom_loc[0]) :
-                        break
-                    else :
-                        bottom_loop.append(triple(bottom_loc))
-                        bottom_loc = (bottom_loc[0], bottom_loc[1] + direction)
-
-                b4way_loop = top_loop + bottom_loop[::-1] # reversed
-            else :
-                b4way_loop = None
- 
-            zipped_results.append(zipper(
-                reactant, start_loc, bound_loc, loop[:i], loop[i + 1:], 
-                direction, disp_strands, freed, filter, b4way=b4way_loop))
-        return zipped_results
-    else:
-        return [(Loop([triple(start_loc)]), Loop([triple(bound_loc)]), 
-            Loop(loop[:i]), Loop(loop[i + 1:])) for (bound_loc, i, _) in results]
-
-def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strands, freed, 
-        filter, b4way=None):
-    """
     Takes a result from `find_on_loop` and "zips" it inwards (in the given
     `direction`); that is, given some `start_loc` and some `bound_loc`, tries
     to find as many adjacent domains as possible such that the `filter`
@@ -1005,105 +999,96 @@ def zipper(reactant, start_loc, bound_loc, before, after, direction, disp_strand
             b1  b2
 
 
-    return start_locs, bound_locs, before, after
-
+    Returns:
     """
-    if freed is None:
-        freed = set()
 
     def triple(loc):
         return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
 
-    def move_towards_middle(middle, direction):
+    assert filter(start_trp,bound_trp)
 
-        dstrand, ddomain = start_loc
-        bstrand, bdomain = bound_loc
+    def extend_match(start_loc, bound_loc, sdir, bdir):
+        """
+        Move upstream or downstream from start locus and bound locus and check
+        if filter condition still applies.
 
-        while True:
-            # move domain pointers "inwards" towards each other
-            ddomain += direction
-            if b4way :
-                bdomain += direction
+        Accesses reactant, start_loc, bound_loc, filter, 
+        
+        """
+        (sstrand, sdomain) = start_loc
+        (bstrand, bdomain) = bound_loc
+
+        start_pair = reactant.get_structure(start_loc)
+        bound_pair = reactant.get_structure(bound_loc)
+
+        sloc = (sstrand, sdomain + sdir)
+        bloc = (bstrand, bdomain + bdir)
+
+        try:
+            spair = reactant.get_structure(sloc)
+            bpair = reactant.get_structure(bloc)
+        except IndexError:
+            # sdomain is no longer on sstrand or 
+            # bdomain is no longer on bstrand
+            return
+
+        if (start_pair is None) != (spair is None):
+            return
+
+        if (bound_pair is None) != (bpair is None):
+            return
+
+            # ddomain hasn't passed bound_loc
+        if ((cmp(sloc, bound_loc) == cmp(start_loc, bound_loc)) and
+            # and bdomain hasn't passed start_loc
+            (cmp(bloc, start_loc) == cmp(bound_loc, start_loc)) and
+
+            # TODO: check if we can write that nicer...
+            # if paired, then pair(ddomain) is still on pair(dstrand)
+            ((start_pair is None) and (spair is None) or
+                start_pair[0] == spair[0] and        # same strand!
+                start_pair[1] == spair[1] + sdir) and # adjacent!
+
+            # if paired, then pair(ddomain) is still on pair(dstrand)
+            ((bound_pair is None) and (bpair is None) or
+                bound_pair[0] == bpair[0] and        # same strand!
+                bound_pair[1] == bpair[1] + bdir) and # adjacent!
+
+            # and filter condition still applies
+            filter(triple(sloc), triple(bloc))):
+
+            # add new positions to list
+            if sdir == 1:
+                start_locs.append(triple(sloc))
+                if before and before[0] == triple(sloc):
+                    before.pop(0)
             else :
-                bdomain -= direction
+                start_locs[:0] = [triple(sloc)]
+                if after and after[-1] == triple(sloc):
+                    after.pop(-1)
 
-            # if ddomain is still on dstrand
-            if ((ddomain < reactant.strand_length(dstrand) and ddomain >= 0) and
+            if bdir == 1:
+                bound_locs[:0] = [triple(bloc)]
+                if after and after[0] == triple(bloc):
+                    after.pop(0)
+            else :
+                bound_locs.append(triple(bloc))
+                if before and before[-1] == triple(bloc):
+                    before.pop(-1)
 
-                    # and bdomain is still on bstrand
-                    (bdomain < reactant.strand_length(bstrand) and bdomain >= 0) and
+            extend_match(sloc, bloc, sdir, bdir)
 
-                    # and ddomain hasn't passed bound_loc
-                    (cmp((dstrand, ddomain), bound_loc) == cmp(start_loc, bound_loc)) and
+        return
 
-                    # and bdomain hasn't passed start_loc
-                    (cmp((bstrand, bdomain), start_loc) == cmp(bound_loc, start_loc)) and
+    start_locs = [start_trp]
+    bound_locs = [bound_trp]
 
-                    # If we are displacing, we are still displacing the same strand.
-                    # Delete these conditions if you want to enable the previous max-helix semantics
-                    ((reactant.get_structure((dstrand, ddomain)) is None) or 
-                        (disp_strands is None) or 
-                        # disp_strands is none! but it was just freed during this move!
-                        ((disp_strands[0] is None) and 
-                            reactant.get_structure((dstrand, ddomain)) in freed) or
-                        (reactant.get_structure((dstrand, ddomain))[0] == disp_strands[0])) and
-
-                    ((reactant.get_structure((bstrand, bdomain)) is None) or 
-                        (disp_strands is None) or 
-                        # disp_strands is none! but it was just freed during this move!
-                        ((disp_strands[1] is None) and 
-                            reactant.get_structure((bstrand, bdomain)) in freed) or
-                        (reactant.get_structure((bstrand, bdomain))[0] == disp_strands[1])) and
-                    # ~~~
-
-                    # and filter condition still applies
-                    filter(reactant.get_domain((dstrand, ddomain)),
-                        reactant.get_structure((dstrand, ddomain)),
-                        (dstrand, ddomain),
-                        reactant.get_domain((bstrand, bdomain)),
-                        reactant.get_structure((bstrand, bdomain)),
-                        (bstrand, bdomain), freed)):
-
-                # add new positions to list
-                if direction == 1:
-                    start_locs.append(triple((dstrand, ddomain)))
-                    bound_locs.append(triple((bstrand, bdomain)))
-                elif direction == -1:
-                    start_locs[:0] = [triple((dstrand, ddomain))]
-                    bound_locs[:0] = [triple((bstrand, bdomain))]
-
-                # remove zipped positions from `middle` loop
-                displacing_index = (direction - 1) / 2
-                bound_index = (-direction - 1) / 2
-
-                freed.add((bstrand, bdomain))
-
-                if middle and middle[displacing_index] is not None and \
-                        middle[displacing_index][2] == (dstrand, ddomain):
-                    del middle[displacing_index]
-
-                if middle and middle[bound_index] is not None and \
-                        middle[bound_index][2] == (bstrand, bdomain):
-                    del middle[bound_index]
-
-            else:
-                break
-
-    start_locs = [triple(start_loc)]
-    bound_locs = [triple(bound_loc)]
-
-    if b4way :
-        for (d, middle) in [(direction, b4way)]:
-            move_towards_middle(middle, d)
+    if filter_4way(start_trp,bound_trp):
+        extend_match(start_trp[2], bound_trp[2], sdir = 1, bdir = 1)
+        bound_locs = bound_locs[::-1]
     else :
-        for (d, middle) in [(direction, before), (-direction, after)]:
-            move_towards_middle(middle, d)
+        extend_match(start_trp[2], bound_trp[2], sdir = 1, bdir = -1)
+        extend_match(start_trp[2], bound_trp[2], sdir = -1, bdir = 1)
 
-    start_locs = Loop(start_locs)
-    bound_locs = Loop(bound_locs)
-    before = Loop(before)
-    after = Loop(after)
-
-    return start_locs, bound_locs, before, after
-
+    return start_locs, before, bound_locs, after
 

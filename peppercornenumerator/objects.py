@@ -6,7 +6,7 @@ import numpy as np
 from dsdobjects import clear_memory
 from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingSet
 from dsdobjects import DSDObjectsError, DSDDuplicationError
-from dsdobjects.utils import split_complex 
+from dsdobjects.utils import split_complex
 # not needed here, but passing it on...
 from dsdobjects.utils import make_pair_table, pair_table_to_dot_bracket 
 
@@ -188,6 +188,14 @@ class PepperReaction(DSD_Reaction):
 
         self._reverse_reaction = None
 
+        # Store the 4 relevant Loop() objects (reactant based):
+        #   * initial-locus
+        #   * target-locus
+        #   * x-linker
+        #   * y-linker
+        self.meta = None
+        self.rotations = None
+
     def __cmp__(self, other):
         """
         ReactionPathway objects are sorted by their canonical form.
@@ -260,11 +268,6 @@ class PepperMacrostate(DSD_RestingSet):
             self._internal_reactions.add(rxn)
         else :
             self._exit_reactions.add(rxn)
-
-        #if rxn.reactants[0] in self._reactions_consuming:
-        #    self._reactions_consuming[rxn.reactants[0]].add(rxn)
-        #else :
-        #    self._reactions_consuming[rxn.reactants[0]] = set([rxn])
 
         self._stationary_distribution = []
         self._exit_probabilities = []

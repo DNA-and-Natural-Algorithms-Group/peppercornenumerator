@@ -6,10 +6,11 @@
 #
 
 import sys
+import math
 import logging
 import itertools
 
-from peppercornenumerator.objects import PepperMacrostate
+from peppercornenumerator.objects import PepperMacrostate, PepperComplex
 from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactlib
@@ -587,13 +588,26 @@ class Enumerator(object):
         for rxn in reactions: 
             # It could be that k_slow is set, but k_fast is not....
             if maxsize and not all(p.size <= maxsize for p in rxn.products) :
-                logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                logging.warning(
+                        "Product complex size (={}) larger than --max-complex-size(={}). "+\
+                        "Ignoring slow reaction {}!".format(
+                            max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
                 continue
             valid_reactions.append(rxn)
 
         return valid_reactions
 
     def get_limited_fast_reactions(self, cplx, p_loc):
+        """Accept/reject a fast reaction based on local elevation.
+
+        Enumerates all fast reactions, then clusters them into compatible
+        reactions. I.e. every pairwise combination of reactions is tested, if
+        two or more reactions are compatible, they belong to the same clique.
+
+        Local elevation is the inverse of the maximum free energy gain when
+        applying a sequence of compatible moves.
+
+        """
         reactions = self.get_fast_reactions(cplx)
 
         def rev_rtype(rtype, arity):
@@ -609,45 +623,123 @@ class Enumerator(object):
             elif rtype == 'branch-4way':
                 return 'branch_4way'
 
-        uphill = []
-        filtered = []
-        sum_of_rates = 0
-        for rxn in reactions:
-            sum_of_rates += rxn.rate
-
-            if rxn.reverse_reaction is None:
-                if rxn.arity != (1,1) :
-                    rxn.reverse_reaction = False
-                else :
-                    rr = rev_rtype(rxn.rtype, rxn.arity)
-                    r = self.get_fast_reactions(rxn.products[0], rtypes = [rr])
-                    r = filter(lambda x: sorted(x.products) == sorted(rxn.reactants), r)
-                    assert len(r) <= 1
-                    if len(r) == 1:
-                        rxn.reverse_reaction = r[0]
-                        r[0].reverse_reaction = rxn
-                    else :
-                        rxn.reverse_reaction = False
-
-            # find uphill reactions
-            if rxn.reverse_reaction:
-                if rxn.rate < rxn.reverse_reaction.rate:
-                    #rev = rxn.reverse_reaction
-                    #print 'r', rxn, rxn.rtype, rxn.rate, 'v', rev, rev.rtype, rev.rate
-                    uphill.append(rxn)
-                else:
-                    filtered.append(rxn)
+        def try_move(reactant, rtype, rotations, meta):
+            (invader, target, x_linker, y_linker) = meta
+            if rotations is not None and rotations != 0:
+                invaders = map(lambda x: reactant.rotate_location(x, rotations), invader.locs)
+                targets = map(lambda x: reactant.rotate_location(x, rotations), target.locs)
             else :
-                assert rxn.reverse_reaction is False
-                filtered.append(rxn)
+                invaders = list(invader.locs)
+                targets = list(target.locs)
 
-        for rxn in uphill:
-            if rxn.rate / sum_of_rates > p_loc:
-                filtered.append(rxn)
+            assert len(invaders) == 1
+            assert len(targets) == 1
+
+            def triple(loc):
+                return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
+
+            if rtype == 'bind11':
+                results = reactlib.find_on_loop(reactant, invaders[0], 
+                        reactlib.filter_bind11)
+            elif rtype == 'branch-3way':
+                results = reactlib.find_on_loop(reactant, invaders[0],
+                        reactlib.filter_3way, direction = 1) + \
+                          reactlib.find_on_loop(reactant, invaders[0], 
+                        reactlib.filter_3way, direction = -1)
+            elif rtype == 'branch-4way':
+                results = reactlib.find_on_loop(reactant, invaders[0], 
+                        reactlib.filter_4way)
+            elif rtype == 'open':
+                return reactant.get_structure(invaders[0]) == targets[0]
+            else :
+                raise Exception('unknown rtype:', rtype)
+
+            targets = map(triple, targets)
+            for [s,x,t,y] in results:
+                if t == targets:
+                    return True
+            return False
+
+        def elevation(rxn):
+            assert rxn.arity == (1,1)
+            if rxn.reverse_reaction is None:
+                rr = rev_rtype(rxn.rtype, rxn.arity)
+                r = self.get_fast_reactions(rxn.products[0], rtypes = [rr], restrict=False, rc=99)
+                r = filter(lambda x: sorted(x.products) == sorted(rxn.reactants), r)
+                assert len(r) == 1
+                if len(r) == 1:
+                    rxn.reverse_reaction = r[0]
+                    r[0].reverse_reaction = rxn
+                else :
+                    rxn.reverse_reaction = False
+            
+            dG = math.log(rxn.rate/rxn.reverse_reaction.rate)
+            return dG if dG > 0 else 0
+        
+        # Calculate the local elevation of a complex using only 1-1 reactions.
+        compat = dict()
+        for rxn in reactions:
+            #print 'RXN', rxn, rxn.kernel_string, rxn.rtype
+            if rxn.arity != (1,1): continue
+            compat[rxn] = set()
+            for other in reactions:
+                if rxn == other: continue
+                if other.arity != (1,1): continue
+                #print 'OTH', other, other.kernel_string, other.rtype
+                # Try to append the other reaction to this reaction
+                success = try_move(rxn.products[0], other.rtype, rxn.rotations, other.meta)
+                if success:
+                    # We can apply other to the product of rxn
+                    compat[rxn].add(other)
+
+        # https://en.wikipedia.org/wiki/Clique_(graph_theory)
+        cliques = []
+        for p in sorted(compat):
+            vert = p
+            if compat[p] == set():
+                cliques.append(set([p]))
+                continue
+            for l in list(compat[p]):
+                edge = (p,l)
+                processed = False
+                for e, c in enumerate(cliques):
+                    if p in c and (l in c or all(l in compat[y] for y in c)):
+                        c.add(l)
+                        processed = True
+                if not processed:
+                    cliques.append(set([p,l]))
+
+        elevations = []
+        for c in cliques:
+            elevations.append(sum(map(elevation, c)))
+
+        if elevations:
+            eleven = max(elevations)
+        else :
+            eleven = 0
+
+        #print cplx, cplx.kernel_string, eleven, math.e**(-eleven)
+
+        filtered = []
+        for rxn in reactions:
+            if rxn.arity != (1,1):
+                # we don't know the reverse rate, assuming uphill...
+                if math.e**(-eleven) * rxn.rate < p_loc:
+                    #print 'skipping', rxn, rxn.rtype, rxn.arity, math.e**(-eleven) * rxn.rate, p_loc
+                    continue
+            elif rxn.rate < rxn.reverse_reaction.rate:
+                # this is a true uphill reaction...
+                if math.e**(-eleven) * rxn.rate < p_loc:
+                    #print 'skipping', rxn, rxn.rtype, rxn.arity, math.e**(-eleven) * rxn.rate, p_loc
+                    continue
+            else :
+                #print 'accepting', rxn, rxn.rtype, rxn.arity, math.e**(-eleven) * rxn.rate
+                pass
+            filtered.append(rxn)
 
         return filtered
 
-    def get_fast_reactions(self, cplx, rtypes = None):
+    def get_fast_reactions(self, cplx, rtypes = None, restrict=True, rc = None):
         """
         Returns a list of fast reactions possible using complex as a reagent.
 
@@ -659,18 +751,25 @@ class Enumerator(object):
 
         reactions = []
 
-        total = 0
         # Do unimolecular reactions
         for move in FAST_REACTIONS[1]:
             if rtypes and move.__name__ not in rtypes:
                 continue
             if move.__name__ == 'open':
-                move_reactions = move(cplx, 
+                if rc :
+                    move_reactions = move(cplx, 
+                        max_helix=self._max_helix, 
+                        release_11 = rc,
+                        release_1N = rc)
+                else :
+                    move_reactions = move(cplx, 
                         max_helix=self._max_helix, 
                         release_11 = self._release_11,
                         release_1N = self._release_1N)
             else :
                 move_reactions = move(cplx, max_helix=self._max_helix, remote=self._remote)
+            
+            if not restrict: continue
 
             for rxn in move_reactions: 
                 # It could be that k_slow is set, but k_fast is not....
@@ -680,10 +779,9 @@ class Enumerator(object):
                         --max-complex-size(={}). Ignoring fast reaction {}!".format(
                             max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
                         continue
-                    total += rxn.rate
                     reactions.append(rxn)
 
-        return reactions
+        return reactions if restrict else move_reactions
 
     def get_new_products(self, reactions):
         """
