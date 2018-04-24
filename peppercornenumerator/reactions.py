@@ -120,7 +120,12 @@ def show_loops(before, after, message):
 
 def branch_3way_remote_rate(length, before, after, debug = False):
     """
-    Rate constant formula for 3-way branch migration, possibly with a remote toehold
+    Rate constant formula for 3-way branch migration, possibly with a remote toehold.
+
+    Args: 
+        length (int): the length of the domain
+        before (:obj:Loop): the loop object on the typical 3-way branch migration initiation site.
+        after (:obj:Loop): the other (remote) loop object.
     """
     # step = 0.1e-3  # 100us branch migration step time from Srinivas et al 2013 (not relevant)
     # k_init = k_uni exp(-dGsp / RT) with k_uni = 7.5e7, dGsp = 7.3 kcal/mol,
@@ -130,8 +135,8 @@ def branch_3way_remote_rate(length, before, after, debug = False):
     if debug :
         show_loops(before, after, "...before & after loops for 3-way branch migration...")
 
-    # "standard" 3-way bm initiation (plus "before" being closed)
-    if not after.is_open and after.stems == 1 and after.bases == 0:
+    # "standard" 3-way bm initiation (plus "after" being closed)
+    if not before.is_open and before.stems == 1 and before.bases == 0:
         # each initiation has probability 1/length of succeeding.  
         # how long it takes doesn't matter.
         return 1.0 / init / length
@@ -653,18 +658,15 @@ def branch_3way(reactant, max_helix = True, remote=True):
                 except DSDDuplicationError, e :
                     reaction = e.existing
 
-                # length of invading domain
-                length = len(displacing)
-
-                # calculate reaction constant
-                reaction.rate = branch_3way_remote_rate(length, before, after)
-
                 # skip remote toehold reactions if directed
                 if not remote :
                     if not (not before.is_open and before.stems == 1 and before.bases == 0):
                         # print "Rejecting... " + reaction.kernel_string
                         # import pdb; pdb.set_trace()
                         continue
+
+                # calculate reaction constant
+                reaction.rate = branch_3way_remote_rate(len(displacing), before, after)
 
                 reactions.append(reaction)
 
@@ -704,6 +706,8 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
         rotations = 0
+        # TODO: This is expensive, pointless and should be removed...
+        # it checks for a very bad bug that should be resolved.
         for e, s in enumerate(product.pair_table):
             for e2, tup in enumerate(s):
                 if tup != struct[e][e2]:
@@ -711,7 +715,7 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
                     print product, product.kernel_string
                     print struct
                     print product.pair_table
-                    raise Exception
+                    raise Exception('Inconsistent secondary structures.')
     except DSDDuplicationError, e:
         product = e.existing
         rotations = e.rotations
@@ -770,20 +774,17 @@ def branch_4way(reactant, max_helix = False, remote=True):
                     reaction.meta = (displacing, displaced, before, after)
                     reaction.rotations = rotations
                 except DSDDuplicationError, e :
-                    #assert opening_rate(length) == PepperReaction.dictionary[e.solution].rate
                     reaction = e.existing
-
-                # length of invading domain
-                length = len(displacing)
-
-                # calculate reaction constant
-                reaction.rate = branch_4way_remote_rate(length, before, after)
 
                 # skip remote toehold reactions
                 if not remote:
-                    if not (not after.is_open and after.stems == 1 and after.bases == 0 and
-                            not before.is_open and before.stems == 1 and before.bases == 0):
+                    # NOTE: both sides need to be remote!
+                    if not ((not after.is_open and after.stems == 1 and after.bases == 0) or
+                            (not before.is_open and before.stems == 1 and before.bases == 0)):
                         continue
+
+                # calculate reaction constant
+                reaction.rate = branch_4way_remote_rate(len(displacing), before, after)
 
                 reactions.append(reaction)
 
@@ -822,6 +823,8 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
         rotations = 0
+        # TODO: This is expensive, pointless and should be removed...
+        # it checks for a very bad bug that should be resolved.
         for e, s in enumerate(product.pair_table):
             for e2, tup in enumerate(s):
                 if tup != struct[e][e2]:
@@ -829,7 +832,7 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
                     print product, product.kernel_string
                     print struct
                     print product.pair_table
-                    raise Exception
+                    raise Exception('Inconsistent secondary structures.')
     except DSDDuplicationError, e:
         product = e.existing
         rotations = e.rotations
@@ -972,24 +975,16 @@ def find_on_loop(reactant, start_loc, pattern, direction=1):
              [triple(bound_loc)],   # target domain
              loop[i+1:]) for (bound_loc, i) in results]
 
-def zipper(reactant, start_trp, before, bound_trp, after, filter):
+def zipper(reactant, start_trp, before, bound_trp, after, pattern):
     """Max-helix mode zipping to extend a given move type.
 
-    TODO: explain why before/after will not change...
+    Takes a result from `find_on_loop` and finds as many adjacent domains as
+    possible such that the `pattern` function still returns True.
 
-    Takes a result from `find_on_loop` and "zips" it inwards (in the given
-    `direction`); that is, given some `start_loc` and some `bound_loc`, tries
-    to find as many adjacent domains as possible such that the `filter`
-    function still returns True.
-
-    For example, if `start_loc` was b1 and `bound_loc` was b1*, and the filter
+    For example, if `start_loc` was b1 and `bound_loc` was b1*, and the pattern
     function specified that the domain at `start_loc` must be complementary to
     the domain at `bound_loc`, then the function would return [b1,b2] as
     start_locs and [b1*, b2*] as bound_locs
-
-    Note: if you pass disp_strands = None, you will turn of the new max-helix semantics
-    and enable Caseys max helix semantics
-
 
             b1* b2*
             ______
@@ -998,21 +993,27 @@ def zipper(reactant, start_trp, before, bound_trp, after, filter):
            \______/
             b1  b2
 
+    Note that 4-way branch migration max-helix never extends into (changes) the 
+    before / after loops, so it is safe to pass None instead.
 
     Returns:
+        start_locs (extended list of triples)
+        before (reduced list of triples)
+        bound_locs (extended list of triples)
+        after (reduced list of triples)
     """
 
     def triple(loc):
         return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
 
-    assert filter(start_trp,bound_trp)
+    assert pattern(start_trp,bound_trp)
 
     def extend_match(start_loc, bound_loc, sdir, bdir):
         """
         Move upstream or downstream from start locus and bound locus and check
-        if filter condition still applies.
+        if pattern condition still applies.
 
-        Accesses reactant, start_loc, bound_loc, filter, 
+        Accesses reactant, start_loc, bound_loc, pattern, 
         
         """
         (sstrand, sdomain) = start_loc
@@ -1032,30 +1033,26 @@ def zipper(reactant, start_trp, before, bound_trp, after, filter):
             # bdomain is no longer on bstrand
             return
 
-        if (start_pair is None) != (spair is None):
-            return
-
-        if (bound_pair is None) != (bpair is None):
-            return
+        if (start_pair is None) != (spair is None): return
+        if (bound_pair is None) != (bpair is None): return
 
             # ddomain hasn't passed bound_loc
         if ((cmp(sloc, bound_loc) == cmp(start_loc, bound_loc)) and
             # and bdomain hasn't passed start_loc
             (cmp(bloc, start_loc) == cmp(bound_loc, start_loc)) and
 
-            # TODO: check if we can write that nicer...
-            # if paired, then pair(ddomain) is still on pair(dstrand)
+            # if paired, then also the paired domain must be adjacent
             ((start_pair is None) and (spair is None) or
-                start_pair[0] == spair[0] and        # same strand!
+                start_pair[0] == spair[0] and         # same strand!
                 start_pair[1] == spair[1] + sdir) and # adjacent!
 
-            # if paired, then pair(ddomain) is still on pair(dstrand)
+            # if paired, then also the paired domain must be adjacent
             ((bound_pair is None) and (bpair is None) or
-                bound_pair[0] == bpair[0] and        # same strand!
+                bound_pair[0] == bpair[0] and         # same strand!
                 bound_pair[1] == bpair[1] + bdir) and # adjacent!
 
-            # and filter condition still applies
-            filter(triple(sloc), triple(bloc))):
+            # and pattern condition still applies
+            pattern(triple(sloc), triple(bloc))):
 
             # add new positions to list
             if sdir == 1:

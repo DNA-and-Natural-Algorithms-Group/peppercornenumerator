@@ -16,6 +16,42 @@ from dsdobjects.parser import ParseException
 
 from peppercornenumerator.objects import PepperDomain, PepperComplex, PepperReaction
 
+def resolve_loops(loop):
+    """ Return a sequence, structure pair from kernel format with parenthesis. """
+    sequen = []
+    struct = []
+    for dom in loop :
+        if isinstance(dom, str):
+            sequen.append(dom)
+            if dom == '+' :
+                struct.append('+')
+            else :
+                struct.append('.')
+        elif isinstance(dom, list):
+            struct[-1] = '('
+            old = sequen[-1]
+            se, ss = resolve_loops(dom)
+            sequen.extend(se)
+            struct.extend(ss)
+            sequen.append(old + '*' if old[-1] != '*' else old[:-1])
+            struct.append(')')
+    return sequen, struct
+
+def read_reaction(line):
+    rtype = line[1][0][0] if line[1] != [] and line[1][0] != [] else None
+    rate = float(line[1][1][0]) if line[1] != [] and line[1][1] != [] else None
+    units = line[1][2][0] if line[1] != [] and line[1][2] != [] else None
+    if rate is None or rtype is None or rtype == 'condensed' :
+        r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
+        logging.warning("Ignoring input reaction without a rate: {}".format(r))
+        return None, None, None, None, None, None
+    else :
+        r = "[{} = {:12g} {}] {} -> {}".format(
+                rtype, rate, units, ' + '.join(line[2]), ' + '.join(line[3]))
+
+    return line[2], line[3], rtype, rate, units, r
+
+
 def read_pil(data, is_file = False, alpha = ''):
     """ Old input standard. 
 
@@ -33,27 +69,6 @@ def read_pil(data, is_file = False, alpha = ''):
         parsed_file = parse_pil_file(data)
     else :
         parsed_file = parse_pil_string(data)
-
-    def resolve_loops(loop):
-        """ Return a sequence, structure pair from kernel format with parenthesis. """
-        sequen = []
-        struct = []
-        for dom in loop :
-            if isinstance(dom, str):
-                sequen.append(dom)
-                if dom == '+' :
-                    struct.append('+')
-                else :
-                    struct.append('.')
-            elif isinstance(dom, list):
-                struct[-1] = '('
-                old = sequen[-1]
-                se, ss = resolve_loops(dom)
-                sequen.extend(se)
-                struct.extend(ss)
-                sequen.append(old + '*' if old[-1] != '*' else old[:-1])
-                struct.append(')')
-        return sequen, struct
 
     domains = {'+' : '+'} # saves some code
     sequences = {}
@@ -121,24 +136,20 @@ def read_pil(data, is_file = False, alpha = ''):
             complexes[name] = PepperComplex(sequence, structure, name=name)
 
         elif line[0] == 'reaction':
-            rtype = line[1][0][0] if line[1] != [] and line[1][0] != [] else None
-            rate = float(line[1][1][0]) if line[1] != [] and line[1][1] != [] else None
-            if rate is None or rtype is None or rtype == 'condensed' :
-                r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
-                logging.warning("Ignoring input reaction: {}".format(r))
-                continue
-            else :
-                r = "[{} = {:12g}] {} -> {}".format(
-                        rtype, rate, ' + '.join(line[2]), ' + '.join(line[3]))
+            reactants, products, rtype, rate, units, r = read_reaction(line)
+            if r is None: continue
 
             try :
-                reactants = map(lambda c : complexes[c], line[2])
-                products  = map(lambda c : complexes[c], line[3])
+                reactants = map(lambda c : complexes[c], reactants)
+                products  = map(lambda c : complexes[c], products)
             except KeyError:
                 logging.warning("Ignoring input reaction with undefined complex: {}".format(r))
                 continue
             
             reaction = PepperReaction(reactants, products, rtype=rtype, rate=rate)
+            if reaction.rateunits != units:
+                logging.warning("Rate units do not match: {} vs {}".format(
+                    units, reaction.rateunits))
             reactions.append(reaction)
 
         elif line[0] == 'resting-macrostate':
@@ -159,27 +170,6 @@ def read_kernel(data, is_file = False):
         parsed_file = parse_kernel_file(data)
     else :
         parsed_file = parse_kernel_string(data)
-
-    def resolve_loops(loop):
-        """ Return a sequence, structure pair from kernel format with parenthesis. """
-        sequen = []
-        struct = []
-        for dom in loop :
-            if isinstance(dom, str):
-                sequen.append(dom)
-                if dom == '+' :
-                    struct.append('+')
-                else :
-                    struct.append('.')
-            elif isinstance(dom, list):
-                struct[-1] = '('
-                old = sequen[-1]
-                se, ss = resolve_loops(dom)
-                sequen.extend(se)
-                struct.extend(ss)
-                sequen.append(old + '*' if old[-1] != '*' else old[:-1])
-                struct.append(')')
-        return sequen, struct
 
     # Do domains first, just in case...
     domains = {'+' : '+'} # saves some code
@@ -228,24 +218,20 @@ def read_kernel(data, is_file = False):
             complexes[name] = PepperComplex(sequence, structure, name=name)
 
         elif line[0] == 'reaction':
-            rtype = line[1][0][0] if line[1] != [] and line[1][0] != [] else None
-            rate = float(line[1][1][0]) if line[1] != [] and line[1][1] != [] else None
-            if rate is None or rtype is None or rtype == 'condensed' :
-                r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
-                logging.warning("Ignoring input reaction without a rate: {}".format(r))
-                continue
-            else :
-                r = "[{} = {:12g}] {} -> {}".format(
-                        rtype, rate, ' + '.join(line[2]), ' + '.join(line[3]))
+            reactants, products, rtype, rate, units, r = read_reaction(line)
+            if r is None: continue
 
             try :
-                reactants = map(lambda c : complexes[c], line[2])
-                products  = map(lambda c : complexes[c], line[3])
+                reactants = map(lambda c : complexes[c], reactants)
+                products  = map(lambda c : complexes[c], products)
             except KeyError:
                 logging.warning("Ignoring input reaction with undefined complex: {}".format(r))
                 continue
 
             reaction = PepperReaction(reactants, products, rtype=rtype, rate=rate)
+            if reaction.rateunits != units:
+                logging.warning("Rate units do not match: {} vs {}".format(
+                    units, reaction.rateunits))
             reactions.append(reaction)
 
         elif line[0] == 'resting-macrostate':

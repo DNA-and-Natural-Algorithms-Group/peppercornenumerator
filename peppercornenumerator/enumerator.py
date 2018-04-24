@@ -589,9 +589,7 @@ class Enumerator(object):
             # It could be that k_slow is set, but k_fast is not....
             if maxsize and not all(p.size <= maxsize for p in rxn.products) :
                 logging.warning(
-                        "Product complex size (={}) larger than --max-complex-size(={}). "+\
-                        "Ignoring slow reaction {}!".format(
-                            max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                        "Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
                 continue
             valid_reactions.append(rxn)
 

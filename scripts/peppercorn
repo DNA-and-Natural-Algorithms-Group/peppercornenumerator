@@ -8,8 +8,9 @@ import contextlib
 
 # Import global default variables from peppercornenumerator library
 from peppercornenumerator import Enumerator, __version__
+from peppercornenumerator.enumerator import FAST_REACTIONS
 from peppercornenumerator.input import read_kernel, read_pil, ParseException
-from peppercornenumerator.output import write_kernel
+from peppercornenumerator.output import write_kernel, write_crn
 
 from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
 
@@ -78,6 +79,14 @@ def add_peppercorn_args(parser):
         help="""Redirect output to a file""")
     output.add_argument( '-c', '--condensed', action='store_true',
         help="Condense reactions into only resting complexes.")
+    output.add_argument('--output-crn', default=None, metavar='<str>',
+        help="""Write CRN separately to a file.""")
+    output.add_argument("--concentration-unit", default='M', action='store',
+        choices=('M', 'mM', 'uM', 'nM', 'pM'),
+        help="""Specify concentration units for crn output.""")
+    output.add_argument("--time-unit", default='s', action='store',
+        choices=('s', 'm', 'h'),
+        help="""Specify time units for crn output.""")
 
     limits.add_argument( '--max-complex-size', type=int, default=6, metavar='<int>',
         help="""Maximum number of strands allowed in a complex (used to prevent
@@ -233,12 +242,12 @@ def main(cl_opts):
 
     # Modify enumeration events based on command line options.
     if cl_opts.ignore_branch_3way:
-        if branch_3way in enum.FAST_REACTIONS:
-            enum.FAST_REACTIONS.remove(branch_3way)
+        if branch_3way in FAST_REACTIONS[1]:
+            FAST_REACTIONS[1].remove(branch_3way)
 
     if cl_opts.ignore_branch_4way:
-        if branch_4way in enum.FAST_REACTIONS:
-            enum.FAST_REACTIONS.remove(branch_4way)
+        if branch_4way in FAST_REACTIONS[1]:
+            FAST_REACTIONS[1].remove(branch_4way)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Run reaction enumeration (or not) #
@@ -278,6 +287,12 @@ def main(cl_opts):
     else :
         with open(cl_opts.output_filename, 'w') as pil :
             write_kernel(enum, pil, condensed = condensed)
+
+    if cl_opts.output_crn :
+        with open(cl_opts.output_crn, 'w') as crn:
+            write_crn(enum, crn, condensed = condensed, 
+                    molarity = cl_opts.concentration_unit,
+                    time = cl_opts.time_unit)
 
 
 if __name__ == '__main__':
