@@ -19,11 +19,15 @@ setup(
     license=license,
     test_suite='tests',
     install_requires=[
-        'pyparsing>=1.5.5', 
         'numpy',
-        'dsdobjects==0.5'],
-    dependency_links=['http://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects/tarball/master#egg=dsdobjects-0.5'],
+        'pyparsing>=1.5.5', 
+        'crnsimulator==0.4',
+        'dsdobjects==0.6'],
+    dependency_links=[
+        'https://github.com/bad-ants-fleet/crnsimulator/tarball/master#egg=crnsimulator-0.4',
+        'http://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects/tarball/master#egg=dsdobjects-0.6'],
     packages=['peppercornenumerator'],
-    scripts=['scripts/peppercorn']
+    scripts=['scripts/peppercorn',
+             'scripts/pilsimulator']
 )
 

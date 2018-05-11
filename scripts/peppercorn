@@ -79,8 +79,8 @@ def add_peppercorn_args(parser):
         help="""Redirect output to a file""")
     output.add_argument( '-c', '--condensed', action='store_true',
         help="Condense reactions into only resting complexes.")
-    output.add_argument('--output-crn', default=None, metavar='<str>',
-        help="""Write CRN separately to a file.""")
+    output.add_argument( '-d', '--detailed', action='store_true',
+        help="Print detailed reactions even if --condensed is chosen.")
     output.add_argument("--concentration-unit", default='M', action='store',
         choices=('M', 'mM', 'uM', 'nM', 'pM'),
         help="""Specify concentration units for crn output.""")
@@ -167,7 +167,7 @@ def main(cl_opts):
     systeminput = cl_opts.input_filename
     if not systeminput :
         if sys.stdout.isatty():
-            logging.warning("Reading file from STDIN, Ctrl-D to stop")
+            logging.info("Reading file from STDIN, Ctrl-D to stop")
         systeminput = ''
         for l in sys.stdin:
             systeminput += l
@@ -175,20 +175,14 @@ def main(cl_opts):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Load an input parser to generate complexes for enumeration #
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    try:
-        logging.info("Parsing input.")
-        complexes, reactions = read_kernel(systeminput, cl_opts.input_filename is not None) 
-        logging.info("Parsed input format: kernel")
+
+    composite = None
+    try :
+        complexes, reactions, composite = read_pil(systeminput, cl_opts.input_filename is not None, composite=True)
     except ParseException, e:
-        logging.info('Using non-standard input: "{}"'.format(e.line))
-        logging.info('                           {} '.format(' ' * (e.col-1) + '^'))
-        try :
-            complexes, reactions = read_pil(systeminput, cl_opts.input_filename is not None)
-            logging.warning("Used deprecated input format: (pil, enum)")
-        except ParseException, e:
-            logging.error('Cannot parse line {:5d}: "{}"'.format(e.lineno, e.line))
-            logging.error('                          {} '.format(' ' * (e.col-1) + '^'))
-            raise SystemExit
+        logging.error('Cannot parse line {:5d}: "{}"'.format(e.lineno, e.line))
+        logging.error('                          {} '.format(' ' * (e.col-1) + '^'))
+        raise SystemExit
 
     enum = Enumerator(complexes.values(), reactions)
 
@@ -279,21 +273,19 @@ def main(cl_opts):
     # Handle output condensation #
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     condensed = cl_opts.condensed
+    detailed = (not cl_opts.condensed or cl_opts.detailed)
     if(condensed):
         logging.info("Output will be condensed to remove transient complexes.")
 
     if cl_opts.output_filename is None:
-        write_kernel(enum, sys.stdout, condensed = condensed)
+        write_kernel(enum, sys.stdout, detailed = detailed, condensed = condensed, 
+                    composite = composite, molarity = cl_opts.concentration_unit,
+                    time = cl_opts.time_unit)
     else :
         with open(cl_opts.output_filename, 'w') as pil :
-            write_kernel(enum, pil, condensed = condensed)
-
-    if cl_opts.output_crn :
-        with open(cl_opts.output_crn, 'w') as crn:
-            write_crn(enum, crn, condensed = condensed, 
-                    molarity = cl_opts.concentration_unit,
+            write_kernel(enum, pil, detailed = detailed, condensed = condensed, 
+                    composite = composite, molarity = cl_opts.concentration_unit,
                     time = cl_opts.time_unit)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

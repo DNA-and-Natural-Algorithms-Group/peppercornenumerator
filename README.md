@@ -104,7 +104,7 @@ reaction [condensed      =       221956 /M/s ] rS2 + rI1 -> rP3 + rP2 + rC1
 ```
 
 ## Version
-0.5
+0.6
 
 ## Authors
 Casey Grun, Stefan Badelt, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.

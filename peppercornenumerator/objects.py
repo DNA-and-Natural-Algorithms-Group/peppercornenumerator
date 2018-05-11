@@ -44,11 +44,20 @@ class PepperDomain(DL_Domain):
                 raise PepperObjectsError('Conflicting length assignments for {}: "{}" vs. "{}"'.format(
                     name, length, other.length))
             return e.existing
+        self._nucleotides = None
         return self
 
     def __init__(self, name, dtype=None, length=None):
         # Remove default initialziation to get __new__ to work
         pass
+
+    @property
+    def nucleotides(self):
+        return self._nucleotides
+
+    @nucleotides.setter
+    def nucleotides(self, value):
+        self._nucleotides = value
 
     @property
     def complement(self):
@@ -110,6 +119,10 @@ class PepperComplex(DSD_Complex):
             backup = 'enum' if prefix != 'enum' else 'pepper'
             super(PepperComplex, self).__init__(sequence, structure, name, backup, memorycheck)
             logging.warning('Complex name existed, prefix has been changed to: {}'.format(backup))
+        
+        # Peppercorn IO:
+        # store and ignore concentration values if given..
+        self._concentration = None # e.g. (initial, 5, nM)
 
     @property
     def pair_table(self):
@@ -223,14 +236,48 @@ class PepperReaction(DSD_Reaction):
             assert rxn.rtype == rev_rtype(self.rtype, self.arity)
         self._reverse_reaction = rxn
 
-    @property
-    def full_string(self):
-        """prints the formal chemical reaction."""
+    def full_string(self, molarity='M', time='s'):
+        """Prints the reaction in PIL format.
+        Reaction objects *always* specify rate in /M and /s.  """
+
+        def format_rate_units():
+            rate = self.rate
+            if time == 's':
+                pass
+            elif time == 'm':
+                rate *= 60
+            elif time == 'h':
+                rate *= 3600
+            else :
+                raise NotImplementedError
+        
+            if molarity == 'M':
+                pass
+            elif molarity == 'mM':
+                if self.arity[0] > 1:
+                    factor = self.arity[0] - 1
+                    rate /= (factor * 1e3)
+            elif molarity == 'uM':
+                if self.arity[0] > 1:
+                    factor = self.arity[0] - 1
+                    rate /= (factor * 1e6)
+            elif molarity == 'nM':
+                if self.arity[0] > 1:
+                    factor = self.arity[0] - 1
+                    rate /= (factor * 1e9)
+            else :
+                raise NotImplementedError
+
+            return rate
+
+        rate = format_rate_units()
+        units = "/{}".format(molarity) * (self.arity[0] - 1) + "/{}".format(time)
+
         if self.rtype :
-            return '[{:14s} = {:12g} {:4s} ] {} -> {}'.format(self.rtype, self.rate, self.rateunits,
+            return '[{:14s} = {:12g} {:4s} ] {} -> {}'.format(self.rtype, rate, units,
                     " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
         else :
-            return '[{:12g} {:4s} ] {} -> {}'.format(self.rate, self.rateunits,
+            return '[{:12g} {:4s} ] {} -> {}'.format(rate, units,
                     " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
 
 class PepperMacrostate(DSD_RestingSet):

@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+#
+# pilsimulator: simulate PIL files using ODEs
+#
+# Written by Stefan Badelt (badelt@caltech.edu).
+#
+# Use at your own risk.
+#
+#
+
+from __future__ import print_function
+import os
+import sys
+import imp
+import argparse
+
+from crnsimulator import ReactionGraph, __version__
+from crnsimulator.odelib_template import add_integrator_args
+from peppercornenumerator.input import load_pil_crn
+
+def main(args):
+    """Translate a CRN into a system of ODEs. Optional: Simulate ODEs on-the-fly. """
+
+    # ********************* #
+    # ARGUMENT PROCESSING 1 #
+    # ..................... #
+    filename = args.output + \
+        '.py' if args.output[-3:] != '.py' else args.output
+    odename = 'odesystem'
+
+    input_crn = sys.stdin.readlines()
+    input_crn = "".join(input_crn)
+
+    crn, species = load_pil_crn(input_crn)
+
+    if crn == []:
+        raise SystemExit('No Input CRN provided.')
+
+    V = []
+    C = []
+    for s in sorted(species):
+        V.append(s)
+        if species[s][0][0] != 'i':
+            raise NotImplementedError
+        C.append(species[s][1])
+
+    # Split CRN into irreversible reactions
+    new = []
+    for [r, p, k] in crn:
+        if None in k:
+            print('# Set missing rates to 1.')
+            k[:] = [x if x is not None else 1 for x in k]
+
+        if len(k) == 2:
+            new.append([r, p, k[0]])
+            new.append([p, r, k[1]])
+        else:
+            new.append([r, p, k[0]])
+    crn = new
+
+    # **************** #
+    # WRITE ODE SYSTEM #
+    # ................ #
+    if not args.force and os.path.exists(args.output):
+        print('# Reading ODE system from existing file:', args.output)
+    else:
+        # ******************* #
+        # BUILD REACTIONGRAPH #
+        # ................... #
+        RG = ReactionGraph(crn)
+
+        # ********************* #
+        # PRINT ODE TO TEMPLATE #
+        # ..................... #
+        filename, odename = RG.write_ODE_lib(sorted_vars = V, concvect = C,
+                                             jacobian=not args.no_jacobian, filename=filename,
+                                             odename=odename)
+        print('# Wrote ODE system:', filename)
+
+    # ******************* #
+    # SIMULATE ODE SYSTEM #
+    # ................... #
+    if args.dryrun:
+        print('# Dryrun: Simulate the ODE system using:')
+        print("#  python {} --help ".format(filename))
+    else:
+        print('# Simulating the ODE system, change parameters using:')
+        print("#  python {} --help ".format(filename))
+
+        _temp = imp.load_source(odename, filename)
+        integrate = getattr(_temp, 'integrate')
+
+        # ********************* #
+        # ARGUMENT PROCESSING 2 #
+        # ..................... #
+        integrate(args)
+
+    return
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+    parser.add_argument("--force", action='store_true',
+            help="Overwrite existing files")
+    parser.add_argument("--dryrun", action='store_true',
+            help="Do not run the simulation, only write the files.")
+    parser.add_argument("-o", "--output", default='odesystem', metavar='<str>',
+            help="Name of ODE library files.")
+    parser.add_argument("--no-jacobian", action='store_true',
+            help="Do not compute the Jacobi-Matrix.")
+
+    add_integrator_args(parser)
+
+    args = parser.parse_args()
+
+    main(args)
