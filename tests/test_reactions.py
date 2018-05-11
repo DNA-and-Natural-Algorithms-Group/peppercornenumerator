@@ -8,7 +8,7 @@ import logging
 logging.disable(logging.CRITICAL)
 
 from peppercornenumerator import Enumerator
-from peppercornenumerator.input import read_kernel
+from peppercornenumerator.input import read_pil
 from peppercornenumerator.objects import PepperReaction, clear_memory
 
 import peppercornenumerator.reactions as rxn
@@ -37,7 +37,7 @@ class FindOnLoop(unittest.TestCase):
         clear_memory()
 
     def test_bind11(self):
-        complexes, reaction = read_kernel("""
+        complexes, reaction = read_pil("""
         A = a( b c d e( ) d* c* b* c* )
         """)
         A = complexes['A']
@@ -111,7 +111,7 @@ class FindOnLoop(unittest.TestCase):
                              triple(A, (0,1))]) # b
 
     def test_bind11_ms(self):
-        complexes, reaction = read_kernel("""
+        complexes, reaction = read_pil("""
         B = a( b c d e( + ) d* + c* b* c* )
         """)
         B = complexes['B']
@@ -196,7 +196,7 @@ class FindOnLoop(unittest.TestCase):
                              triple(B, (0,1))]) # b
 
     def test_3way_matching(self):
-        complexes, reaction = read_kernel("""
+        complexes, reaction = read_pil("""
         A = a( b( c( x a b c b y c( b( + ) ) + b c ) ) )
         #                  ^(0.6)                  ^(2,2)
         """)
@@ -267,7 +267,7 @@ class FindOnLoop(unittest.TestCase):
                              triple(A, (0,7))]) # b
 
     def test_4way_matching(self):
-        complexes, reaction = read_kernel("""
+        complexes, reaction = read_pil("""
         A = c* b*( X2*( X1*( + ) ) ) c y* b*( a* Y1* + a ) c( + ) b*( X2*( X1*( + ) ) ) c y* b*( a*( Y1* + ) ) c
         #      ^(0,1)                     ^(1,5)                  ^(3,3)
         """)
@@ -325,7 +325,7 @@ class NewOpenTests(unittest.TestCase):
         Testing max-helix-semantics and release-cutoff 5, 8, 13
         """
         # INPUT
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         length a = 8
         length t = 5
 
@@ -381,7 +381,7 @@ class NewOpenTests(unittest.TestCase):
         # That means, should release-cutoff of 4 mean "max-helix-semantics up
         # to length 4"? What would that mean if you start in 
         # "a b c( + ) b* a*" vs "ab c( + ) ab*"
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         length a = 3
         length b = 1
         length c = 3
@@ -402,7 +402,7 @@ class NewBindTests(unittest.TestCase):
         clear_memory()
 
     def test_binding(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         length a = 10
         length t = 5
 
@@ -488,8 +488,19 @@ class NewBranch3WayTests(unittest.TestCase):
     def tearDown(self):
         clear_memory()
 
+    def test_inconsitent_structure_bug(self):
+        # this bug was fixed via dsdobjects. 
+        # dsdobjects now raises an index error when asking for
+        # the pair of a locus (0,-1)
+        # update to version dsdobjects v0.6
+        complexes, reaction = read_pil("""
+        A = d11 t6( d7 t8 + d12( t6( d7 t8 + ) ) ) d11*( t8*( + d7 ) )
+        """)
+        A = complexes['A']
+        _ = rxn.branch_3way(A, max_helix=True, remote=True)
+
     def test_break_3way(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         length b = 7
         A = b( b*( b b*( + ) b* ) )
         """)
@@ -503,7 +514,7 @@ class NewBranch3WayTests(unittest.TestCase):
         A single 3-way branch migration reaction.
         """
         # INPUT
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         X = a( b x + b( d( + ) ) )
         Y = a( b( x + b d( + ) ) )
         """)
@@ -535,7 +546,7 @@ class NewBranch3WayTests(unittest.TestCase):
         A series of 3-way branch migration reactions.
         """
         # INPUT
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         X  = a( x y z + x( y( z( b( + ) ) ) ) )
         I1 = a( x( y z + x y( z( b( + ) ) ) ) )
         I2 = a( x( y( z + x y z( b( + ) ) ) ) )
@@ -594,7 +605,7 @@ class NewBranch3WayTests(unittest.TestCase):
         A remote 3way branch migration reaction.
         """
         # INPUT
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         X  = a( b x y z + x( y( z( c( + ) ) ) ) )
         I1 = a( b x( y z + x y( z( c( + ) ) ) ) )
         I2 = a( b x( y( z + x y z( c( + ) ) ) ) )
@@ -668,7 +679,7 @@ class NewBranch3WayTests(unittest.TestCase):
 
         """
         # INPUT
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         X  = a( x b y z x y + x( y( z( c( + ) ) ) ) )
         I1 = a( x( b y z x y + x y( z( c( + ) ) ) ) )
         I2 = a( x( b y( z x y + x y z( c( + ) ) ) ) ) # no-max-helix
@@ -723,7 +734,7 @@ class NewBranch3WayTests(unittest.TestCase):
 
     def test_multiple_choice_2(self):
         # INPUT
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         N = a( x( b x y + y( z( + ) ) ) )
         P1 = a( x b x( y + y( z( + ) ) ) )
         P2 = a( x( b x y( + y z( + ) ) ) )
@@ -750,7 +761,7 @@ class NewBranch4WayTests(unittest.TestCase):
     def test_break_casey_4way(self):
         # Note the new max-helix semantics also fixes the old 4way error,
         # so this test can be safely removed...
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         A1 = t0*( d3*( d4*( + ) ) + d3*( t0* d3*( d4*( + ) ) + ) )
         """)
 
@@ -759,7 +770,7 @@ class NewBranch4WayTests(unittest.TestCase):
         #for o in output: print 'branch_4way_bug', o.kernel_string()
 
     def test_break_reverse_4way(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         B = y*( b*( a*( Y1* + ) b( c( + ) ) Y2* Y1*( + ) a ) )
         A = c* b* X2* X1*( + ) X2 b c y*( b*( a*( Y1* + ) b( c( + ) ) Y2* Y1*( + ) a ) )
         R = c* b* X2* X1*( + ) X2 b c y*( b*( a*( Y1* + ) ) c( + ) b*( Y2* Y1*( + ) a ) )
@@ -775,7 +786,7 @@ class NewBranch4WayTests(unittest.TestCase):
 
     def test_4wayfilter_bugfix(self):
         # a test to ensure the 4way filter includes struct1
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         # Domain Specifications
         length d1 = 15
         length d2 = 15
@@ -798,7 +809,7 @@ class NewBranch4WayTests(unittest.TestCase):
 
     def test_branch4_way(self):
         # Standard 3state 4way junction, no end-dissociation
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         A1 = a( b( c( + ) ) x*( + ) b( c( y( + ) ) ) )
         A2 = a( b( c( + ) b*( x*( + ) ) c( y( + ) ) ) )
         A3 = a( b( c( + c*( b*( x*( + ) ) ) y( + ) ) ) )
@@ -835,7 +846,7 @@ class NewBranch4WayTests(unittest.TestCase):
 
     def test_branch4_way_2(self):
         # Unconventional multi-state 4way junction, no end-dissociation
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         A1 = a( a*( b( + ) ) a*( x*( + ) ) b( c( + ) ) )
         A2 = a( ) b( + ) a( a*( x*( + ) ) b( c( + ) ) )
         A3 = a( a*( b( + ) a( ) x*( + ) ) b( c( + ) ) )
@@ -862,7 +873,7 @@ class NewBranch4WayTests(unittest.TestCase):
 
     def test_branch4_way_long(self):
         # Unconventional multi-state 4way junction, no end-dissociation
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         A1 = a( x*( y*( z*( b z( y( x( c( + ) ) ) ) d z( y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
 
         A2 = a( x*( y*( z*( b ) y( x( c( + ) ) ) z*( d z( y( x( e( + ) ) ) ) f z( y( x( g( + ) ) ) ) h ) ) ) )
@@ -916,7 +927,7 @@ class NewBranch4WayTests(unittest.TestCase):
 
     def test_branch4_way_no_remote(self):
         # Standard 4state 4way junction, no end-dissociation
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         A0 = a( x( y( z( b(  + ) ) ) ) c*( + ) x( y( z( d( + ) ) ) ) )
         A1 = a( x( y( z( b(  + ) ) ) x*( c*( + ) ) y( z( d( + ) ) ) ) )
         A2 = a( x( y( z( b(  + ) ) y*( x*( c*( + ) ) ) z( d( + ) ) ) ) )
@@ -986,7 +997,7 @@ class DSD_PathwayTests(unittest.TestCase):
 
     def test_bind_and_displace3way(self):
         # Skip the outer loop of the enumerator...
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         length a = 10
         length t = 5
 
@@ -1018,7 +1029,7 @@ class DSD_PathwayTests(unittest.TestCase):
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2]))
 
     def test_cooperative_binding(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         length a = 5
         length x = 10
         length y = 10
@@ -1094,7 +1105,7 @@ class ReactionMatchingTests (unittest.TestCase):
     def testBind11A(self):
 
         # bind11: a ? a* ? -> a( ? ) ?
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         A1 = x( ) a  x( ) a* x( )
         A2 = x( ) a( x( ) )  x( )
 
@@ -1114,7 +1125,7 @@ class ReactionMatchingTests (unittest.TestCase):
 
     def testBind21A(self):
         # bind11: a ? a* ? -> a( ? ) ?
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         A1 = w( ) a  x( )
         A2 = y( ) a* z( )
         A3 = w( ) a( x( ) + y( ) ) z( )
@@ -1128,7 +1139,7 @@ class ReactionMatchingTests (unittest.TestCase):
 
     def testOpenA(self):
         # open:  ? a( ? ) ? -> ? a ? a* ?
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         length a = 5
         length b = 5
 
@@ -1149,7 +1160,7 @@ class ReactionMatchingTests (unittest.TestCase):
 
     def testOpenB(self):
         # open:  ? a( ? ) ? -> ? a ? a* ?
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         length a = 5
         length b = 5
 
@@ -1174,7 +1185,7 @@ class ReactionMatchingTests (unittest.TestCase):
 
     def testOpenNoMaxHelix(self):
         # open:  ? a( ? ) ? -> ? a ? a* ?
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         length a = 5
         length b = 5
 
@@ -1192,7 +1203,7 @@ class ReactionMatchingTests (unittest.TestCase):
 
     def testBranch3wayA(self):
         # 3wayA: ? b ? b(?) ? <-> ? b(? b ?) ?
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         A1 = d1( ) b  d2( ) b( d3( ) ) d4( )
         A2 = d1( ) b( d2( ) b  d3( ) ) d4( )
         """)
@@ -1207,7 +1218,7 @@ class ReactionMatchingTests (unittest.TestCase):
 
     def testBranch3wayB(self):
         # 3wayB: ? b(?) ? b ? <-> ? b ? b*(?) ?
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         A1 = d1( ) b( d2( )  )  d3( ) b d4( )
         A2 = d1( ) b  d2( ) b*( d3( ) ) d4( )
         """)
@@ -1221,7 +1232,7 @@ class ReactionMatchingTests (unittest.TestCase):
 
     def testBranch3wayC(self):
         # 3wayC: ? b*(?) ? b ? <-> ? b*(? b ?) ?
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         A1 = d1( ) b*( d2( ) ) d3( ) b d4( )
         A2 = d1( ) b*( d2( ) b d3( ) ) d4( )
         """)
@@ -1235,7 +1246,7 @@ class ReactionMatchingTests (unittest.TestCase):
 
     def testBranch4wayA(self):
         # 4way: b( ? ) ? b ( ? ) --> b( ? b*( ? ) ? )
-        complexes, _ = read_kernel("""
+        complexes, _ = read_pil("""
         A1 = d1( ) b( d2( )  )  d3( ) b( d4( ) ) d5( )
         A2 = d1( ) b( d2( ) b*( d3( ) )  d4( ) ) d5( )
         """)
@@ -1258,7 +1269,7 @@ class IsomorphicSets(unittest.TestCase):
 
     def test_simple(self):
         # works just fine
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         length a = 6
         length a1 = 2
         length a2 = 2
@@ -1307,7 +1318,7 @@ class IsomorphicSets(unittest.TestCase):
         pass
 
     def test_erik_max_helix_examples_3way(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
 
         # should be one reaction, is one
         A1 = x( y z + y( z( + ) ) )
@@ -1394,7 +1405,7 @@ class Compare_MaxHelix(unittest.TestCase):
         clear_memory()
 
     def test_self_displacement_bug(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         B1 = x( y( x( y x + ) ) )
         B2 = x y x( y( x( + ) ) )
 
@@ -1425,7 +1436,7 @@ class Compare_MaxHelix(unittest.TestCase):
         #self.assertEqual(sorted([forward, backward]), sorted(enum.reactions))
 
     def test_self_displacement_bug_iso(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         B1 = x1( x2( y1( y2( x1( x2( y1 y2 x1 x2 + ) ) ) ) ) )
         B2 = x1 x2 y1 y2 x1( x2( y1( y2( x1( x2( + ) ) ) ) ) )
         i1 = x1( x2( y1 y2 x1 x2 y1( y2( x1( x2( + ) ) ) ) ) )
@@ -1458,7 +1469,7 @@ class Compare_MaxHelix(unittest.TestCase):
 
 
     def test_self_displacement(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         T = x( y x + ) y* x*
 
         T1 = x( y x + x* y* )
@@ -1495,7 +1506,7 @@ class Compare_MaxHelix(unittest.TestCase):
 
 
     def test_compare_semantics(self):
-        complexes, reactions = read_kernel("""
+        complexes, reactions = read_pil("""
         length d1 = 15
         length d4 = 15
         length d6 = 15

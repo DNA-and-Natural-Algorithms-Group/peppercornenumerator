@@ -11,7 +11,7 @@ import logging
 logging.disable(logging.CRITICAL)
 
 from peppercornenumerator.utils import *
-from peppercornenumerator.input import from_kernel
+from peppercornenumerator.input import read_pil
 from peppercornenumerator.objects import clear_memory
 
 class MiscTests(unittest.TestCase):
@@ -66,7 +66,7 @@ class LoopTests(unittest.TestCase):
         clear_memory()
 
     def testLoop(self):
-        (domains, strands, complexes) = from_kernel(["C = 1 2 3() + 4"])
+        complexes, _ = read_pil("C = 1 2 3() + 4")
 
         parts = []
         domain_length = 0
@@ -93,7 +93,7 @@ class LoopTests(unittest.TestCase):
         assert loop.is_open
 
     def testLoop_fail(self):
-        (domains, strands, complexes) = from_kernel(["C = 1 2 3() + 4"])
+        complexes, _ = read_pil("C = 1 2 3() + 4")
 
         parts = []
         domain_length = 0

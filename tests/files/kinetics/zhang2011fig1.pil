@@ -8,6 +8,7 @@ length 4 = 8
 target_T1 = 1 2
 target_T2 = 3 4
 complex_D1 = 2( 3( + 4* ) ) 1*
+complex_end = 2 3
 
 # this does fine with and without -c, but no net reaction occurs, but that's correct for the low-concentration limit
 # ../../enumerator.py --release-cutoff 8 zhang2011fig1.pil -r 
