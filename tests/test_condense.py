@@ -9,7 +9,7 @@ from peppercornenumerator.objects import PepperReaction
 from peppercornenumerator.objects import PepperMacrostate
 from peppercornenumerator.objects import clear_memory
 
-from peppercornenumerator.condense import SetOfFates, ReactionGraph
+from peppercornenumerator.condense import SetOfFates, PepperCondensation
 import peppercornenumerator.condense as c
 
 SKIP=False
@@ -231,7 +231,7 @@ class CondenseTests(unittest.TestCase):
         enum = Enumerator(complexes.values(), reactions)
         enum.dry_run() # does not change the rates!
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
 
         self.assertEqual(sorted([rs1, rs2, rs3, rs4]),  sorted(enumRG.resting_sets))
@@ -296,7 +296,7 @@ class CondenseTests(unittest.TestCase):
         #enum.enumerate() # or enum.dry_run()
         enum.dry_run()
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
         
         """
@@ -452,7 +452,7 @@ class CondenseTests(unittest.TestCase):
         #enum.enumerate() # or enum.dry_run()
         enum.dry_run() # or enum.dry_run()
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
 
         # Works...
@@ -518,7 +518,7 @@ class CondenseTests(unittest.TestCase):
         enum = Enumerator(complexes.values())
         enum.enumerate() # or enum.dry_run()
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
 
         # TODO: It should raise an error here, saying that the condensed graph
         # is disconnected!
@@ -595,7 +595,7 @@ class CondenseTests(unittest.TestCase):
         reaction [condensed      =      2.45499 /M/s ] re0 + rt23 -> re21 + re22
         """
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
         self.assertEqual(len(enumRG.resting_sets), 6)
         self.assertEqual(len(enumRG.condensed_reactions), 2)
@@ -689,7 +689,7 @@ class OldCondenseTests(unittest.TestCase):
         enum.dry_run()
         self.assertEqual(sorted(enum.reactions), sorted(reactions))
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
 
         #  enum = Enumerator([complexes['bot'], complexes['top'], 
@@ -764,7 +764,7 @@ class CondenseCRNs(unittest.TestCase):
         #for r in enum.reactions: print r, r.rate
         #print enum.complexes
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
         self.assertEqual(enumRG.condensed_reactions, [])
         self.assertEqual(enumRG.resting_sets, [rs('E'), rs('D'), rs('F'), rs('G')])
@@ -788,7 +788,7 @@ class CondenseCRNs(unittest.TestCase):
         enum = Enumerator(complexes.values(), list(reactions))
         enum.dry_run()
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
         self.assertEqual(enumRG.resting_sets, [rs('E'), rs('D'), rs('F'), rs('G')])
         self.assertEqual(enumRG.get_fates(cplx('A')),
@@ -818,7 +818,7 @@ class CondenseCRNs(unittest.TestCase):
         enum.k_fast = 0.5
         enum.dry_run()
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
 
         self.assertEqual(sorted(enumRG.resting_sets), 
@@ -878,7 +878,7 @@ class CondenseCRNs(unittest.TestCase):
         enum = Enumerator(complexes.values(), list(reactions))
         enum.dry_run()
 
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
 
         #for k,v in enumRG._stationary_distributions.items():

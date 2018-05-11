@@ -8,7 +8,7 @@
 
 from peppercornenumerator import __version__
 from peppercornenumerator.utils import natural_sort, PeppercornUsageError
-from peppercornenumerator.condense import ReactionGraph
+from peppercornenumerator.condense import PepperCondensation
 
 def format_conc_units(cplx, molarity='M'):
     ini = cplx._concentration[0]
@@ -73,7 +73,7 @@ def write_kernel(enumerator, pil, detailed = True, condensed = False,
  
     if condensed :
         # Print resting macrostates
-        enumCG = ReactionGraph(enumerator)
+        enumCG = PepperCondensation(enumerator)
         enumCG.condense()
         pil.write("\n# Resting macrostates \n")
         for resting in natural_sort(enumerator.resting_sets):
@@ -136,7 +136,7 @@ def write_crn(enumerator, crn, condensed = False, molarity = 'M', time = 's'):
         return rate
 
     if condensed :
-        enumCG = ReactionGraph(enumerator)
+        enumCG = PepperCondensation(enumerator)
         enumCG.condense()
 
         # Print reactions

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.objects import clear_memory
-from peppercornenumerator.condense import ReactionGraph
+from peppercornenumerator.condense import PepperCondensation
 from peppercornenumerator.input import read_kernel, read_pil
 from peppercornenumerator.output import write_kernel
 
@@ -47,7 +47,7 @@ def peppercorn(kernelstring, name, condensed=True, conc='nM', crn=True, k_fast=0
 
     #condensed = False
     if condensed:
-        enumRG = ReactionGraph(enum)
+        enumRG = PepperCondensation(enum)
         enumRG.condense()
 
     detailed = not condensed

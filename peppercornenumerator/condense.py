@@ -14,7 +14,7 @@ from peppercornenumerator.objects import DSDDuplicationError
 class CondensationError(Exception):
     pass
 
-class ReactionGraph(object):
+class PepperCondensation(object):
     def __init__(self, enumerator):
         self._enumerator = enumerator
 
@@ -528,6 +528,12 @@ class ReactionGraph(object):
         return {(c, r): B[i, j] for (c, i) in complex_indices.iteritems()
                 for (r, j) in exit_indices.iteritems()}
 
+class ReactionGraph(PepperCondensation):
+    def __init__(self, *kargs, **kwargs):
+        print '''# WARNING: peppercorn-v0.6: using depricated object name:'''
+        print '''# Please rename peppercornenumerator.condense.ReactionGraph to peppercornenumerator.condense.PepperCondensation.  '''
+        super(ReactionGraph, self).__init__(*kargs, **kwargs)
+
 
 class SetOfFates(object):
     """
@@ -716,7 +722,7 @@ def tarjans(complexes, reactions, reactions_consuming, is_fast):
 
     return SCCs
 
-# NOTE: temporary -- mainly a copy of ReactionGraph.get_stationary_distribution(scc)
+# NOTE: temporary -- mainly a copy of PepperCondensation.get_stationary_distribution(scc)
 def stationary_distribution(T, nodes = None):
     """
     Take a strongly connected component and calculate the stationary distribution.
