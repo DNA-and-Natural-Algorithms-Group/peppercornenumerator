@@ -706,16 +706,6 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
         rotations = 0
-        # TODO: This is expensive, pointless and should be removed...
-        # it checks for a very bad bug that should be resolved.
-        for e, s in enumerate(product.pair_table):
-            for e2, tup in enumerate(s):
-                if tup != struct[e][e2]:
-                    print reactant, reactant.kernel_string
-                    print product, product.kernel_string
-                    print struct
-                    print product.pair_table
-                    raise Exception('Inconsistent secondary structures.')
     except DSDDuplicationError, e:
         product = e.existing
         rotations = e.rotations
@@ -823,16 +813,6 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
         rotations = 0
-        # TODO: This is expensive, pointless and should be removed...
-        # it checks for a very bad bug that should be resolved.
-        for e, s in enumerate(product.pair_table):
-            for e2, tup in enumerate(s):
-                if tup != struct[e][e2]:
-                    print reactant, reactant.kernel_string
-                    print product, product.kernel_string
-                    print struct
-                    print product.pair_table
-                    raise Exception('Inconsistent secondary structures.')
     except DSDDuplicationError, e:
         product = e.existing
         rotations = e.rotations

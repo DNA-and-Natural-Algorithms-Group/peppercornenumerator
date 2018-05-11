@@ -4,14 +4,12 @@ import os
 import sys
 import logging
 import argparse
-import contextlib
 
 # Import global default variables from peppercornenumerator library
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.enumerator import FAST_REACTIONS
 from peppercornenumerator.input import read_kernel, read_pil, ParseException
-from peppercornenumerator.output import write_kernel, write_crn
-
+from peppercornenumerator.output import write_kernel
 from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
 
 version = __import__('peppercornenumerator').__version__

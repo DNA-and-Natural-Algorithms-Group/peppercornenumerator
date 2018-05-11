@@ -3,12 +3,12 @@
 #  EnumeratorProject
 #
 #  Created by Karthik Sarma on 4/18/10.
+#  Modified by Stefan Badelt
 #
 
 import sys
 import math
 import logging
-import itertools
 
 from peppercornenumerator.objects import PepperMacrostate, PepperComplex
 from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
@@ -429,7 +429,7 @@ class Enumerator(object):
                 # print e
                 # import traceback
                 # print traceback.format_exc()
-                logging.warning("Polymerization error; gracefully exiting...")
+                logging.error("Polymerization error; gracefully exiting...")
                 finish(premature=True)
         else:
             do_enumerate()
