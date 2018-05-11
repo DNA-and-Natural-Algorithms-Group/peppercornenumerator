@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import os
 import sys
 from math import log
 import subprocess as sub
@@ -19,6 +20,9 @@ from genot2011 import setups as g11
 from qian2011 import setups as q11 # missing F3 & F4 & Supplement?
 from kotani2017 import setups as k17
 
+from zhang2009_rates import setups as z09r # 3-way branch migration rates
+from dabby2013_rates import setups as d13r # 4-way branch migration rates
+
 # Troublemakers:
 # from yin2008 import setups as y08
 # from zhang2010_cooperative import setups as z10c
@@ -28,20 +32,29 @@ from kotani2017 import setups as k17
 # srinivas2017.py
 # seelig2006.py
 
-paperdata = z07() + z09() + z10() + g11() + q11() + k17()
-#paperdata = q11()
+analysis = [z07(), z09(), z10(), g11(), q11(), k17()] # all completion times
+analysis = [z09r(), d13r()] # rates only
+analysis = [z07(), z09(), z10(), g11(), q11(), k17(), z09r(), d13r()] # everything
 
-mcmax = map(len, [z07(), z09(), z10(), g11(), q11(), k17()])
-#mcmax = [13]
+paperdata = []
+mcmax = []
+for paper in analysis:
+    paperdata += paper
+    mcmax.append(len(paper))
 
-def peppercorn(kernelstring, name, condensed=True, conc='nM', crn=True, k_fast=0):
+def peppercorn(kernelstring, name, 
+        condensed=True, 
+        conc='nM', 
+        max_complex_size = 10,
+        release_cutoff = 13,
+        k_fast=0):
     """ A wrapper for peppercorn.
     """
     #print kernelstring
     complexes, reactions = read_pil(kernelstring)
     enum = Enumerator(complexes.values(), reactions)
-    enum.release_cutoff = 13
-    enum.max_complex_size = 10
+    enum.release_cutoff = release_cutoff
+    enum.max_complex_size = max_complex_size
     enum.k_fast = k_fast
     enum.enumerate()
 
@@ -56,7 +69,10 @@ def peppercorn(kernelstring, name, condensed=True, conc='nM', crn=True, k_fast=0
     with open(name + '.crn', 'w') as crn:
         write_kernel(enum, crn, detailed, condensed, molarity=conc)
 
-    return None, name + '.crn'
+    if condensed:
+        return enumRG, name + '.crn'
+    else :
+        return enum, name + '.crn'
 
 def simulate_crn(infile, name, crnsimu):
     assert infile == name + '.crn'
@@ -90,8 +106,10 @@ def get_simulated_time(nxyfile, species, threshold):
     return None
 
 def main():
-
     logdata = True
+
+    if not os.path.exists('tmp'):
+        raise SystemExit('Please make a directory called "tmp" to store temorary results')
 
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
@@ -104,13 +122,24 @@ def main():
         results = []
         for e, pilstring in enumerate(map(data['piltemplate'], data['pilparams'])):
             clear_memory()
-            tmpname = data['name'] + '_' + str(e)
+            tmpname = 'tmp/'+data['name'] + '_' + str(e)
             print tmpname
-            #print pilstring
-            out, crn = peppercorn(pilstring, name=tmpname, crn=True, **data['pepperargs'])
+            enumOBJ, crn = peppercorn(pilstring, name=tmpname, **data['pepperargs'])
 
             if 'rates' in data:
-                raise NotImplementedError
+                if len(enumOBJ.condensed_reactions) == 1:
+                    rxn = enumOBJ.condensed_reactions[0]
+                    er = data['exp_results'][e]
+                    results.append([er, rxn.rate])
+                else :
+                    if 'reactants' in data['rates']:
+                        for rxn in enumOBJ.condensed_reactions:
+                            if sorted([rs.name for rs in rxn.reactants]) == sorted(data['rates']['reactants']):
+                                er = data['exp_results'][e]
+                                results.append([er, rxn.rate])
+                                break
+                    else:
+                        raise NotImplementedError('multiple condensed reactions')
 
             if 'simulation' in data:
                 for i, command in enumerate(data['simulation']):
@@ -147,8 +176,9 @@ def main():
         ax1.set_xlabel('Experimental system speed [$\log_{10}(s)$]', fontsize=16)
         ax1.set_ylabel('Simulated system speed [$\log_{10}(s)$]', fontsize=16)
         (mi,ma)=(0, 6)
-        plt.xlim(mi, ma)
-        plt.ylim(mi, ma)
+        (mi,ma)=(-3, 7)
+        #plt.xlim(mi, ma)
+        #plt.ylim(mi, ma)
         plt.plot([mi, ma], [mi, ma], color='black')
     else:
         ax1.set_xlabel('Experimental system speed [s]', fontsize=16)
