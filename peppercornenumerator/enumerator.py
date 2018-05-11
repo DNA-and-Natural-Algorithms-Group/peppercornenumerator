@@ -74,7 +74,7 @@ class Enumerator(object):
         self._initial_complexes = initial_complexes
         for cplx in initial_complexes:
             if not cplx.is_connected:
-                raise ValueError('Initial complex is not connected: {}'.format(cplx))
+                raise utils.PeppercornUsageError('Initial complex is not connected: {}'.format(cplx))
         self._domains = self.get_domains(self._initial_complexes)
 
         # list containing all detailed reactions after enumeration
@@ -160,7 +160,7 @@ class Enumerator(object):
     @property
     def release_cutoff(self):
         if self._release_11 != self._release_1N :
-            raise PeppercornUsageError('Ambiguous release cutoff request.')
+            raise utils.PeppercornUsageError('Ambiguous release cutoff request.')
         return self._release_11
 
     @release_cutoff.setter
@@ -256,17 +256,6 @@ class Enumerator(object):
         return self._resting_complexes[:]
 
     @property
-    def improbable_resting_complexes(self):
-        """
-        List of complexes enumerated that are within resting states.
-        :py:meth:`.enumerate` must be called before access.
-        """
-        if self._resting_complexes is None:
-            raise utils.PeppercornUsageError("enumerate not yet called!")
-        return self._resting_complexes[:]
-
-
-    @property
     def transient_complexes(self):
         """
         List of complexes enumerated that are not within resting sets (e.g.
@@ -297,14 +286,13 @@ class Enumerator(object):
         Make it look like you've enumerated, but actually do nothing.
         """
         self._complexes = self.initial_complexes[:]
+
+        # This is not nice, the input might not be a resting complex
         self._resting_complexes = self._complexes[:]
-        # This is not nice, the input might not be a resting set... 
-        #   so for now we turn of memorycheck...
+
         self._resting_macrostates = []
-            # [PepperRestingSet([complex], name=complex.name, memorycheck=False) 
-            #   for complex in self._complexes]
+
         self._transient_complexes = []
-        #self._reactions = []
 
     def enumerate(self):
         """
@@ -447,18 +435,18 @@ class Enumerator(object):
             do_enumerate()
             finish()
 
-    def reactions_interactive(self, root, reactions, type='fast'):
+    def reactions_interactive(self, root, reactions, rtype='fast'):
         """
         Prints the passed reactions as a kernel string, then waits for keyboard
         input before continuing.
         """
-        print "%s = %s (%s)" % (root.name, root.kernel_string, type)
+        print "{} = {} ({})".format(root.name, root.kernel_string, rtype)
         print
         for r in reactions:
             print r.kernel_string
         if len(reactions) is 0:
-            print "(No %s reactions)" % type
-        print
+            print "(No {} reactions)".format(rtype)
+        print 
         utils.wait_for_input()
 
     def process_neighborhood(self, source):

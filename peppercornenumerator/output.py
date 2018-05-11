@@ -7,14 +7,15 @@
 #
 
 from peppercornenumerator import __version__
-from peppercornenumerator.utils import natural_sort
+from peppercornenumerator.utils import natural_sort, PeppercornUsageError
 from peppercornenumerator.condense import ReactionGraph
 
 def format_conc_units(cplx, molarity='M'):
     ini = cplx._concentration[0]
     num = float(cplx._concentration[1])
     uni = cplx._concentration[2]
-    assert uni == 'M'
+    if uni != 'M':
+        raise PeppercornUsageError('Must specify concentration of complex {} in M'.format(cplx))
 
     if molarity == 'M':
         pass

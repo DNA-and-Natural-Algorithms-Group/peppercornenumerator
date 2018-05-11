@@ -102,9 +102,11 @@ def add_peppercorn_args(parser):
     semantics.add_argument( '--k-fast', dest='k_fast', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be marked as slow.")
     semantics.add_argument( '--p-min', default=0.0, type=float, metavar='<flt>',
-        help="""Minimal occupancy of a complex in steady state to engage into further reactions.""")
+        help=argparse.SUPPRESS)
+        #help="""Minimal occupancy of a complex in steady state to engage into further reactions.""")
     semantics.add_argument( '--p-loc', default=0.0, type=float, metavar='<flt>',
-        help="""Local probability threshold to accept an unfavorable reaction.""")
+        #help="""Local probability threshold to accept an unfavorable reaction.""")
+        help=argparse.SUPPRESS)
 
     semantics.add_argument( '--release-cutoff-1-1', type=int, default=6, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
@@ -171,6 +173,9 @@ def main(cl_opts):
         systeminput = ''
         for l in sys.stdin:
             systeminput += l
+        if cl_opts.interactive:
+            logging.error("Interactive mode needs to read input from file, not STDIN.")
+            raise SystemExit
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Load an input parser to generate complexes for enumeration #

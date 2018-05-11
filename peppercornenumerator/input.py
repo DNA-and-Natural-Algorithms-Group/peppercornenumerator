@@ -236,16 +236,16 @@ def load_pil_crn(data):
                     if sysunit != line[3][2]:
                         raise PilFormatError(
                                 'Conflicting units: {} vs. {}'.format(sysunit, line[3][2]))
-                if init != 'initial':
-                    raise NotImplementedError
+                if init[0] != 'i':
+                    raise NotImplementedError('concentrations must be specified as *initial*')
             species[name] = ('initial', conc)
         elif line[0] == 'resting-macrostate':
             name = line[1]
             conc = ['initial', 0]
             for sp in line[2]:
                 assert sp in species
-                if species[sp][0] != 'initial':
-                    raise NotImplementedError
+                if species[sp][0][0] != 'i':
+                    raise NotImplementedError('concentrations must be specified as *initial*')
                 conc[1] += species[sp][1]
             macrostates[name] = tuple(conc)
         elif line[0] == 'reaction':
