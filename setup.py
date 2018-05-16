@@ -15,7 +15,7 @@ the publication [Grun et al. (2014)].
 
 setup(
     name='peppercornenumerator',
-    version='0.6.1',
+    version='0.6.2',
     description='Domain-level nucleic acid reaction enumerator',
     long_description=LONG_DESCRIPTION,
     author='Casey Grun, Stefan Badelt, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree',

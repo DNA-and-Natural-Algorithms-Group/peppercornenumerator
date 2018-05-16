@@ -126,7 +126,7 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e51
 ```
 
 ## Version
-0.6.1
+0.6.2
 
 ## Authors
 Casey Grun, Stefan Badelt, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.
