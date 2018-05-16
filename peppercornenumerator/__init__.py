@@ -5,5 +5,8 @@
 __version__ = "v0.6.1"
 
 from peppercornenumerator.enumerator import Enumerator, PolymerizationError
-from peppercornenumerator.condense import ReactionGraph, CondensationError, PepperCondensation
+from peppercornenumerator.condense import CondensationError, PepperCondensation
+
+# Deprecated since v0.6
+from peppercornenumerator.condense import ReactionGraph
 

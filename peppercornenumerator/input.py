@@ -57,14 +57,15 @@ def read_reaction(line):
 
 
 def read_pil(data, is_file = False, composite = False):
-    """ Old input standard. 
+    """ Peppercorn standard input.
 
-    Supports a variety of formats, including enum and pil. Sequences and sanity
-    checks for domain-length are not supported.  
+    Supports a variety of pil-style dialects, including kernel and enum.
 
     Args:
         data (str): Is either the PIL file in string format or the path to a file.
         is_file (bool): True if data is a path to a file, False otherwise
+        composite (bool, optional): Returns an additional dictionary that maps
+            names of composite domains (or strands) to a list of domains.
     """
     if is_file :
         parsed_file = parse_pil_file(data)
