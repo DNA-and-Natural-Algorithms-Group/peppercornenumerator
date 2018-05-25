@@ -127,7 +127,7 @@ def setups():
     kotani2017_F2['name'] = 'kotani2017_F2'
     kotani2017_F2['piltemplate'] = kotani2017_F2_pil
     kotani2017_F2['pilparams'] = [None]
-    kotani2017_F2['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 10}
+    kotani2017_F2['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 7}
     kotani2017_F2['simulation'] = [
             ('pilsimulator', '--nxy', '--atol', '1e-13', '--rtol', '1e-13', '--mxstep', '10000', '--t8', '36000', '--p0', 'S1=10', 'S2=10', 'R=20', 'C1=1'),
             ('pilsimulator', '--nxy', '--atol', '1e-13', '--rtol', '1e-13', '--mxstep', '10000', '--t8', '36000', '--p0', 'S1=10', 'S2=10', 'R=20', 'C1=0.5'),
@@ -136,14 +136,12 @@ def setups():
     kotani2017_F2['exp_results'] = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
     setups.append(kotani2017_F2)
 
-
-
     # If you run this in detailed mode, you need to set --t8 to 1e8
     kotani2017_F3 = dict()
     kotani2017_F3['name'] = 'kotani2017_F3'
     kotani2017_F3['piltemplate'] = kotani2017_F3_pil
     kotani2017_F3['pilparams'] = [None]
-    kotani2017_F3['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 10}
+    kotani2017_F3['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 7}
     kotani2017_F3['simulation'] = [
             ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S1=10', 'S2=10', 'S3=10', 'S4=10', 'R=20', 'C1=0.1'),
             ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S1=10', 'S2=10', 'S3=10', 'S4=10', 'R=20', 'C1=0.01'),
@@ -157,7 +155,7 @@ def setups():
     kotani2017_F4['name'] = 'kotani2017_F4'
     kotani2017_F4['piltemplate'] = kotani2017_F4_pil
     kotani2017_F4['pilparams'] = [None]
-    kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 10}
+    kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}
     kotani2017_F4['simulation'] = [
             ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.1'),
             ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.01'),
