@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.objects import clear_memory
 from peppercornenumerator.condense import PepperCondensation
-from peppercornenumerator.input import read_kernel, read_pil
-from peppercornenumerator.output import write_kernel
+from peppercornenumerator.input import read_pil
+from peppercornenumerator.output import write_pil
 
 # updated
 from zhang2007 import setups as z07
@@ -48,9 +48,11 @@ def peppercorn(kernelstring, name,
         max_complex_size = 10,
         release_cutoff = 13,
         k_fast=0):
-    """ A wrapper for peppercorn.
-    """
-    #print kernelstring
+    """ A wrapper for peppercorn.  """
+
+    with open(name + '_input.pil', 'w') as pil:
+        pil.write(kernelstring)
+
     complexes, reactions = read_pil(kernelstring)
     enum = Enumerator(complexes.values(), reactions)
     enum.release_cutoff = release_cutoff
@@ -65,17 +67,19 @@ def peppercorn(kernelstring, name,
 
     detailed = not condensed
 
-    #write_kernel(enum, sys.stdout, detailed, condensed)
-    with open(name + '.crn', 'w') as crn:
-        write_kernel(enum, crn, detailed, condensed, molarity=conc)
+    enumfile = name + '_enum.pil'
+
+    with open(enumfile, 'w') as crn:
+        # You can find this file in the tmp directory
+        write_pil(enum, crn, detailed, condensed, molarity=conc)
 
     if condensed:
-        return enumRG, name + '.crn'
+        return enumRG, enumfile
     else :
-        return enum, name + '.crn'
+        return enum, enumfile
 
 def simulate_crn(infile, name, crnsimu):
-    assert infile == name + '.crn'
+    assert infile == name + '_enum.pil'
     # Do the simulation (catch treekin errors)
     print "{}".format(' '.join(crnsimu))
     with open(infile, 'r') as crn, \
@@ -175,7 +179,7 @@ def main():
     if logdata:
         ax1.set_xlabel('Experimental system speed [$\log_{10}(s)$]', fontsize=16)
         ax1.set_ylabel('Simulated system speed [$\log_{10}(s)$]', fontsize=16)
-        (mi,ma)=(0, 6)
+        #(mi,ma)=(0, 6)
         (mi,ma)=(-3, 7)
         #plt.xlim(mi, ma)
         #plt.ylim(mi, ma)
@@ -192,7 +196,7 @@ def main():
     #plt.legend(loc='lower right');
     #plt.legend(loc='lower right');
     
-    #pfile = 'zhang2009_condensed_log.png'
+    #pfile = 'qian2011_condensed_log.png'
     #plt.savefig(pfile, bbox_extra_artists=(lgd,), bbox_inches='tight')
     plt.savefig('test.pdf', bbox_extra_artists=(lgd,), bbox_inches='tight')
 
