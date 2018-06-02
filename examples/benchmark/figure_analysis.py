@@ -22,19 +22,19 @@ from kotani2017 import setups as k17
 
 from zhang2009_rates import setups as z09r # 3-way branch migration rates
 from dabby2013_rates import setups as d13r # 4-way branch migration rates
+from zhang2010_cooperative import setups as z10c # Only Figure 2, and it is a bit strange...
 
 # Troublemakers:
 # from yin2008 import setups as y08
-# from zhang2010_cooperative import setups as z10c
 
 # More:
 # groves2015.py
 # srinivas2017.py
 # seelig2006.py
 
-analysis = [z07(), z09(), z10(), g11(), q11(), k17()] # all completion times
+analysis = [z07(), z09(), z10(), z10c(), g11(), q11(), k17()] # all completion times
 analysis = [z09r(), d13r()] # rates only
-analysis = [z07(), z09(), z10(), g11(), q11(), k17(), z09r(), d13r()] # everything
+analysis = [z07(), z09(), z10(), z10c(), g11(), q11(), k17(), z09r(), d13r()] # everything
 
 paperdata = []
 mcmax = []
@@ -45,9 +45,12 @@ for paper in analysis:
 def peppercorn(kernelstring, name, 
         condensed=True, 
         conc='nM', 
+        release_cutoff = 8,
         max_complex_size = 10,
-        release_cutoff = 13,
-        k_fast=0):
+        max_complex_count = 10000,
+        max_reaction_count = 10000,
+        k_fast=None,
+        k_slow=None):
     """ A wrapper for peppercorn.  """
 
     with open(name + '_input.pil', 'w') as pil:
@@ -57,7 +60,12 @@ def peppercorn(kernelstring, name,
     enum = Enumerator(complexes.values(), reactions)
     enum.release_cutoff = release_cutoff
     enum.max_complex_size = max_complex_size
-    enum.k_fast = k_fast
+    enum.max_complex_count = max_complex_count
+    enum.max_reaction_count = max_reaction_count
+    if k_fast is not None:
+        enum.k_fast = k_fast
+    if k_slow is not None:
+        enum.k_slow = k_slow
     enum.enumerate()
 
     #condensed = False
@@ -91,6 +99,24 @@ def simulate_crn(infile, name, crnsimu):
             raise Exception
     return name + '.nxy'
 
+def get_simulated_trajectory(nxyfile, species, threshold):
+    trajectory = []
+    with open(nxyfile, 'r') as nxy:
+        idx = None
+        for l in nxy.readlines():
+            if l[0:25] == '# Initial concentrations:' : 
+                data = eval(l.strip().split(': ')[1])
+                for e, (sp,ini) in enumerate(data,1):
+                    if sp == species:
+                        idx = e
+                continue
+            elif l[0] == '#' : 
+                continue
+
+            d = l.strip().split()
+            trajectory.append([d[0], d[idx]])
+    return trajectory
+
 def get_simulated_time(nxyfile, species, threshold):
     with open(nxyfile, 'r') as nxy:
         idx = None
@@ -111,12 +137,14 @@ def get_simulated_time(nxyfile, species, threshold):
 
 def main():
     logdata = True
+    cmpfig = True
 
     if not os.path.exists('tmp'):
         raise SystemExit('Please make a directory called "tmp" to store temorary results')
 
     fig = plt.figure()
-    ax1 = fig.add_subplot(111)
+    ax1  = plt.subplot(1,1,1)
+    #ax2  = plt.subplot(1,2,2)
     mycolors = list('bgrcmyk')
     mymarker = list('o*^.vph+D')
     (mc,mm) = (0,0)
@@ -124,6 +152,8 @@ def main():
     allresults = []
     for data in paperdata:
         results = []
+
+        trajectories = []
         for e, pilstring in enumerate(map(data['piltemplate'], data['pilparams'])):
             clear_memory()
             tmpname = 'tmp/'+data['name'] + '_' + str(e)
@@ -154,6 +184,21 @@ def main():
                     #print e+i, rep, et, ec, time
                     results.append([et, time])
 
+                    if cmpfig :
+                        tr = get_simulated_trajectory(nxy, rep, ec)
+
+                    if trajectories :
+                        for te, [time, val] in enumerate(tr):
+                            if len(trajectories) > te:
+                                assert trajectories[te][0] == time
+                                trajectories[te].append(val)
+                    else :
+                        trajectories = tr
+            
+        with open('tmp/'+data['name'] + '_cmp.nxy', 'w') as cnxy:
+            for td in trajectories:
+                cnxy.write("{}\n".format(' '.join(td)))
+
         #assert len(results) == len(data['exp_results'])
         xs = []
         ys = []
@@ -175,7 +220,7 @@ def main():
             mc = 0
             mm += 1
 
-    plt.title('Peppercorn vs. experiment');
+    plt.title('Peppercorn vs. experiment', y=1.08)
     if logdata:
         ax1.set_xlabel('Experimental system speed [$\log_{10}(s)$]', fontsize=16)
         ax1.set_ylabel('Simulated system speed [$\log_{10}(s)$]', fontsize=16)
@@ -183,7 +228,7 @@ def main():
         (mi,ma)=(-3, 7)
         #plt.xlim(mi, ma)
         #plt.ylim(mi, ma)
-        plt.plot([mi, ma], [mi, ma], color='black')
+        ax1.plot([mi, ma], [mi, ma], color='black')
     else:
         ax1.set_xlabel('Experimental system speed [s]', fontsize=16)
         ax1.set_ylabel('Simulated system speed [s]', fontsize=16)
