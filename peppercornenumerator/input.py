@@ -10,9 +10,13 @@ from __future__ import print_function
 import logging
 
 from dsdobjects.parser import parse_pil_string, parse_pil_file
+from dsdobjects.parser import parse_seesaw_string, parse_seesaw_file
 from dsdobjects.parser import ParseException, PilFormatError
 
 from peppercornenumerator.objects import PepperDomain, PepperComplex, PepperReaction
+
+def InputFormatError(Exception):
+    pass
 
 def resolve_loops(loop):
     """ Return a sequence, structure pair from kernel format with parenthesis. """
@@ -281,3 +285,306 @@ def load_pil_crn(data):
 
     return reactions, species if detailed else macrostates
 
+
+def read_seesaw(data, 
+        is_file = False, 
+        conc = 100e-9, 
+        explicit = True):
+    """Translates a seesaw circuit into PepperComplexes.
+
+    Args:
+        is_file (bool, optional): Pareses a file if True, parses a string if False
+        conc (float, optional): The 1x concentration value in M.    
+            Defaults to 100 nM
+        explicit (bool, optional): Translate to the exact explicit notation, or to 
+            the easier shorthand-notation. Defaults to True: explicit.
+
+    The explicit notation is more accurate, but also harder to enumerate.
+    Typical domain lengths:
+        gate-b: 5 + 15 + 5
+        thld-b: 5 + 5 + 15
+        long-domain: 10 + 5
+        toehold: 5
+        gate-top: 15 + 5 + 15 != 32!!
+ 
+    """
+    if is_file :
+        parsed_file = parse_seesaw_file(data)
+    else :
+        parsed_file = parse_seesaw_string(data)
+
+    domains = {'+' : '+'}
+    def assgn_domain(name, l):
+        if name not in domains:
+            domains[name] = PepperDomain(name, length = l)
+            cname = name[:-1] if domains[name].is_complement else name + '*'
+            domains[cname] = ~domains[name]
+        return domains[name]
+
+    if explicit:
+        toe = assgn_domain('toe', 3) # toehold TCT - AGA
+        clp = assgn_domain('clp', 2) # clamp   CA  - TG
+        dlen = 6
+        tlen = 5
+    else :
+        toe = assgn_domain('toe', 5) # toehold CATCT - AGATG
+        dlen = 10
+        tlen =  5
+
+    complexes = {}
+    def make_wire(w, name=None):
+        """Translates a wire into a PepperComplex.
+
+        Every complex gets 0 M concentration as default, i.e. it is excluded
+        from enumeration.
+
+        Args:
+            name (str, optional): Provida a name for the complex that is
+                different from the internal wire representation.
+
+        explicit:
+            ['w', ['1', '2']] -> w1_2 = c s2 c t c s1 c
+        shorthand:
+            ['w', ['1', '2']] -> w1_2 = s2 t s1
+
+        """
+        if w[0] != 'w': 
+            raise InputFormatError('Does not look like a wire: {}'.format(w))
+
+        [nI, nO] = w[1]
+        wire = 'w{}_{}'.format(nI, nO)
+        if wire not in complexes:
+            dIa = assgn_domain('s{}a'.format(nI), l=dlen)
+            dIt = assgn_domain('s{}t'.format(nI), l=tlen)
+            dOa = assgn_domain('s{}a'.format(nO), l=dlen)
+            dOt = assgn_domain('s{}t'.format(nO), l=tlen)
+            if explicit:
+                sequence = [clp, dOt, dOa, clp, toe, clp, dIt, dIa, clp]
+                structure = list('.........')
+            else:
+                sequence = [dOt, dOa, toe, dIt, dIa]
+                structure = list('.....')
+            complexes[wire] = PepperComplex(sequence, structure, 
+                    name=name if name else wire)
+            complexes[wire]._concentration = ('i', 0, 'M')
+        return complexes[wire]
+
+    def make_thld(t):
+        """ ['t', [inp, name]] """
+        if t[0] != 't': 
+            raise InputFormatError('Does not look like a threshold: {}'.format(t))
+        [nI, nO] = t[1]
+        thld = 'T{}_{}'.format(nI, nO)
+        if thld not in complexes:
+            dIa = assgn_domain('s{}a'.format(nI), l=dlen)
+            dIt = assgn_domain('s{}t'.format(nI), l=tlen)
+            dOa = assgn_domain('s{}a'.format(nO), l=dlen)
+            dOt = assgn_domain('s{}t'.format(nO), l=tlen)
+            if explicit:
+                sequence = [clp, dOt, dOa, clp, '+', ~dIt, ~clp, ~toe, ~clp, ~dOa, ~dOt, ~clp]
+                structure = list('((((+...))))')
+            else :
+                sequence = [dOt, dOa, '+', ~dIt, ~toe, ~dOa, ~dOt]
+                structure = list('((+..))')
+            complexes[thld] = PepperComplex(sequence, structure, name=thld)
+            complexes[thld]._concentration = ('i', 0, 'M')
+
+            # Name the waste as well, for convenience...
+            waste = '{}_c'.format(thld)
+            assert waste not in complexes
+            if explicit:
+                sequence = [clp, dOt, dOa, clp, toe, clp, dIt, dIa, clp, '+', ~dIt, ~clp, ~toe, ~clp, ~dOa, ~dOt, ~clp]
+                structure = list('(((((((..+)))))))')
+            else :
+                sequence = [dOt, dOa, toe, dIt, dIa, '+', ~dIt, ~toe, ~dOa, ~dOt]
+                structure = list('((((.+))))')
+            complexes[waste] = PepperComplex(sequence, structure, name=waste)
+            complexes[waste]._concentration = ('i', 0, 'M')
+
+        return complexes[thld]
+
+    def make_gate(g):
+        """ Two options: 
+        1) ['g', [['w', ['31', '25']], '25']]
+        2) ['g', ['31', ['w', ['31', '25']]]]
+        """
+        if g[0] != 'g': 
+            raise InputFormatError('Does not look like a gate: {}'.format(g))
+
+        if isinstance(g[1][0], list):
+            # ['g', [['w', ['1', '2']], '2']]
+            [[_, [nI, nO]], nG] = g[1]
+            assert _ == 'w' and nG == nO
+        elif isinstance(g[1][1], list):
+            # ['g', ['1', ['w', ['1', '2']]]]
+            [nG, [_, [nI, nO]]] = g[1]
+            assert _ == 'w' and nG == nI
+
+        if nI == nG : # this is a producing gate:
+            assert nO != nG
+            dGa = assgn_domain('s{}a'.format(nG), l=dlen)
+            dGt = assgn_domain('s{}t'.format(nG), l=tlen)
+            dOa = assgn_domain('s{}a'.format(nO), l=dlen)
+            dOt = assgn_domain('s{}t'.format(nO), l=tlen)
+
+            wire = 'w{}_{}'.format(nG, nO) # output wire
+            gate = 'G_g{}_{}'.format(nG, wire)
+            if explicit:
+                sequence  = [clp, dOt, dOa, clp, toe, clp, dGt, dGa, clp, '+', 
+                            ~clp, ~toe, ~clp, ~dGa, ~dGt, ~clp, ~toe, ~clp]
+                structure = list('...((((((+..))))))')
+            else :
+                sequence  = [dOt, dOa, toe, dGt, dGa, '+', ~toe, ~dGa, ~dGt, ~toe]
+                structure = list('..(((+.)))')
+
+        else : # this is a consumed gate:
+            assert nO == nG and nI != nG
+            dIa = assgn_domain('s{}a'.format(nI), l=dlen)
+            dIt = assgn_domain('s{}t'.format(nI), l=tlen)
+            dGa = assgn_domain('s{}a'.format(nG), l=dlen)
+            dGt = assgn_domain('s{}t'.format(nG), l=tlen)
+
+            wire = 'w{}_{}'.format(nI, nG) # output wire
+            gate = 'G_{}_g{}'.format(wire, nG)
+            if explicit:
+                sequence  = [clp, dGt, dGa, clp, toe, clp, dIt, dIa, clp, '+', 
+                            ~clp, ~toe, ~clp, ~dGa, ~dGt, ~clp, ~toe, ~clp]
+                structure = list('((((((...+))))))..')
+            else :
+                sequence  = [dGt, dGa, toe, dIt, dIa, '+', ~toe, ~dGa, ~dGt, ~toe]
+                structure = list('(((..+))).')
+ 
+        if gate not in complexes:
+            complexes[gate] = PepperComplex(sequence, structure, name=gate)
+            complexes[gate]._concentration = ('i', 0, 'M')
+        return complexes[gate]
+
+    for line in parsed_file :
+        if line[0] == 'INPUT':
+            # use the given name if it is not a digit...
+            name = None if line[1][0].isdigit() else line[1][0]
+            w = make_wire(line[2], name)
+            w._concentration = None
+
+        elif line[0] == 'OUTPUT':
+            # use the given name if it is not a digit...
+            name = None if line[1][0].isdigit() else line[1][0]
+            if line[2][0] == 'w':
+                make_wire(line[2], name)
+            elif line[2][0] == 'Fluor':
+                nF = line[2][1]
+                fluor = "F_{}".format(line[2][1])
+                name = fluor if name is None else name
+                dFa = assgn_domain('s{}a'.format(nF), l=dlen)
+                dFt = assgn_domain('s{}t'.format(nF), l=tlen)
+                if fluor not in complexes:
+                    if explicit:
+                        complexes[fluor] = PepperComplex([clp, dFt, dFa, clp], ['.','.','.','.'], name=name)
+                    else :
+                        complexes[fluor] = PepperComplex([dFt, dFa], ['.','.'], name=name)
+                    complexes[fluor]._concentration = ('i', 0, 'M')
+            else:
+                raise InputFormatError('Unknown output format: {}'.format(line))
+
+        elif line[0] == 'seesaw':
+            # seesaw[2,{1,4},{3}]
+            [gate, inp, out] = line[1]
+            for d in inp:
+                make_wire(['w', [d, gate]])
+                make_thld(['t', [d, gate]])
+                make_gate(['g', [['w', [d, gate]], gate]])
+            for d in out:
+                make_wire(['w', [gate, d]])
+                make_gate(['g', [gate, ['w',[gate, d]]]])
+
+        elif line[0] in ('seesawOR', 'seesawAND'):
+            # seesaw[2,5,{1,4},{3,9,10}]
+            [g1, g2, inp, out] = line[1]
+            n = len(inp)
+            m = len(out)
+
+            for d in inp:
+                make_wire(['w', [d, g1]])
+                make_thld(['t', [d, g1]])
+                make_gate(['g', [['w', [d, g1]], g1]])
+
+            # connection
+            make_wire(['w',[g1, g2]])
+            cx = make_thld(['t',[g1, g2]]) 
+            if line[0] == 'seesawOR':
+                cx._concentration = ('i', 1.1 * 0.6 * conc, 'M')
+            else:
+                cx._concentration = ('i', 1.1 * (n-1 + 0.2) * conc, 'M')
+            cx = make_gate(['g', [g1, ['w', [g1, g2]]]])
+            cx._concentration = ('i', n * conc, 'M')
+            make_gate(['g', [['w',[g1, g2]], g2]])
+
+            for d in out + ['f']:
+                cxw = make_wire(['w', [g2, d]])
+                cxg = make_gate(['g', [g2, ['w',[g2, d]]]])
+                if d == 'f':
+                    cxw._concentration = ('i', 2 * m * conc, 'M')
+                else :
+                    cxg._concentration = ('i', conc, 'M')
+
+        elif line[0] == 'inputfanout':
+            [g1, inp, out] = line[1]
+            n = len(inp)
+            m = len(out)
+
+            make_wire(['w', [inp, g1]])
+            cx = make_thld(['t', [inp, g1]])
+            cx._concentration = ('i', 1.1 * 0.2 * conc, 'M')
+            make_gate(['g', [['w',[inp, g1]], g1]])
+
+            for d in out + ['f']:
+                cxw = make_wire(['w', [g1, d]])
+                cxg = make_gate(['g', [g1, ['w', [g1, d]]]])
+                if d == 'f':
+                    cxw._concentration = ('i', 2 * m * conc, 'M')
+                else :
+                    cxg._concentration = ('i', conc, 'M')
+
+        elif line[0] == 'reporter':
+            #['reporter', ['25', '31']]
+            [nR, nI] = line[1]
+            make_wire(['w', [nI, nR]])
+
+            rep = 'R_{}'.format(nR)
+            assert rep not in complexes
+
+            dRa = assgn_domain('s{}a'.format(nR), l=dlen)
+            dRt = assgn_domain('s{}t'.format(nR), l=tlen)
+            if explicit:
+                sequence  = [clp, dRt, dRa, clp, '+', ~clp, ~toe, ~clp, ~dRa, ~dRt, ~clp]
+                structure = list('((((+..))))')
+            else: 
+                sequence  = [dRt, dRa, '+', ~toe, ~dRa, ~dRt]
+                structure = list('((+.))')
+            complexes[rep] = PepperComplex(sequence, structure, name=rep)
+            complexes[rep]._concentration = ('i', 1.5 * conc, 'M')
+
+            flr = "F_{}".format(nR)
+            if flr not in complexes:
+                if explicit:
+                    complexes[flr] = PepperComplex([clp, dRt, dRa, clp], ['.','.','.','.'], name=flr)
+                else :
+                    complexes[flr] = PepperComplex([dRt, dRa], ['.','.'], name=flr)
+                complexes[flr]._concentration = ('i', 0, 'M')
+
+        elif line[0] == 'conc':
+            if line[1][0] == 'w':
+                cx = make_wire(line[1])
+            elif line[1][0] == 'g':
+                cx = make_gate(line[1])
+            elif line[1][0] == 'th':
+                cx = make_thld(line[1])
+            else:
+                print(line)
+                raise NotImplementedError
+            cx._concentration = ('i', conc*float(line[2][0]), 'M')
+
+        else :
+            print('WARNING: keyword not supported: {}'.format(line[0]))
+
+    return complexes, []
