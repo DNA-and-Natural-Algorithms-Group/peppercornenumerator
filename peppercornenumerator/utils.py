@@ -264,10 +264,6 @@ class Loop(object):
         return (part[2] if part is not None else None for part in self._parts)
 
     @property
-    def revlocs(self):
-        return (part[2] if part is not None else None for part in self._parts[::-1])
-
-    @property
     def domains(self):
         return (part[0] if part is not None else None for part in self._parts)
 
@@ -277,7 +273,7 @@ class Loop(object):
 
     @property
     def structs(self):
-        raise DeprecationWarning('SB: Use of Loop.structs has been replaced by Loop.structures.')
+        raise DeprecationWarning('Use of Loop.structs has been replaced by Loop.structures.')
         return self.structures
 
     @property

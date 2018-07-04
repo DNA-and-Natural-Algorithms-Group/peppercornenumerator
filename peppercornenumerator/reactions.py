@@ -126,33 +126,51 @@ def branch_3way_remote_rate(length, before, after, debug = False):
         length (int): the length of the domain
         before (:obj:Loop): the loop object on the typical 3-way branch migration initiation site.
         after (:obj:Loop): the other (remote) loop object.
+
+    Returns:
+        k1 = P(link) * k_init / l
     """
     # step = 0.1e-3  # 100us branch migration step time from Srinivas et al 2013 (not relevant)
     # k_init = k_uni exp(-dGsp / RT) with k_uni = 7.5e7, dGsp = 7.3 kcal/mol,
     # T = 273.15 + 25 K, R = 0.001987 kcal/mol/K
-    init = 3.0e-3  # sec, = 1/k_init from Srinivas et al 2013
+
+    # Experimentally derived time for a single step of 3-way branch migration.
+    t_step = 1e-4  # sec
+    k_step = 1/t_step
+
+    if after._parts[0] is None: 
+        # Initialtion penalty if there is *no* danling end on the displaced side.
+        t_init = 3.0e-3 
+        k_init = 1/t_init
+    else :
+        # Initialtion penalty if there is a danling end on the displaced side,
+        # in which case it is just a regular displacement step.
+        t_init = t_step
+        k_init = k_step
+
+    k1 = None # The probability of a successfull branch migration scales with 1/L
+    k2 = None # The time spent on branch migration scales with 1/L^2
 
     if debug :
-        show_loops(before, after, "...before & after loops for 3-way branch migration...")
+        show_loops(before, after, "before & after loops for 3-way branch migration.")
 
     # "standard" 3-way bm initiation (plus "after" being closed)
     if not before.is_open and before.stems == 1 and before.bases == 0:
-        # each initiation has probability 1/length of succeeding.  
-        # how long it takes doesn't matter.
-        return 1.0 / init / length
-    
-    if debug:
-        show_loops(before, after, 
-                "run_tests.py should not have any remote toeholds for 3-way branch migration")
+        k1 = k_init / length
+        #k2 = k_init / length + k_step / length**2
+    else :
+        # consider a slowdown analogous to Genot et al 2011 (remote) supp info derivation
+        # bulge closing assumed to be similar to faster of two hairpin closings
+        L = polymer_link_length(before, after)
 
-    # consider a slowdown analogous to Genot et al 2011 (remote) supp info derivation
-    # bulge closing assumed to be similar to faster of two hairpin closings
-    L = polymer_link_length(before, after)
-    # how much slower than our (admittedly slow) zippering rate is this?
-    ratio = polymer_link_rate(L) / (1e6)
-    # we slow down initiation and thus success probability (note: ratio < 1/30)
-    return ratio / init / length
+        # how much slower than our (admittedly slow) zippering rate is this?
+        ratio = polymer_link_rate(L) / 1e6
 
+        # we slow down initiation and thus success probability (note: ratio < 1/30)
+        k1 = ratio * k_init / length
+        #k2 = ratio * k_init / length + k_step / length**2
+
+    return k1
 
 def branch_4way_remote_rate(length, before, after, debug=False):
     """
@@ -427,19 +445,29 @@ def join_complexes_21(complex1, location1, complex2, location2):
     return new_complex, loc1, loc2
 
 def open(reactant, max_helix = True, release_11=6, release_1N=6):
-    """
-    Returns a list of reaction product sets that can be produced by the
-    'open' reaction, in which a short helix dissociates. Each product
-    set are the results of one particular dissociation; each strand in the
-    reactant occurs exactly once in one of the complexes in the product set.
+    """ Returns a list of open reactions.
 
-    A dissociation can happen to any helix under the threshold length
+    Args:
+        reactant (PepperComplex): The reactant complex
+        max_helix (bool, optional): Use max-helix notion. Defaults to True.
+        release_11 (int, optional): Threshold length for a open11 reaction. Defaults to 6.
+        release_1N (int, optional): Threshold length for a open12 reaction. Defaults to 6.
+
+    Returns:
+        [PepperReactions]
 
     """
 
     # remember the larger release cutoff; don't enumerate any reactions
     # for helices longer than this
-    max_release = max(release_11, release_1N)
+    max_release = max(release_11, release_1N) if release_11 and release_1N else 0
+
+    # Disabled breathing option for now. 
+    # It is effectively the same as not using max-helix.
+    if False and max_release:
+        end_release = (max_release + 1) / 2
+    else :
+        end_release = 0
 
     reactions = []
     structure = reactant.pair_table
@@ -460,6 +488,20 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                 bound_loc = (strand_index, domain_index)
                 bound_domain = reactant.get_domain(bound_loc)
 
+                # Assume we want to correct for the actual number of stacks,
+                # not just use the length of a helix, then this code can be helpful...
+                #
+                # thispair = reactant.get_structure((strand_index, domain_index))
+                # try:
+                #     prevpair = reactant.get_structure((strand_index, domain_index-1))
+                #     nextpair = reactant.get_structure((strand_index, domain_index+1))
+                #     if prevpair and nextpair and \
+                #             prevpair[0] == thispair[0] and nextpair[0] == thispair[0] and \
+                #             prevpair[1] == thispair[1]+1 and nextpair[1] == thispair[1]-1:
+                #                 continue
+                # except IndexError:
+                #     pass
+
                 (release_reactant, rotations) = do_single_open(reactant, bound_loc)
                 product_set = release_reactant.split()
                 meta = (Loop([triple(bound_loc)]),
@@ -467,8 +509,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                 reactions.append((product_set, rotations, len(bound_domain),
                     meta))
 
-    # for max-helix mode:
-    else:
+    else: # for max-helix mode:
         # We loop through all stands, domains
         for (strand_index, strand) in enumerate(structure):
             for (domain_index, domain) in enumerate(strand):
@@ -494,6 +535,12 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                 bound_domain = reactant.get_domain(bound_loc)
                 helix_length = len(bound_domain)
 
+                if max_release and helix_length > max_release:
+                    continue
+
+                ext_fw = False
+                ext_bw = False
+
                 # Now iterate through the whole helix to find the other end of
                 # this one (The helix ends at the first strand break from
                 # either direction)
@@ -518,6 +565,8 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                     temp_bl = (helix_endA[0], helix_endA[1])
                     helix_length += len(reactant.get_domain(temp_bl))
 
+                    ext_fw = True
+
                 # We must also iterate in the other direction
                 while True:
                     helix_startA[1] -= 1
@@ -537,12 +586,18 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                     temp_bl = (helix_startA[0], helix_startA[1])
                     helix_length += len(reactant.get_domain(temp_bl))
 
-                # Move start location to the first domain in the helix
+                    ext_bw = True
+
+                # Move start location back to the first domain in the helix
                 helix_startA[1] += 1
                 helix_startB[1] -= 1
 
+                if ext_fw and ext_bw :
+                    # we only want to allow moves that start at helix ends!
+                    continue
+
                 # If the helix is short enough, we have a reaction
-                if (helix_length <= max_release):
+                if not max_release or helix_length <= max_release:
 
                     new_struct = reactant.pair_table
 
@@ -565,6 +620,37 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
                     meta = None
                     reactions.append((product_set, rotations, helix_length, meta))
 
+                elif len(bound_domain) <= end_release: # bound-domain is initial domain
+                    new_struct = reactant.pair_table
+
+                    # Delete all the pairs in the released helix
+                    breathing = range(helix_startA[1], helix_endA[1])
+                    if ext_bw:
+                        breathing = reversed(breathing)
+
+                    bl = 0
+                    for dom in breathing:
+                        bound_loc = reactant.get_structure((helix_startA[0], dom))
+                        dl = len(reactant.get_domain(bound_loc))
+                        if bl + dl > end_release :
+                            break
+                        bl += dl
+                        new_struct[helix_startA[0]][dom] = None
+                        new_struct[bound_loc[0]][bound_loc[1]] = None
+
+                    newstr = pair_table_to_dot_bracket(new_struct)
+
+                    try:
+                        release_reactant = PepperComplex(reactant.sequence, newstr)
+                        rotations = 0
+                    except DSDDuplicationError, e:
+                        release_reactant = e.existing
+                        rotations = e.rotations
+
+                    product_set = release_reactant.split()
+                    meta = None
+                    reactions.append((product_set, rotations, bl, meta))
+
     output = []
     for product_set, rotations, length, meta in reactions:
         try :
@@ -575,9 +661,9 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
             reaction = e.existing
 
         # discard reactions where the release cutoff is greater than the threshold
-        if len(reaction.products) == 1 and length > release_11:
+        if release_11 and len(reaction.products) == 1 and length > release_11:
             continue
-        elif len(reaction.products) > 1 and length > release_1N:
+        elif release_1N and len(reaction.products) > 1 and length > release_1N:
             continue
 
         reaction.rate = opening_rate(length)
@@ -625,7 +711,6 @@ def branch_3way(reactant, max_helix = True, remote=True):
 
             # search 5'->3' and 3'->5' directions around the loop for a bound
             # domain that is complementary (and therefore can be displaced)
-
             start_loc = (strand_index, domain_index)
 
             # build products
@@ -667,7 +752,6 @@ def branch_3way(reactant, max_helix = True, remote=True):
 
                 # calculate reaction constant
                 reaction.rate = branch_3way_remote_rate(len(displacing), before, after)
-
                 reactions.append(reaction)
 
     # Remove any duplicate reactions
