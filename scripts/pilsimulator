@@ -14,9 +14,10 @@ import sys
 import imp
 import argparse
 
-from crnsimulator import ReactionGraph, __version__
+from crnsimulator import ReactionGraph
 from crnsimulator.odelib_template import add_integrator_args
 from peppercornenumerator.input import load_pil_crn
+from peppercornenumerator import __version__
 
 def main(args):
     """Translate a CRN into a system of ODEs. Optional: Simulate ODEs on-the-fly. """
@@ -36,13 +37,33 @@ def main(args):
     if crn == []:
         raise SystemExit('No Input CRN provided.')
 
-    V = []
-    C = []
+    V = [] # sorted species (vertices) vector
+    C = [] # corresponding concentration vector
+    seen = set() # keep track of what species are covered
+
+    # Move interesting species to the front, in their given order.
+    labels = args.pyplot_labels
+    for s in labels:
+        if s in seen :
+            print('# Ignoring multiple occurances of {}'.format(s))
+            continue
+        V.append(s)
+        if s in species:
+            if species[s][0][0] != 'i': raise NotImplementedError
+            initial = species[s][1]
+        else :
+            initial = 0
+        C.append(initial)
+        seen.add(s)
+
+    # Append the remaining specified species 
     for s in sorted(species):
+        if s in seen : continue
         V.append(s)
         if species[s][0][0] != 'i':
             raise NotImplementedError
         C.append(species[s][1])
+        seen.add(s)
 
     # Split CRN into irreversible reactions
     new = []
@@ -61,20 +82,34 @@ def main(args):
     # **************** #
     # WRITE ODE SYSTEM #
     # ................ #
-    if not args.force and os.path.exists(args.output):
-        print('# Reading ODE system from existing file:', args.output)
+    if not args.force and os.path.exists(filename):
+        print('# Use --force to overwrite existing file: {}'.format(filename))
+        raise SystemExit
     else:
         # ******************* #
         # BUILD REACTIONGRAPH #
         # ................... #
         RG = ReactionGraph(crn)
 
+        if len(C):
+            if len(RG.species) != len(V):
+                # Append the remaining unspecified species 
+                for s in sorted(RG.species):
+                    if s in seen : continue
+                    V.append(s)
+                    C.append(0)
+                    seen.add(s)
+        else :
+            V = RG.species
+            C = None
+
         # ********************* #
         # PRINT ODE TO TEMPLATE #
         # ..................... #
         filename, odename = RG.write_ODE_lib(sorted_vars = V, concvect = C,
-                                             jacobian=not args.no_jacobian, filename=filename,
-                                             odename=odename)
+                                             jacobian = not args.no_jacobian, 
+                                             filename = filename,
+                                             odename = odename)
         print('# Wrote ODE system:', filename)
 
     # ******************* #
@@ -84,7 +119,7 @@ def main(args):
         print('# Dry-run: Simulate the ODE system using:')
         print("#  python {} --help ".format(filename))
     else:
-        print('# Simulating the ODE system, change parameters using:')
+        print('# Simulating the ODE system. Change parameters using:')
         print("#  python {} --help ".format(filename))
 
         _temp = imp.load_source(odename, filename)
@@ -102,15 +137,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
-    parser.add_argument("--force", action='store_true',
-            help="Overwrite existing files")
-    parser.add_argument("--dry-run", action='store_true',
+    pilsim = parser.add_argument_group('pilsimulator I/O')
+
+    pilsim.add_argument('--version', action='version', 
+            version='%(prog)s ' + __version__)
+    pilsim.add_argument("--dry-run", action='store_true',
             help="Do not run the simulation, only write the files.")
-    parser.add_argument("-o", "--output", default='odesystem', metavar='<str>',
+    pilsim.add_argument("-o", "--output", default='odesystem', metavar='<str>',
             help="Name of ODE library files.")
-    parser.add_argument("--no-jacobian", action='store_true',
-            help="Do not compute the Jacobi-Matrix.")
+    pilsim.add_argument("--force", action='store_true',
+            help="Overwrite existing files")
+    pilsim.add_argument("--no-jacobian", action='store_true',
+            help="Do not write the Jacobi-Matrix. Let the solver do the work.")
 
     add_integrator_args(parser)
 
