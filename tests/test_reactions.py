@@ -369,13 +369,8 @@ class NewOpenTests(unittest.TestCase):
         output = rxn.open(reactant, max_helix=False, release_11=13, release_1N=13)
         self.assertEqual(output, sorted([forward2, forward1]))
 
-    def test_multiple_choice(self):
-        # TODO: len(a) + len(b) = len(ab) - but the behavior is different!
-        #
-        ## think of hierarchical domain-level displacement.
-        ## Upper  class: max-helix
-        ## Middle class: no-max-helix
-        ## Lower  class: sequence-level
+    def dont_test_breathing(self):
+        # NOTE: breathing is disabled, for now... 
         #
         # Should release-cutoff be dependent on domain-level representation?
         # That means, should release-cutoff of 4 mean "max-helix-semantics up
@@ -384,14 +379,50 @@ class NewOpenTests(unittest.TestCase):
         complexes, reactions = read_pil("""
         length a = 3
         length b = 1
-        length c = 3
+        length c = 4
         length ab = 4
 
         X = a( b( c( + ) ) )
         Y = ab( c( + ) )
 
+        Xf = a b( c( + ) ) a*
+        Xff= a b c( + ) b* a*
+        Xb = a( b( c + c* ) )
+        Y1 = ab c( + ) ab*
+        Y2 = ab( c + c* )
+
         """)
-        pass
+        X = complexes['X']
+        Y = complexes['Y']
+
+        Xf = complexes['Xf']
+        Xff= complexes['Xff']
+        Xb = complexes['Xb']
+        Y1 = complexes['Y1']
+        Y2 = complexes['Y2']
+
+        output = rxn.open(X, max_helix=True, release_11 = 6, release_1N = 6, breathing=True)
+        rf = PepperReaction([X], [Xf], 'open', memorycheck=False)
+        self.assertEqual(output,[rf])
+
+        output = rxn.open(X, max_helix=True, release_11 = 7, release_1N = 7, breathing=True)
+        rf = PepperReaction([X], [Xff], 'open', memorycheck=False)
+        rb = PepperReaction([X], [Xb], 'open', memorycheck=False)
+        self.assertEqual(sorted(output),sorted([rf, rb]))
+
+        output = rxn.open(X, max_helix=True, release_11 = 8, release_1N = 8, breathing=True)
+        self.assertEqual(len(output[0].products), 2)
+
+        output = rxn.open(Y, max_helix=True, release_11 = 6, release_1N = 6, breathing=True)
+        self.assertEqual(output,[])
+
+        output = rxn.open(Y, max_helix=True, release_11 = 7, release_1N = 7, breathing=True)
+        r1 = PepperReaction([Y], [Y1], 'open', memorycheck=False)
+        r2 = PepperReaction([Y], [Y2], 'open', memorycheck=False)
+        self.assertEqual(sorted(output),sorted([r1, r2]))
+
+        output = rxn.open(Y, max_helix=True, release_11 = 8, release_1N = 8, breathing=True)
+        self.assertEqual(len(output[0].products), 2)
 
 @unittest.skipIf(SKIP, "skipping tests")
 class NewBindTests(unittest.TestCase):
@@ -749,7 +780,6 @@ class NewBranch3WayTests(unittest.TestCase):
         #for o in output: print 'new-max', o.kernel_string
         self.assertEqual(sorted(output), sorted([forward1, forward2]))
 
-
 @unittest.skipIf(SKIP, "skipping tests")
 class NewBranch4WayTests(unittest.TestCase):
     def setUp(self):
@@ -971,6 +1001,62 @@ class NewBranch4WayTests(unittest.TestCase):
         #for o in output: print 'branch-4way', o.kernel_string(), o.rate
         self.assertEqual(output, [path])
 
+@unittest.skipIf(SKIP, "skipping tests")
+class RateBranch3WayTests(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        clear_memory()
+
+    def test_max_helix_initiation_pen(self):
+        """ 
+        A series of 3-way branch migration reactions.
+        """
+        # INPUT
+        complexes, reactions = read_pil("""
+        X  = a( b( c + c( d( + ) ) ) )
+        Y  = a( b( c( + c d( + ) ) ) )
+        """)
+
+        X = complexes['X']
+        Y = complexes['Y']
+        output = rxn.branch_3way(X)
+        reaction = output[0]
+        (displacing, bound, before, after) = reaction.meta
+        rate  = rxn.branch_3way_remote_rate(len(displacing), before, after)
+        self.assertEqual(int(rate), 22)
+
+        output = rxn.branch_3way(Y)
+        reaction = output[0]
+        (displacing, bound, before, after) = reaction.meta
+        rate = rxn.branch_3way_remote_rate(len(displacing), before, after)
+        self.assertEqual(int(rate), 22)
+
+
+    def test_max_helix_initiation_pen2(self):
+        """ 
+        A series of 3-way branch migration reactions.
+        """
+        # INPUT
+        complexes, reactions = read_pil("""
+        X  = a( b( c e + x c( d( + ) ) ) )
+        Y  = a( b( c( e + x c d( + ) ) ) )
+        """)
+
+        X = complexes['X']
+        Y = complexes['Y']
+        output = rxn.branch_3way(X)
+        reaction = output[0]
+        (displacing, bound, before, after) = reaction.meta
+        rate = rxn.branch_3way_remote_rate(len(displacing), before, after)
+        self.assertEqual(int(rate), 666)
+
+        output = rxn.branch_3way(Y)
+        reaction = output[0]
+        (displacing, bound, before, after) = reaction.meta
+        rate = rxn.branch_3way_remote_rate(len(displacing), before, after)
+        self.assertEqual(int(rate), 666)
 
 @unittest.skipIf(SKIP, "skipping tests")
 class DSD_PathwayTests(unittest.TestCase):
@@ -1091,7 +1177,6 @@ class DSD_PathwayTests(unittest.TestCase):
         #    else:
         #        print r.kernel_string(), r.rate
         self.assertEqual(len(enum.reactions), 22)
-
 
 @unittest.skipIf(SKIP, "skipping tests")
 class ReactionMatchingTests (unittest.TestCase):
@@ -1310,12 +1395,9 @@ class IsomorphicSets(unittest.TestCase):
         enum2.max_helix_migration = True
         enum2.enumerate()
 
-        self.assertEqual(len(enum2.reactions), len(enum.reactions))
         #for r in enum.reactions:
-        #    print 'test_isomorph', r.kernel_string(), r.rate
-
-    def test_old_vs_new_max_helix(self):
-        pass
+        #    print 'test_isomorph', r.kernel_string, r.rate
+        self.assertEqual(len(enum2.reactions), len(enum.reactions))
 
     def test_erik_max_helix_examples_3way(self):
         complexes, reactions = read_pil("""
@@ -1330,22 +1412,24 @@ class IsomorphicSets(unittest.TestCase):
         B1_2 = x1( x2( y1( y2( z1( z2( + ) ) ) ) ) ) 
         YZ2 = y1 y2 z1 z2
 
-        # should be two reactions, is one
-        A2 = x( y z + y( + z( + ) ) )
+        # should be two reactions, is two
+        A2   = x( y z + y( + z( + ) ) )
         A2_1 = x( y( z + z( + ) ) )
-        #A2_2 = x( y( z( + ) ) )
+        #A2_2 = x( y( z( + ) ) ) # = A1_2
         Y1 = y
         Z1 = z
 
-        # should be two reactions, is one
+        # should be two reactions, is two
         B2 = x1( x2( y1 y2 z1 z2 + y1( y2( + z1( z2( + ) ) ) ) ) ) 
         B2_1 = x1( x2( y1( y2( z1 z2 + z1( z2( + ) ) ) ) ) ) 
         #B2_2 = x1( x2( y1( y2( z1( z2( + ) ) ) ) ) ) 
         Y2 = y1 y2
         Z2 = z1 z2
 
-        # should be two reactions, is one
+        # should be two reactions, is two
         C = x( y z + y( + a( + ) z( + ) ) )
+        C1 = x( y( z + a( + ) z( + ) ) )
+        r1 = a( + ) z
 
         """)
 
@@ -1368,10 +1452,7 @@ class IsomorphicSets(unittest.TestCase):
         path1 = PepperReaction([A1], sorted([A1_2, YZ]), 'branch-3way', memorycheck=False)
         path2 = PepperReaction([A2], sorted([A2_1, Y1]), 'branch-3way', memorycheck=False)
         path3 = PepperReaction([A2_1], sorted([A1_2, Z1]), 'branch-3way', memorycheck=False)
-
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
-        #for r in enum.reactions:
-        #    print 'invade', r, r.kernel_string(), r.rate
  
         B1 = complexes['B1']
         B1_2 = complexes['B1_2']
@@ -1392,9 +1473,15 @@ class IsomorphicSets(unittest.TestCase):
         path1 = PepperReaction([B1], sorted([B1_2, YZ2]), 'branch-3way', memorycheck=False)
         path2 = PepperReaction([B2], sorted([B2_1, Y2]), 'branch-3way', memorycheck=False)
         path3 = PepperReaction([B2_1], sorted([B1_2, Z2]), 'branch-3way', memorycheck=False)
-        #for r in enum.reactions:
-        #    print 'invade', r, r.kernel_string(), r.rate
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2, path3]))
+
+        C = complexes['C']
+        enum = Enumerator([C])
+        enum.k_fast = 0
+        enum.k_slow = 0
+        enum.max_helix_migration = True
+        enum.enumerate()
+        self.assertEqual(len(enum.reactions), 2)
 
 @unittest.skipIf(SKIP, "skipping tests")
 class Compare_MaxHelix(unittest.TestCase):
@@ -1403,6 +1490,56 @@ class Compare_MaxHelix(unittest.TestCase):
 
     def tearDown(self):
         clear_memory()
+
+    def test_seesaw_bug(self):
+        # turns out its not a bug.. its a leak pathway
+        complexes, reactions = read_pil("""
+        # Domain specifications 
+        length c = 2
+        length s1 = 11
+        length s2 = 11
+        length s3 = 11
+        length s4 = 11
+        length t = 3
+
+
+        # Resting complexes 
+        G_g2_w2_3 = c s3 c( t( c( s2( c( + c* t* ) ) ) ) )
+        G_w4_2_g2 = c( s2( c( t( c( s4 c + ) ) ) ) ) t* c*
+
+        I12_223 = c s2 c t( c( s1 c + ) ) c*( s2*( c*( t*( c*( + c s3 ) ) ) ) )
+        B12_223 = c( s2( c( t( c( s1 c + ) ) ) ) ) t*( c*( + c s3 ) ) c s2 c
+        I12_422 = c s2 c( t( c s1 c + c( s2( c( t( c( s4 c + ) ) ) ) ) ) )
+
+        w1_2 = c s2 c t c s1 c
+        w2_3 = c s3 c t c s2 c
+        w4_2 = c s2 c t c s4 c
+        """)
+        G223 = complexes['G_g2_w2_3']
+        G422 = complexes['G_w4_2_g2']
+        w12 = complexes['w1_2']
+        w23 = complexes['w2_3']
+        w42 = complexes['w4_2']
+        I12_223 = complexes['I12_223']
+        I12_422 = complexes['I12_422']
+
+        out = rxn.bind21(w12, G223, max_helix=True)
+        self.assertEqual(len(out), 4)
+        self.assertTrue(I12_223 in r.products for r in out)
+
+        out = rxn.bind21(w12, G422, max_helix=True)
+        self.assertEqual(len(out), 4)
+        self.assertTrue(I12_422 in r.products for r in out)
+
+        out = rxn.branch_3way(I12_223, max_helix=True)
+        self.assertEqual(len(out), 4)
+        self.assertTrue(B12_422 in r.products for r in out)
+
+        out = rxn.branch_3way(I12_422, max_helix=True)
+        #for o in out:
+        #    print o, o.rate
+        #    print o.kernel_string
+
 
     def test_self_displacement_bug(self):
         complexes, reactions = read_pil("""

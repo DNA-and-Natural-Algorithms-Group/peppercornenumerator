@@ -90,7 +90,7 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
         enumCG = PepperCondensation(enumerator)
         enumCG.condense()
         output_string("\n# Resting macrostates \n")
-        for resting in natural_sort(enumerator.resting_sets):
+        for resting in natural_sort(enumerator.resting_macrostates):
             output_string("macrostate {:s} = [{}]\n".format(resting, ', '.join(map(str,resting.complexes))))
 
         # Print reactions

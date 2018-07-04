@@ -9,7 +9,7 @@ pathways always equilibrate before bimolecular reactions initiate. The
 enumerator can handle arbitrary non-pseudoknotted structures and supports a
 diverse set of unimolecular and bimolecular domain-level reactions: bind/unbind
 reactions, 3-way branch-migration and 4-way branch-migration reactions and
-remote toehold migration. For more background on reaction semantics we refer to
+remote-toehold migration. For more background on reaction semantics we refer to
 the publication [Grun et al. (2014)].
 """
 
@@ -25,8 +25,8 @@ setup(
     install_requires=[
         'numpy',
         'pyparsing>=1.5.5', 
-        'crnsimulator==0.4',
-        'dsdobjects==0.6.1'],
+        'crnsimulator>=0.4',
+        'dsdobjects>=0.6.3'],
     dependency_links=['https://github.com/bad-ants-fleet/crnsimulator/archive/v0.4.tar.gz#egg=crnsimulator-0.4'],
     packages=['peppercornenumerator'],
     scripts=['scripts/peppercorn',

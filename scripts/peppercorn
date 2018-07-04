@@ -8,7 +8,7 @@ import argparse
 # Import global default variables from peppercornenumerator library
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.enumerator import FAST_REACTIONS
-from peppercornenumerator.input import read_pil, ParseException
+from peppercornenumerator.input import read_pil, read_seesaw, ParseException
 from peppercornenumerator.output import write_pil
 from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
 
@@ -75,10 +75,13 @@ def add_peppercorn_args(parser):
 
     output.add_argument('-o', '--output', dest='output_filename', default=None, metavar='<str>',
         help="""Redirect output to a file""")
-    output.add_argument( '-c', '--condensed', action='store_true',
+    output.add_argument('-c', '--condensed', action='store_true',
         help="Condense reactions into only resting complexes.")
-    output.add_argument( '-d', '--detailed', action='store_true',
+    output.add_argument('-d', '--detailed', action='store_true',
         help="Print detailed reactions even if --condensed is chosen.")
+    output.add_argument('--explicit-seesaw', action='store_true',
+        #help="""When using seesaw format, translate into explicit form."""
+        help=argparse.SUPPRESS)
     output.add_argument("--concentration-unit", default='M', action='store',
         choices=('M', 'mM', 'uM', 'nM', 'pM'),
         help="""Specify concentration units for crn output.""")
@@ -95,14 +98,13 @@ def add_peppercorn_args(parser):
     limits.add_argument( '--max-reaction-count', type=int, default=1000, metavar='<int>',
         help="Maximum number of reactions that may be enumerated before the enumerator halts.")
 
-    semantics.add_argument( '--k-slow', dest='k_slow', default=0.0, type=float, metavar='<flt>',
+    semantics.add_argument( '--k-slow', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be discarded.")
-    semantics.add_argument( '--k-fast', dest='k_fast', default=0.0, type=float, metavar='<flt>',
+    semantics.add_argument( '--k-fast', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be marked as slow.")
     semantics.add_argument( '--p-min', default=0.0, type=float, metavar='<flt>',
-        help=argparse.SUPPRESS)
-        #help="""Minimal occupancy of a complex in steady state to engage into further reactions.""")
-    semantics.add_argument( '--p-loc', default=0.0, type=float, metavar='<flt>',
+        help="""Minimal occupancy of a complex in steady state to engage in slow reactions.""")
+    semantics.add_argument( '--local-elevation', action='store_true', 
         #help="""Local probability threshold to accept an unfavorable reaction.""")
         help=argparse.SUPPRESS)
 
@@ -119,9 +121,9 @@ def add_peppercorn_args(parser):
 
     semantics.add_argument( '--no-max-helix', action='store_true', 
         help="Do not apply 'max helix at a time' semantics.")
-    semantics.add_argument( '--ignore-branch-3way', action='store_true', dest='ignore_branch_3way',
+    semantics.add_argument( '--ignore-branch-3way', action='store_true', 
         help="Ignore 3-way branch migration events during enumeration.")
-    semantics.add_argument( '--ignore-branch-4way', action='store_true', dest='ignore_branch_4way',
+    semantics.add_argument( '--ignore-branch-4way', action='store_true',
         help="Ignore 4-way branch migration events during enumeration.")
     semantics.add_argument( '--reject-remote', action='store_true', 
         help="Discard remote toehold mediated 3-way and 4-way branch migration reactions.")
@@ -132,7 +134,7 @@ def add_peppercorn_args(parser):
         help="When searching for bimolecular reactions, look to the oldest complexes first.")
     devel.add_argument( '--dry-run', action='store_true', 
         help="Dry run: read input, write output. Do not enumerate any reactions.")
-    devel.add_argument('--profile', action='store_true', dest='profile',
+    devel.add_argument('--profile', action='store_true',
         help="Enable statistical profiling")
 
     return
@@ -181,18 +183,34 @@ def main(cl_opts):
 
     composite = None
     try :
-        complexes, reactions, composite = read_pil(systeminput, cl_opts.input_filename is not None, composite=True)
-    except ParseException, e:
-        logging.error('Cannot parse line {:5d}: "{}"'.format(e.lineno, e.line))
-        logging.error('                          {} '.format(' ' * (e.col-1) + '^'))
-        raise SystemExit
+        complexes, reactions, composite = read_pil(systeminput, 
+                cl_opts.input_filename is not None, composite=True)
+    except ParseException, ex_pil:
+        try :
+            complexes, reactions = read_seesaw(systeminput, 
+                    cl_opts.input_filename is not None, 
+                    conc=100e-9, explicit=cl_opts.explicit_seesaw)
+        except ParseException, ex_ssw:
+            logging.error('Pil-format parsing error:')
+            logging.error('Cannot parse line {:5d}: "{}"'.format(ex_pil.lineno, ex_pil.line))
+            logging.error('                          {} '.format(' ' * (ex_pil.col-1) + '^'))
+            logging.error('SeeSaw-format parsing error:')
+            logging.error('Cannot parse line {:5d}: "{}"'.format(ex_ssw.lineno, ex_ssw.line))
+            logging.error('                          {} '.format(' ' * (ex_ssw.col-1) + '^'))
+            raise SystemExit
 
-    enum = Enumerator(complexes.values(), reactions)
+    init_cplxs = filter(
+            lambda x: x._concentration is None or \
+                    float(x._concentration[1]) != (0.0), complexes.values())
+    if cl_opts.dry_run:
+        enum = Enumerator(complexes.values(), reactions)
+    else:
+        enum = Enumerator(init_cplxs, reactions)
 
     # Print initial complexes
     logging.info("Initial complexes: ")
     for c in enum.initial_complexes:
-        logging.info(c.kernel_string)
+        logging.info("{}: {}".format(c, c.kernel_string))
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Transfer options to enumerator object #
@@ -200,11 +218,6 @@ def main(cl_opts):
     enum.max_complex_size = cl_opts.max_complex_size
     enum.max_complex_count = cl_opts.max_complex_count
     enum.max_reaction_count = cl_opts.max_reaction_count
-
-    enum.k_slow = cl_opts.k_slow
-    enum.k_fast = cl_opts.k_fast
-    enum._p_min = cl_opts.p_min
-    enum._p_loc = cl_opts.p_loc
 
     if cl_opts.k_slow:
         rc = 0
@@ -214,9 +227,9 @@ def main(cl_opts):
             k_rc = opening_rate(rc)
             if k_rc < cl_opts.k_slow:
                 break
-        cl_opts.release_cutoff = 99
+        cl_opts.release_cutoff = rc 
         logging.info('Corresponding release-cutoff between {} and {}'.format(rc-1, rc))
-        logging.warning('Setting release_cutoff to {}'.format(cl_opts.release_cutoff))
+        logging.warning('Setting release-cutoff to {}'.format(cl_opts.release_cutoff))
     else :
         logging.info('Dissociation at release-cutoff {} corresponds to a k-slow < {}'.format(
             cl_opts.release_cutoff_1_1, opening_rate(cl_opts.release_cutoff_1_1)))
@@ -224,14 +237,21 @@ def main(cl_opts):
     enum.release_cutoff_1_1 = cl_opts.release_cutoff_1_1
     enum.release_cutoff_1_N = cl_opts.release_cutoff_1_N
 
-    if cl_opts.release_cutoff:
+    if cl_opts.release_cutoff is not None:
         enum.release_cutoff = cl_opts.release_cutoff
+
+    enum.k_slow = cl_opts.k_slow
+    enum.k_fast = cl_opts.k_fast
+    enum._p_min = cl_opts.p_min
 
     enum.remote_migration = not cl_opts.reject_remote 
 
-    if cl_opts.p_loc:
-        logging.warning('Turning off max-helix mode, since you are using: p-loc')
+    if (cl_opts.k_fast or cl_opts.k_slow) and cl_opts.local_elevation:
+        logging.warning('Turning off max-helix mode, since you are using: local-elevation')
+        enum.local_elevation = True
         cl_opts.no_max_helix = True
+    elif cl_opts.local_elevation:
+        logging.warning('Ignoring local-elevation, since you are using the rate-independent model ')
     enum.max_helix_migration = not cl_opts.no_max_helix
 
     enum.DFS = not cl_opts.bfs

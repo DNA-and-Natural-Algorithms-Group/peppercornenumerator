@@ -578,6 +578,7 @@ class CondenseTests(unittest.TestCase):
         gate = complexes['gate']
         t23 = complexes['t23']
         enum = Enumerator(complexes.values())
+        enum.release_cutoff = 6
         enum.enumerate() # or enum.dry_run()
 
         self.assertEqual(sorted(enum.reactions), sorted(reactions))

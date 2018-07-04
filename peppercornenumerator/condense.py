@@ -10,6 +10,7 @@ from peppercornenumerator.objects import PepperComplex
 from peppercornenumerator.objects import PepperReaction
 from peppercornenumerator.objects import PepperMacrostate
 from peppercornenumerator.objects import DSDDuplicationError
+from peppercornenumerator.enumerator import local_elevation_rate
 
 class CondensationError(Exception):
     pass
@@ -87,7 +88,10 @@ class PepperCondensation(object):
         return self._enumerator.k_fast
 
     def is_fast(self, rxn):
-        return rxn.arity[0] == 1 and rxn.rate > self.k_fast
+        if rxn.arity[0] != 1:
+            return False
+        k_loc = local_elevation_rate(rxn)
+        return k_loc >= self.k_fast if k_loc is not None else rxn.rate >= self.k_fast
 
     def reactions_consuming(self, cplx):
         if self._reactions_consuming is None:

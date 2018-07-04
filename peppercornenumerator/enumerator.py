@@ -51,7 +51,6 @@ class PolymerizationError(Exception):
             self.message += " ({})".format(val)
         super(PolymerizationError, self).__init__(self.message) 
 
-
 class Enumerator(object):
     """
     Represents a single enumerator instance, consisting of all the information
@@ -75,7 +74,6 @@ class Enumerator(object):
         for cplx in initial_complexes:
             if not cplx.is_connected:
                 raise utils.PeppercornUsageError('Initial complex is not connected: {}'.format(cplx))
-        self._domains = self.get_domains(self._initial_complexes)
 
         # list containing all detailed reactions after enumeration
         if initial_reactions:
@@ -83,39 +81,46 @@ class Enumerator(object):
         else :
             self._reactions = []
 
+        # Enumeration results
         self._complexes = None
         self._resting_complexes = None
         self._transient_complexes = None
         self._resting_macrostates = None
 
+        # Experimental support or debugging features
         self.DFS = True
         self.interruptible = True
         self.interactive = False
+        self.local_elevation = False
+
+        # A list of "known" complexes, 
+        #   e.g. expected to show up during enumeration.
+        # This is useful when chosing representatives of resting macrostates.
+        self._named_complexes = PepperComplex.MEMORY.values()
         
         # Polymerization settings to prevent infinite looping
-        self.max_complex_size = 6
-        self.max_complex_count = 200
-        self.max_reaction_count = 1000
-
-        #
-        # Set separation of timescales for *unimolecular* reactions.
-        #
-        #  ignore-reaction | resting-set | transient-state
-        # -----------------|---------------|---------------> rate
-        #                k_slow          k_fast
-        #
-        # Default: All unimolecular reactions are transient, none are ignored.
-        #
-        self._k_slow = 0 
-        self._k_fast = 0
-        self._p_min = 0
-        self._p_loc = 0
+        self._max_complex_count = max(200, len(self._initial_complexes))
+        self._max_reaction_count = max(1000, len(self._reactions))
 
         # Settings for reaction enumeration. 
         self._max_helix = True
-        self._remote = True
-        self._release_11 = 6
-        self._release_1N = 6
+        self._release_11 = 8
+        self._release_1N = 8
+        self._max_complex_size = 6
+        self._reject_remote = False
+
+        # Rate-dependent enumeration settings:
+        #
+        # Set separation of timescales for *unimolecular* reactions.
+        #
+        #  ignore-reaction | slow-reaction | fast-reaction
+        # -----------------|---------------|---------------> rate
+        #                 k_slow          k_fast
+        #
+        # Default: OFF = all unimolecular reactions are fast or negligible
+        self._k_slow = 0 
+        self._k_fast = 0
+        self._p_min = 0 # minimum complex steady state probability to engage in slow reaction.
 
     @property
     def max_complex_size(self):
@@ -123,6 +128,12 @@ class Enumerator(object):
 
     @max_complex_size.setter
     def max_complex_size(self, value):
+        assert isinstance(value, int)
+        if not all(cx.size <= value for cx in self._initial_complexes):
+            msize = max(map(lambda c: c.size, self._initial_complexes))
+            raise utils.PeppercornUsageError(
+                    'Maximum complex size must include all input complexes.',
+                    'Set to at least: {}'.format(msize))
         self._max_complex_size = value
 
     @property
@@ -131,6 +142,7 @@ class Enumerator(object):
 
     @max_reaction_count.setter
     def max_reaction_count(self, value):
+        assert isinstance(value, int) and value >= len(self._reactions)
         self._max_reaction_count = value
 
     @property
@@ -139,6 +151,7 @@ class Enumerator(object):
 
     @max_complex_count.setter
     def max_complex_count(self, value):
+        assert isinstance(value, int) and value >= len(self._initial_complexes)
         self._max_complex_count = value
 
     @property
@@ -147,6 +160,15 @@ class Enumerator(object):
 
     @k_slow.setter
     def k_slow(self, value):
+        if value and self.release_cutoff and \
+                value <= reactlib.opening_rate(self.release_cutoff):
+            raise utils.PeppercornUsageError(
+                    'Conflicting settings: k-slow: {}, open at L={}: {}'.format(
+                value, self.release_cutoff, reactlib.opening_rate(self.release_cutoff)))
+
+        if 0 < self.k_fast < value :
+            raise utils.PeppercornUsageError('k-slow must not be bigger than k-fast.')
+
         self._k_slow = value
 
     @property
@@ -155,6 +177,8 @@ class Enumerator(object):
 
     @k_fast.setter
     def k_fast(self, value):
+        if 0 < value < self.k_slow:
+            raise utils.PeppercornUsageError('k-fast must not be smaller than k-slow.')
         self._k_fast = value
 
     @property
@@ -165,7 +189,7 @@ class Enumerator(object):
 
     @release_cutoff.setter
     def release_cutoff(self, value):
-        assert isinstance(value, int)
+        assert isinstance(value, int) and value >= 0
         self._release_11 = value
         self._release_1N = value
 
@@ -175,7 +199,7 @@ class Enumerator(object):
 
     @release_cutoff_1_1.setter
     def release_cutoff_1_1(self, value):
-        assert isinstance(value, int)
+        assert isinstance(value, int) and value >= 0
         self._release_11 = value
 
     @property
@@ -184,17 +208,17 @@ class Enumerator(object):
 
     @release_cutoff_1_N.setter
     def release_cutoff_1_N(self, value):
-        assert isinstance(value, int)
+        assert isinstance(value, int) and value >= 0
         self._release_1N = value
 
     @property
     def remote_migration(self):
-        return self._remote
+        return not self._reject_remote
 
     @remote_migration.setter
     def remote_migration(self, remote):
         assert isinstance(remote, bool)
-        self._remote = remote
+        self._reject_remote = not remote
 
     @property
     def max_helix_migration(self):
@@ -205,7 +229,6 @@ class Enumerator(object):
     def max_helix_migration(self, max_helix):
       self._max_helix = max_helix
 
-    # ------------
     @property
     def initial_complexes(self):
         """
@@ -215,7 +238,10 @@ class Enumerator(object):
 
     @property
     def domains(self):
-        return self._domains[:]
+        domains = set()
+        for cplx in self._initial_complexes:
+            map(lambda d: domains.add(d), cplx.domains)
+        return list(domains)
 
     @property
     def reactions(self):
@@ -223,10 +249,15 @@ class Enumerator(object):
         List of reactions enumerated. :py:meth:`.enumerate` must be
         called before access.
         """
-        return list(set(self._reactions))
+        return self._reactions[:]
 
     @property
     def resting_sets(self):
+        print "# Deprecated function: Enumerator.resting_sets. Replace with Enumerator.resting_macrostates"
+        return self.resting_macrostates
+
+    @property
+    def resting_macrostates(self):
         """
         List of resting states enumerated. :py:meth:`.enumerate` must be
         called before access.
@@ -266,33 +297,27 @@ class Enumerator(object):
             raise utils.PeppercornUsageError("enumerate not yet called!")
         return self._transient_complexes[:]
 
-    def __eq__(self, object):
-        return (sorted(self.domains) == sorted(object.domains)) and \
-            (sorted(self.initial_complexes) == sorted(object.initial_complexes)) and \
-            (sorted(self.reactions) == sorted(object.reactions)) and \
-            (sorted(self.resting_sets) == sorted(object.resting_sets)) and \
-            (sorted(self.complexes) == sorted(object.complexes)) and \
-            (sorted(self.resting_complexes) == sorted(object.resting_complexes)) and \
-            (sorted(self.transient_complexes) == sorted(object.transient_complexes))
+    def __eq__(self, other):
+        raise NotImplementedError('No notion of equality implemented for Enumerator objects.')
 
-    def get_domains(self, initial_complexes):
-        domains = set()
-        for cplx in initial_complexes:
-            map(lambda d: domains.add(d), cplx.domains)
-        return list(domains)
+    def __ne__(self, other):
+        return not (self == other)
 
     def dry_run(self):
         """
-        Make it look like you've enumerated, but actually do nothing.
+        Make it look like you've enumerated, but actually do nothing...
         """
-        self._complexes = self.initial_complexes[:]
+        if self._complexes:
+            raise utils.PeppercornUsageError('Cannot call dry-run after enumeration!')
 
-        # This is not nice, the input might not be a resting complex
-        self._resting_complexes = self._complexes[:]
+        rep = set(self._named_complexes) if self._named_complexes else set(self._initial_complexes)
+        rxs = filter(lambda r: len(r.reactants) == 1, self._reactions)
+        info = segment_neighborhood(self.initial_complexes, rxs, self._p_min, represent=rep)
 
-        self._resting_macrostates = []
-
-        self._transient_complexes = []
+        self._complexes = self.initial_complexes
+        self._resting_complexes = info['resting_complexes']
+        self._transient_complexes = info['transient_complexes']
+        self._resting_macrostates = info['resting_macrostates']
 
     def enumerate(self):
         """
@@ -363,7 +388,7 @@ class Enumerator(object):
         # List B contains initial complexes, or products of bimolecular
         # reactions that have had no reactions enumerated yet. They will be
         # moved to F for their fast neighborhood to be enumerated.
-        self._B = self.initial_complexes[:]
+        self._B = self.initial_complexes
 
         self._complexes = []
         self._resting_macrostates = []
@@ -443,7 +468,7 @@ class Enumerator(object):
         print "{} = {} ({})".format(root.name, root.kernel_string, rtype)
         print
         for r in reactions:
-            print r.kernel_string
+            print r.kernel_string, r.rate
         if len(reactions) is 0:
             print "(No {} reactions)".format(rtype)
         print 
@@ -471,8 +496,6 @@ class Enumerator(object):
         logging.debug("Processing neighborhood: %s" % source)
 
         try:
-            # First find all of the complexes accessible through horizontal or
-            # downhill reactions starting with the source
             while len(self._F) > 0 :
 
                 # Find fast reactions from `element`
@@ -481,11 +504,8 @@ class Enumerator(object):
                     element, len(self._F)))
 
                 # Return valid fast reactions:
-                if self._p_loc:
-                    reactions = self.get_limited_fast_reactions(element, self._p_loc)
-                else :
-                    reactions = self.get_fast_reactions(element)
-
+                reactions = self.get_fast_reactions(element)
+                   
                 # Add new products to F
                 new_products = self.get_new_products(reactions)
                 self._F += (new_products)
@@ -511,10 +531,11 @@ class Enumerator(object):
 
         # Now segment the neighborhood into transient and resting complexes
         # by finding the strongly connected components.
+        rep = set(self._named_complexes) if self._named_complexes else set(self._initial_complexes)
         segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
-                                                      p_min=self._p_min)
+                                                      p_min = self._p_min,
+                                                      represent = rep)
 
-        # TODO: check using sets instead
         # Resting complexes are added to S
         self._S += (segmented_neighborhood['resting_complexes'])
 
@@ -556,15 +577,26 @@ class Enumerator(object):
         assert SLOW_REACTIONS[1] == []
 
         # Do unimolecular reactions that are sometimes slow
-        for move in FAST_REACTIONS[1]:
-            if move.__name__ == 'open':
-                move_reactions = move(complex, 
-                        max_helix=self._max_helix, 
-                        release_11 = self._release_11,
-                        release_1N = self._release_1N)
-            else :
-                move_reactions = move(complex, max_helix=self._max_helix, remote=self._remote)
-            reactions += (r for r in move_reactions if self._k_fast > r.rate > self._k_slow)
+        if self._k_fast > self._k_slow:
+            for move in FAST_REACTIONS[1]:
+                if move.__name__ == 'open':
+                    move_reactions = move(complex, 
+                            max_helix = self._max_helix, 
+                            release_11 = self._release_11,
+                            release_1N = self._release_1N)
+                else :
+                    move_reactions = move(complex, 
+                            max_helix = self._max_helix, 
+                            remote = not self._reject_remote)
+
+                if self.local_elevation:
+                    reactions += filter(lambda rxn: self._k_slow <= local_elevation_rate(rxn) < \
+                                self._k_fast, move_reactions)
+                else :
+                    reactions += filter(
+                            lambda r: self._k_slow <= r.rate < self._k_fast, move_reactions)
+            for rxn in reactions:
+                logging.info('adding unimolecular slow reaction {}'.format(rxn.full_string()))
 
         # Do bimolecular reactions
         for move in SLOW_REACTIONS[2]:
@@ -572,202 +604,69 @@ class Enumerator(object):
             for complex2 in self._E:
                 reactions += (move(complex, complex2))
 
+        # And now remove all over max-complex-size
         valid_reactions = []
         for rxn in reactions: 
-            # It could be that k_slow is set, but k_fast is not....
             if maxsize and not all(p.size <= maxsize for p in rxn.products) :
-                logging.warning(
-                        "Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
                 continue
             valid_reactions.append(rxn)
 
         return valid_reactions
 
-    def get_limited_fast_reactions(self, cplx, p_loc):
-        """Accept/reject a fast reaction based on local elevation.
+    def get_fast_reactions(self, cplx, rtypes = None, restrict=True):
+        """Returns a list of fast reactions possible using complex as a reagent.
 
-        Enumerates all fast reactions, then clusters them into compatible
-        reactions. I.e. every pairwise combination of reactions is tested, if
-        two or more reactions are compatible, they belong to the same clique.
+        Args:
+            cplx: A reactant complex.
+            rtypes (str, optional): Only reactions of a certain type.
+            restrict (bool, optional): Use golbal parameters release_cutoff, 
 
-        Local elevation is the inverse of the maximum free energy gain when
-        applying a sequence of compatible moves.
 
-        """
-        reactions = self.get_fast_reactions(cplx)
-
-        def rev_rtype(rtype, arity):
-            """Returns the reaction type of a corresponding reverse reaction. """
-            if rtype == 'open' and arity == (1,1):
-                return 'bind11'
-            elif rtype == 'open' and arity == (1,2):
-                return 'bind21'
-            elif rtype == 'bind11' or rtype == 'bind21':
-                return 'open'
-            elif rtype == 'branch-3way':
-                return 'branch_3way'
-            elif rtype == 'branch-4way':
-                return 'branch_4way'
-
-        def try_move(reactant, rtype, rotations, meta):
-            (invader, target, x_linker, y_linker) = meta
-            if rotations is not None and rotations != 0:
-                invaders = map(lambda x: reactant.rotate_location(x, rotations), invader.locs)
-                targets = map(lambda x: reactant.rotate_location(x, rotations), target.locs)
-            else :
-                invaders = list(invader.locs)
-                targets = list(target.locs)
-
-            assert len(invaders) == 1
-            assert len(targets) == 1
-
-            def triple(loc):
-                return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
-
-            if rtype == 'bind11':
-                results = reactlib.find_on_loop(reactant, invaders[0], 
-                        reactlib.filter_bind11)
-            elif rtype == 'branch-3way':
-                results = reactlib.find_on_loop(reactant, invaders[0],
-                        reactlib.filter_3way, direction = 1) + \
-                          reactlib.find_on_loop(reactant, invaders[0], 
-                        reactlib.filter_3way, direction = -1)
-            elif rtype == 'branch-4way':
-                results = reactlib.find_on_loop(reactant, invaders[0], 
-                        reactlib.filter_4way)
-            elif rtype == 'open':
-                return reactant.get_structure(invaders[0]) == targets[0]
-            else :
-                raise Exception('unknown rtype:', rtype)
-
-            targets = map(triple, targets)
-            for [s,x,t,y] in results:
-                if t == targets:
-                    return True
-            return False
-
-        def elevation(rxn):
-            assert rxn.arity == (1,1)
-            if rxn.reverse_reaction is None:
-                rr = rev_rtype(rxn.rtype, rxn.arity)
-                r = self.get_fast_reactions(rxn.products[0], rtypes = [rr], restrict=False, rc=99)
-                r = filter(lambda x: sorted(x.products) == sorted(rxn.reactants), r)
-                assert len(r) == 1
-                if len(r) == 1:
-                    rxn.reverse_reaction = r[0]
-                    r[0].reverse_reaction = rxn
-                else :
-                    rxn.reverse_reaction = False
-            
-            dG = math.log(rxn.rate/rxn.reverse_reaction.rate)
-            return dG if dG > 0 else 0
-        
-        # Calculate the local elevation of a complex using only 1-1 reactions.
-        compat = dict()
-        for rxn in reactions:
-            #print 'RXN', rxn, rxn.kernel_string, rxn.rtype
-            if rxn.arity != (1,1): continue
-            compat[rxn] = set()
-            for other in reactions:
-                if rxn == other: continue
-                if other.arity != (1,1): continue
-                #print 'OTH', other, other.kernel_string, other.rtype
-                # Try to append the other reaction to this reaction
-                success = try_move(rxn.products[0], other.rtype, rxn.rotations, other.meta)
-                if success:
-                    # We can apply other to the product of rxn
-                    compat[rxn].add(other)
-
-        # https://en.wikipedia.org/wiki/Clique_(graph_theory)
-        cliques = []
-        for p in sorted(compat):
-            vert = p
-            if compat[p] == set():
-                cliques.append(set([p]))
-                continue
-            for l in list(compat[p]):
-                edge = (p,l)
-                processed = False
-                for e, c in enumerate(cliques):
-                    if p in c and (l in c or all(l in compat[y] for y in c)):
-                        c.add(l)
-                        processed = True
-                if not processed:
-                    cliques.append(set([p,l]))
-
-        elevations = []
-        for c in cliques:
-            elevations.append(sum(map(elevation, c)))
-
-        if elevations:
-            eleven = max(elevations)
-        else :
-            eleven = 0
-
-        #print cplx, cplx.kernel_string, eleven, math.e**(-eleven)
-
-        filtered = []
-        for rxn in reactions:
-            if rxn.arity != (1,1):
-                # we don't know the reverse rate, assuming uphill...
-                if math.e**(-eleven) * rxn.rate < p_loc:
-                    #print 'skipping', rxn, rxn.rtype, rxn.arity, math.e**(-eleven) * rxn.rate, p_loc
-                    continue
-            elif rxn.rate < rxn.reverse_reaction.rate:
-                # this is a true uphill reaction...
-                if math.e**(-eleven) * rxn.rate < p_loc:
-                    #print 'skipping', rxn, rxn.rtype, rxn.arity, math.e**(-eleven) * rxn.rate, p_loc
-                    continue
-            else :
-                #print 'accepting', rxn, rxn.rtype, rxn.arity, math.e**(-eleven) * rxn.rate
-                pass
-            filtered.append(rxn)
-
-        return filtered
-
-    def get_fast_reactions(self, cplx, rtypes = None, restrict=True, rc = None):
-        """
-        Returns a list of fast reactions possible using complex as a reagent.
-
-        This only supports unimolecular reactions. Could be extended to support
-        arbitrary reactions.
         """
 
         maxsize = self._max_complex_size
 
-        reactions = []
-
         # Do unimolecular reactions
+        reactions = []
         for move in FAST_REACTIONS[1]:
             if rtypes and move.__name__ not in rtypes:
                 continue
             if move.__name__ == 'open':
-                if rc :
+                if restrict:
                     move_reactions = move(cplx, 
-                        max_helix=self._max_helix, 
-                        release_11 = rc,
-                        release_1N = rc)
-                else :
-                    move_reactions = move(cplx, 
-                        max_helix=self._max_helix, 
+                        max_helix = self._max_helix, 
                         release_11 = self._release_11,
                         release_1N = self._release_1N)
+                else :
+                    move_reactions = move(cplx, 
+                        max_helix = self._max_helix, 
+                        release_11 = 0, release_1N = 0)
             else :
-                move_reactions = move(cplx, max_helix=self._max_helix, remote=self._remote)
+                move_reactions = move(cplx, 
+                        max_helix = self._max_helix, 
+                        remote = not self._reject_remote)
             
-            if not restrict: continue
-
             for rxn in move_reactions: 
-                # It could be that k_slow is set, but k_fast is not....
-                if rxn.rate >= max(self._k_fast, self._k_slow):
-                    if maxsize and not all(p.size <= maxsize for p in rxn.products):
-                        logging.warning("Product complex size (={}) larger than \
-                        --max-complex-size(={}). Ignoring fast reaction {}!".format(
-                            max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
-                        continue
-                    reactions.append(rxn)
+                if maxsize and any(p.size > maxsize for p in rxn.products):
+                    logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring fast reaction {}!".format( max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                    continue
+                reactions.append(rxn)
 
-        return reactions if restrict else move_reactions
+        if restrict: # apply the k-fast / k-slow filter
+            if self.local_elevation:
+                # let's first remove reactions that cannot pass...
+                reactions = filter(lambda rxn: rxn.rate >= self._k_slow, reactions)
+                assert cplx._elevation is None
+                el = self.get_local_elevation(cplx, reactions)
+                cplx._elevation = el
+                reactions = filter(lambda rxn: local_elevation_rate(rxn, el) >= \
+                                max(self._k_slow, self._k_fast), reactions)
+            else :
+                reactions = filter(
+                        lambda rxn: rxn.rate >= max(self._k_slow, self._k_fast), reactions)
+
+        return reactions
 
     def get_new_products(self, reactions):
         """
@@ -804,8 +703,143 @@ class Enumerator(object):
 
         return list(new_products)
 
+    def get_local_elevation(self, cplx, reactions):
+        """Calculate the local elevation of a complex.
 
-def segment_neighborhood(complexes, reactions, p_min=None):
+        Local elevation is the inverse of the maximum free energy gain when
+        applying a sequence of compatible moves. In other words, the energy
+        difference between this complex and its gradient decent local minimum.
+        Because our rate model is insufficient, this is just an approximation: 
+
+            (1) Take all unary open/bind reactions, and their reverse reaction. 
+            (2) Calculate the free energy change for each reversible reaction: 
+                dG = ln(k1/k2)
+            (3) Solve the max-clique problem to identify compatible downhill
+                reactions. That means, reactions that can be applied
+                successively leading to the same local minimum. 
+            (4) Calculate the cummulative free energy change for every path
+                that leads to a local minimum. The maximum value is the local
+                elevation.
+
+        """
+
+        def rev_rtype(rtype, arity):
+            """Returns the reaction type of a corresponding reverse reaction. """
+            if rtype == 'open' and arity == (1,1):
+                return 'bind11'
+            elif rtype == 'open' and arity == (1,2):
+                return 'bind21'
+            elif rtype == 'bind11' or rtype == 'bind21':
+                return 'open'
+            else:
+                raise NotImplementedError
+
+        def elevation(rxn):
+            assert rxn.arity == (1,1)
+            if rxn.reverse_reaction is None:
+                rr = rev_rtype(rxn.rtype, rxn.arity)
+                r = self.get_fast_reactions(rxn.products[0], rtypes = [rr], restrict=False)
+                r = filter(lambda x: sorted(x.products) == sorted(rxn.reactants), r)
+                assert len(r) == 1
+                if len(r) == 1:
+                    rxn.reverse_reaction = r[0]
+                    r[0].reverse_reaction = rxn
+                else :
+                    rxn.reverse_reaction = False
+            
+            dG = math.log(rxn.rate/rxn.reverse_reaction.rate)
+            # downhill reaction has dG > 0
+            return dG if dG > 0 else 0
+
+        def try_move(reactant, rotations, rtype, meta):
+            """
+            Args:
+                rectant: Is the product of a previous rection
+                rotations: Rotations needed to rotate this product back in reactant form
+                rtype: the type of the new reaction
+                meta: the find_on_loop parameters for the new reaction
+            """
+            
+            (invader, target, x_linker, y_linker) = meta
+
+            # First, make sure invader and target locations map to the reactant-rotation.
+            if rotations is not None and rotations != 0:
+                invaders = map(lambda x: reactant.rotate_location(x, rotations), invader.locs)
+                targets = map(lambda x: reactant.rotate_location(x, rotations), target.locs)
+            else :
+                invaders = list(invader.locs)
+                targets = list(target.locs)
+
+            # forbid max helix.... :-(
+            assert len(invaders) == 1
+            assert len(targets) == 1
+
+            def triple(loc):
+                return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
+
+            if rtype == 'bind11':
+                # fore i in invaders...
+                results = reactlib.find_on_loop(reactant, invaders[0], reactlib.filter_bind11)
+            elif rtype == 'open':
+                return reactant.get_structure(invaders[0]) == targets[0]
+            else : 
+                raise NotImplementedError('rtype not considered in local neighborhood: {}'.format(
+                    rtype))
+
+            targets = map(triple, targets)
+            for [s,x,t,y] in results:
+                if t == targets:
+                    return True
+            return False
+        
+        # Calculate the local elevation of a complex using only 1-1 reactions.
+        compat = dict()
+        for rxn in reactions:
+            # exclude open and branch-migration with arity 1,2
+            if rxn.arity != (1,1): continue
+            if rxn.rtype in ('branch-3way', 'branch-4way'): continue
+            #print 'RXN', rxn, rxn.kernel_string, rxn.rtype
+            compat[rxn] = set()
+            for other in reactions:
+                if rxn == other: continue
+                if other.arity != (1,1): continue
+                if other.rtype in ('branch-3way', 'branch-4way'): continue
+                #print 'OTH', other, other.kernel_string, other.rtype
+                # Try to append the other reaction to this reaction
+                success = try_move(rxn.products[0], rxn.rotations, other.rtype, other.meta)
+                if success:
+                    # We can apply other to the product of rxn
+                    compat[rxn].add(other)
+
+        # https://en.wikipedia.org/wiki/Clique_(graph_theory)
+        cliques = []
+        for p in sorted(compat):
+            vert = p
+            if compat[p] == set():
+                cliques.append(set([p]))
+                continue
+            for l in list(compat[p]):
+                edge = (p,l)
+                processed = False
+                for e, c in enumerate(cliques):
+                    if p in c and (l in c or all(l in compat[y] for y in c)):
+                        c.add(l)
+                        processed = True
+                if not processed:
+                    cliques.append(set([p,l]))
+
+        elevations = []
+        for c in cliques:
+            elevations.append(sum(map(elevation, c)))
+
+        if elevations:
+            eleven = max(elevations)
+        else :
+            eleven = 0
+
+        return eleven
+
+def segment_neighborhood(complexes, reactions, p_min=None, represent = None):
     """
     Segmentation of a potentially incomplete neighborhood. That means only
     the specified complexes are interesting, all others should not be
@@ -886,15 +920,14 @@ def segment_neighborhood(complexes, reactions, p_min=None):
 
     for scc in SCCs:
         try:
-            ms = PepperMacrostate(scc[:], prefix='')
+            if represent :
+                rcx = filter(lambda cx: cx in represent, scc)
+
+            rcx = sorted(rcx)[0] if rcx else None
+            ms = PepperMacrostate(scc[:], prefix='', representative = rcx)
         except DSDDuplicationError, e:
             assert set(e.existing.complexes) == set(scc)
             ms = e.existing
-        #except DSDObjectsError, e:
-        #    assert set(e.existing.complexes) <= set(scc)
-        #    del PepperMacrostate.MEMORY[e.existing.canonical_form]
-        #    del PepperMacrostate.NAMES[e.existing.name]
-        #    ms = PepperMacrostate(scc[:], prefix='')
 
         for c in scc:
             for rxn in rxns_consuming[c]:
@@ -924,3 +957,29 @@ def segment_neighborhood(complexes, reactions, p_min=None):
         'transient_complexes': transient_complexes
     }
 
+def local_elevation_rate(rxn, el=None):
+    """Re-calculate a transition rate based on local elevation.
+
+    Right now, downhill reactions are only passed through, but that
+    probably needs some more thought about the consequences.
+
+    """
+    if el is None:
+        assert rxn.arity[0] == 1
+        cplx = rxn.reactants[0]
+        if cplx._elevation is None:
+            return None
+        el = cplx._elevation
+
+    if rxn.arity != (1,1) or rxn.rtype in ('branch-3way', 'branch-4way'): 
+        # we don't know the reverse rate, ...
+        return 1/(1+math.e**(el)) * rxn.rate
+
+    elif rxn.rate < rxn.reverse_reaction.rate:
+        # this is a true uphill reaction...
+        return 1/(1+math.e**(el)) * rxn.rate
+    
+    # it is a downhill reaction, elevation does not matter ...
+    assert rxn.arity[0] == 1
+    return rxn.rate
+ 

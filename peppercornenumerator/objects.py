@@ -123,6 +123,7 @@ class PepperComplex(DSD_Complex):
         # Peppercorn IO:
         # store and ignore concentration values if given..
         self._concentration = None # e.g. (initial, 5, nM)
+        self._elevation = None
 
     @property
     def pair_table(self):
@@ -240,8 +241,7 @@ class PepperReaction(DSD_Reaction):
         """Prints the reaction in PIL format.
         Reaction objects *always* specify rate in /M and /s.  """
 
-        def format_rate_units():
-            rate = self.rate
+        def format_rate_units(rate):
             if time == 's':
                 pass
             elif time == 'm':
@@ -270,7 +270,7 @@ class PepperReaction(DSD_Reaction):
 
             return rate
 
-        rate = format_rate_units()
+        rate = format_rate_units(self.rate)
         units = "/{}".format(molarity) * (self.arity[0] - 1) + "/{}".format(time)
 
         if self.rtype :
