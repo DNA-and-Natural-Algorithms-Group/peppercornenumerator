@@ -49,7 +49,7 @@ def setups():
     setups = []
 
     dabby2013 = dict()
-    dabby2013['name'] = 'dabby2013_4way'
+    dabby2013['name'] = 'Dabby2013-4way'
     dabby2013['piltemplate'] = dabby2013_kernel
     dabby2013['pilparams'] = [(0, 2), (2, 2), (2, 0), (4, 2), (4, 0), (0, 4), (2, 4), (6, 2), (0, 6), (4, 4), (6, 0), (2, 6), (4, 6), (6, 4), (6, 6)]
     dabby2013['pepperargs'] = {'condensed': True}

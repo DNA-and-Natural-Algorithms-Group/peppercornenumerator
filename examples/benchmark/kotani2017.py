@@ -122,9 +122,8 @@ def setups():
     """
     setups = []
 
-    # If you run this in detailed mode, you need to set --t8 to 1e8
     kotani2017_F2 = dict()
-    kotani2017_F2['name'] = 'kotani2017_F2'
+    kotani2017_F2['name'] = 'Kotani2017-F2'
     kotani2017_F2['piltemplate'] = kotani2017_F2_pil
     kotani2017_F2['pilparams'] = [None]
     kotani2017_F2['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 7}
@@ -136,9 +135,8 @@ def setups():
     kotani2017_F2['exp_results'] = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
     setups.append(kotani2017_F2)
 
-    # If you run this in detailed mode, you need to set --t8 to 1e8
     kotani2017_F3 = dict()
-    kotani2017_F3['name'] = 'kotani2017_F3'
+    kotani2017_F3['name'] = 'Kotani2017-F3'
     kotani2017_F3['piltemplate'] = kotani2017_F3_pil
     kotani2017_F3['pilparams'] = [None]
     kotani2017_F3['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 7}
@@ -150,17 +148,19 @@ def setups():
     kotani2017_F3['exp_results'] = [(21220, 7.72), (64203, 3.12), (86996, 0.69)]
     setups.append(kotani2017_F3)
 
-    # If you run this in detailed mode, you need to set --t8 to 1e8
     kotani2017_F4 = dict()
-    kotani2017_F4['name'] = 'kotani2017_F4'
+    kotani2017_F4['name'] = 'Kotani2017-F4'
     kotani2017_F4['piltemplate'] = kotani2017_F4_pil
     kotani2017_F4['pilparams'] = [None]
-    kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}
+    #kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}
+    #kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'k_slow': 0.0001, 'max_complex_size': 20}
+    kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'k_slow': 0.0001, 'k_fast': 0.01, 'max_complex_size': 50}
+    #kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'k_slow': 0.0001, 'k_fast': 0.001, 'max_complex_size': 20}
     kotani2017_F4['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.1'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.01'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.001'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0')]
+            ('pilsimulator', '--no-jacobian', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.1'),
+            ('pilsimulator', '--no-jacobian', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.01'),
+            ('pilsimulator', '--no-jacobian', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.001'),
+            ('pilsimulator', '--no-jacobian', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0')]
     kotani2017_F4['reporter'] = 'D'
     kotani2017_F4['exp_results'] = [(6815, 6.06), (9004, 4.78), (10278, 4.03), (10795, 3.73)]
     setups.append(kotani2017_F4)

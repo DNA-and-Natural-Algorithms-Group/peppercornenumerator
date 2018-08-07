@@ -1,5 +1,5 @@
 
-def zhang2010_F1_pil(x):
+def zhang2011_F1_pil(x):
     return """
     # Domains
     length d1 = 8
@@ -46,21 +46,21 @@ def setups():
     """
     setups = []
 
-    zhang2010_F1 = dict()
-    zhang2010_F1['name'] = 'zhang2010_F1'
-    zhang2010_F1['piltemplate'] = zhang2010_F1_pil
-    zhang2010_F1['pilparams'] = [None]
-    zhang2010_F1['pepperargs'] = {'condensed': False, 'conc': 'nM', 
+    zhang2011_F1 = dict()
+    zhang2011_F1['name'] = 'Zhang2011c-F1'
+    zhang2011_F1['piltemplate'] = zhang2011_F1_pil
+    zhang2011_F1['pilparams'] = [None]
+    zhang2011_F1['pepperargs'] = {'condensed': False, 'conc': 'nM', 
             'max_complex_count': 10000, 
             'max_reaction_count': 10000, 
             'k_fast': 0.01, 'k_slow': 0.001}
-    zhang2010_F1['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '5400', '--p0', 'R=60', 'D1=20', 'T1=18', 'T2=18'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '5400', '--p0', 'R=60', 'D1=20', 'T1=12', 'T2=12'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '5400', '--p0', 'R=60', 'D1=20', 'T1=6', 'T2=6')]
-    zhang2010_F1['reporter'] = 'F'
-    zhang2010_F1['exp_results'] = [(463, 9.45), (751, 7.28), (1104, 4.73)] # NOTE: It is actually not clear to me if these are the correct values...
-    setups.append(zhang2010_F1)
+    zhang2011_F1['simulation'] = [
+            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '54000', '--p0', 'R=60', 'D1=20', 'T1=18', 'T2=18'),
+            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '54000', '--p0', 'R=60', 'D1=20', 'T1=12', 'T2=12'),
+            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '54000', '--p0', 'R=60', 'D1=20', 'T1=6', 'T2=6')]
+    zhang2011_F1['reporter'] = 'F'
+    zhang2011_F1['exp_results'] = [(463, 9.45), (751, 7.28), (1104, 4.73)] # NOTE: It is actually not clear to me if these are the correct values...
+    setups.append(zhang2011_F1)
 
     return setups
 

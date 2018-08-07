@@ -94,7 +94,7 @@ def setups():
     setups = []
 
     zhang2010_F3A = dict()
-    zhang2010_F3A['name'] = 'zhang2010_F3A'
+    zhang2010_F3A['name'] = 'zhang2010-F3A'
     zhang2010_F3A['piltemplate'] = zhang2007_F1_pil
     zhang2010_F3A['pilparams'] = [None]
     zhang2010_F3A['pepperargs'] = {'condensed': True, 'conc': 'nM'}
@@ -107,7 +107,7 @@ def setups():
 
 
     zhang2010_F3B = dict()
-    zhang2010_F3B['name'] = 'zhang2010_F3B'
+    zhang2010_F3B['name'] = 'zhang2010-F3B'
     zhang2010_F3B['piltemplate'] = zhang2007_F1_pil
     zhang2010_F3B['pilparams'] = [None]
     zhang2010_F3B['pepperargs'] = {'condensed': True, 'conc': 'nM'}
@@ -119,7 +119,7 @@ def setups():
     setups.append(zhang2010_F3B)
 
     zhang2010_F3C = dict()
-    zhang2010_F3C['name'] = 'zhang2010_F3C'
+    zhang2010_F3C['name'] = 'zhang2010-F3C'
     zhang2010_F3C['piltemplate'] = zhang2007_F1_pil
     zhang2010_F3C['pilparams'] = [None]
     zhang2010_F3C['pepperargs'] = {'condensed': True, 'conc': 'nM'}
@@ -131,7 +131,7 @@ def setups():
     setups.append(zhang2010_F3C)
 
     zhang2010_F3D = dict()
-    zhang2010_F3D['name'] = 'zhang2010_F3D'
+    zhang2010_F3D['name'] = 'zhang2010-F3D'
     zhang2010_F3D['piltemplate'] = zhang2007_F1_pil
     zhang2010_F3D['pilparams'] = [None]
     zhang2010_F3D['pepperargs'] = {'condensed': True, 'conc': 'nM'}
@@ -143,20 +143,20 @@ def setups():
     setups.append(zhang2010_F3D)
 
     zhang2010_F10C = dict()
-    zhang2010_F10C['name'] = 'zhang2010_F10C'
+    zhang2010_F10C['name'] = 'zhang2010-F10C'
     zhang2010_F10C['piltemplate'] = zhang2010_F10A_pil
     zhang2010_F10C['pilparams'] = [None]
     zhang2010_F10C['pepperargs'] = {'condensed': True, 'conc': 'nM'}
     zhang2010_F10C['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '10000', '--t8', '36000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=3'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '10000', '--t8', '36000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=0.09'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '10000', '--t8', '36000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=0.03')]
+            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '100000', '--t8', '360000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=3'),
+            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '100000', '--t8', '360000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=0.09'),
+            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '100000', '--t8', '360000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=0.03')]
     zhang2010_F10C['reporter'] = 'ROX'
     zhang2010_F10C['exp_results'] = [(14475, 11.55), (24750, 5.88), (30425, 2.75)]
     setups.append(zhang2010_F10C)
 
     zhang2010_F10F = dict()
-    zhang2010_F10F['name'] = 'zhang2010_F10F'
+    zhang2010_F10F['name'] = 'zhang2010-F10F'
     zhang2010_F10F['piltemplate'] = zhang2010_F10D_pil
     zhang2010_F10F['pilparams'] = [None]
     zhang2010_F10F['pepperargs'] = {'condensed': True, 'conc': 'nM'}

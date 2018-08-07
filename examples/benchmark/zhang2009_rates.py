@@ -105,7 +105,7 @@ def setups():
         ((15, 0),  4.78e6)]
 
     zhang2009_3way = dict()
-    zhang2009_3way['name'] = 'zhang2009_3way'
+    zhang2009_3way['name'] = 'Zhang2009-3way'
     zhang2009_3way['piltemplate'] = zhang2009_3way_reg
     zhang2009_3way['pilparams'] = [x[0] for x in k3way_exp]
     zhang2009_3way['pepperargs'] = {'condensed': True}
@@ -124,7 +124,7 @@ def setups():
         ((8, 7), 1.94e6), ((8, 6), 2.68e6), ((8, 5), 3.14e6), ((8, 4), 3.37e6)]
 
     zhang2009_3wayX = dict()
-    zhang2009_3wayX['name'] = 'zhang2009_3wayX'
+    zhang2009_3wayX['name'] = 'Zhang2009-3wayX'
     zhang2009_3wayX['piltemplate'] = zhang2009_3way_exchange
     zhang2009_3wayX['pilparams'] = [x[0] for x in k3wayX_exp]
     zhang2009_3wayX['pepperargs'] = {'condensed': True}

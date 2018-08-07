@@ -104,7 +104,7 @@ def setups():
     setups = []
 
     zhang2007_F1E = dict()
-    zhang2007_F1E['name'] = 'zhang2007_F1'
+    zhang2007_F1E['name'] = 'Zhang2007-F1'
     zhang2007_F1E['piltemplate'] = zhang2007_F1_pil
     zhang2007_F1E['pilparams'] = [None]
     zhang2007_F1E['pepperargs'] = {'condensed': True, 'conc': 'nM'}
@@ -123,7 +123,7 @@ def setups():
     setups.append(zhang2007_F1E)
 
     zhang2007_F3 = dict()
-    zhang2007_F3['name'] = 'zhang2007_F3'
+    zhang2007_F3['name'] = 'Zhang2007-F3'
     zhang2007_F3['piltemplate'] = zhang2007_F3_pil
     zhang2007_F3['pilparams'] = [None]
     zhang2007_F3['pepperargs'] = {'condensed': True, 'conc': 'nM'}
@@ -142,7 +142,7 @@ def setups():
     setups.append(zhang2007_F3)
 
     zhang2007_F4 = dict()
-    zhang2007_F4['name'] = 'zhang2007_F4'
+    zhang2007_F4['name'] = 'Zhang2007-F4'
     zhang2007_F4['piltemplate'] = zhang2007_F4_pil
     zhang2007_F4['pilparams'] = [None]
     zhang2007_F4['pepperargs'] = {'condensed': True, 'conc': 'nM'}
