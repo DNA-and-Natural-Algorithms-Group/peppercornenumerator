@@ -7,6 +7,7 @@
 #  Modifications by Stefan Badelt 09/2019
 
 import copy
+import math
 
 from peppercornenumerator.utils import Loop, wrap
 
@@ -16,7 +17,7 @@ from peppercornenumerator.objects import make_pair_table, pair_table_to_dot_brac
 # Rate constant formulas
 # ----------------------------------------------------------------------------
 
-def opening_rate(length):
+def opening_rate(length, ddG=0):
     """
     Rate constant formula for opening a duplex of a given `length`.
     """
@@ -30,8 +31,19 @@ def opening_rate(length):
     #
     # instead, use k_hybrid = L * 3 * 10^5, which matches the above for L=10.
     # this is to be consistent with the bimolecular binding rate.
-    return length * 7.41e6 * (0.0567 ** length)
 
+    RT = 0.001987 * 298.15 
+
+    k_bind21 = bimolecular_binding_rate(length)
+    dG = -1.7 * length + 1.9 + ddG
+    rate = k_bind21 * math.exp(dG/RT)
+
+    #    k_bind11 = 1e4
+    #    dG = -1.7 * length
+    #    rate = k_bind11 * math.exp(dG/RT)
+
+    #r2 = length * 7.41e6 * (0.0567 ** length)
+    return rate
 
 def polymer_link_length(before, after):
     """
@@ -282,14 +294,10 @@ def bind11(reactant, max_helix=True, remote=None):
                     reaction = PepperReaction([reactant], [product], 'bind11')
                     reaction.meta = (loc1s, loc2s, before, after)
                     reaction.rotations = rotations
+                    length = len(loc1s) # length of invading domain
+                    reaction.rate = binding_rate(length, before, after)
                 except DSDDuplicationError, e :
                     reaction = e.existing
-
-                # length of invading domain
-                length = len(loc1s)
-
-                # calculate reaction constant
-                reaction.rate = binding_rate(length, before, after)
 
                 reactions.append(reaction)
 
@@ -341,7 +349,7 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
                     reactant1, (strand_num1, dom_num1),
                     reactant2, (strand_num2, dom_num2)))
     
-    output = []
+    output = set()
     for complex, location1, location2 in reactions:
         # build "before" and "after" loop structures via find_on_loop ...
         out = find_on_loop(complex, location1, 
@@ -356,21 +364,17 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
                     complex, loc1s[0], before, loc2s[0], after, filter_bind11)
 
         [loc1s, before, loc2s, after] = map(Loop, [loc1s, before, loc2s, after])
-
         (product,rotations) = do_bind11(complex, loc1s.locs, loc2s.locs)
 
         try :
             reaction = PepperReaction(sorted([reactant1, reactant2]), [product], 'bind21')
+            reaction.rate = bimolecular_binding_rate(len(loc1s))
         except DSDDuplicationError, e :
-            #assert opening_rate(length) == PepperReaction.dictionary[e.solution].rate
             reaction = e.existing
 
-        length = len(loc1s)
-        reaction.rate = bimolecular_binding_rate(length)
+        output.add(reaction)
 
-        output.append(reaction)
-
-    return sorted(list(set(output)))
+    return sorted(list(output))
 
 def join_complexes_21(complex1, location1, complex2, location2):
     """
@@ -444,7 +448,7 @@ def join_complexes_21(complex1, location1, complex2, location2):
 
     return new_complex, loc1, loc2
 
-def open(reactant, max_helix = True, release_11=6, release_1N=6):
+def open(reactant, max_helix = True, release_11=6, release_1N=6, ddG=0):
     """ Returns a list of open reactions.
 
     Args:
@@ -657,6 +661,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
             reaction = PepperReaction([reactant], sorted(product_set), 'open')
             reaction.rotations = rotations
             reaction.meta = meta
+            reaction.rate = opening_rate(length, ddG=ddG)
         except DSDDuplicationError, e :
             reaction = e.existing
 
@@ -666,7 +671,6 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6):
         elif release_1N and len(reaction.products) > 1 and length > release_1N:
             continue
 
-        reaction.rate = opening_rate(length)
         output.append(reaction)
 
     return sorted(list(set(output)))
@@ -740,6 +744,7 @@ def branch_3way(reactant, max_helix = True, remote=True):
                     reaction = PepperReaction([reactant], products, 'branch-3way')
                     reaction.meta = (displacing, bound, before, after)
                     reaction.rotations = rotations
+                    reaction.rate = branch_3way_remote_rate(len(displacing), before, after)
                 except DSDDuplicationError, e :
                     reaction = e.existing
 
@@ -751,7 +756,6 @@ def branch_3way(reactant, max_helix = True, remote=True):
                         continue
 
                 # calculate reaction constant
-                reaction.rate = branch_3way_remote_rate(len(displacing), before, after)
                 reactions.append(reaction)
 
     # Remove any duplicate reactions
@@ -847,6 +851,7 @@ def branch_4way(reactant, max_helix = False, remote=True):
                     reaction = PepperReaction([reactant], products, 'branch-4way')
                     reaction.meta = (displacing, displaced, before, after)
                     reaction.rotations = rotations
+                    reaction.rate = branch_4way_remote_rate(len(displacing), before, after)
                 except DSDDuplicationError, e :
                     reaction = e.existing
 
@@ -856,9 +861,6 @@ def branch_4way(reactant, max_helix = False, remote=True):
                     if not ((not after.is_open and after.stems == 1 and after.bases == 0) or
                             (not before.is_open and before.stems == 1 and before.bases == 0)):
                         continue
-
-                # calculate reaction constant
-                reaction.rate = branch_4way_remote_rate(len(displacing), before, after)
 
                 reactions.append(reaction)
 

@@ -15,7 +15,7 @@ from dsdobjects.parser import ParseException, PilFormatError
 
 from peppercornenumerator.objects import PepperDomain, PepperComplex, PepperReaction
 
-def InputFormatError(Exception):
+class InputFormatError(Exception):
     pass
 
 def resolve_loops(loop):
@@ -102,8 +102,7 @@ def read_pil(data, is_file = False, composite = False):
             logging.info("Ignoring sequence information for domain {}.".format(name))
             if len(line) == 4:
                 if int(line[3]) != len(line[2]):
-                    logging.error("Sequence/Length information inconsistent {} vs ().".format(
-                        line[3], len(line[2])))
+                    raise InputFormatError("Sequence/Length information inconsistent {} vs {}.".format(line[3], len(line[2])))
                 domains[name] = PepperDomain(name, length = int(line[3]))
             else :
                 domains[name] = PepperDomain(name, length = len(line[2]))
@@ -285,7 +284,6 @@ def load_pil_crn(data):
 
     return reactions, species if detailed else macrostates
 
-
 def read_seesaw(data, 
         is_file = False, 
         conc = 100e-9, 
@@ -328,8 +326,8 @@ def read_seesaw(data,
         tlen = 5
     else :
         toe = assgn_domain('toe', 5) # toehold CATCT - AGATG
-        dlen = 10
-        tlen =  5
+        dlen = 10 # length of the domain
+        tlen =  5 # lenth of the threshold
 
     complexes = {}
     def make_wire(w, name=None):
@@ -578,11 +576,13 @@ def read_seesaw(data,
             elif line[1][0] == 'g':
                 cx = make_gate(line[1])
             elif line[1][0] == 'th':
-                cx = make_thld(line[1])
+                tmp  = line[1][1][0]
+                tmp[0] = 't'
+                cx = make_thld(tmp)
             else:
                 print(line)
                 raise NotImplementedError
-            cx._concentration = ('i', conc*float(line[2][0]), 'M')
+            cx._concentration = ('i', conc*float(line[2]), 'M')
 
         else :
             print('WARNING: keyword not supported: {}'.format(line[0]))

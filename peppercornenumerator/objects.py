@@ -270,7 +270,7 @@ class PepperReaction(DSD_Reaction):
 
             return rate
 
-        rate = format_rate_units(self.rate)
+        rate = format_rate_units(self.rate) if self.rate else float('nan')
         units = "/{}".format(molarity) * (self.arity[0] - 1) + "/{}".format(time)
 
         if self.rtype :

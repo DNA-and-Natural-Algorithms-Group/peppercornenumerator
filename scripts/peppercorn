@@ -58,7 +58,6 @@ class ColorFormatter(logging.Formatter):
                 levelname + self.RESET
         return logging.Formatter.format(self, record)
 
-
 def add_peppercorn_args(parser):
     output    = parser.add_argument_group('Peppercorn output format')
     semantics = parser.add_argument_group('Peppercorn reaction semantics')
@@ -71,7 +70,7 @@ def add_peppercorn_args(parser):
         help="Print more output (-vv for extra debugging information)")
 
     parser.add_argument('input_filename', default=None, nargs='?', metavar='<str>',
-            help="Path to the input file (same as --infile)")
+            help="Path to the input file.")
 
     output.add_argument('-o', '--output', dest='output_filename', default=None, metavar='<str>',
         help="""Redirect output to a file""")
@@ -79,9 +78,10 @@ def add_peppercorn_args(parser):
         help="Condense reactions into only resting complexes.")
     output.add_argument('-d', '--detailed', action='store_true',
         help="Print detailed reactions even if --condensed is chosen.")
-    output.add_argument('--explicit-seesaw', action='store_true',
-        #help="""When using seesaw format, translate into explicit form."""
-        help=argparse.SUPPRESS)
+    output.add_argument('--seesaw-explicit', action='store_true',
+        help="""When using seesaw language, translate into explicit form.""")
+    output.add_argument('--seesaw-conc', default=100e-9, type=float, metavar='<flt>',
+        help="""When using seesaw language, specify 1x concentrations [M].""")
     output.add_argument("--concentration-unit", default='M', action='store',
         choices=('M', 'mM', 'uM', 'nM', 'pM'),
         help="""Specify concentration units for crn output.""")
@@ -89,29 +89,31 @@ def add_peppercorn_args(parser):
         choices=('s', 'm', 'h'),
         help="""Specify time units for crn output.""")
 
-    limits.add_argument( '--max-complex-size', type=int, default=6, metavar='<int>',
+    limits.add_argument('--max-complex-size', type=int, default=6, metavar='<int>',
         help="""Maximum number of strands allowed in a complex (used to prevent
         polymerization).""")
-    limits.add_argument( '--max-complex-count', type=int, default=200, metavar='<int>',
+    limits.add_argument('--max-complex-count', type=int, default=200, metavar='<int>',
         help="""Maximum number of complexes that may be enumerated before the
         enumerator halts.""")
-    limits.add_argument( '--max-reaction-count', type=int, default=1000, metavar='<int>',
+    limits.add_argument('--max-reaction-count', type=int, default=1000, metavar='<int>',
         help="Maximum number of reactions that may be enumerated before the enumerator halts.")
 
-    semantics.add_argument( '--k-slow', default=0.0, type=float, metavar='<flt>',
+    semantics.add_argument('--k-slow', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be discarded.")
-    semantics.add_argument( '--k-fast', default=0.0, type=float, metavar='<flt>',
+    semantics.add_argument('--k-fast', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be marked as slow.")
-    semantics.add_argument( '--p-min', default=0.0, type=float, metavar='<flt>',
+    semantics.add_argument('--p-min', default=0.0, type=float, metavar='<flt>',
         help="""Minimal occupancy of a complex in steady state to engage in slow reactions.""")
-    semantics.add_argument( '--local-elevation', action='store_true', 
+    semantics.add_argument('--ddG-bind', default=0.0, type=float, metavar='<flt>',
+        help="Adjust the toehold-binding energy (affects only the opening rate).")
+    semantics.add_argument('--local-elevation', action='store_true', 
         #help="""Local probability threshold to accept an unfavorable reaction.""")
         help=argparse.SUPPRESS)
 
-    semantics.add_argument( '--release-cutoff-1-1', type=int, default=6, metavar='<int>',
+    semantics.add_argument( '--release-cutoff-1-1', type=int, default=7, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         a 1-1 `open` reaction.""")
-    semantics.add_argument( '--release-cutoff-1-N', type=int, default=6, metavar='<int>',
+    semantics.add_argument( '--release-cutoff-1-N', type=int, default=7, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         a 1-n `open` reaction.""")
     semantics.add_argument( '--release-cutoff', default=None, type=int, metavar='<int>',
@@ -128,17 +130,20 @@ def add_peppercorn_args(parser):
     semantics.add_argument( '--reject-remote', action='store_true', 
         help="Discard remote toehold mediated 3-way and 4-way branch migration reactions.")
 
-    devel.add_argument( '--interactive', action='store_true', 
-        help="Interactive - show new reactions after each step.")
-    devel.add_argument( '--bfs-ish', action='store_true', dest='bfs',
+    devel.add_argument('--interactive', action='store_true', 
+        help="Show new reactions after each step, confirm them in an interactive session.")
+    devel.add_argument('--interruptible', action='store_true', 
+        help="""If polymerization errors are raised or after a keyboard
+        interrupt, proceed with neighborhood segmentation and CRN
+        condensation.""")
+    devel.add_argument('--bfs-ish', action='store_true', dest='bfs',
         help="When searching for bimolecular reactions, look to the oldest complexes first.")
-    devel.add_argument( '--dry-run', action='store_true', 
+    devel.add_argument('--dry-run', action='store_true', 
         help="Dry run: read input, write output. Do not enumerate any reactions.")
     devel.add_argument('--profile', action='store_true',
-        help="Enable statistical profiling")
+        help="Enable statistical profiling of enumeration (not condensation).")
 
     return
-
 
 def main(cl_opts):
     logger = logging.getLogger()
@@ -189,7 +194,7 @@ def main(cl_opts):
         try :
             complexes, reactions = read_seesaw(systeminput, 
                     cl_opts.input_filename is not None, 
-                    conc=100e-9, explicit=cl_opts.explicit_seesaw)
+                    conc=cl_opts.seesaw_conc, explicit=cl_opts.seesaw_explicit)
         except ParseException, ex_ssw:
             logging.error('Pil-format parsing error:')
             logging.error('Cannot parse line {:5d}: "{}"'.format(ex_pil.lineno, ex_pil.line))
@@ -242,7 +247,8 @@ def main(cl_opts):
 
     enum.k_slow = cl_opts.k_slow
     enum.k_fast = cl_opts.k_fast
-    enum._p_min = cl_opts.p_min
+    enum.p_min = cl_opts.p_min
+    enum.ddG_bind = cl_opts.ddG_bind
 
     enum.remote_migration = not cl_opts.reject_remote 
 
@@ -256,6 +262,7 @@ def main(cl_opts):
 
     enum.DFS = not cl_opts.bfs
     enum.interactive = cl_opts.interactive
+    enum.interruptible = cl_opts.interruptible
 
     # Modify enumeration events based on command line options.
     if cl_opts.ignore_branch_3way:

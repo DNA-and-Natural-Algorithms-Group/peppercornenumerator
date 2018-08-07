@@ -25,6 +25,55 @@ class TestEnumeratorInterface(unittest.TestCase):
     def tearDown(self):
         clear_memory()
 
+    def test_rxn_input(self):
+        complexes, reactions = read_pil("""
+        # Domain Specifications
+        length a = 8
+        length b = 8
+        length c = 8
+        length d2 = 8
+        length d3 = 8
+        length t = 4
+
+        # Resting-set Complexes
+        e0 = d2( d3( + ) a* + a*( b*( c ) ) ) t* 
+        e12 = d2 d3( + ) a*                     
+        e13 = t( d2( d3 + a*( b*( c ) ) ) )    
+        e21 = d2 d3                           
+        e22 = t( d2( d3( + ) a*( + a* b*( c ) ) ) )
+        e27 = t( d2( d3( + ) a* + a*( b*( c ) ) ) )
+        gate = d2( d3( + ) a*( + a* b*( c ) ) ) t* 
+        t23 = t d2 d3   
+                                                                                                     
+        # Transient Complexes    
+        e5 = t( d2 d3 + d2( d3( + ) a*( + a* b*( c ) ) ) )  
+        e7 = t( d2 d3 + d2( d3( + ) a* + a*( b*( c ) ) ) ) 
+        e18 = t( d2( d3 + d2 d3( + ) a*( + a* b*( c ) ) ) )
+
+        # Detailed Reactions  
+        reaction [bind21         =      1.2e+06 /M/s ] e0 + t23 -> e7   
+        reaction [branch-3way    =     0.122307 /s   ] e0 -> gate       
+        reaction [branch-3way    =      41.6667 /s   ] e5 -> e7         
+        reaction [branch-3way    =      41.6667 /s   ] e5 -> e18        
+        reaction [open           =      306.345 /s   ] e5 -> t23 + gate 
+        reaction [open           =      306.345 /s   ] e7 -> e0 + t23   
+        reaction [branch-3way    =     0.122307 /s   ] e7 -> e5         
+        reaction [branch-3way    =      41.6667 /s   ] e7 -> e12 + e13  
+        reaction [branch-3way    =     0.122307 /s   ] e18 -> e5        
+        reaction [branch-3way    =      41.6667 /s   ] e18 -> e12 + e13 
+        reaction [branch-3way    =     0.122307 /s   ] e18 -> e22 + e21 
+        reaction [branch-3way    =      41.6667 /s   ] e22 -> e27       
+        reaction [branch-3way    =     0.122307 /s   ] e27 -> e22       
+        reaction [branch-3way    =      41.6667 /s   ] gate -> e0       
+        reaction [bind21         =      1.2e+06 /M/s ] t23 + gate -> e5 
+        """)
+
+        enum = Enumerator(complexes.values(), reactions)
+        enum.release_cutoff = 7
+        enum.enumerate()
+        self.assertEqual(len(enum.reactions), len(reactions))
+
+
     def test_interface(self):
         #   - initialization
         #   - initial-complexes
@@ -98,6 +147,8 @@ class TestEnumeratorInterface(unittest.TestCase):
         F = complexes['F']
 
         enum = Enumerator([A,B])
+        enum.max_complex_count = 1000
+        enum.max_reaction_count = 5000
         enum.enumerate()
 
         self.assertTrue(F in [rms.canonical for rms in enum.resting_macrostates])

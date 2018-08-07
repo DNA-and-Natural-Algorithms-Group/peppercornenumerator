@@ -82,7 +82,7 @@ def main(args):
     # **************** #
     # WRITE ODE SYSTEM #
     # ................ #
-    if not args.force and os.path.exists(filename):
+    if filename != 'odesystem.py' and not args.force and os.path.exists(filename):
         print('# Use --force to overwrite existing file: {}'.format(filename))
         raise SystemExit
     else:
@@ -106,6 +106,10 @@ def main(args):
         # ********************* #
         # PRINT ODE TO TEMPLATE #
         # ..................... #
+        if len(V) != len(RG.species):
+            print(sorted(V))
+            print(sorted(RG.species))
+            raise RuntimeError('Some species do not appear in the reaction network:')
         filename, odename = RG.write_ODE_lib(sorted_vars = V, concvect = C,
                                              jacobian = not args.no_jacobian, 
                                              filename = filename,

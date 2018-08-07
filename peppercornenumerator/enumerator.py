@@ -77,9 +77,9 @@ class Enumerator(object):
 
         # list containing all detailed reactions after enumeration
         if initial_reactions:
-            self._reactions = initial_reactions
+            self._reactions = set(initial_reactions)
         else :
-            self._reactions = []
+            self._reactions = set()
 
         # Enumeration results
         self._complexes = None
@@ -89,7 +89,7 @@ class Enumerator(object):
 
         # Experimental support or debugging features
         self.DFS = True
-        self.interruptible = True
+        self.interruptible = False
         self.interactive = False
         self.local_elevation = False
 
@@ -104,8 +104,8 @@ class Enumerator(object):
 
         # Settings for reaction enumeration. 
         self._max_helix = True
-        self._release_11 = 8
-        self._release_1N = 8
+        self._release_11 = 7
+        self._release_1N = 7
         self._max_complex_size = 6
         self._reject_remote = False
 
@@ -120,7 +120,9 @@ class Enumerator(object):
         # Default: OFF = all unimolecular reactions are fast or negligible
         self._k_slow = 0 
         self._k_fast = 0
-        self._p_min = 0 # minimum complex steady state probability to engage in slow reaction.
+
+        self.ddG_bind= 0 # adjust bimolecular binding strength
+        self.p_min = 0 # minimum complex steady state probability to engage in slow reaction.
 
     @property
     def max_complex_size(self):
@@ -249,7 +251,7 @@ class Enumerator(object):
         List of reactions enumerated. :py:meth:`.enumerate` must be
         called before access.
         """
-        return self._reactions[:]
+        return list(self._reactions)
 
     @property
     def resting_sets(self):
@@ -311,8 +313,8 @@ class Enumerator(object):
             raise utils.PeppercornUsageError('Cannot call dry-run after enumeration!')
 
         rep = set(self._named_complexes) if self._named_complexes else set(self._initial_complexes)
-        rxs = filter(lambda r: len(r.reactants) == 1, self._reactions)
-        info = segment_neighborhood(self.initial_complexes, rxs, self._p_min, represent=rep)
+        rxs = filter(lambda r: len(r.reactants) == 1, list(self._reactions))
+        info = segment_neighborhood(self.initial_complexes, rxs, self.p_min, represent=rep)
 
         self._complexes = self.initial_complexes
         self._resting_complexes = info['resting_complexes']
@@ -357,7 +359,7 @@ class Enumerator(object):
                     else :
                         rm_reactions.append(reaction)
 
-                self._reactions = [x for x in self._reactions if x not in rm_reactions]
+                self._reactions -= set(rm_reactions)
 
         # List E contains enumerated resting complexes. Every time a new
         # complex is added (from S), all cross reactions with other resting
@@ -417,7 +419,7 @@ class Enumerator(object):
 
                 # Find the new complexes which were generated
                 self._B = self.get_new_products(slow_reactions)
-                self._reactions += (slow_reactions)
+                self._reactions |= set(slow_reactions)
                 logging.debug("Generated {:d} new slow reactions".format(len(slow_reactions)))
                 logging.debug("Generated {:d} new products".format(len(self._B)))
 
@@ -495,6 +497,7 @@ class Enumerator(object):
 
         logging.debug("Processing neighborhood: %s" % source)
 
+        interrupted = False
         try:
             while len(self._F) > 0 :
 
@@ -521,9 +524,12 @@ class Enumerator(object):
                 if self.interactive:
                     self.reactions_interactive(element, reactions, 'fast')
 
-
         except KeyboardInterrupt:
             logging.debug("Exiting neighborhood %s prematurely..." % source)
+            if self.interruptible:
+                interrupted = True
+            else :
+                raise KeyboardInterrupt
 
         logging.debug("In neighborhood %s..." % source)
         logging.debug("Segmenting %d complexes and %d reactions" %
@@ -533,7 +539,7 @@ class Enumerator(object):
         # by finding the strongly connected components.
         rep = set(self._named_complexes) if self._named_complexes else set(self._initial_complexes)
         segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
-                                                      p_min = self._p_min,
+                                                      p_min = self.p_min,
                                                       represent = rep)
 
         # Resting complexes are added to S
@@ -546,7 +552,7 @@ class Enumerator(object):
         self._resting_macrostates += (segmented_neighborhood['resting_macrostates'])
 
         # Reactions from this neighborhood are added to the list
-        self._reactions += (N_reactions)
+        self._reactions |= set(N_reactions)
 
         # Reset neighborhood
         logging.debug("Generated {:d} new fast reactions".format(len(N_reactions)))
@@ -558,6 +564,9 @@ class Enumerator(object):
         logging.debug("Generated {:d} resting macrostates".format(
             len(segmented_neighborhood['resting_macrostates'])))
         logging.debug("Done processing neighborhood: {:s}".format(source))
+
+        if interrupted:
+            raise KeyboardInterrupt
 
     def get_slow_reactions(self, complex):
         """
@@ -583,7 +592,8 @@ class Enumerator(object):
                     move_reactions = move(complex, 
                             max_helix = self._max_helix, 
                             release_11 = self._release_11,
-                            release_1N = self._release_1N)
+                            release_1N = self._release_1N,
+                            ddG = self.ddG_bind)
                 else :
                     move_reactions = move(complex, 
                             max_helix = self._max_helix, 
@@ -637,11 +647,13 @@ class Enumerator(object):
                     move_reactions = move(cplx, 
                         max_helix = self._max_helix, 
                         release_11 = self._release_11,
-                        release_1N = self._release_1N)
+                        release_1N = self._release_1N,
+                        ddG = self.ddG_bind)
                 else :
                     move_reactions = move(cplx, 
                         max_helix = self._max_helix, 
-                        release_11 = 0, release_1N = 0)
+                        release_11 = 0, release_1N = 0,
+                        ddG = self.ddG_bind)
             else :
                 move_reactions = move(cplx, 
                         max_helix = self._max_helix, 

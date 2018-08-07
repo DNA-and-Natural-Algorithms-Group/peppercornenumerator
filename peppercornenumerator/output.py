@@ -59,7 +59,7 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
 
     # Print domains
     seen = set()
-    output_string("\n# Domain specifications \n")
+    output_string("\n# Domains ({}) \n".format(len(enumerator.domains)))
     for dom in natural_sort(enumerator.domains):
         if dom.is_complement and not dom.nucleotides: 
             dom = ~dom
@@ -71,14 +71,14 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
             seen.add(dom)
 
     if composite:
-        output_string("\n# Composite domains \n")
+        output_string("\n# Strands or composite domains ({}) \n".format(len(composite)))
         for comp in composite:
             if comp[-1]=='*' and comp[:-1] in composite:
                 continue
             output_string("sup-sequence {} = {} : {:d}\n".format(comp, ' '.join(map(str, composite[comp])), sum(map(len,composite[comp]))))
 
     # Print resting complexes
-    output_string("\n# Resting complexes \n")
+    output_string("\n# Resting complexes ({}) \n".format(len(enumerator.resting_complexes)))
     for cplx in natural_sort(enumerator.resting_complexes):
         if cplx._concentration :
             output_string("{:s} = {:s} @{}\n".format(cplx.name, cplx.kernel_string, format_conc_units(cplx, molarity=molarity)))
@@ -89,18 +89,18 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
         # Print resting macrostates
         enumCG = PepperCondensation(enumerator)
         enumCG.condense()
-        output_string("\n# Resting macrostates \n")
+        output_string("\n# Resting macrostates ({}) \n".format(len(enumerator.resting_macrostates)))
         for resting in natural_sort(enumerator.resting_macrostates):
             output_string("macrostate {:s} = [{}]\n".format(resting, ', '.join(map(str,resting.complexes))))
 
         # Print reactions
-        output_string("\n# Condensed reactions \n")
+        output_string("\n# Condensed reactions ({}) \n".format(len(enumCG.condensed_reactions)))
         for rxn in natural_sort(enumCG.condensed_reactions):
             output_string("reaction {:s}\n".format(rxn.full_string(molarity, time)))
 
     if detailed :
         # Print transient complexes
-        output_string("\n# Transient complexes \n")
+        output_string("\n# Transient complexes ({}) \n".format(len(enumerator.transient_complexes)))
         for cplx in natural_sort(enumerator.transient_complexes):
             if cplx._concentration :
                 output_string("{:s} = {:s} @{}\n".format(cplx.name, cplx.kernel_string, 
@@ -109,7 +109,7 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
                 output_string("{:s} = {:s}\n".format(cplx.name, cplx.kernel_string))
 
         # Print reactions
-        output_string("\n# Detailed reactions \n")
+        output_string("\n# Detailed reactions ({}) \n".format(len(enumerator.reactions)))
         for rxn in natural_sort(enumerator.reactions):
             output_string("reaction {:s}\n".format(rxn.full_string(molarity, time)))
 
