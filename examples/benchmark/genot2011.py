@@ -74,29 +74,27 @@ def genot2011_F4D_pil(d3) :
 
 def genot2011_SF4A_pil(dl) :
     return """
-    length d1 = 15
-    length d2a = 5
-    length d2b = 7
-    length d2c = 10
-    length d3 = 14 # original 
-    #length d3 = 6 # try-to-fit
-    length d4 = {}
-    length d5 = {}
+    \rlength d1 = 15
+    \rlength d2a = 5
+    \rlength d2b = 7
+    \rlength d2c = 10
+    \rlength d3 = 14 # original 
+    \r#length d3 = 6 # try-to-fit
+    \rlength d4 = {}
+    \rlength d5 = {}
 
-    #composite d2 = d2a d2b d2c
-    
-    S = d1 d2a( d2b( d2c( + d3* d5 ) ) )
-    X = d2a d2b d2c d4 d3
+    \r#composite d2 = d2a d2b d2c
+    \r
+    \rS = d1 d2a( d2b( d2c( + d3* d5 ) ) )
+    \rX = d2a d2b d2c d4 d3
 
-    W = d2a( d2b( d2c( d4 d3( + ) d5 ) ) )
-    P = d1 d2a d2b d2c
+    \rW = d2a( d2b( d2c( d4 d3( + ) d5 ) ) )
+    \rP = d1 d2a d2b d2c
 
-    R = d1( d2a( + d2b* ) )
+    \rR = d1( d2a( + d2b* ) )
 
-    F = d1 d2a
-    FW = d1( d2a( d2b( d2c + ) ) )
-
-
+    \rF = d1 d2a
+    \rFW = d1( d2a( d2b( d2c + ) ) )
     """.format(dl, dl)
 
 
@@ -198,6 +196,166 @@ def setups():
     genot2011_SF4A['exp_results'] = [(9088, 5), (13927, 5), (28681, 5)]
     setups.append(genot2011_SF4A)
 
-
     return setups
+
+def data(evaluate=False, verbose = 0):
+    from figure_analysis import FigureData
+    psim = "pilsimulator --no-jacobian --nxy --atol 1e-13 --rtol 1e-13 --mxstep 10000 "
+    psim += "--t-lin 10000 --t8 1000"
+    rates = {'k_slow': 1e-10, 'k_fast': 20}
+
+    G11_F3 = FigureData('Genot2011-F3')
+    current = G11_F3
+    template = genot2011_F3_pil
+
+    pilp = [(8,7), (17,17), (20,20), (23,23)] # original
+    litr = [(42, 2.2), (48, 2.2), (100, 2.2), (91, 2.2)] # seconds
+
+    for (pil, res) in zip(pilp, litr):
+        pilstring  = template(pil)
+        simulation = psim + " --pyplot-labels S I T W --p0 S=6.6 I=660"
+        reporter = 'T'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default'].update(rates)
+
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+
+    G11_F4A = FigureData('Genot2011-F4A')
+    current = G11_F4A
+    template = genot2011_F4A_pil
+
+    pilp = [11, 9]
+    litr = [(2, 2.2), (3, 2.2)]
+
+    for (pil, res) in zip(pilp, litr):
+        pilstring  = template(pil)
+        simulation = psim + " --pyplot-labels S I T W --p0 S=6.6 I=22"
+        reporter = 'T'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default'].update(rates)
+
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+
+    G11_F4B = FigureData('Genot2011-F4B')
+    current = G11_F4B
+    template = genot2011_F4B_pil
+
+    pilp = [11, 9]
+    litr = [(15, 2.2), (75, 2.2)]
+
+    for (pil, res) in zip(pilp, litr):
+        pilstring  = template(pil)
+        simulation = psim + " --pyplot-labels S I T W --p0 S=6.6 I=22"
+        reporter = 'T'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default'].update(rates)
+
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+    G11_F4C = FigureData('Genot2011-F4C')
+    current = G11_F4C
+    template = genot2011_F4C_pil
+
+    sims = [psim + " --pyplot-labels S I T W --p0 S=6.6 I=330",
+            psim + " --pyplot-labels S I T W --p0 S=6.6 I=145",
+            psim + " --pyplot-labels S I T W --p0 S=6.6 I=66"]
+    litr = [(25, 2.2), (75, 2.2), (150, 2.2)]
+
+    for (sim, res) in zip(sims, litr):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'T'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default'].update(rates)
+
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+    G11_F4D = FigureData('Genot2011-F4D')
+    current = G11_F4D
+    template = genot2011_F4D_pil
+    sims = [psim + " --pyplot-labels S I T W --p0 S=6.6 I=330",
+            psim + " --pyplot-labels S I T W --p0 S=6.6 I=145",
+            psim + " --pyplot-labels S I T W --p0 S=6.6 I=66"]
+    #litr = [(176, 3.3), (213, 3.3), (248, 3.3)]
+    litr =  [(51, 2.2), (55, 2.2), (60, 2.2)]
+
+    for (sim, res) in zip(sims, litr):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'T'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default'].update(rates)
+
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+    G11_SF4A = FigureData('Genot2011-SF4A')
+    current = G11_SF4A
+    template = genot2011_SF4A_pil
+
+    pilp = [17, 20, 23]
+    litr = [(9088, 5), (13927, 5), (28681, 5)]
+
+    psim = "pilsimulator --nxy --atol 1e-12 --rtol 1e-12 --mxstep 10000 --t-lin 100000 --t8 1e5"
+    for (pil, res) in zip(pilp, litr):
+        pilstring  = template(pil)
+        simulation = psim + " --pyplot-labels S X R F --p0 R=30 X=40 S=10"
+        reporter = 'F'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default'].update(rates)
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+    return [G11_F3, G11_F4A, G11_F4B, G11_F4C, G11_F4D, G11_SF4A]
+
+if __name__ == '__main__':
+    data(evaluate=True, verbose=1)
 

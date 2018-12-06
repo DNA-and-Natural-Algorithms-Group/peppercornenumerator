@@ -44,35 +44,81 @@ def setups():
 
     ddG_bind = 0
 
+    # Default pilsimulator call
+    psim = "pilsimulator --no-jacobian --nxy --atol 1e-10 --rtol 1e-10 --mxstep 10000 --t8 18000 --t-lin 18000".split()
+
     yin2008_F3 = dict()
     yin2008_F3['name'] = 'Yin2008-F3'
     yin2008_F3['piltemplate'] = yin2008_F3_pil
     yin2008_F3['pilparams'] = [None]
-    yin2008_F3['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 15, 'k_slow' : 0.00001, 'k_fast': 0.1, 'ddG_bind': ddG_bind}
+    yin2008_F3['pepperargs'] = [
+            ('condensed', {'condensed': True, 'conc': 'nM', 'release_cutoff': 15, 'k_slow' : 0.00001, 'k_fast': 0.1, 'ddG_bind': ddG_bind})]
     yin2008_F3['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=20'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=6'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=2'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=1'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=0.6'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=0.4'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=0.2'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=0.1'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=0.06'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=0.02'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=0.01'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '18000', '--p0', 'A=20', 'B=20', 'C=20', 'D=20', 'I=0')]
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=20'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=6'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=2'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=1'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.6'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.4'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.2'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.1'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.06'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.02'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.01'.split(),
+            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0'.split()]
     yin2008_F3['reporter'] = 'A'
-    yin2008_F3['exp_results'] = [(43,  -10), (1064, -10), (3505, -10), (5341, -10), (6893, -10), (7706, -10), (8842, -10), (9731, -10), (10242, -10), (10696, -10), (10885, -10), (11112, -10)]
+    yin2008_F3['metric'] = 'half-completion-time'
+    yin2008_F3['exp-results'] = [(43,  -10), (1064, -10), (3505, -10), (5341, -10), (6893, -10), (7706, -10), (8842, -10), (9731, -10), (10242, -10), (10696, -10), (10885, -10), (11112, -10)]
     setups.append(yin2008_F3)
 
     return setups
 
-def main():
-    print yin2008_F3_pil(None)
+def data(evaluate=False, verbose = 0):
+    from figure_analysis import FigureData
 
+    # Default pilsimulator call
+    psim = "pilsimulator --no-jacobian --nxy --atol 1e-10 --rtol 1e-10 --mxstep 10000 --t8 18000 --t-lin 18000"
+    rates = {'k_slow': 1e-5, 'k_fast': 0.1}
+
+    # Setup
+    F3 = FigureData('Yin2008-F3')
+    current = F3
+    template = yin2008_F3_pil
+    sims = [psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=20',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=6',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=2',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=1',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.6',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.4',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.2',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.1',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.06',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.02',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.01',
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0']
+    litr = [(43,  -10), (1064, -10), (3505, -10), (5341, -10), (6893, -10), (7706, -10), (8842, -10), (9731, -10), (10242, -10), (10696, -10), (10885, -10), (11112, -10)]
+
+    for (sim, res) in zip(sims, litr):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'A'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default'].update(rates)
+
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+    return [F3]
 
 if __name__ == '__main__':
-    main()
+    data(evaluate=True, verbose=1)
+
 
 

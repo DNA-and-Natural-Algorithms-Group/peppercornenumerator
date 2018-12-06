@@ -87,25 +87,69 @@ def kotani2017_F4_pil(x):
     length y   = 2
 
     length d1s = 16
+    length d1r = 2
     length d2  = 6
 
-    S5au = o( b*( T2 a + c2 ) a( t2( y + ) ) c2*( c1*( t1* x* + ) ) ) d2 t3
-    S6au = y* t2* a*( b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) c2*( c1*( t1*( + x ) ) ) )
+    S5 = o( b*( T2 a + c2 ) a( t2( y + ) ) c2*( c1*( t1* x* + ) ) ) d2 t3
+    S6 = y* t2* a*( b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) c2*( c1*( t1*( + x ) ) ) )
     
-    C1x = x t1 c1 c2 a
+    C1 = x t1 c1 c2 a
 
-    P1x  = t2* a*( c2*( c1*( t1*( x*( + ) ) ) ) )
-    P2au = c2( b( a( t2( y( + ) ) ) ) )
+    P1  = t2* a*( c2*( c1*( t1*( x*( + ) ) ) ) )           @i 0 M
+    P2 = c2( b( a( t2( y( + ) ) ) ) )                     @i 0 M
 
-    P8au = x t1 c1 c2 b( o*( + ) ) T2 a
-    P9au = d1s T2 o( c2*( c1*( t1* + ) ) ) d2 t3
+    I5  = c1 c2 o*( d2 t3 + ) b*( T2 a + c2 ) a t2 y        @i 0 M
+    I6 = c1( c2( o*( d2 t3 + ) b*( T2 a + c2 ) a( t2( y( + ) ) ) b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) ) ) t1* @i 0 M
+    P10 = x( t1( c1( c2( b( o*( + ) ) T2 a( + t2* ) ) ) ) ) @i 0 M
+ 
+    P8 = x t1 c1 c2 b( o*( + ) ) T2 a                     @i 0 M
+    P9 = d1s T2 o( c2*( c1*( t1* + ) ) ) d2 t3            @i 0 M
 
-    R = d1s( d2( + t3* ) )
-    D = d1s d2
-    RWau = d1s( T2 o( c2*( c1*( t1* + ) ) ) d2( t3( + ) ) ) 
+    R = d1r( d1s( d2( + t3* ) ) )
+    D = d1r d1s d2                                              @i 0 M
+    RW = d1s( T2 o( c2*( c1*( t1* + ) ) ) d2( t3( + ) ) ) d1r*  @i 0 M
 
     """.format(x)
 
+
+def kotani2017_F4_pil_simple(x):
+    return """
+    length a   = 22
+    length b   = 22
+    length o   = 22
+    length c1  = 11
+    length c2  = 11
+    length t1  = 6
+    length t2  = 6
+    length t3a  = 6
+    length t3b  = 4
+    length T2  = 2
+    length x   = 2
+    length y   = 2
+
+    length d1s = 16
+    length d2  = 6
+
+    S5 = o( b*( T2 a + c2 ) a( t2( y + ) ) c2*( c1*( t1* x* + ) ) ) d2 t3a t3b
+    S6 = y* t2* a*( b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) c2*( c1*( t1*( + x ) ) ) )
+    
+    C1 = x t1 c1 c2 a
+
+    P1  = t2* a*( c2*( c1*( t1*( x*( + ) ) ) ) )           @i 0 M
+    P2 = c2( b( a( t2( y( + ) ) ) ) )                     @i 0 M
+
+    I5  = c1 c2 o*( d2 t3a t3b + ) b*( T2 a + c2 ) a t2 y        @i 0 M
+    I6 = c1( c2( o*( d2 t3a t3b + ) b*( T2 a + c2 ) a( t2( y( + ) ) ) b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) ) ) t1* @i 0 M
+    P10 = x( t1( c1( c2( b( o*( + ) ) T2 a( + t2* ) ) ) ) ) @i 0 M
+ 
+    P8 = x t1 c1 c2 b( o*( + ) ) T2 a                     @i 0 M
+    P9 = d1s T2 o( c2*( c1*( t1* + ) ) ) d2 t3a t3b       @i 0 M
+
+    R = d1s( d2( + t3a* ) )
+    D = d1s d2                                              @i 0 M
+    RW = d1s( T2 o( c2*( c1*( t1* + ) ) ) d2( t3a( t3b + ) ) ) @i 0 M
+
+    """.format(x)
 
 def setups():
     """Returns a list of hardcoded dictionaries for every experimental setup.
@@ -122,48 +166,170 @@ def setups():
     """
     setups = []
 
+    # Default pilsimulator call
+    psim = "pilsimulator --nxy --atol 1e-13 --rtol 1e-13 --mxstep 10000 --t0 0.1 --t8 180000 --t-log 10000".split()
+
     kotani2017_F2 = dict()
     kotani2017_F2['name'] = 'Kotani2017-F2'
     kotani2017_F2['piltemplate'] = kotani2017_F2_pil
     kotani2017_F2['pilparams'] = [None]
-    kotani2017_F2['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 7}
+    kotani2017_F2['pepperargs'] = [('condensed-rc8', {'condensed': True, 'conc': 'nM', 'release_cutoff': 7, 'max_complex_size': 8})]
     kotani2017_F2['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-13', '--rtol', '1e-13', '--mxstep', '10000', '--t8', '36000', '--p0', 'S1=10', 'S2=10', 'R=20', 'C1=1'),
-            ('pilsimulator', '--nxy', '--atol', '1e-13', '--rtol', '1e-13', '--mxstep', '10000', '--t8', '36000', '--p0', 'S1=10', 'S2=10', 'R=20', 'C1=0.5'),
-            ('pilsimulator', '--nxy', '--atol', '1e-13', '--rtol', '1e-13', '--mxstep', '10000', '--t8', '36000', '--p0', 'S1=10', 'S2=10', 'R=20', 'C1=0.05')]
+            psim + "--pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=1".split(),
+            psim + "--pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.5".split(),
+            psim + "--pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.05".split()]
     kotani2017_F2['reporter'] = 'D'
-    kotani2017_F2['exp_results'] = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
+    kotani2017_F2['metric'] = 'diagonal-crossing-time'
+    kotani2017_F2['cmax'] = 10
+    kotani2017_F2['tmax'] = 32400
+    kotani2017_F2['exp-results'] = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
     setups.append(kotani2017_F2)
 
     kotani2017_F3 = dict()
     kotani2017_F3['name'] = 'Kotani2017-F3'
     kotani2017_F3['piltemplate'] = kotani2017_F3_pil
     kotani2017_F3['pilparams'] = [None]
-    kotani2017_F3['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 7}
+    kotani2017_F3['pepperargs'] = [('condensed-rc7', {'condensed': True, 'conc': 'nM', 'release_cutoff': 7})]
     kotani2017_F3['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S1=10', 'S2=10', 'S3=10', 'S4=10', 'R=20', 'C1=0.1'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S1=10', 'S2=10', 'S3=10', 'S4=10', 'R=20', 'C1=0.01'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S1=10', 'S2=10', 'S3=10', 'S4=10', 'R=20', 'C1=0.001')]
+            psim + "--pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.1".split(),
+            psim + "--pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.01".split(),
+            psim + "--pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.001".split()]
     kotani2017_F3['reporter'] = 'D'
-    kotani2017_F3['exp_results'] = [(21220, 7.72), (64203, 3.12), (86996, 0.69)]
+    kotani2017_F3['metric'] = 'diagonal-crossing-time'
+    kotani2017_F3['cmax'] = 10
+    kotani2017_F3['tmax'] = 97200
+    kotani2017_F3['exp-results'] = [(21220, 7.72), (64203, 3.12), (86996, 0.69)]
     setups.append(kotani2017_F3)
 
     kotani2017_F4 = dict()
     kotani2017_F4['name'] = 'Kotani2017-F4'
     kotani2017_F4['piltemplate'] = kotani2017_F4_pil
     kotani2017_F4['pilparams'] = [None]
-    #kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}
-    #kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'k_slow': 0.0001, 'max_complex_size': 20}
-    kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'k_slow': 0.0001, 'k_fast': 0.01, 'max_complex_size': 50}
-    #kotani2017_F4['pepperargs'] = {'condensed': True, 'conc': 'nM', 'k_slow': 0.0001, 'k_fast': 0.001, 'max_complex_size': 20}
+    kotani2017_F4['pepperargs'] = [
+            ('#1-detailed',  {'condensed': False, 'conc': 'nM', 'release_cutoff': 8}),
+            ('#1-condensed', {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}),
+            #('#2-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-3, 'max_complex_size': 20}), # doesn't work, no 4-way branch migration, no D
+            ('#3-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'max_complex_size': 10}), # works! but not as good as detailed...
+            ('#4-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'k_fast': 1e-3, 'max_complex_size': 16}),
+            ('#5-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'k_fast': 1e-2, 'max_complex_size': 24}), # solver cannot handle leak
+            ('#6-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-5, 'k_fast': 1e-2, 'max_complex_size': 24}),
+            ('#7-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-10, 'k_fast': 1e-2, 'max_complex_size': 24})]
     kotani2017_F4['simulation'] = [
-            ('pilsimulator', '--no-jacobian', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.1'),
-            ('pilsimulator', '--no-jacobian', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.01'),
-            ('pilsimulator', '--no-jacobian', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0.001'),
-            ('pilsimulator', '--no-jacobian', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '360000', '--p0', 'S5au=10', 'S6au=10', 'R=20', 'C1x=0')]
+            psim + "--pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.1".split(),
+            psim + "--pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.01".split(),
+            psim + "--pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.001".split(),
+            psim + "--pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0".split()]
     kotani2017_F4['reporter'] = 'D'
-    kotani2017_F4['exp_results'] = [(6815, 6.06), (9004, 4.78), (10278, 4.03), (10795, 3.73)]
+    kotani2017_F4['metric'] = 'half-completion-time'
+    kotani2017_F4['exp-results'] = [(6136, 5), (9150, 5), (10776, 5), (11637, 5)]
     setups.append(kotani2017_F4)
-
     return setups
+
+def data(evaluate=False, verbose = 0):
+    from figure_analysis import FigureData
+
+    # Default pilsimulator call
+    psim = "pilsimulator --nxy --atol 1e-13 --rtol 1e-13 --mxstep 10000 --t0 0.1 --t8 180000 --t-log 10000"
+
+    # Setup
+    k17_F2 = FigureData('Kotani2017-F2')
+    current = k17_F2
+    template = kotani2017_F2_pil
+    sims = [psim + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=1",
+            psim + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.5",
+            psim + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.05"]
+    litr = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
+
+    for (sim, res) in zip(sims, litr):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'D'
+        metric = 'diagonal-crossing-time'
+        cmax = '10'
+        tmax = '32400'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default']['release_cutoff'] = 7
+    current.pepperargs['default']['max_complex_size'] = 8
+
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+    # Setup
+    k17_F3 = FigureData('Kotani2017-F3')
+    current = k17_F3
+    template = kotani2017_F3_pil
+    sims = [psim + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.1",
+            psim + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.01",
+            psim + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.001"]
+    litr = [(21220, 7.72), (64203, 3.12), (86996, 0.69)]
+
+    for (sim, res) in zip(sims, litr):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'D'
+        metric = 'diagonal-crossing-time'
+        cmax = '10'
+        tmax = '97200'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res)
+
+    current.pepperargs['default'] = current.pepperargs['condensed'].copy()
+    current.pepperargs['default']['release_cutoff'] = 7
+    current.pepperargs['default']['max_complex_size'] = 8
+
+    if evaluate:
+        current.eval()
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+    # Setup
+    k17_F4 = FigureData('Kotani2017-F4')
+    current = k17_F4
+    template = kotani2017_F4_pil
+    sims = [psim + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.1",
+            psim + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.01",
+            psim + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.001",
+            psim + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0"]
+    litr = [(6136, 5), (9150, 5), (10776, 5), (11637, 5)]
+
+    for (sim, res) in zip(sims, litr):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'D'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+
+    current.pepperargs['default'] = current.pepperargs['CONDENSED'].copy()
+    current.pepperargs['default']['release_cutoff'] = 7
+    current.pepperargs['default']['max_complex_size'] = 24
+    current.pepperargs['default']['k_slow'] = 1e-10
+    current.pepperargs['default']['k_fast'] = 1e-2
+
+    if evaluate:
+        current.eval()
+
+    # current.pepperargs['#1-detailed']  = {'condensed': False, 'conc': 'nM', 'release_cutoff': 8}
+    # current.pepperargs['#1-condensed'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}
+    # current.pepperargs['#2-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-3, 'max_complex_size': 20} # doesn't work, no 4-way branch migration, no D
+    # current.pepperargs['#3-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'max_complex_size': 10} # works! but not as good as detailed...
+    # current.pepperargs['#4-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'k_fast': 1e-3, 'max_complex_size': 16}
+    # current.pepperargs['#5-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'k_fast': 1e-2, 'max_complex_size': 24} # solver cannot handle leak
+    # current.pepperargs['#6-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-5, 'k_fast': 1e-2, 'max_complex_size': 24}
+    # current.pepperargs['#7-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-10, 'k_fast': 1e-2, 'max_complex_size': 24}
+
+    if verbose:
+        for df in current.get_dataframes():
+            print(df)
+
+    return [k17_F2, k17_F3, k17_F4]
+
+if __name__ == '__main__':
+    data(evaluate=True, verbose=1)
 
