@@ -111,7 +111,6 @@ def kotani2017_F4_pil(x):
 
     """.format(x)
 
-
 def kotani2017_F4_pil_simple(x):
     return """
     length a   = 22
@@ -151,93 +150,23 @@ def kotani2017_F4_pil_simple(x):
 
     """.format(x)
 
-def setups():
-    """Returns a list of hardcoded dictionaries for every experimental setup.
-
-    Provide DNA strands in form of a kernel string. Parameters to
-    describe variations in the setup and a target value.
-
-    Provide options for enumeration, such as condensation of the CRN or a
-    release cutoff.
-
-    Provide options for simulation, such as the initial concentrations.
-
-    Provide completion threshold for simulation, such as target concentration.
-    """
-    setups = []
-
-    # Default pilsimulator call
-    psim = "pilsimulator --nxy --atol 1e-13 --rtol 1e-13 --mxstep 10000 --t0 0.1 --t8 180000 --t-log 10000".split()
-
-    kotani2017_F2 = dict()
-    kotani2017_F2['name'] = 'Kotani2017-F2'
-    kotani2017_F2['piltemplate'] = kotani2017_F2_pil
-    kotani2017_F2['pilparams'] = [None]
-    kotani2017_F2['pepperargs'] = [('condensed-rc8', {'condensed': True, 'conc': 'nM', 'release_cutoff': 7, 'max_complex_size': 8})]
-    kotani2017_F2['simulation'] = [
-            psim + "--pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=1".split(),
-            psim + "--pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.5".split(),
-            psim + "--pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.05".split()]
-    kotani2017_F2['reporter'] = 'D'
-    kotani2017_F2['metric'] = 'diagonal-crossing-time'
-    kotani2017_F2['cmax'] = 10
-    kotani2017_F2['tmax'] = 32400
-    kotani2017_F2['exp-results'] = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
-    setups.append(kotani2017_F2)
-
-    kotani2017_F3 = dict()
-    kotani2017_F3['name'] = 'Kotani2017-F3'
-    kotani2017_F3['piltemplate'] = kotani2017_F3_pil
-    kotani2017_F3['pilparams'] = [None]
-    kotani2017_F3['pepperargs'] = [('condensed-rc7', {'condensed': True, 'conc': 'nM', 'release_cutoff': 7})]
-    kotani2017_F3['simulation'] = [
-            psim + "--pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.1".split(),
-            psim + "--pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.01".split(),
-            psim + "--pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.001".split()]
-    kotani2017_F3['reporter'] = 'D'
-    kotani2017_F3['metric'] = 'diagonal-crossing-time'
-    kotani2017_F3['cmax'] = 10
-    kotani2017_F3['tmax'] = 97200
-    kotani2017_F3['exp-results'] = [(21220, 7.72), (64203, 3.12), (86996, 0.69)]
-    setups.append(kotani2017_F3)
-
-    kotani2017_F4 = dict()
-    kotani2017_F4['name'] = 'Kotani2017-F4'
-    kotani2017_F4['piltemplate'] = kotani2017_F4_pil
-    kotani2017_F4['pilparams'] = [None]
-    kotani2017_F4['pepperargs'] = [
-            ('#1-detailed',  {'condensed': False, 'conc': 'nM', 'release_cutoff': 8}),
-            ('#1-condensed', {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}),
-            #('#2-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-3, 'max_complex_size': 20}), # doesn't work, no 4-way branch migration, no D
-            ('#3-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'max_complex_size': 10}), # works! but not as good as detailed...
-            ('#4-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'k_fast': 1e-3, 'max_complex_size': 16}),
-            ('#5-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'k_fast': 1e-2, 'max_complex_size': 24}), # solver cannot handle leak
-            ('#6-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-5, 'k_fast': 1e-2, 'max_complex_size': 24}),
-            ('#7-condensed', {'condensed': True, 'conc': 'nM', 'k_slow': 1e-10, 'k_fast': 1e-2, 'max_complex_size': 24})]
-    kotani2017_F4['simulation'] = [
-            psim + "--pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.1".split(),
-            psim + "--pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.01".split(),
-            psim + "--pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.001".split(),
-            psim + "--pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0".split()]
-    kotani2017_F4['reporter'] = 'D'
-    kotani2017_F4['metric'] = 'half-completion-time'
-    kotani2017_F4['exp-results'] = [(6136, 5), (9150, 5), (10776, 5), (11637, 5)]
-    setups.append(kotani2017_F4)
-    return setups
-
 def data(evaluate=False, verbose = 0):
     from figure_analysis import FigureData
 
     # Default pilsimulator call
-    psim = "pilsimulator --nxy --atol 1e-13 --rtol 1e-13 --mxstep 10000 --t0 0.1 --t8 180000 --t-log 10000"
+    # If you use --no-jacobian, #7 doesn't show the 0 nM trajectory
+    psim = "pilsimulator --nxy --header --atol 1e-12 --rtol 1e-12 --mxstep 1000"
+    h10l = " --t0 0 --t8 36000 --t-lin 18000"
+    h20l = " --t0 0 --t8 72000 --t-lin 18000"
+    h30log = " --t0 0.1 --t8 108000 --t-log 18000"
 
     # Setup
     k17_F2 = FigureData('Kotani2017-F2')
     current = k17_F2
     template = kotani2017_F2_pil
-    sims = [psim + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=1",
-            psim + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.5",
-            psim + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.05"]
+    sims = [psim + h10l + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=1",
+            psim + h10l + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.5",
+            psim + h10l + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.05"]
     litr = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
 
     for (sim, res) in zip(sims, litr):
@@ -247,14 +176,14 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         cmax = '10'
         tmax = '32400'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C1='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default']['release_cutoff'] = 7
     current.pepperargs['default']['max_complex_size'] = 8
 
     if evaluate:
-        current.eval()
+        current.eval(cmpfig=True)
 
     if verbose:
         for df in current.get_dataframes():
@@ -264,9 +193,9 @@ def data(evaluate=False, verbose = 0):
     k17_F3 = FigureData('Kotani2017-F3')
     current = k17_F3
     template = kotani2017_F3_pil
-    sims = [psim + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.1",
-            psim + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.01",
-            psim + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.001"]
+    sims = [psim + h30log + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.1",
+            psim + h30log + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.01",
+            psim + h30log + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.001"]
     litr = [(21220, 7.72), (64203, 3.12), (86996, 0.69)]
 
     for (sim, res) in zip(sims, litr):
@@ -276,14 +205,14 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         cmax = '10'
         tmax = '97200'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C1='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default']['release_cutoff'] = 7
     current.pepperargs['default']['max_complex_size'] = 8
 
     if evaluate:
-        current.eval()
+        current.eval(cmpfig=True)
 
     if verbose:
         for df in current.get_dataframes():
@@ -293,10 +222,10 @@ def data(evaluate=False, verbose = 0):
     k17_F4 = FigureData('Kotani2017-F4')
     current = k17_F4
     template = kotani2017_F4_pil
-    sims = [psim + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.1",
-            psim + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.01",
-            psim + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.001",
-            psim + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0"]
+    sims = [psim + h20l + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.1",
+            psim + h20l + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.01",
+            psim + h20l + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.001",
+            psim + h20l + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0"]
     litr = [(6136, 5), (9150, 5), (10776, 5), (11637, 5)]
 
     for (sim, res) in zip(sims, litr):
@@ -304,16 +233,16 @@ def data(evaluate=False, verbose = 0):
         simulation = sim
         reporter = 'D'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res, simargs=sim[sim.find('C1='):])
 
-    current.pepperargs['default'] = current.pepperargs['CONDENSED'].copy()
-    current.pepperargs['default']['release_cutoff'] = 7
+    current.pepperargs['default'] = current.pepperargs['DETAILED'].copy()
+    current.pepperargs['default']['release_cutoff'] = 8
     current.pepperargs['default']['max_complex_size'] = 24
-    current.pepperargs['default']['k_slow'] = 1e-10
-    current.pepperargs['default']['k_fast'] = 1e-2
+    #current.pepperargs['default']['k_slow'] = 1e-10
+    #current.pepperargs['default']['k_fast'] = 1e-2
 
     if evaluate:
-        current.eval()
+        current.eval(cmpfig=True)
 
     # current.pepperargs['#1-detailed']  = {'condensed': False, 'conc': 'nM', 'release_cutoff': 8}
     # current.pepperargs['#1-condensed'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}

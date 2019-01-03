@@ -27,57 +27,11 @@ def yin2008_F3_pil(x):
 
     """.format(x)
 
-def setups():
-    """Returns a list of hardcoded dictionaries for every experimental setup.
-
-    Provide DNA strands in form of a kernel string. Parameters to
-    describe variations in the setup and a target value.
-
-    Provide options for enumeration, such as condensation of the CRN or a
-    release cutoff.
-
-    Provide options for simulation, such as the initial concentrations.
-
-    Provide completion threshold for simulation, such as target concentration.
-    """
-    setups = []
-
-    ddG_bind = 0
-
-    # Default pilsimulator call
-    psim = "pilsimulator --no-jacobian --nxy --atol 1e-10 --rtol 1e-10 --mxstep 10000 --t8 18000 --t-lin 18000".split()
-
-    yin2008_F3 = dict()
-    yin2008_F3['name'] = 'Yin2008-F3'
-    yin2008_F3['piltemplate'] = yin2008_F3_pil
-    yin2008_F3['pilparams'] = [None]
-    yin2008_F3['pepperargs'] = [
-            ('condensed', {'condensed': True, 'conc': 'nM', 'release_cutoff': 15, 'k_slow' : 0.00001, 'k_fast': 0.1, 'ddG_bind': ddG_bind})]
-    yin2008_F3['simulation'] = [
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=20'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=6'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=2'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=1'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.6'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.4'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.2'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.1'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.06'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.02'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.01'.split(),
-            psim + '--pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0'.split()]
-    yin2008_F3['reporter'] = 'A'
-    yin2008_F3['metric'] = 'half-completion-time'
-    yin2008_F3['exp-results'] = [(43,  -10), (1064, -10), (3505, -10), (5341, -10), (6893, -10), (7706, -10), (8842, -10), (9731, -10), (10242, -10), (10696, -10), (10885, -10), (11112, -10)]
-    setups.append(yin2008_F3)
-
-    return setups
-
 def data(evaluate=False, verbose = 0):
     from figure_analysis import FigureData
 
     # Default pilsimulator call
-    psim = "pilsimulator --no-jacobian --nxy --atol 1e-10 --rtol 1e-10 --mxstep 10000 --t8 18000 --t-lin 18000"
+    psim = "pilsimulator --no-jacobian --nxy --header --atol 1e-10 --rtol 1e-10 --mxstep 10000 --t8 18000 --t-lin 18000"
     rates = {'k_slow': 1e-5, 'k_fast': 0.1}
 
     # Setup
@@ -103,7 +57,7 @@ def data(evaluate=False, verbose = 0):
         simulation = sim
         reporter = 'A'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res, simargs=sim[sim.find('I='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)

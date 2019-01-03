@@ -78,105 +78,13 @@ def zhang2010_F10D_pil(x):
     OR43 = d51( d52a( + d52b* ) )
     """.format(x)
 
-def setups():
-    """Returns a list of hardcoded dictionaries for every experimental setup.
-
-    Provide DNA strands in form of a kernel string. Parameters to
-    describe variations in the setup and a target value.
-
-    Provide options for enumeration, such as condensation of the CRN or a
-    release cutoff.
-
-    Provide options for simulation, such as the initial concentrations.
-
-    Provide completion threshold for simulation, such as target concentration.
-    """
-    setups = []
-
-    zhang2010_F3A = dict()
-    zhang2010_F3A['name'] = 'zhang2010-F3A'
-    zhang2010_F3A['piltemplate'] = zhang2007_F1_pil
-    zhang2010_F3A['pilparams'] = [None]
-    zhang2010_F3A['pepperargs'] = {'condensed': True, 'conc': 'nM'}
-    zhang2010_F3A['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '36000', '--p0', 'S=200', 'F=200', 'OR=300', 'C=10'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '36000', '--p0', 'S=200', 'F=200', 'OR=300', 'C=1')]
-    zhang2010_F3A['reporter'] = 'ROX'
-    zhang2010_F3A['exp_results'] = [(2235, 86.25), (11389, 43.93)] 
-    setups.append(zhang2010_F3A)
-
-
-    zhang2010_F3B = dict()
-    zhang2010_F3B['name'] = 'zhang2010-F3B'
-    zhang2010_F3B['piltemplate'] = zhang2007_F1_pil
-    zhang2010_F3B['pilparams'] = [None]
-    zhang2010_F3B['pepperargs'] = {'condensed': True, 'conc': 'nM'}
-    zhang2010_F3B['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '36000', '--p0', 'S=30', 'F=60', 'OR=90', 'C=3'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '36000', '--p0', 'S=30', 'F=60', 'OR=90', 'C=0.9')]
-    zhang2010_F3B['reporter'] = 'ROX'
-    zhang2010_F3B['exp_results'] = [(3887, 23.70), (8687, 17.04)]
-    setups.append(zhang2010_F3B)
-
-    zhang2010_F3C = dict()
-    zhang2010_F3C['name'] = 'zhang2010-F3C'
-    zhang2010_F3C['piltemplate'] = zhang2007_F1_pil
-    zhang2010_F3C['pilparams'] = [None]
-    zhang2010_F3C['pepperargs'] = {'condensed': True, 'conc': 'nM'}
-    zhang2010_F3C['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '36000', '--p0', 'S=3', 'F=6', 'OR=9', 'C=0.9'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--mxstep', '10000', '--t8', '36000', '--p0', 'S=3', 'F=6', 'OR=9', 'C=0.3')]
-    zhang2010_F3C['reporter'] = 'ROX'
-    zhang2010_F3C['exp_results'] = [(9600, 2.24), (16066, 1.76)]
-    setups.append(zhang2010_F3C)
-
-    zhang2010_F3D = dict()
-    zhang2010_F3D['name'] = 'zhang2010-F3D'
-    zhang2010_F3D['piltemplate'] = zhang2007_F1_pil
-    zhang2010_F3D['pilparams'] = [None]
-    zhang2010_F3D['pepperargs'] = {'condensed': True, 'conc': 'nM'}
-    zhang2010_F3D['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '10000', '--t8', '360000', '--p0', 'S=1', 'F=2', 'OR=3', 'C=1'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '10000', '--t8', '360000', '--p0', 'S=1', 'F=2', 'OR=3', 'C=0.1')]
-    zhang2010_F3D['reporter'] = 'ROX'
-    zhang2010_F3D['exp_results'] = [(13332, 0.82), (37775, 0.51)]
-    setups.append(zhang2010_F3D)
-
-    zhang2010_F10C = dict()
-    zhang2010_F10C['name'] = 'zhang2010-F10C'
-    zhang2010_F10C['piltemplate'] = zhang2010_F10A_pil
-    zhang2010_F10C['pilparams'] = [None]
-    zhang2010_F10C['pepperargs'] = {'condensed': True, 'conc': 'nM'}
-    zhang2010_F10C['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '100000', '--t8', '360000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=3'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '100000', '--t8', '360000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=0.09'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '100000', '--t8', '360000', '--p0', 'S4=30', 'F4=60', 'OR4=90', 'C4=0.03')]
-    zhang2010_F10C['reporter'] = 'ROX'
-    zhang2010_F10C['exp_results'] = [(14475, 11.55), (24750, 5.88), (30425, 2.75)]
-    setups.append(zhang2010_F10C)
-
-    zhang2010_F10F = dict()
-    zhang2010_F10F['name'] = 'zhang2010-F10F'
-    zhang2010_F10F['piltemplate'] = zhang2010_F10D_pil
-    zhang2010_F10F['pilparams'] = [None]
-    zhang2010_F10F['pepperargs'] = {'condensed': True, 'conc': 'nM'}
-    zhang2010_F10F['simulation'] = [
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '10000', '--t8', '360000', '--p0', 'S43=10', 'F43=20', 'OR43=30', 'C43=3'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '10000', '--t8', '360000', '--p0', 'S43=10', 'F43=20', 'OR43=30', 'C43=0.09'),
-            ('pilsimulator', '--nxy', '--atol', '1e-10', '--rtol', '1e-10', '--t-lin', '10000', '--t8', '360000', '--p0', 'S43=10', 'F43=20', 'OR43=30', 'C43=0.03')]
-    zhang2010_F10F['reporter'] = 'RG'
-    zhang2010_F10F['exp_results'] = [(3358, 3.98), (5139, 2.04), (6075, 1.04)]
-    setups.append(zhang2010_F10F)
-
-    return setups
-
 def data(evaluate=False, verbose = 0):
     from figure_analysis import FigureData
 
     # Default pilsimulator call
-    psim = "pilsimulator --no-jacobian --nxy "
-    psim += "--atol 1e-10 --rtol 1e-10 --mxstep 1000 "
-    psim += "--t8 86500 --t-lin 86500 "
+    psim = "pilsimulator --no-jacobian --nxy --header"
+    psim += " --atol 1e-10 --rtol 1e-10 --mxstep 1000"
+    psim += " --t8 86500 --t-lin 86500"
 
     rates = {'k_slow': 1e-5, 'k_fast': 0.1}
 
@@ -196,7 +104,7 @@ def data(evaluate=False, verbose = 0):
         tmax = '21600'
         cmax = '100'
         current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res)
+                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
 
@@ -223,7 +131,7 @@ def data(evaluate=False, verbose = 0):
         tmax = '21600'
         cmax = '30'
         current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res)
+                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
 
@@ -250,7 +158,7 @@ def data(evaluate=False, verbose = 0):
         tmax = '43200'
         cmax = '3'
         current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res)
+                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -277,7 +185,7 @@ def data(evaluate=False, verbose = 0):
         tmax = '86400'
         cmax = '1'
         current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res)
+                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -305,7 +213,7 @@ def data(evaluate=False, verbose = 0):
         tmax = '36000'
         cmax = '20'
         current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res)
+                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C4='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -333,7 +241,7 @@ def data(evaluate=False, verbose = 0):
         tmax = '7200'
         cmax = '8'
         current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res)
+                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C43='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
