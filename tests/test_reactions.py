@@ -347,7 +347,7 @@ class NewOpenTests(unittest.TestCase):
         self.assertEqual(output, [])
 
         forward = PepperReaction([reactant], product_set, 'open', memorycheck=False)
-        forward.rate = rxn.opening_rate(13)
+        forward.const = rxn.opening_rate(13)
 
         forward = PepperReaction([reactant], product_set, 'open', memorycheck=False)
         output = rxn.open(reactant, max_helix=True, release_11=13, release_1N=13)
@@ -356,9 +356,9 @@ class NewOpenTests(unittest.TestCase):
 
         # max helix semantics OFF -> domains dissociate, but at most one at a time
         forward1 = PepperReaction([reactant], [product1], 'open', memorycheck=False)
-        forward1.rate = rxn.opening_rate(5)
+        forward1.const = rxn.opening_rate(5)
         forward2 = PepperReaction([reactant], [product2], 'open', memorycheck=False)
-        forward2.rate = rxn.opening_rate(8)
+        forward2.const = rxn.opening_rate(8)
 
         output = rxn.open(reactant, max_helix=False, release_11=7, release_1N=7)
         self.assertEqual(output, [forward1])
@@ -538,7 +538,7 @@ class NewBranch3WayTests(unittest.TestCase):
 
         A1 = complexes['A']
         output = rxn.branch_3way(A1, max_helix=False, remote=True)
-        #for o in output: print 'branch_3way', o.kernel_string, o.rate
+        #for o in output: print 'branch_3way', o.kernel_string, o.const
 
     def test_single_migration(self):
         """ 
@@ -810,8 +810,8 @@ class NewBranch4WayTests(unittest.TestCase):
         R1 = complexes['R']
         output = rxn.branch_4way(A1, max_helix=True, remote=True)
         oR = rxn.branch_4way(R1, max_helix=True, remote=True)
-        #for o in output: print 'branch_4way_reverse', o.kernel_string, o.rate
-        #for o in oR: print 'branch_4way_reverse', o.kernel_string, o.rate
+        #for o in output: print 'branch_4way_reverse', o.kernel_string, o.const
+        #for o in oR: print 'branch_4way_reverse', o.kernel_string, o.const
 
 
     def test_4wayfilter_bugfix(self):
@@ -850,28 +850,28 @@ class NewBranch4WayTests(unittest.TestCase):
 
         path = PepperReaction([A1], [A2], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=False)
-        #for o in output: print 'branch_4way one-step', o.kernel_string, o.rate
+        #for o in output: print 'branch_4way one-step', o.kernel_string, o.const
         self.assertEqual(output, [path])
 
         path = PepperReaction([A3], [A2], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A3, max_helix=False)
-        #for o in output: print 'branch_4way one-step', o.kernel_string(), o.rate
+        #for o in output: print 'branch_4way one-step', o.kernel_string(), o.const
         self.assertEqual(output, [path])
 
         path1 = PepperReaction([A2], [A1], 'branch-4way', memorycheck=False)
         path2 = PepperReaction([A2], [A3], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A2, max_helix=False)
-        #for o in output: print 'branch_4way one-step', o.kernel_string(), o.rate
+        #for o in output: print 'branch_4way one-step', o.kernel_string(), o.const
         self.assertEqual(output, sorted([path1, path2]))
 
         path = PepperReaction([A1], [A3], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A1, max_helix=True)
-        #for o in output: print 'branch_4way_two-step', o.kernel_string(), o.rate
+        #for o in output: print 'branch_4way_two-step', o.kernel_string(), o.const
         self.assertEqual(output, [path])
 
         path = PepperReaction([A3], [A1], 'branch-4way', memorycheck=False)
         output = rxn.branch_4way(A3, max_helix=True)
-        #for o in output: print 'branch_4way_two-step', o.kernel_string(), o.rate
+        #for o in output: print 'branch_4way_two-step', o.kernel_string(), o.const
         self.assertEqual(output, [path])
 
     def test_branch4_way_2(self):

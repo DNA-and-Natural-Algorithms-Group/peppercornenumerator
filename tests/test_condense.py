@@ -226,7 +226,7 @@ class CondenseTests(unittest.TestCase):
 
 
         cond_react = PepperReaction([rs1, rs2], [rs3, rs4], 'condensed', memorycheck=False)
-        cond_react.rate = 100 * (float(50)/(50+50))
+        cond_react.const = 100 * (float(50)/(50+50))
 
         enum = Enumerator(complexes.values(), reactions)
         enum.dry_run() # does not change the rates!
@@ -240,8 +240,8 @@ class CondenseTests(unittest.TestCase):
         #self.assertDictEqual(cplx_to_set,  info['complexes_to_resting_set'])
 
         self.assertEqual([cond_react], enumRG.condensed_reactions)
-        self.assertEqual(cond_react.rate, enumRG.condensed_reactions[0].rate)
-        self.assertEqual(enumRG.condensed_reactions[0].rate, 50)
+        self.assertEqual(cond_react.const, enumRG.condensed_reactions[0].const)
+        self.assertEqual(enumRG.condensed_reactions[0].const, 50)
 
     def test_zhang_cooperative_binding(self):
         complexes, reactions = read_pil("""
@@ -333,11 +333,9 @@ class CondenseTests(unittest.TestCase):
         for r in enumRG.condensed_reactions:
             if r == cr1:
                 found = True
-                self.assertAlmostEqual(r.rate, cr1.rate)
+                self.assertAlmostEqual(r.const, cr1.const)
 
         self.assertTrue(found)
-
-        #print enumRG
 
         #for k,v in enumRG._stationary_distributions.items():
         #    print k, v
@@ -467,7 +465,7 @@ class CondenseTests(unittest.TestCase):
         for (r1, r2) in zip(sorted([cr1, cr1r, cr2, cr2r, cr3, cr4]), 
                 sorted(enumRG.condensed_reactions)):
             self.assertEqual(r1, r2)
-            self.assertAlmostEqual(r1.rate, r2.rate)
+            self.assertAlmostEqual(r1.const, r2.const)
 
     def test_cooperative_binding_fail(self):
         complexes, reactions = read_pil("""

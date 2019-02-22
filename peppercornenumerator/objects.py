@@ -9,6 +9,7 @@ from dsdobjects import DSDObjectsError, DSDDuplicationError
 from dsdobjects.utils import split_complex
 # not needed here, but passing it on...
 from dsdobjects.utils import make_pair_table, pair_table_to_dot_bracket 
+from peppercornenumerator.utils import convert_units
 
 class PepperObjectsError(Exception):
     """
@@ -35,7 +36,7 @@ class PepperDomain(DL_Domain):
         self = DL_Domain.__new__(cls)
         try:
             super(PepperDomain, self).__init__(name, dtype, length)
-        except DSDDuplicationError, e :
+        except DSDDuplicationError as e :
             other = e.existing
             if dtype and (other.dtype != dtype) :
                 raise PepperObjectsError('Conflicting dtype assignments for {}: "{}" vs. "{}"'.format(
@@ -124,6 +125,7 @@ class PepperComplex(DSD_Complex):
         # store and ignore concentration values if given..
         self._concentration = None # e.g. (initial, 5, nM)
         self._elevation = None
+        assert self.is_domainlevel_complement
 
     @property
     def pair_table(self):
@@ -159,6 +161,14 @@ class PepperComplex(DSD_Complex):
             ad.append((self.get_domain((x,y)), x, y))
         return ad
 
+    @property
+    def pk_domains(self):
+        pd = []
+        for (x,y) in self.enclosed_domains:
+            pd.append((self.get_domain((x,y)), x, y))
+        return pd
+
+
     def rotate_location(self, loc, n=None):
         return self.rotate_pairtable_loc(loc, n)
 
@@ -176,7 +186,7 @@ class PepperComplex(DSD_Complex):
             for (se,ss) in parts:
                 try:
                     cplxs.append(PepperComplex(se, ss))
-                except DSDDuplicationError, e:
+                except DSDDuplicationError as e:
                     cplxs.append(e.existing)
             return sorted(cplxs)
 
@@ -241,37 +251,15 @@ class PepperReaction(DSD_Reaction):
         """Prints the reaction in PIL format.
         Reaction objects *always* specify rate in /M and /s.  """
 
-        def format_rate_units(rate):
-            if time == 's':
-                pass
-            elif time == 'm':
-                rate *= 60
-            elif time == 'h':
-                rate *= 3600
-            else :
-                raise NotImplementedError
-        
-            if molarity == 'M':
-                pass
-            elif molarity == 'mM':
-                if self.arity[0] > 1:
-                    factor = self.arity[0] - 1
-                    rate /= (factor * 1e3)
-            elif molarity == 'uM':
-                if self.arity[0] > 1:
-                    factor = self.arity[0] - 1
-                    rate /= (factor * 1e6)
-            elif molarity == 'nM':
-                if self.arity[0] > 1:
-                    factor = self.arity[0] - 1
-                    rate /= (factor * 1e9)
-            else :
-                raise NotImplementedError
-
-            return rate
-
-        rate = format_rate_units(self.rate) if self.rate else float('nan')
-        units = "/{}".format(molarity) * (self.arity[0] - 1) + "/{}".format(time)
+        if self.rate :
+            newunits = [molarity] * (self.arity[0] - 1) + [time]
+            newrate = self.rateformat(newunits)
+            rate = newrate.constant
+            assert newunits == newrate.units
+            units = ''.join(map('/{}'.format, newrate.units))
+        else :
+            rate = float('nan')
+            units = ''
 
         if self.rtype :
             return '[{:14s} = {:12g} {:4s} ] {} -> {}'.format(self.rtype, rate, units,

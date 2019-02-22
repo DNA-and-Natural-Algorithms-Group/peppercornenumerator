@@ -17,7 +17,7 @@ from peppercornenumerator.objects import make_pair_table, pair_table_to_dot_brac
 # Rate constant formulas
 # ----------------------------------------------------------------------------
 
-def opening_rate(length, ddG=0):
+def opening_rate(length, ddG=0, dissoc=True):
     """
     Rate constant formula for opening a duplex of a given `length`.
     """
@@ -34,15 +34,16 @@ def opening_rate(length, ddG=0):
 
     RT = 0.001987 * 298.15 
 
-    k_bind21 = bimolecular_binding_rate(length)
-    dG = -1.7 * length + 1.9 + ddG
-    rate = k_bind21 * math.exp(dG/RT)
+    if True or dissoc: # Let's stick with the simple model for now.
+        k_bind21 = bimolecular_binding_rate(length)
+        dG = length * (-1.7 + ddG) + 1.9 
+        rate = k_bind21 * math.exp(dG/RT)
+    else :
+        k_bind11 = 1e6*length # using zipping and not bubble-closing
+        dG = length * (-1.7 + ddG)
+        rate = k_bind11 * math.exp(dG/RT)
 
-    #    k_bind11 = 1e4
-    #    dG = -1.7 * length
-    #    rate = k_bind11 * math.exp(dG/RT)
-
-    #r2 = length * 7.41e6 * (0.0567 ** length)
+    #return length * 7.41e6 * (0.0567 ** length)
     return rate
 
 def polymer_link_length(before, after):
@@ -295,7 +296,7 @@ def bind11(reactant, max_helix=True, remote=None):
                     reaction.meta = (loc1s, loc2s, before, after)
                     reaction.rotations = rotations
                     length = len(loc1s) # length of invading domain
-                    reaction.rate = binding_rate(length, before, after)
+                    reaction.const = binding_rate(length, before, after)
                 except DSDDuplicationError, e :
                     reaction = e.existing
 
@@ -348,7 +349,23 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
                 reactions.append(join_complexes_21(
                     reactant1, (strand_num1, dom_num1),
                     reactant2, (strand_num2, dom_num2)))
-    
+
+    #if True: # check if potential pseudoknots are there:
+    #    pk1_doms = reactant1.pk_domains
+    #    pk2_doms = reactant2.pk_domains
+    #    # Iterate through all the free domains in reactant1
+    #    for (dom1, strand_num1, dom_num1) in r1_doms + pk1_doms:
+    #        # For each, find any domains in reactant2 that could bind
+    #        for (dom2, strand_num2, dom_num2) in r2_doms + pk2_doms:
+    #            if (dom1, strand_num1, dom_num1) in r1_doms and \
+    #                (dom2, strand_num2, dom_num2) in r2_doms:
+    #                # Exclude the non-pseudoknotted interactions
+    #                continue
+    #            if (dom1.can_pair(dom2)):
+    #                print("# WARNING: potential pk-interaction: {} and {}".format(
+    #                    reactant1, reactant2))
+
+   
     output = set()
     for complex, location1, location2 in reactions:
         # build "before" and "after" loop structures via find_on_loop ...
@@ -368,7 +385,7 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
 
         try :
             reaction = PepperReaction(sorted([reactant1, reactant2]), [product], 'bind21')
-            reaction.rate = bimolecular_binding_rate(len(loc1s))
+            reaction.const = bimolecular_binding_rate(len(loc1s))
         except DSDDuplicationError, e :
             reaction = e.existing
 
@@ -661,7 +678,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6, ddG=0):
             reaction = PepperReaction([reactant], sorted(product_set), 'open')
             reaction.rotations = rotations
             reaction.meta = meta
-            reaction.rate = opening_rate(length, ddG=ddG)
+            reaction.const = opening_rate(length, ddG=ddG, dissoc=(len(product_set) > 1))
         except DSDDuplicationError, e :
             reaction = e.existing
 
@@ -744,7 +761,7 @@ def branch_3way(reactant, max_helix = True, remote=True):
                     reaction = PepperReaction([reactant], products, 'branch-3way')
                     reaction.meta = (displacing, bound, before, after)
                     reaction.rotations = rotations
-                    reaction.rate = branch_3way_remote_rate(len(displacing), before, after)
+                    reaction.const = branch_3way_remote_rate(len(displacing), before, after)
                 except DSDDuplicationError, e :
                     reaction = e.existing
 
@@ -851,7 +868,7 @@ def branch_4way(reactant, max_helix = False, remote=True):
                     reaction = PepperReaction([reactant], products, 'branch-4way')
                     reaction.meta = (displacing, displaced, before, after)
                     reaction.rotations = rotations
-                    reaction.rate = branch_4way_remote_rate(len(displacing), before, after)
+                    reaction.const = branch_4way_remote_rate(len(displacing), before, after)
                 except DSDDuplicationError, e :
                     reaction = e.existing
 

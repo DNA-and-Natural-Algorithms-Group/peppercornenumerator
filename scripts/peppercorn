@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import os
 import sys
@@ -9,7 +10,6 @@ import argparse
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.enumerator import FAST_REACTIONS
 from peppercornenumerator.input import read_pil, read_seesaw, ParseException
-from peppercornenumerator.output import write_pil
 from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
 
 version = __import__('peppercornenumerator').__version__
@@ -68,26 +68,34 @@ def add_peppercorn_args(parser):
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     parser.add_argument( '-v', '--verbose', action='count', default=0,
         help="Print more output (-vv for extra debugging information)")
-
+    parser.add_argument('--logfile', default='', action='store', metavar='<str>',
+        help="""Redirect verbose information to a file.""")
     parser.add_argument('input_filename', default=None, nargs='?', metavar='<str>',
             help="Path to the input file.")
 
     output.add_argument('-o', '--output', dest='output_filename', default=None, metavar='<str>',
-        help="""Redirect output to a file""")
+        help="""Redirect output to a file.""")
     output.add_argument('-c', '--condensed', action='store_true',
         help="Condense reactions into only resting complexes.")
     output.add_argument('-d', '--detailed', action='store_true',
         help="Print detailed reactions even if --condensed is chosen.")
-    output.add_argument('--seesaw-explicit', action='store_true',
-        help="""When using seesaw language, translate into explicit form.""")
-    output.add_argument('--seesaw-conc', default=100e-9, type=float, metavar='<flt>',
-        help="""When using seesaw language, specify 1x concentrations [M].""")
+    output.add_argument('--dry-run', action='store_true', 
+        help="Dry run: read input, write output. Do not enumerate any reactions.")
     output.add_argument("--concentration-unit", default='M', action='store',
         choices=('M', 'mM', 'uM', 'nM', 'pM'),
-        help="""Specify concentration units for crn output.""")
+        help="""Specify output concentration units for species and reaction rates.""")
     output.add_argument("--time-unit", default='s', action='store',
         choices=('s', 'm', 'h'),
-        help="""Specify time units for crn output.""")
+        help="""Specify output time units for reaction rates.""")
+    output.add_argument('--seesaw-explicit', action='store_true',
+        help="""When using seesaw language input format, translate it into
+        explicit form.""")
+    output.add_argument('--seesaw-conc', default=100e-9, type=float, metavar='<flt>',
+        help="""When using seesaw language input format, specify 1x
+        concentrations [M].""")
+    output.add_argument('--seesaw-reactions', default='', action='store',
+        #choices=('seesaw', 'T20', 'T25', 'utbr', 'leak', 'reduced'),
+        help=argparse.SUPPRESS)
 
     limits.add_argument('--max-complex-size', type=int, default=6, metavar='<int>',
         help="""Maximum number of strands allowed in a complex (used to prevent
@@ -110,75 +118,72 @@ def add_peppercorn_args(parser):
         #help="""Local probability threshold to accept an unfavorable reaction.""")
         help=argparse.SUPPRESS)
 
-    semantics.add_argument( '--release-cutoff-1-1', type=int, default=7, metavar='<int>',
-        help="""Maximum number of bases that will be released spontaneously in
-        a 1-1 `open` reaction.""")
-    semantics.add_argument( '--release-cutoff-1-N', type=int, default=7, metavar='<int>',
-        help="""Maximum number of bases that will be released spontaneously in
-        a 1-n `open` reaction.""")
     semantics.add_argument( '--release-cutoff', default=None, type=int, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
-        an `open` reaction, for either 1-1 or 1-n reactions (overwrites both
-        --release-cutoff-1-1 and --release-cutoff-1-n to the same value)""")
+        an `open` reaction.""")
+    semantics.add_argument( '--release-cutoff-1-1', type=int, default=7, metavar='<int>',
+        help="""Maximum number of bases that will be released spontaneously in
+        an `open` reaction with one product.""")
+    semantics.add_argument( '--release-cutoff-1-2', type=int, default=7, metavar='<int>',
+        help="""Maximum number of bases that will be released spontaneously in
+        an `open` reaction with two products.""")
 
     semantics.add_argument( '--no-max-helix', action='store_true', 
-        help="Do not apply 'max helix at a time' semantics.")
+        help="Do not apply 'max helix' semantics.")
     semantics.add_argument( '--ignore-branch-3way', action='store_true', 
-        help="Ignore 3-way branch migration events during enumeration.")
+        help="Ignore 3-way branch migration reactions during enumeration.")
     semantics.add_argument( '--ignore-branch-4way', action='store_true',
-        help="Ignore 4-way branch migration events during enumeration.")
+        help="Ignore 4-way branch migration reactions during enumeration.")
     semantics.add_argument( '--reject-remote', action='store_true', 
-        help="Discard remote toehold mediated 3-way and 4-way branch migration reactions.")
+        help="""Discard remote toehold mediated 3-way and 4-way branch
+        migration reactions.""")
 
     devel.add_argument('--interactive', action='store_true', 
-        help="Show new reactions after each step, confirm them in an interactive session.")
+        help="""Show new reactions after each step, confirm them in an
+        interactive session.""")
     devel.add_argument('--interruptible', action='store_true', 
         help="""If polymerization errors are raised or after a keyboard
         interrupt, proceed with neighborhood segmentation and CRN
         condensation.""")
     devel.add_argument('--bfs-ish', action='store_true', dest='bfs',
         help="When searching for bimolecular reactions, look to the oldest complexes first.")
-    devel.add_argument('--dry-run', action='store_true', 
-        help="Dry run: read input, write output. Do not enumerate any reactions.")
     devel.add_argument('--profile', action='store_true',
-        help="Enable statistical profiling of enumeration (not condensation).")
+        help="Provide statistical profiling of enumeration (not condensation).")
 
     return
 
-def main(cl_opts):
+def main(args):
     logger = logging.getLogger()
-    if cl_opts.verbose == 1:
+    if args.verbose == 1:
         logger.setLevel(logging.INFO)
-    elif cl_opts.verbose == 2:
+    elif args.verbose == 2:
         logger.setLevel(logging.DEBUG)
-    elif cl_opts.verbose >= 3:
+    elif args.verbose >= 3:
         logger.setLevel(logging.NOTSET)
 
-    ch = logging.StreamHandler()
+    title = "Peppercorn Domain-level Reaction Enumerator"
+    if args.logfile:
+        ch = logging.FileHandler(args.logfile)
+        formatter = logging.Formatter('%(levelname)s - %(message)s')
+        banner = title + (" (%s)" % version)
+    else:
+        ch = logging.StreamHandler()
+        formatter = ColorFormatter('%(levelname)s %(message)s', use_color=True)
+        banner = (colors.BOLD + title + colors.ENDC + " " + colors.GREEN + version + colors.ENDC)
 
-    # logging.Formatter('%(levelname)s - %(message)s')
-    formatter = ColorFormatter('%(levelname)s %(message)s', use_color=sys.stdout.isatty())
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-    if cl_opts.verbose > 3:
-        logging.warning("Verbosity greater than -vvv has no effect")
-
-    title = "Peppercorn Domain-level Reaction Enumerator"
-    banner = (colors.BOLD + title + colors.ENDC + " " +
-              colors.GREEN + version +
-              colors.ENDC if sys.stdout.isatty() else title +
-              (" (%s)" % version))
     logging.info(banner)
 
-    systeminput = cl_opts.input_filename
+    systeminput = args.input_filename
     if not systeminput :
         if sys.stdout.isatty():
             logging.info("Reading file from STDIN, Ctrl-D to stop")
         systeminput = ''
         for l in sys.stdin:
             systeminput += l
-        if cl_opts.interactive:
+        if args.interactive:
             logging.error("Interactive mode needs to read input from file, not STDIN.")
             raise SystemExit
 
@@ -189,12 +194,14 @@ def main(cl_opts):
     composite = None
     try :
         complexes, reactions, composite = read_pil(systeminput, 
-                cl_opts.input_filename is not None, composite=True)
+                args.input_filename is not None, composite=True)
     except ParseException, ex_pil:
         try :
             complexes, reactions = read_seesaw(systeminput, 
-                    cl_opts.input_filename is not None, 
-                    conc=cl_opts.seesaw_conc, explicit=cl_opts.seesaw_explicit)
+                    args.input_filename is not None, 
+                    conc=args.seesaw_conc, 
+                    explicit=args.seesaw_explicit, 
+                    reactions=args.seesaw_reactions)
         except ParseException, ex_ssw:
             logging.error('Pil-format parsing error:')
             logging.error('Cannot parse line {:5d}: "{}"'.format(ex_pil.lineno, ex_pil.line))
@@ -204,13 +211,19 @@ def main(cl_opts):
             logging.error('                          {} '.format(' ' * (ex_ssw.col-1) + '^'))
             raise SystemExit
 
-    init_cplxs = filter(
-            lambda x: x._concentration is None or \
+    init_cplxs = filter(lambda x: x._concentration is None or \
                     float(x._concentration[1]) != (0.0), complexes.values())
-    if cl_opts.dry_run:
+    if args.dry_run:
         enum = Enumerator(complexes.values(), reactions)
     else:
         enum = Enumerator(init_cplxs, reactions)
+
+    if args.profile:
+        try:
+            import statprof
+        except ImportError as err:
+            print("Python-module statprof not found, disabled Peppercorn profiling.")
+            args.profile = False
 
     # Print initial complexes
     logging.info("Initial complexes: ")
@@ -220,75 +233,71 @@ def main(cl_opts):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Transfer options to enumerator object #
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    enum.max_complex_size = cl_opts.max_complex_size
-    enum.max_complex_count = cl_opts.max_complex_count
-    enum.max_reaction_count = cl_opts.max_reaction_count
+    enum.max_complex_size = args.max_complex_size
+    enum.max_complex_count = max(args.max_complex_count, len(complexes))
+    enum.max_reaction_count = max(args.max_reaction_count, len(reactions))
 
-    if cl_opts.k_slow:
+    if args.k_slow:
         rc = 0
         k_rc = None
         while True:
             rc += 1
             k_rc = opening_rate(rc)
-            if k_rc < cl_opts.k_slow:
+            if k_rc < args.k_slow:
                 break
-        cl_opts.release_cutoff = rc 
+        release_cutoff = max(rc, args.release_cutoff, args.release_cutoff_1_1, args.release_cutoff_1_2)
         logging.info('Corresponding release-cutoff between {} and {}'.format(rc-1, rc))
-        logging.warning('Setting release-cutoff to {}'.format(cl_opts.release_cutoff))
-    else :
-        logging.info('Dissociation at release-cutoff {} corresponds to a k-slow < {}'.format(
-            cl_opts.release_cutoff_1_1, opening_rate(cl_opts.release_cutoff_1_1)))
+        logging.info('Setting release-cutoff to {}'.format(max(rc, release_cutoff)))
 
-    enum.release_cutoff_1_1 = cl_opts.release_cutoff_1_1
-    enum.release_cutoff_1_N = cl_opts.release_cutoff_1_N
+    enum.release_cutoff_1_1 = args.release_cutoff_1_1
+    enum.release_cutoff_1_2 = args.release_cutoff_1_2
+    if args.release_cutoff is not None:
+        enum.release_cutoff = args.release_cutoff
+        logging.info('Opening reaction rate at release-cutoff {} = {}'.format(
+            enum.release_cutoff, opening_rate(enum.release_cutoff)))
+    enum.k_slow = args.k_slow
+    enum.k_fast = args.k_fast
+    enum.p_min = args.p_min
+    enum.ddG_bind = args.ddG_bind
 
-    if cl_opts.release_cutoff is not None:
-        enum.release_cutoff = cl_opts.release_cutoff
+    enum.remote_migration = not args.reject_remote 
 
-    enum.k_slow = cl_opts.k_slow
-    enum.k_fast = cl_opts.k_fast
-    enum.p_min = cl_opts.p_min
-    enum.ddG_bind = cl_opts.ddG_bind
-
-    enum.remote_migration = not cl_opts.reject_remote 
-
-    if (cl_opts.k_fast or cl_opts.k_slow) and cl_opts.local_elevation:
+    if (args.k_fast or args.k_slow) and args.local_elevation:
         logging.warning('Turning off max-helix mode, since you are using: local-elevation')
         enum.local_elevation = True
-        cl_opts.no_max_helix = True
-    elif cl_opts.local_elevation:
+        args.no_max_helix = True
+    elif args.local_elevation:
         logging.warning('Ignoring local-elevation, since you are using the rate-independent model ')
-    enum.max_helix_migration = not cl_opts.no_max_helix
+    enum.max_helix_migration = not args.no_max_helix
 
-    enum.DFS = not cl_opts.bfs
-    enum.interactive = cl_opts.interactive
-    enum.interruptible = cl_opts.interruptible
+    enum.DFS = not args.bfs
+    enum.interactive = args.interactive
+    enum.interruptible = args.interruptible
 
     # Modify enumeration events based on command line options.
-    if cl_opts.ignore_branch_3way:
+    if args.ignore_branch_3way:
         if branch_3way in FAST_REACTIONS[1]:
             FAST_REACTIONS[1].remove(branch_3way)
 
-    if cl_opts.ignore_branch_4way:
+    if args.ignore_branch_4way:
         if branch_4way in FAST_REACTIONS[1]:
             FAST_REACTIONS[1].remove(branch_4way)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Run reaction enumeration (or not) #
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    if cl_opts.dry_run:
+    if args.dry_run:
         logging.info("Dry run (not enumerating any reactions)... ")
         enum.dry_run()
         logging.info("Done.")
     else:
         logging.info("Enumerating reactions...")
-        if cl_opts.interactive:
+        if args.interactive:
             logging.info("Interactive mode enabled: Fast and slow reactions " + \
                         "will be printed for each complex as enumerated." + \
                         "Press ^C at any time to terminate and write accumulated" + \
                         "complexes to output.")
-        if cl_opts.profile:
-            import statprof
+        if args.profile:
             statprof.start()
             try:
                 enum.enumerate()
@@ -299,23 +308,27 @@ def main(cl_opts):
             enum.enumerate()
         logging.info("Done.")
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    # Handle output condensation #
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    condensed = cl_opts.condensed
-    detailed = (not cl_opts.condensed or cl_opts.detailed)
-    if(condensed):
+    # ~~~~~~~~~~~~~~~~~~~ #
+    # Handle condensation #
+    # ~~~~~~~~~~~~~~~~~~~ #
+    condensed = args.condensed
+    detailed = (not args.condensed or args.detailed)
+    if condensed:
         logging.info("Output will be condensed to remove transient complexes.")
+        if args.profile:
+            statprof.start()
+            try:
+                enum.condense()
+            finally:
+                statprof.stop()
+                statprof.display()
+        else:
+            enum.condense()
 
-    if cl_opts.output_filename is None:
-        write_pil(enum, sys.stdout, detailed = detailed, condensed = condensed, 
-                    composite = composite, molarity = cl_opts.concentration_unit,
-                    time = cl_opts.time_unit)
-    else :
-        with open(cl_opts.output_filename, 'w') as pil :
-            write_pil(enum, pil, detailed = detailed, condensed = condensed, 
-                    composite = composite, molarity = cl_opts.concentration_unit,
-                    time = cl_opts.time_unit)
+    output = enum.to_pil(args.output_filename, 
+                         detailed=detailed, condensed=condensed, composite=composite, 
+                         molarity=args.concentration_unit, time = args.time_unit)
+    print(output, end='')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

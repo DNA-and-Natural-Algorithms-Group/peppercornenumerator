@@ -4,12 +4,11 @@
 #
 #  Created by Karthik Sarma on 4/18/10.
 #  Modifications by Casey Grun and Erik Winfree 8/15/2014.#
+#  Modifications by Stefan Badelt (see GiT history)
 
 import re
 import sys
-import copy
 import logging
-from math import log10
 
 SHORT_DOMAIN_LENGTH = 6
 LONG_DOMAIN_LENGTH = 12
@@ -23,13 +22,21 @@ class PeppercornUsageError(Exception):
             self.message += " ({})".format(val)
         super(PeppercornUsageError, self).__init__(self.message) 
 
+def convert_units(val, unit_in, unit_out):
+    conc = {'M':1, 'mM':1e-3, 'uM':1e-6, 'nM':1e-9, 'pM':1e-12}
+    time = {'ns':1e-9, 'us':1e-6, 'ms':1e-3, 's':1, 'min':60, 'hours':3600, 'days':86400}
+    if unit_in in conc:
+        return val*conc[unit_in]/conc[unit_out]
+    elif unit_in in time:
+        return val*time[unit_in]/time[unit_out]
+    else:
+        raise PeppercornUsageError('Unknown unit for conversion: {}'.format(unit_in))
 
 def wrap(x, m):
     """
     Mathematical modulo; wraps x so that 0 <= wrap(x,m) < m. x can be negative.
     """
     return (x % m + m) % m
-
 
 def natural_sort(l):
     """
@@ -44,7 +51,6 @@ def natural_sort(l):
 
     return sorted(l, key=alphanum_key)
 
-
 def find(f, seq, default=None):
     """
     Return first item in sequence where f(item) == True.
@@ -54,7 +60,6 @@ def find(f, seq, default=None):
             return item
     return default
 
-
 def warning(message):
     # from termcolor import colored, cprint
     # cprint("Warning: " + message, 'yellow')
@@ -63,134 +68,6 @@ def warning(message):
 def error(message):
     logging.error(message)
     sys.exit(1)
-
-def wait_for_input(message="[Press Enter to continue...]"):
-    raw_input(message)
-    print ""
-
-def parse_parameters(parameters):
-    match = re.match(r"\s*\[([^\]]+)\]\s*", parameters)
-    if match is not None:
-        parameters, = match.groups()
-
-    params = {'concentration': None}
-
-    # parse parameters into <list of targets> @ <list of conditions>
-    parameters = parameters.split("@")
-    if len(parameters) > 1:
-        targets, conditions = parameters
-
-        # split conditions into comma-separated list, discard whitespace
-        conditions = conditions.split(",")
-        for condition in conditions:
-            condition = condition.strip()
-
-            # try to parse a concentration
-            concentration = parse_concentration(condition)
-            if concentration is not None:
-                params['concentration'] = concentration
-    return params
-
-
-exp_to_si_prefix = {9: 'G', 6: 'M', 3: 'k', 0: '', -3: 'm', -
-                    6: 'u', -9: 'n', -12: 'p', -15: 'f', -18: 'a', -21: 'z'}
-
-si_prefix_to_exp = dict((pre, 10**exp)
-                        for (exp, pre) in exp_to_si_prefix.iteritems())
-
-
-def parse_concentration(condition):
-    parts = re.match(
-        r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*(p|n|u|m|d|)M",
-        condition)
-
-    if parts is not None:
-        conc, unit = parts.groups()
-        base = si_prefix_to_exp[unit]
-        concentration = float(conc) * base
-        return concentration
-    return None
-
-def format_si(n):
-    try:
-        x = int(log10(n) // 3) * 3
-        u = exp_to_si_prefix[x]
-    except (ValueError, KeyError):
-        x = 0
-    return (n / 10**x), exp_to_si_prefix[x]
-
-def resolve_length(length):
-    if (isinstance(length, type(0))):
-        return length
-    elif (length == "short"):
-        return SHORT_DOMAIN_LENGTH
-    elif (length == "long"):
-        return LONG_DOMAIN_LENGTH
-
-def parse_basewise_dot_paren(structure_line, strands):
-    parts = [x.strip() for x in structure_line.split("+")]
-    assert len(parts) == len(strands), "Structure '%s' has %d parts, but corresponds to %d strands" % (
-        structure_line, len(parts), len(strands))
-
-    segment_struct = ["" for s in strands]
-    for (i, s) in enumerate(strands):
-        strand_part = parts[i]
-        for d in s.domains:
-            assert len(strand_part) >= len(
-                d), "Not enough characters for domain %s" % str(d)
-            domain_part, strand_part = strand_part[:len(
-                d)], strand_part[len(d):]
-
-            assert all(
-                c == domain_part[0] for c in domain_part), "Not all parts of structure for %s are the same" % str(d)
-            segment_struct[i] += domain_part[0]
-
-    return parse_dot_paren("+".join(segment_struct))
-
-def parse_dot_paren(structure_line):
-    """
-    Parses a dot-parenthesis structure into the list of lists representeation
-    used elsewhere in the enumerator.
-
-    Example::
-
-                             0,0  0,1  0,2   0,3   0,4     1,0   1,1
-             "...((+))" -> [[None,None,None,(1,0),(1,1)],[(0,4),(0,3)]]
-
-    """
-    complex_structure = []
-    dot_paren_stack = []
-    strand_index = 0
-    domain_index = 0
-    curr_strand = []
-    complex_structure.append(curr_strand)
-    for part in structure_line:
-        # stand break
-        if (part == "+"):
-            strand_index += 1
-            domain_index = 0
-            curr_strand = []
-            complex_structure.append(curr_strand)
-            continue
-
-        # unpaired
-        if (part == "."):
-            curr_strand.append(None)
-            domain_index += 1
-
-        # paired to later domain
-        elif (part == "("):
-            curr_strand.append(None)
-            dot_paren_stack.append((strand_index, domain_index))
-            domain_index += 1
-
-        # paired to earlier domain
-        elif (part == ")"):
-            loc = dot_paren_stack.pop()
-            curr_strand.append(loc)
-            complex_structure[loc[0]][loc[1]] = (strand_index, domain_index)
-            domain_index += 1
-    return complex_structure
 
 def index_parts(enum):
     """
@@ -320,6 +197,5 @@ class Loop(object):
         return sum(len(dom) for dom in self.domains)
 
     def __eq__(self, other):
-        #TODO print Warning('SB: not obvious!!')
         return self._parts == other._parts
 

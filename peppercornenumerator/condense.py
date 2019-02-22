@@ -10,7 +10,6 @@ from peppercornenumerator.objects import PepperComplex
 from peppercornenumerator.objects import PepperReaction
 from peppercornenumerator.objects import PepperMacrostate
 from peppercornenumerator.objects import DSDDuplicationError
-from peppercornenumerator.enumerator import local_elevation_rate
 
 class CondensationError(Exception):
     pass
@@ -67,11 +66,9 @@ class PepperCondensation(object):
             raise CondensationError('need to call condense first')
         return self._complex_fates
 
-    def reactions(self, condensed=False):
-        if condensed :
-            return self.condensed_reactions
-        else :
-            return self._enumerator.reactions
+    @property
+    def reactions(self):
+        return self.condensed_reactions + self.detailed_reactions
 
     @property
     def detailed_reactions(self):
@@ -90,8 +87,12 @@ class PepperCondensation(object):
     def is_fast(self, rxn):
         if rxn.arity[0] != 1:
             return False
-        k_loc = local_elevation_rate(rxn)
-        return k_loc >= self.k_fast if k_loc is not None else rxn.rate >= self.k_fast
+        if self._enumerator.local_elevation:
+            from peppercornenumerator.enumerator import local_elevation_rate
+            k = local_elevation_rate(rxn)
+        else :
+            k = rxn.const
+        return k >= self.k_fast
 
     def reactions_consuming(self, cplx):
         if self._reactions_consuming is None:
@@ -322,7 +323,7 @@ class PepperCondensation(object):
                     logging.debug('duplicating PepperReaction: {}'.format(e.existing))
                     reaction = e.existing
 
-                reaction.rate = self.get_condensed_rate(reaction)
+                reaction.const = self.get_condensed_rate(reaction)
                 self._condensed_reactions.add(reaction)
         return
 
@@ -374,7 +375,7 @@ class PepperCondensation(object):
             assert reactant_probabilities <= 1.000001
 
             # rate of the detailed reaction
-            k = r.rate
+            k = r.const
             assert k > 0
 
             # overall contribution of detailed reaction r to rate of the condensed reaction 
@@ -419,7 +420,7 @@ class PepperCondensation(object):
             # T_{b,a} = rate(r : a -> b)
             a = r.reactants[0]
             b = r.products[0]
-            T[complex_indices[b]][complex_indices[a]] = r.rate
+            T[complex_indices[b]][complex_indices[a]] = r.const
     
         T0 = np.copy(T)
     
@@ -485,13 +486,13 @@ class PepperCondensation(object):
             assert len(r.products) == 1
             a = r.reactants[0]
             b = r.products[0]
-            T[complex_indices[a]][complex_indices[b]] = r.rate
+            T[complex_indices[a]][complex_indices[b]] = r.const
 
         # add transition rates for each outgoing reaction
         Te = np.zeros((L, e))
         for r in r_outgoing:
             a = r.reactants[0]
-            Te[complex_indices[a]][exit_indices[r]] = r.rate
+            Te[complex_indices[a]][exit_indices[r]] = r.const
     
         # the full transition matrix P_{L+e x L+e} would be
         #

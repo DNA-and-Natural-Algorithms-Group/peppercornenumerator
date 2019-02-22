@@ -19,6 +19,9 @@ from crnsimulator.odelib_template import add_integrator_args
 from peppercornenumerator.input import load_pil_crn
 from peppercornenumerator import __version__
 
+class SimulationSetupError(Exception):
+    pass
+
 def main(args):
     """Translate a CRN into a system of ODEs. Optional: Simulate ODEs on-the-fly. """
 
@@ -45,15 +48,11 @@ def main(args):
     labels = args.pyplot_labels
     for s in labels:
         if s in seen :
-            print('# Ignoring multiple occurances of {}'.format(s))
-            continue
+            raise SimulationSetupError('Multiple occurances of {} in labels.'.format(s))
         V.append(s)
-        if s in species:
-            if species[s][0][0] != 'i': raise NotImplementedError
-            initial = species[s][1]
-        else :
-            initial = 0
-        C.append(initial)
+
+        if species[s][0][0] != 'i': raise NotImplementedError
+        C.append(species[s][1])
         seen.add(s)
 
     # Append the remaining specified species 
@@ -61,7 +60,7 @@ def main(args):
         if s in seen : continue
         V.append(s)
         if species[s][0][0] != 'i':
-            raise NotImplementedError
+            raise NotImplementedError('Concentrations must be given as "initial" concentrations.')
         C.append(species[s][1])
         seen.add(s)
 
@@ -83,33 +82,20 @@ def main(args):
     # WRITE ODE SYSTEM #
     # ................ #
     if filename != 'odesystem.py' and not args.force and os.path.exists(filename):
-        print('# Use --force to overwrite existing file: {}'.format(filename))
-        raise SystemExit
+        print('# Reading ODE system from existing file:', filename)
     else:
         # ******************* #
         # BUILD REACTIONGRAPH #
         # ................... #
         RG = ReactionGraph(crn)
-
-        if len(C):
-            if len(RG.species) != len(V):
-                # Append the remaining unspecified species 
-                for s in sorted(RG.species):
-                    if s in seen : continue
-                    V.append(s)
-                    C.append(0)
-                    seen.add(s)
-        else :
-            V = RG.species
-            C = None
+        if len(RG.species) > len(V):
+            raise SimulationSetupError('Undefined species in the CRN')
+        elif len(RG.species) < len(V):
+            raise SimulationSetupError('Some species do not appear in the CRN:')
 
         # ********************* #
         # PRINT ODE TO TEMPLATE #
         # ..................... #
-        if len(V) != len(RG.species):
-            print(sorted(V))
-            print(sorted(RG.species))
-            raise RuntimeError('Some species do not appear in the reaction network:')
         filename, odename = RG.write_ODE_lib(sorted_vars = V, concvect = C,
                                              jacobian = not args.no_jacobian, 
                                              filename = filename,

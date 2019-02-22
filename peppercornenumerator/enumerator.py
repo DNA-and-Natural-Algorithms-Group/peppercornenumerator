@@ -9,11 +9,14 @@
 import sys
 import math
 import logging
+from builtins import input
 
 from peppercornenumerator.objects import PepperMacrostate, PepperComplex
 from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
+from peppercornenumerator.condense import PepperCondensation
 import peppercornenumerator.utils as utils
 import peppercornenumerator.reactions as reactlib
+from peppercornenumerator.output import write_pil
 
 
 # There should be better control of this limit -- only set it when
@@ -53,22 +56,20 @@ class PolymerizationError(Exception):
 
 class Enumerator(object):
     """
-    Represents a single enumerator instance, consisting of all the information
-    required for a reaction graph. This class is the coordinator for the state
-    enumerator. Enumerators have immutable starting conditions. 
+    The main enumerator object, collecting all the parameters to enumerate the
+    Chemical Reaction Network (CRN) from an initial set of domain-level
+    complexes.  Enumerators have immutable starting conditions. 
+
+    Args:
+        initial_complexes(list[PepperComplex()]): The list of complexes
+            presenting a starting condition for the enumeration process.
+        initial_reactions(list[PepperReaction()], optional): An optional list
+            of Reactions to be added to the enumeration results. These 
+            reactions will be considered when finding SCCs and when condensing
+            the CRN after enumeration.
     """
 
     def __init__(self, initial_complexes, initial_reactions=None):
-        """
-        Initializes the enumerator with a list of initial complexes.
-
-        Note: The optional arguments 'strands' and 'domains' are there for
-        backwards-compatibility and will be remove at some point. Ignoring them
-        below breaks unit-tests - why? (1) sometimes complementary domains are
-        specified that are actually not present in any of the complexes, (2)
-        conflicts with strand names in the original kernel format (where
-        explicit strand specifications are supported).
-        """
         # System initialization
         self._initial_complexes = initial_complexes
         for cplx in initial_complexes:
@@ -86,6 +87,11 @@ class Enumerator(object):
         self._resting_complexes = None
         self._transient_complexes = None
         self._resting_macrostates = None
+
+        # Condensation
+        self.condensation = None
+        self._detailed_reactions = None
+        self._condensed_reactions = None
 
         # Experimental support or debugging features
         self.DFS = True
@@ -105,7 +111,7 @@ class Enumerator(object):
         # Settings for reaction enumeration. 
         self._max_helix = True
         self._release_11 = 7
-        self._release_1N = 7
+        self._release_12 = 7
         self._max_complex_size = 6
         self._reject_remote = False
 
@@ -162,11 +168,13 @@ class Enumerator(object):
 
     @k_slow.setter
     def k_slow(self, value):
-        if value and self.release_cutoff and \
-                value <= reactlib.opening_rate(self.release_cutoff):
-            raise utils.PeppercornUsageError(
-                    'Conflicting settings: k-slow: {}, open at L={}: {}'.format(
-                value, self.release_cutoff, reactlib.opening_rate(self.release_cutoff)))
+        if value > 0:
+            (rc, k_rc) = (0, None)
+            while True:
+                rc += 1
+                k_rc = reactlib.opening_rate(rc)
+                if k_rc < value: break
+            self.release_cutoff = max(rc, self.release_cutoff)
 
         if 0 < self.k_fast < value :
             raise utils.PeppercornUsageError('k-slow must not be bigger than k-fast.')
@@ -185,7 +193,7 @@ class Enumerator(object):
 
     @property
     def release_cutoff(self):
-        if self._release_11 != self._release_1N :
+        if self._release_11 != self._release_12 :
             raise utils.PeppercornUsageError('Ambiguous release cutoff request.')
         return self._release_11
 
@@ -193,7 +201,7 @@ class Enumerator(object):
     def release_cutoff(self, value):
         assert isinstance(value, int) and value >= 0
         self._release_11 = value
-        self._release_1N = value
+        self._release_12 = value
 
     @property
     def release_cutoff_1_1(self):
@@ -205,13 +213,13 @@ class Enumerator(object):
         self._release_11 = value
 
     @property
-    def release_cutoff_1_N(self):
-        return self._release_1N
+    def release_cutoff_1_2(self):
+        return self._release_12
 
-    @release_cutoff_1_N.setter
-    def release_cutoff_1_N(self, value):
+    @release_cutoff_1_2.setter
+    def release_cutoff_1_2(self, value):
         assert isinstance(value, int) and value >= 0
-        self._release_1N = value
+        self._release_12 = value
 
     @property
     def remote_migration(self):
@@ -254,8 +262,18 @@ class Enumerator(object):
         return list(self._reactions)
 
     @property
+    def detailed_reactions(self):
+        return list(self._reactions)
+
+    @property
+    def condensed_reactions(self):
+        if self.condensation is None:
+            self.condense()
+        return self.condensation.condensed_reactions
+
+    @property
     def resting_sets(self):
-        print "# Deprecated function: Enumerator.resting_sets. Replace with Enumerator.resting_macrostates"
+        print("# Deprecated function: Enumerator.resting_sets. Replace with Enumerator.resting_macrostates")
         return self.resting_macrostates
 
     @property
@@ -413,7 +431,7 @@ class Enumerator(object):
                     element = self._S.pop(0)
 
                 logging.debug("Slow reactions from complex {:s} ({:d} remaining in S)".format(
-                    element, len(self._S)))
+                    str(element), len(self._S)))
                 slow_reactions = self.get_slow_reactions(element)
                 self._E.append(element)
 
@@ -462,19 +480,33 @@ class Enumerator(object):
             do_enumerate()
             finish()
 
+    def condense(self):
+        self.condensation = PepperCondensation(self)
+        self.condensation.condense()
+
+    def to_pil(self, filename = None, **kwargs):
+        if filename:
+            with open(filename, 'w') as pil :
+                write_pil(self, fh=pil, **kwargs)
+            return ''
+        else:
+            return write_pil(self, **kwargs)
+
     def reactions_interactive(self, root, reactions, rtype='fast'):
         """
         Prints the passed reactions as a kernel string, then waits for keyboard
         input before continuing.
         """
-        print "{} = {} ({})".format(root.name, root.kernel_string, rtype)
-        print
+        print("{} = {} ({})".format(root.name, root.kernel_string, rtype))
+        print()
         for r in reactions:
-            print r.kernel_string, r.rate
+            print("{} ({}: {})".format(r, r.rtype, r.const))
+            print(" {}".format(r.kernel_string))
         if len(reactions) is 0:
-            print "(No {} reactions)".format(rtype)
-        print 
-        utils.wait_for_input()
+            print("(No {} reactions)".format(rtype))
+        print()
+        input("[Press Enter to continue...]")
+        print()
 
     def process_neighborhood(self, source):
         """ Enumerate neighborhood of fast reactions.
@@ -504,7 +536,7 @@ class Enumerator(object):
                 # Find fast reactions from `element`
                 element = self._F.pop()
                 logging.debug("Fast reactions from {:s}... ({:d} remaining in F)".format(
-                    element, len(self._F)))
+                    str(element), len(self._F)))
 
                 # Return valid fast reactions:
                 reactions = self.get_fast_reactions(element)
@@ -525,7 +557,7 @@ class Enumerator(object):
                     self.reactions_interactive(element, reactions, 'fast')
 
         except KeyboardInterrupt:
-            logging.debug("Exiting neighborhood %s prematurely..." % source)
+            logging.warning("Exiting neighborhood %s prematurely..." % source)
             if self.interruptible:
                 interrupted = True
             else :
@@ -563,7 +595,7 @@ class Enumerator(object):
 
         logging.debug("Generated {:d} resting macrostates".format(
             len(segmented_neighborhood['resting_macrostates'])))
-        logging.debug("Done processing neighborhood: {:s}".format(source))
+        logging.debug("Done processing neighborhood: {:s}".format(str(source)))
 
         if interrupted:
             raise KeyboardInterrupt
@@ -592,7 +624,7 @@ class Enumerator(object):
                     move_reactions = move(complex, 
                             max_helix = self._max_helix, 
                             release_11 = self._release_11,
-                            release_1N = self._release_1N,
+                            release_1N = self._release_12,
                             ddG = self.ddG_bind)
                 else :
                     move_reactions = move(complex, 
@@ -604,7 +636,7 @@ class Enumerator(object):
                                 self._k_fast, move_reactions)
                 else :
                     reactions += filter(
-                            lambda r: self._k_slow <= r.rate < self._k_fast, move_reactions)
+                            lambda r: self._k_slow <= r.const < self._k_fast, move_reactions)
             for rxn in reactions:
                 logging.info('adding unimolecular slow reaction {}'.format(rxn.full_string()))
 
@@ -647,7 +679,7 @@ class Enumerator(object):
                     move_reactions = move(cplx, 
                         max_helix = self._max_helix, 
                         release_11 = self._release_11,
-                        release_1N = self._release_1N,
+                        release_1N = self._release_12,
                         ddG = self.ddG_bind)
                 else :
                     move_reactions = move(cplx, 
@@ -668,7 +700,7 @@ class Enumerator(object):
         if restrict: # apply the k-fast / k-slow filter
             if self.local_elevation:
                 # let's first remove reactions that cannot pass...
-                reactions = filter(lambda rxn: rxn.rate >= self._k_slow, reactions)
+                reactions = filter(lambda rxn: rxn.const >= self._k_slow, reactions)
                 assert cplx._elevation is None
                 el = self.get_local_elevation(cplx, reactions)
                 cplx._elevation = el
@@ -676,7 +708,7 @@ class Enumerator(object):
                                 max(self._k_slow, self._k_fast), reactions)
             else :
                 reactions = filter(
-                        lambda rxn: rxn.rate >= max(self._k_slow, self._k_fast), reactions)
+                        lambda rxn: rxn.const >= max(self._k_slow, self._k_fast), reactions)
 
         return reactions
 
@@ -759,7 +791,7 @@ class Enumerator(object):
                 else :
                     rxn.reverse_reaction = False
             
-            dG = math.log(rxn.rate/rxn.reverse_reaction.rate)
+            dG = math.log(rxn.const/rxn.reverse_reaction.const)
             # downhill reaction has dG > 0
             return dG if dG > 0 else 0
 
@@ -851,11 +883,10 @@ class Enumerator(object):
 
         return eleven
 
-def segment_neighborhood(complexes, reactions, p_min=None, represent = None):
+def segment_neighborhood(complexes, reactions, p_min=None, represent=None):
     """
-    Segmentation of a potentially incomplete neighborhood. That means only
-    the specified complexes are interesting, all others should not be
-    returned.
+    Segmentation of a potentially incomplete neighborhood. That means only the
+    specified complexes are interesting, all others should not be returned.
 
     Beware: Complexes must contain all reactants in reactions *and* there
     must not be any incoming fast reactions into complexes, other than
@@ -937,7 +968,7 @@ def segment_neighborhood(complexes, reactions, p_min=None, represent = None):
 
             rcx = sorted(rcx)[0] if rcx else None
             ms = PepperMacrostate(scc[:], prefix='', representative = rcx)
-        except DSDDuplicationError, e:
+        except DSDDuplicationError as e:
             assert set(e.existing.complexes) == set(scc)
             ms = e.existing
 
@@ -985,13 +1016,13 @@ def local_elevation_rate(rxn, el=None):
 
     if rxn.arity != (1,1) or rxn.rtype in ('branch-3way', 'branch-4way'): 
         # we don't know the reverse rate, ...
-        return 1/(1+math.e**(el)) * rxn.rate
+        return 1/(1+math.e**(el)) * rxn.const
 
-    elif rxn.rate < rxn.reverse_reaction.rate:
+    elif rxn.const < rxn.reverse_reaction.const:
         # this is a true uphill reaction...
-        return 1/(1+math.e**(el)) * rxn.rate
+        return 1/(1+math.e**(el)) * rxn.const
     
     # it is a downhill reaction, elevation does not matter ...
     assert rxn.arity[0] == 1
-    return rxn.rate
+    return rxn.const
  
