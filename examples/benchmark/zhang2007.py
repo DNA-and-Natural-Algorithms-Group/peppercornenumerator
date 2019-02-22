@@ -96,7 +96,8 @@ def data(evaluate=False, verbose = 0):
     psim += " --t8 18000 --t-lin 18000"
 
     # Setup
-    F1E = FigureData('Zhang2007-F1')
+    F1E = FigureData('Zhang et al. (2007) Fig. 1 - Single-layer catalytic DSD system (varying catalyst)')
+    F1E.fname = 'Zhang2007-F1'
     current = F1E
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels ROX S F OR C --p0 S=10 F=13 OR=30 C=10',
@@ -129,7 +130,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F3 = FigureData('Zhang2007-F3')
+    F3 = FigureData('Zhang et al. (2007) Fig. 3 - Two-layer feedforward DSD system (varying catalyst)')
+    F3.fname = 'Zhang2007-F3'
     current = F3
     template = zhang2007_F3_pil
     sims = [psim + ' --pyplot-labels ROX S0 S1 F0 F1 OR C0 --p0 S1=10 F1=13 S0=10 F0=13 OR=30 C0=10',
@@ -162,7 +164,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F4 = FigureData('Zhang2007-F4')
+    F4 = FigureData('Zhang et al. (2007) Fig. 4 - Autocatalytic DSD system (varying autocatalyst)')
+    F4.fname = 'Zhang2007-F4'
     current = F4
     template = zhang2007_F4_pil
     sims = [psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=10',

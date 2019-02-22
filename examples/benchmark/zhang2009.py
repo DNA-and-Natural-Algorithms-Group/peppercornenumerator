@@ -94,7 +94,8 @@ def data(evaluate=False, verbose = 0):
     rc = {'release_cutoff': 15}
 
     # Setup
-    F3 = FigureData('Zhang2009-F3')
+    F3 = FigureData('Zhang & Winfree (2009) Fig. 3 - Single strand displacement reactions (varying toehold length)')
+    F3.fname = 'Zhang2009-F3'
     current = F3
     template = zhang2009_F1DF_displacement_pil
     sims = [psim + ' --pyplot-labels F R S X --p0 R=3 S=1 X=0.6',
@@ -122,7 +123,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F4 = FigureData('Zhang2009-F4')
+    F4 = FigureData('Zhang & Winfree (2009) Fig. 4 - Single toehold exchange reactions (varying toehold lengths)')
+    F4.fname = 'Zhang2009-F4'
     current = F4
     template = zhang2009_F1DF_exchange_pil
     pilp = [(4,7), (5,7), (6,7), (7,7)]
@@ -148,7 +150,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F5 = FigureData('Zhang2009-F5')
+    F5 = FigureData('Zhang & Winfree (2009) Fig. 5 - Catalytic DSD system (varying toehold lengths)')
+    F5.fname = 'Zhang2009-F5'
     current = F5
     template = zhang2009_F5_pil
     pilp = [6,7,5,8,4,9,3,2]
@@ -175,6 +178,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     return [F3, F4, F5]
+    #return [F5]
 
 if __name__ == '__main__':
     data(evaluate=True, verbose=1)

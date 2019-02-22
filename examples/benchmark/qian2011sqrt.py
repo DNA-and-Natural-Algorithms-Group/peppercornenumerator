@@ -45,13 +45,14 @@ def data(evaluate=False, verbose = 0):
 
     ddG_bind = {'ddG_bind': 0.0}
     rates = {'k_slow': 0.01, 'k_fast': 1}
-    seesaw = {'seesaw-rxns': 'seesaw-T25', 'seesaw-conc': 50e-9}
+    seesaw = {'seesaw-rxns': 'seesaw-T25-utbr-leak-reduced', 'seesaw-conc': 50e-9}
 
     # Default pilsimulator call
     psim = "pilsimulator --no-jacobian --nxy --header --atol 1e-13 --rtol 1e-13 --mxstep 1000 --t8 36000 --t-lin 18000"
 
     # Setup
-    SF31 = FigureData('Qian2011-SF31')
+    SF31 = FigureData('Qian & Winfree (2011) Sup. Fig. 31 - Squareroot')
+    SF31.fname = 'Qian2011-SF31'
     current = SF31
     template = qian2011_SF31
     sims = [psim + ' --pyplot-labels y1_0 y1_1 y2_0 y2_1 --p0 x4_0=45 x4_1=5  x3_0=45 x3_1=5  x2_0=45 x2_1=5  x1_0=45 x1_1=5',  # 0000

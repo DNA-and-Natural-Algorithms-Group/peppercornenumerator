@@ -41,7 +41,8 @@ def data(evaluate=False, verbose = 0):
     rates = {'k_slow': 0.001, 'k_fast': 0.01}
 
     # Setup
-    F3A = FigureData('Zhang2011-F3A')
+    F3A = FigureData('Zhang (2011) Fig. 3A (?) - Cooperative strand displacement')
+    F3A.fname = 'Zhang2011-F3A'
     current = F3A
     template = zhang2011_F1_pil
     sims = [psim + ' --pyplot-labels R D1 T1 T2 F --p0 R=60 D1=20 T1=18 T2=18',

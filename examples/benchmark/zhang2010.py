@@ -89,7 +89,8 @@ def data(evaluate=False, verbose = 0):
     rates = {'k_slow': 1e-5, 'k_fast': 0.1}
 
     # Setup
-    F3A = FigureData('Zhang2010-F3A')
+    F3A = FigureData('Zhang & Winfree (2010) Fig. 3A - Catalytic DSD system with 100 nM substrates (varying catalyst)')
+    F3A.fname = 'Zhang2010-F3A'
     current = F3A
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels S F OR C ROX --p0 S=100 F=200 OR=300 C=10',
@@ -116,7 +117,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F3B = FigureData('Zhang2010-F3B')
+    F3B = FigureData('Zhang & Winfree (2010) Fig. 3B - Catalytic DSD system 30 nM substrates (varying catalyst)')
+    F3B.fname = 'Zhang2010-F3B'
     current = F3B
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels S F OR C ROX --p0 S=30 F=60 OR=90 C=3',
@@ -143,7 +145,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F3C = FigureData('Zhang2010-F3C')
+    F3C = FigureData('Zhang & Winfree (2010) Fig. 3C - Catalytic DSD system with 3 nM substrates (varying catalyst)')
+    F3C.fname = 'Zhang2010-F3C'
     current = F3C
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels S F OR C ROX --p0 S=3 F=6 OR=9 C=0.9',
@@ -170,7 +173,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F3D = FigureData('Zhang2010-F3D')
+    F3D = FigureData('Zhang & Winfree (2010) Fig. 3D - Catalytic DSD system with 1 nM substrates (varying catalyst)')
+    F3D.fname = 'Zhang2010-F3D'
     current = F3D
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels S F OR C ROX --p0 S=1 F=2 OR=3 C=1',
@@ -197,7 +201,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F10C = FigureData('Zhang2010-F10C')
+    F10C = FigureData('Zhang & Winfree (2010) Fig. 10C -- Catalytic DSD system with four-letter alphabet (varying catalyst)')
+    F10C.fname = 'Zhang2010-F10C'
     current = F10C
     template = zhang2010_F10A_pil
     sims = [psim + ' --pyplot-labels S4 F4 OR4 C4 ROX --p0 S4=30 F4=60 OR4=90 C4=3',
@@ -225,7 +230,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F10F = FigureData('Zhang2010-F10F')
+    F10F = FigureData('Zhang & Winfree (2010) Fig. 10F -- Catalytic DSD system with three and four-letter alphabet (varying catalyst)')
+    F10F.fname = 'Zhang2010-F10F'
     current = F10F
     template = zhang2010_F10D_pil
     sims = [psim + ' --pyplot-labels S43 F43 OR43 C43 RG --p0 S43=10 F43=20 OR43=30 C43=3',

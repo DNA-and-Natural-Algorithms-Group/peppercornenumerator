@@ -35,7 +35,8 @@ def data(evaluate=False, verbose = 0):
     rates = {'k_slow': 1e-5, 'k_fast': 0.1}
 
     # Setup
-    F3 = FigureData('Yin2008-F3')
+    F3 = FigureData('Yin et al. (2008) Fig. 3 - Autocatalytic hairpin system (varying initiator)')
+    F3.fname = 'Yin2008-F3'
     current = F3
     template = yin2008_F3_pil
     sims = [psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=20',

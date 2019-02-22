@@ -158,9 +158,8 @@ def data(evaluate=False, verbose = 0):
 
     ddG_bind = {'ddG_bind': 0.0}
     rates  = {'k_slow': 0.01, 'k_fast': 1}
-    seesaw = {'seesaw-rxns': 'seesaw-T20', 
-              'seesaw-conc': 100e-9, 
-              'utbr_species': True}
+    seesaw = {'seesaw-rxns': 'seesaw-T20-utbr-leak-reduced', 
+              'seesaw-conc': 100e-9}
 
     # Default pilsimulator call
     psim = "pilsimulator --no-jacobian --nxy --header"
@@ -171,7 +170,8 @@ def data(evaluate=False, verbose = 0):
     h12l = " --t8 43200 --t-lin 21600"
 
     # Setup
-    SF22 = FigureData('Qian2011-SF22')
+    SF22 = FigureData('Qian & Winfree (2011) Sup. Fig. 22')
+    SF22.fname='Qian2011-SF22'
     current = SF22
     template = qian2011_SF22
     sims = [psim + h1l + " --pyplot-labels I O --p0 I=100",
@@ -210,7 +210,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF23 = FigureData('Qian2011-SF23')
+    SF23 = FigureData('Qian & Winfree (2011) Sup. Fig. 23')
+    SF23.fname='Qian2011-SF23'
     current = SF23
     template = qian2011_SF23
     sims = [psim + h5l + " --pyplot-labels I O --p0 I=100",
@@ -250,7 +251,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F2C_OR = FigureData('Qian2011-F2C-OR')
+    F2C_OR = FigureData('Qian & Winfree (2011) Fig. 2C - OR')
+    F2C_OR.fname='Qian2011-F2C-OR'
     current = F2C_OR
     template = qian2011_F2
     sims = [psim + h5l + " --pyplot-labels x1 x2 y --p0 x1=90 x2=90",
@@ -281,7 +283,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F2C_AND = FigureData('Qian2011-F2C-AND')
+    F2C_AND = FigureData('Qian & Winfree (2011) Fig. 2C - AND')
+    F2C_AND.fname='Qian2011-F2C-AND'
     current = F2C_AND
     template = qian2011_F2
     sims = [ #T2_5 = 120 * 1.1 = 132
@@ -313,7 +316,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF26 = FigureData('Qian2011-SF26')
+    SF26 = FigureData('Qian & Winfree (2011) Sup. Fig. 26')
+    SF26.fname = 'Qian2011-SF26'
     current = SF26
     template = qian2011_SF26
     sims = [psim + h10l + " --pyplot-labels x1 x2 x3 x4 y --p0 x1=90 x2=90 x3=90 x4=90",
@@ -344,7 +348,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF27 = FigureData('Qian2011-SF27')
+    SF27 = FigureData('Qian & Winfree (2011) Sup. Fig. 27')
+    SF27.fname = 'Qian2011-SF27'
     current = SF27
     template = qian2011_SF27
     sims = [psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 y --p0 x1=90 x2=90 x3=90 x4=90 x5=90",
@@ -375,7 +380,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF28 = FigureData('Qian2011-SF28')
+    SF28 = FigureData('Qian & Winfree (2011) Sup. Fig. 28')
+    SF28.fname = 'Qian2011-SF28'
     current = SF28
     template = qian2011_SF28
     sims = [psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 x6 y --p0 x1=90 x2=90 x3=90 x4=90 x5=90 x6=90",
@@ -416,7 +422,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF29_OR = FigureData('Qian2011-SF29-OR')
+    SF29_OR = FigureData('Qian & Winfree (2011) Sup. Fig. 29 - OR')
+    SF29_OR.fname = 'Qian2011-SF29-OR'
     current = SF29_OR
     template = qian2011_SF29_OR
     sims = [ # Threshold = 60 * 1.1
@@ -452,7 +459,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF29_AND = FigureData('Qian2011-SF29-AND')
+    SF29_AND = FigureData('Qian & Winfree (2011) Sup. Fig. 29 - AND')
+    SF29_AND.fname = 'Qian2011-SF29-AND'
     current = SF29_AND
     template = qian2011_SF29_AND
     sims = [ # Threshold = 320 * 1.1

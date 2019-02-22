@@ -35,13 +35,11 @@ def seesaw_model(pilstring, is_file = False, enumfile='',
     cxs, rxns = read_seesaw(pilstring, is_file, 
             explicit = False,
             conc=kwargs['seesaw-conc'], 
-            reactions = kwargs['seesaw-rxns'],
-            utbr_species = utbr)
+            reactions = kwargs['seesaw-rxns'])
 
     enum = Enumerator(cxs.values(), rxns)
     enum.dry_run()
 
-    # NOTE: library interface weakness: cannot access condensation!
     if enumfile :
         with open(enumfile, 'w') as fh :
             write_pil(enum, fh=fh, detailed = detailed, condensed = condensed, 
@@ -51,10 +49,6 @@ def seesaw_model(pilstring, is_file = False, enumfile='',
         outstring = write_pil(enum, fh=None, detailed = detailed, condensed = condensed, 
                 molarity = conc)
     
-    # do condensation, again!
-    if condensed:
-        enum = PepperCondensation(enum)
-        enum.condense()
     return enum, outstring
 
 def peppercorn(pilstring, is_file = False, enumfile='',
@@ -82,19 +76,9 @@ def peppercorn(pilstring, is_file = False, enumfile='',
             setattr(enum, k, w)
         else:
             raise ValueError('No peppercorn attribute called: {}'.format(k))
-        # enum.release_cutoff = release_cutoff
-        # enum.max_helix_migration = max_helix
-        # enum.remote_migration = not reject_remote
-        # enum.max_complex_size = max_complex_size
-        # enum.max_complex_count = max_complex_count
-        # enum.max_reaction_count = max_reaction_count
-        # enum.k_fast = k_fast
-        # enum.k_slow = k_slow
-        # enum.ddG_bind = ddG_bind
 
     enum.enumerate()
 
-    # NOTE: library interface weakness: cannot access condensation!
     if enumfile :
         with open(enumfile, 'w') as fh :
             write_pil(enum, fh=fh, detailed = detailed, condensed = condensed, 
@@ -104,10 +88,6 @@ def peppercorn(pilstring, is_file = False, enumfile='',
         outstring = write_pil(enum, fh=None, detailed = detailed, condensed = condensed, 
                 composite = comp, molarity = conc)
     
-    # do condensation, again!
-    if condensed:
-        enum = PepperCondensation(enum)
-        enum.condense()
     return enum, outstring
 
 #NOTE: produces temporary files
@@ -127,6 +107,7 @@ class FigureData(object):
 
     def __init__(self, name, tmpdir='tmp/', force=True):
         self.name = name
+        self.fname = name.replace(' ', '_').replace('\n', '_').replace('(', '').replace(')', '')
         self.tmpdir = tmpdir
         self.count = 0 # Assign different pil settings
 
@@ -166,7 +147,7 @@ class FigureData(object):
         
         self._ratemode = False
         self._ratedata = []
-        self._ratecalc = []
+        self._ratecalc = {}
 
         self._simmode = False # Internal flag to distingush mode
         self._simdata = []    # userprovided setup (except enumargs)
@@ -192,7 +173,7 @@ class FigureData(object):
         self._pepperargs.update(value)
 
     def make_pilfile(self, pilstring, suffix):
-        name = '{}{}-{:02d}'.format(self.tmpdir, self.name, self.count)
+        name = '{}{}-{:02d}'.format(self.tmpdir, self.fname, self.count)
         self.count += 1
 
         with open(name + suffix, 'w') as pil:
@@ -218,7 +199,7 @@ class FigureData(object):
     def canon_rxn(self, rxn):
         return '{} -> {}'.format(' + '.join(sorted(rxn[0])), ' + '.join(sorted(rxn[1])))
 
-    def add_reaction_rate_setup(self, pilstring, reaction):
+    def add_reaction_rate_setup(self, pilstring, reaction, pilid=None):
         # Supports only single reactions
         rxn, _ = parse_crn_string(reaction)
         reaction = self.canon_rxn(rxn[0])
@@ -226,7 +207,7 @@ class FigureData(object):
 
         pilname = self.make_pilfile(pilstring, suffix='-input.pil')
 
-        self._ratedata.append((pilname, pilstring, reaction, rate))
+        self._ratedata.append((pilname, pilstring, reaction, rate, pilid))
         self._ratemode = True
 
     def eval_reactions(self, pepperargs='default', verbose=0):
@@ -239,42 +220,43 @@ class FigureData(object):
             raise MissingDataError('Cannot find key "{}" in pepperargs'.format(pepperargs))
 
         ratecalc = []
-        for name, pil, rxn, rate in self._ratedata:
+        for name, pil, rxn, rate, pilid in self._ratedata:
             clear_memory()
 
             pname = name + '-input.pil'
             ename = name + '-enum.pil'
             enumOBJ, _ = peppercorn(pname, is_file=True, enumfile=ename, **pargs)
-            rxns = enumOBJ.reactions #NOTE: requires new release
+            rxns = enumOBJ.condensed_reactions \
+                    if pargs.get('condensed', False) else enumOBJ.detailed_reactions
 
             prate = None
             for r in rxns:
                 ed = map(str, r.reactants)
                 pr = map(str, r.products)
                 if self.canon_rxn([ed, pr]) == rxn:
-                    prate = r.rate
+                    prate = r.const
                     break
             if prate is None:
                 raise MissingDataError(
                         'Target reaction not found: {} not in {}'.format(rxn, name))
-            ratecalc.append((pepperargs, prate))
-        self._ratecalc.append((ratecalc))
+            ratecalc.append(prate)
+        self._ratecalc[pepperargs] = ratecalc
 
     def get_reaction_dataframes(self):
-        name, pil, rxn, exp = zip(*self._ratedata)
+        name, pil, rxn, exp, pilid = zip(*self._ratedata)
 
-        ratecalc = [None] if not self._ratecalc else self._ratecalc
+        ratecalc = {None: None} if not self._ratecalc else self._ratecalc
 
-        for rcalc in ratecalc:
-            pargs, calc = (None, None) if rcalc is None else zip(*rcalc)
+        for pargs, rcalc in ratecalc.items():
             df = pd.DataFrame(data={
-                'pilfile': name,
-                'reaction': rxn,
-                'literature': exp,
-                'calculated': calc,
-                'pepperargs': pargs},
-                columns=['pilfile', 'reaction', 'literature', 
-                    'pepperargs', 'calculated'])
+                'Input Filename': name,
+                '(n, m)': pilid,
+                'Reaction': rxn,
+                'Rate (experiment)': exp,
+                'Rate (calculated)': rcalc,
+                'Semantics': pargs},
+                columns=['Input Filename', '(n, m)', 'Reaction', 'Semantics', 
+                    'Rate (calculated)', 'Rate (experiment)'])
             yield df
 
     # Simulation mode
@@ -288,7 +270,7 @@ class FigureData(object):
             pilname = self.make_pilfile(pilstring, suffix='-input.pil')
             self._pil_to_file[pilstring] = pilname
         if simargs == '':
-            simargs = simulation[simulation.find('p0'):].replace(' ','_')
+            simargs = simulation[simulation.find('p0')+3:].replace(' ','_')
         elif simargs == 'pilname':
             simargs = pilname
         self._simargs[simargs]=simulation
@@ -394,19 +376,20 @@ class FigureData(object):
         #ini = map(lambda x: x[x.find('--p0'):], sim)
 
         df = pd.DataFrame(data={
-            'pilfile': name,
-            'simulation': map(lambda x: x.replace('_',' '), sim),
-            'reporter': rep,
-            'metric': met,
-            'exp-conc': conc,
-            'exp-time': time,
-            'sim-time': stime,
-            'sim-conc': sconc,
-            'pepperargs': pargs},
-            columns=['pilfile', 'simulation', 'reporter', 'metric', 'exp-conc',
-                'exp-time', 'pepperargs', 'sim-conc', 'sim-time'])
+            'Input Filename': name,
+            'Simulation': map(lambda x: x.replace('_',' '), sim),
+            'Reporter': rep,
+            'Metric': met,
+            'Concentration (experiment)': conc,
+            'Time (experiment)': time,
+            'Time (simulation)': stime,
+            'Concentration (simulation)': sconc,
+            'Semantics': pargs},
+            columns=['Input Filename', 'Simulation', 'Reporter', 'Metric', 'Semantics',
+                'Concentration (simulation)', 'Time (simulation)',
+                'Concentration (experiment)', 'Time (experiment)'])
+                #'exp-time', 'pepperargs', 'sim-conc', 'sim-time'])
 
-        #df['sim-time'] = df['sim-time'].map('{:.0f}'.format)
         return df
 
     def get_system_dataframes(self):
@@ -420,18 +403,19 @@ class FigureData(object):
         for pargs, scalc in simcalc.items():
             stime, sconc = (None, None) if scalc is None else zip(*scalc)
             df = pd.DataFrame(data={
-                'pilfile': name,
-                'simulation': map(lambda x: x.replace('_',' '), sim),
-                'reporter': rep,
-                'metric': met,
-                'exp-conc': conc,
-                'exp-time': time,
-                'sim-time': stime,
-                'sim-conc': sconc,
-                'pepperargs': pargs},
-                columns=['pilfile', 'simulation', 'reporter', 'metric', 'exp-conc',
-                    'exp-time', 'pepperargs', 'sim-conc', 'sim-time'])
-            #df['sim-time'] = df['sim-time'].map('{:.0f}'.format)
+                'Input Filename': name,
+                'Simulation': map(lambda x: x.replace('_',' '), sim),
+                'Reporter': rep,
+                'Metric': met,
+                'Concentration (experiment)': conc,
+                'Time (experiment)': time,
+                'Time (simulation)': stime,
+                'Concentration (simulation)': sconc,
+                'Semantics': pargs},
+            columns=['Input Filename', 'Simulation', 'Reporter', 'Metric', 'Semantics',
+                    'Concentration (simulation)', 'Time (simulation)',
+                    'Concentration (experiment)', 'Time (experiment)'])
+                    #'exp-time', 'pepperargs', 'sim-conc', 'sim-time'])
             yield df
 
 #done
@@ -565,7 +549,7 @@ def nxy_get_time_at_conc(nxyfile, species, threshold):
         pts = np.where(traj < th)[0]
         return time[pts[0]] if len(pts) else None
     print('WARNING: Returning none: {} ', nxyfile, species)
-    return None
+    return float('inf')
 
 #done
 def nxy_get_diagonal_points(nxyfile, species, tmax, cmax):

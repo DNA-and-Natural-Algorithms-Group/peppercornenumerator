@@ -74,80 +74,78 @@ def kotani2017_F3_pil(x):
 
 def kotani2017_F4_pil(x):
     return """
-    length a   = 22
-    length b   = 22
-    length o   = 22
-    length c1  = 11
-    length c2  = 11
-    length t1  = 6
-    length t2  = 6
-    length t3  = 10
-    length T2  = 2
-    length x   = 2
-    length y   = 2
+    \tlength a   = 22
+    \tlength b   = 22
+    \tlength o   = 22
+    \tlength c1  = 11
+    \tlength c2  = 11
+    \tlength t1  = 6
+    \tlength t2  = 6
+    \tlength t3  = 10
+    \tlength T2  = 2
+    \tlength x   = 2
+    \tlength y   = 2
 
-    length d1s = 16
-    length d1r = 2
-    length d2  = 6
+    \tlength d1s = 16
+    \tlength d1r = 2
+    \tlength d2  = 6
 
-    S5 = o( b*( T2 a + c2 ) a( t2( y + ) ) c2*( c1*( t1* x* + ) ) ) d2 t3
-    S6 = y* t2* a*( b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) c2*( c1*( t1*( + x ) ) ) )
-    
-    C1 = x t1 c1 c2 a
+    \tS5 = o( b*( T2 a + c2 ) a( t2( y + ) ) c2*( c1*( t1* x* + ) ) ) d2 t3
+    \tS6 = y* t2* a*( b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) c2*( c1*( t1*( + x ) ) ) )
+    \t
+    \tC1 = x t1 c1 c2 a
 
-    P1  = t2* a*( c2*( c1*( t1*( x*( + ) ) ) ) )           @i 0 M
-    P2 = c2( b( a( t2( y( + ) ) ) ) )                     @i 0 M
+    \tP1  = t2* a*( c2*( c1*( t1*( x*( + ) ) ) ) )           @i 0 M
+    \tP2 = c2( b( a( t2( y( + ) ) ) ) )                     @i 0 M
 
-    I5  = c1 c2 o*( d2 t3 + ) b*( T2 a + c2 ) a t2 y        @i 0 M
-    I6 = c1( c2( o*( d2 t3 + ) b*( T2 a + c2 ) a( t2( y( + ) ) ) b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) ) ) t1* @i 0 M
-    P10 = x( t1( c1( c2( b( o*( + ) ) T2 a( + t2* ) ) ) ) ) @i 0 M
+    \tI5  = c1 c2 o*( d2 t3 + ) b*( T2 a + c2 ) a t2 y        @i 0 M
+    \tI6 = c1( c2( o*( d2 t3 + ) b*( T2 a + c2 ) a( t2( y( + ) ) ) b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) ) ) t1* @i 0 M
+    \tP10 = x( t1( c1( c2( b( o*( + ) ) T2 a( + t2* ) ) ) ) ) @i 0 M
  
-    P8 = x t1 c1 c2 b( o*( + ) ) T2 a                     @i 0 M
-    P9 = d1s T2 o( c2*( c1*( t1* + ) ) ) d2 t3            @i 0 M
+    \tP8 = x t1 c1 c2 b( o*( + ) ) T2 a                     @i 0 M
+    \tP9 = d1s T2 o( c2*( c1*( t1* + ) ) ) d2 t3            @i 0 M
 
-    R = d1r( d1s( d2( + t3* ) ) )
-    D = d1r d1s d2                                              @i 0 M
-    RW = d1s( T2 o( c2*( c1*( t1* + ) ) ) d2( t3( + ) ) ) d1r*  @i 0 M
-
+    \tR = d1r( d1s( d2( + t3* ) ) )
+    \tD = d1r d1s d2                                              @i 0 M
+    \tRW = d1s( T2 o( c2*( c1*( t1* + ) ) ) d2( t3( + ) ) ) d1r*  @i 0 M
     """.format(x)
 
 def kotani2017_F4_pil_simple(x):
     return """
-    length a   = 22
-    length b   = 22
-    length o   = 22
-    length c1  = 11
-    length c2  = 11
-    length t1  = 6
-    length t2  = 6
-    length t3a  = 6
-    length t3b  = 4
-    length T2  = 2
-    length x   = 2
-    length y   = 2
+    \tlength a   = 22
+    \tlength b   = 22
+    \tlength o   = 22
+    \tlength c1  = 11
+    \tlength c2  = 11
+    \tlength t1  = 6
+    \tlength t2  = 6
+    \tlength t3a  = 6
+    \tlength t3b  = 4
+    \tlength T2  = 2
+    \tlength x   = 2
+    \tlength y   = 2
 
-    length d1s = 16
-    length d2  = 6
+    \tlength d1s = 16
+    \tlength d2  = 6
 
-    S5 = o( b*( T2 a + c2 ) a( t2( y + ) ) c2*( c1*( t1* x* + ) ) ) d2 t3a t3b
-    S6 = y* t2* a*( b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) c2*( c1*( t1*( + x ) ) ) )
-    
-    C1 = x t1 c1 c2 a
+    \tS5 = o( b*( T2 a + c2 ) a( t2( y + ) ) c2*( c1*( t1* x* + ) ) ) d2 t3a t3b
+    \tS6 = y* t2* a*( b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) c2*( c1*( t1*( + x ) ) ) )
+    \t
+    \tC1 = x t1 c1 c2 a
 
-    P1  = t2* a*( c2*( c1*( t1*( x*( + ) ) ) ) )           @i 0 M
-    P2 = c2( b( a( t2( y( + ) ) ) ) )                     @i 0 M
+    \tP1  = t2* a*( c2*( c1*( t1*( x*( + ) ) ) ) )           @i 0 M
+    \tP2 = c2( b( a( t2( y( + ) ) ) ) )                     @i 0 M
 
-    I5  = c1 c2 o*( d2 t3a t3b + ) b*( T2 a + c2 ) a t2 y        @i 0 M
-    I6 = c1( c2( o*( d2 t3a t3b + ) b*( T2 a + c2 ) a( t2( y( + ) ) ) b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) ) ) t1* @i 0 M
-    P10 = x( t1( c1( c2( b( o*( + ) ) T2 a( + t2* ) ) ) ) ) @i 0 M
+    \tI5  = c1 c2 o*( d2 t3a t3b + ) b*( T2 a + c2 ) a t2 y        @i 0 M
+    \tI6 = c1( c2( o*( d2 t3a t3b + ) b*( T2 a + c2 ) a( t2( y( + ) ) ) b*( c2*( + x t1 c1 ) ) o*( + d1s T2 ) ) ) t1* @i 0 M
+    \tP10 = x( t1( c1( c2( b( o*( + ) ) T2 a( + t2* ) ) ) ) ) @i 0 M
  
-    P8 = x t1 c1 c2 b( o*( + ) ) T2 a                     @i 0 M
-    P9 = d1s T2 o( c2*( c1*( t1* + ) ) ) d2 t3a t3b       @i 0 M
+    \tP8 = x t1 c1 c2 b( o*( + ) ) T2 a                     @i 0 M
+    \tP9 = d1s T2 o( c2*( c1*( t1* + ) ) ) d2 t3a t3b       @i 0 M
 
-    R = d1s( d2( + t3a* ) )
-    D = d1s d2                                              @i 0 M
-    RW = d1s( T2 o( c2*( c1*( t1* + ) ) ) d2( t3a( t3b + ) ) ) @i 0 M
-
+    \tR = d1s( d2( + t3a* ) )
+    \tD = d1s d2                                              @i 0 M
+    \tRW = d1s( T2 o( c2*( c1*( t1* + ) ) ) d2( t3a( t3b + ) ) ) @i 0 M
     """.format(x)
 
 def data(evaluate=False, verbose = 0):
@@ -161,7 +159,8 @@ def data(evaluate=False, verbose = 0):
     h30log = " --t0 0.1 --t8 108000 --t-log 18000"
 
     # Setup
-    k17_F2 = FigureData('Kotani2017-F2')
+    k17_F2 = FigureData('Kotani & Hughes (2017) Fig. 2 - Single-layer catalytic DSD with 4-way branch migration (varying catalyst)')
+    k17_F2.fname = 'Kotani2017-F2'
     current = k17_F2
     template = kotani2017_F2_pil
     sims = [psim + h10l + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=1",
@@ -190,7 +189,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    k17_F3 = FigureData('Kotani2017-F3')
+    k17_F3 = FigureData('Kotani & Hughes (2017) Fig. 3 - Two-layer feedforward DSD system with 4-way branch migration (varying catalyst)')
+    k17_F3.fname = 'Kotani2017-F3'
     current = k17_F3
     template = kotani2017_F3_pil
     sims = [psim + h30log + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.1",
@@ -219,7 +219,8 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    k17_F4 = FigureData('Kotani2017-F4')
+    k17_F4 = FigureData('Kotani & Hughes (2017) Fig. 4 - Autocatalytic DSD system with 4-way branch migration (varying autocatalyst)')
+    k17_F4.fname = 'Kotani2017-F4'
     current = k17_F4
     template = kotani2017_F4_pil
     sims = [psim + h20l + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.1",
