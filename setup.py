@@ -18,7 +18,7 @@ setup(
     version='0.7',
     description='Domain-level nucleic acid reaction enumerator',
     long_description=LONG_DESCRIPTION,
-    author='Casey Grun, Stefan Badelt, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree',
+    author='Stefan Badelt, Casey Grun, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree',
     author_email='winfree@caltech.edu',
     license='MIT',
     test_suite='tests',
@@ -26,7 +26,7 @@ setup(
         'numpy',
         'pyparsing>=1.5.5', 
         'crnsimulator>=0.5',
-        'dsdobjects>=0.6.3'],
+        'dsdobjects>=0.7'],
     packages=['peppercornenumerator'],
     scripts=['scripts/peppercorn',
              'scripts/pilsimulator']
