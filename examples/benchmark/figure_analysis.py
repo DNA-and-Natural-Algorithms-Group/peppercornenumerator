@@ -348,13 +348,19 @@ class FigureData(object):
 
             if cmpfig :
                 tr = nxy_get_trajectory(nxy, reporter)
-                tr.rename(columns={reporter:simargs}, inplace=True)
+                if cmpfig is True:
+                    tr.rename(columns={reporter:simargs}, inplace=True)
+                elif cmpfig == 'hack':
+                    tr.rename(columns={reporter:cname}, inplace=True)
 
                 if trajectories is None:
                     trajectories = tr
                 else :
                     assert np.array_equal(trajectories['time'], tr['time'])
-                    trajectories[simargs] = tr[simargs]
+                    if cmpfig is True:
+                        trajectories[simargs] = tr[simargs]
+                    elif cmpfig == 'hack':
+                        trajectories[cname] = tr[cname]
 
         if cmpfig: 
             trajectories.to_csv(cname, sep='\t', float_format='%.9e', index=False,

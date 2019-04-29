@@ -156,7 +156,7 @@ def data(evaluate=False, verbose = 0):
     """ """
     from figure_analysis import FigureData
 
-    ddG_bind = {'ddG_bind': 0.0}
+    #ddG_bind = {'ddG_bind': 0.0}
     rates  = {'k_slow': 0.01, 'k_fast': 1}
     seesaw = {'seesaw-rxns': 'seesaw-T20-utbr-leak-reduced', 
               'seesaw-conc': 100e-9}
@@ -170,7 +170,7 @@ def data(evaluate=False, verbose = 0):
     h12l = " --t8 43200 --t-lin 21600"
 
     # Setup
-    SF22 = FigureData('Qian & Winfree (2011) Sup. Fig. 22')
+    SF22 = FigureData('Sup. Fig. 22: Single catalyst, no threshold')
     SF22.fname='Qian2011-SF22'
     current = SF22
     template = qian2011_SF22
@@ -200,7 +200,6 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate:
         current.eval()
@@ -210,7 +209,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF23 = FigureData('Qian & Winfree (2011) Sup. Fig. 23')
+    SF23 = FigureData('Sup. Fig. 23: Single catalyst and threshold')
     SF23.fname='Qian2011-SF23'
     current = SF23
     template = qian2011_SF23
@@ -241,7 +240,6 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate:
         current.eval()
@@ -251,7 +249,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F2C_OR = FigureData('Qian & Winfree (2011) Fig. 2C - OR')
+    F2C_OR = FigureData('Fig. 2C: Two-input OR gate')
     F2C_OR.fname='Qian2011-F2C-OR'
     current = F2C_OR
     template = qian2011_F2
@@ -273,7 +271,6 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate:
         current.eval()
@@ -283,7 +280,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    F2C_AND = FigureData('Qian & Winfree (2011) Fig. 2C - AND')
+    F2C_AND = FigureData('Fig. 2C: Two-input AND gate')
     F2C_AND.fname='Qian2011-F2C-AND'
     current = F2C_AND
     template = qian2011_F2
@@ -306,7 +303,6 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate:
         current.eval()
@@ -316,7 +312,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF26 = FigureData('Qian & Winfree (2011) Sup. Fig. 26')
+    SF26 = FigureData('Sup. Fig. 26: Three-layer OR cascade')
     SF26.fname = 'Qian2011-SF26'
     current = SF26
     template = qian2011_SF26
@@ -324,9 +320,15 @@ def data(evaluate=False, verbose = 0):
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 y --p0 x1=10 x2=10 x3=90 x4=10",
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 y --p0 x1=10 x2=90 x3=10 x4=10",
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 y --p0 x1=10 x2=10 x3=10 x4=10"]
+
+    simargs = ['((1 or 1) or 1) or 1', 
+               '((0 or 0) or 1) or 0', 
+               '((0 or 1) or 0) or 0', 
+               '((0 or 0) or 0) or 0']
+
     litr = [(3326.32, 84.49), (7368.42, 65.71), (9557.89, 55.51), (20842.11, 3.67)]
 
-    for (sim, res) in zip(sims, litr):
+    for (sim, arg, res) in zip(sims, simargs, litr):
         pilstring  = template(None)
         simulation = sim
         reporter = 'y'
@@ -334,11 +336,10 @@ def data(evaluate=False, verbose = 0):
         tmax = '21600'
         cmax = '100'
         current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate:
         current.eval()
@@ -348,7 +349,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF27 = FigureData('Qian & Winfree (2011) Sup. Fig. 27')
+    SF27 = FigureData('Sup. Fig. 27: Four-layer OR cascade')
     SF27.fname = 'Qian2011-SF27'
     current = SF27
     template = qian2011_SF27
@@ -356,9 +357,15 @@ def data(evaluate=False, verbose = 0):
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 y --p0 x1=10 x2=10 x3=90 x4=10 x5=10",
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 y --p0 x1=10 x2=90 x3=10 x4=10 x5=10",
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 y --p0 x1=10 x2=10 x3=10 x4=10 x5=10"]
+
+    simargs = ['(((1 or 1) or 1) or 1) or 1', 
+               '(((0 or 0) or 1) or 0) or 0', 
+               '(((0 or 1) or 0) or 0) or 0', 
+               '(((0 or 0) or 0) or 0) or 0']
+
     litr = [(3558.62, 82.89), (9848.28, 53.83), (12082.76, 43.88), (20937.93, 3.28)]
 
-    for (sim, res) in zip(sims, litr):
+    for (sim, arg, res) in zip(sims, simargs, litr):
         pilstring  = template(None)
         simulation = sim
         reporter = 'y'
@@ -366,11 +373,10 @@ def data(evaluate=False, verbose = 0):
         tmax = '21600'
         cmax = '100'
         current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate:
         current.eval()
@@ -380,7 +386,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF28 = FigureData('Qian & Winfree (2011) Sup. Fig. 28')
+    SF28 = FigureData('Sup. Fig. 28: Five AND/OR gates, four layers')
     SF28.fname = 'Qian2011-SF28'
     current = SF28
     template = qian2011_SF28
@@ -397,10 +403,25 @@ def data(evaluate=False, verbose = 0):
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 x6 y --p0 x1=10 x2=90 x3=10 x4=10 x5=10 x6=90",
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 x6 y --p0 x1=10 x2=10 x3=90 x4=10 x5=90 x6=10",
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 x6 y --p0 x1=10 x2=10 x3=10 x4=10 x5=10 x6=10"]
+
+    simargs = ['(((1 or 1) and 1) or 1) or (1 and 1)', 
+               '(((1 or 0) and 1) or 1) or (0 and 0)', 
+               '(((1 or 1) and 0) or 1) or (0 and 0)', 
+               '(((0 or 0) and 0) or 1) or (0 and 1)', 
+               '(((0 or 0) and 0) or 0) or (1 and 1)', 
+               '(((1 or 0) and 1) or 0) or (1 and 0)', 
+               '(((0 or 1) and 1) or 0) or (0 and 0)', 
+
+               '(((1 or 1) and 0) or 0) or (0 and 1)', 
+               '(((1 or 0) and 0) or 0) or (1 and 0)', 
+               '(((0 or 1) and 0) or 0) or (0 and 1)', 
+               '(((0 or 0) and 1) or 0) or (1 and 0)', 
+               '(((0 or 0) and 0) or 0) or (0 and 0)']
+
     litr = [(4467.98, 83.76), (7541.50, 73.47), (8224.51, 71.49), (8822.13, 69.50), (12151.78, 57.23), (13944.66, 51.29), 
             (16420.55, 42.57), (28031.62, 2.57), (28031.62, 2.57), (28031.62, 2.57), (28031.62, 2.57), (28031.62, 2.57)]
 
-    for (sim, res) in zip(sims, litr):
+    for (sim, arg, res) in zip(sims, simargs, litr):
         pilstring  = template(None)
         simulation = sim
         reporter = 'y'
@@ -408,11 +429,10 @@ def data(evaluate=False, verbose = 0):
         tmax = '28800'
         cmax = '100'
         current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate: 
         current.eval()
@@ -422,7 +442,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF29_OR = FigureData('Qian & Winfree (2011) Sup. Fig. 29 - OR')
+    SF29_OR = FigureData('Sup. Fig. 29: Four-input OR gates')
     SF29_OR.fname = 'Qian2011-SF29-OR'
     current = SF29_OR
     template = qian2011_SF29_OR
@@ -435,9 +455,19 @@ def data(evaluate=False, verbose = 0):
             psim + h5l + " --pyplot-labels x1 x2 x3 x4 x5 x6 x7 x8 y --p0 x1=10 x2=10 x3=90 x4=10 x5=10 x6=10 x7=10 x8=10 T2_5=66",
             psim + h5l + " --pyplot-labels x1 x2 x3 x4 x5 x6 x7 x8 y --p0 x1=90 x2=10 x3=10 x4=10 x5=10 x6=10 x7=10 x8=10 T2_5=66",
             psim + h5l + " --pyplot-labels x1 x2 x3 x4 x5 x6 x7 x8 y --p0 x1=10 x2=10 x3=10 x4=10 x5=10 x6=10 x7=10 x8=10 T2_5=66"]
+
+    simargs = ['(1 or 0) or (1 or 0) or (1 or 0) or (1 or 0)', 
+               '(1 or 0) or (1 or 0) or (1 or 0) or (0 or 0)', 
+               '(1 or 0) or (1 or 0) or (0 or 0) or (0 or 0)', 
+               '(0 or 0) or (0 or 0) or (0 or 0) or (1 or 0)', 
+               '(0 or 0) or (0 or 0) or (1 or 0) or (0 or 0)', 
+               '(0 or 0) or (1 or 0) or (0 or 0) or (0 or 0)', 
+               '(1 or 0) or (0 or 0) or (0 or 0) or (0 or 0)', 
+               '(0 or 0) or (0 or 0) or (0 or 0) or (0 or 0)']
+
     litr = [(1925.58, 81.20), (2302.33, 78.40), (2679.07, 74.80), (3809.30, 63.60), (4102.33, 61.20), (4311.63, 59.20), (4479.07, 58.00), (10548.84, 3.60)]
 
-    for (sim, res) in zip(sims, litr):
+    for (sim, arg, res) in zip(sims, simargs, litr):
         pilstring  = template(None)
         simulation = sim
         reporter = 'y'
@@ -445,11 +475,10 @@ def data(evaluate=False, verbose = 0):
         tmax = '10800'
         cmax = '100'
         current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate:
         current.eval()
@@ -459,7 +488,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
     # Setup
-    SF29_AND = FigureData('Qian & Winfree (2011) Sup. Fig. 29 - AND')
+    SF29_AND = FigureData('Sup. Fig. 29: Four-input AND gates')
     SF29_AND.fname = 'Qian2011-SF29-AND'
     current = SF29_AND
     template = qian2011_SF29_AND
@@ -468,9 +497,15 @@ def data(evaluate=False, verbose = 0):
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 x6 x7 x8 y --p0 x1=90 x2=10 x3=90 x4=10 x5=90 x6=10 x7=10 x8=10 T2_5=352",
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 x6 x7 x8 y --p0 x1=90 x2=10 x3=90 x4=10 x5=10 x6=10 x7=10 x8=10 T2_5=352",
             psim + h10l + " --pyplot-labels x1 x2 x3 x4 x5 x6 x7 x8 y --p0 x1=90 x2=10 x3=10 x4=10 x5=10 x6=10 x7=10 x8=10 T2_5=352"]
+
+    simargs = ['(1 or 0) and (1 or 0) and (1 or 0) and (1 or 0)', 
+               '(1 or 0) and (1 or 0) and (1 or 0) and (0 or 0)', 
+               '(1 or 0) and (1 or 0) and (0 or 0) and (0 or 0)', 
+               '(1 or 0) and (1 or 0) and (0 or 0) and (0 or 0)']
+
     litr = [(15947.37, 55.33), (31894.74, 11.07), (34263.16, 5.79), (35052.63, 2.94)] 
 
-    for (sim, res) in zip(sims, litr):
+    for (sim, arg, res) in zip(sims, simargs, litr):
         pilstring  = template(None)
         simulation = sim
         reporter = 'y'
@@ -478,11 +513,10 @@ def data(evaluate=False, verbose = 0):
         tmax = '36000'
         cmax = '100'
         current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
-    current.pepperargs['default'].update(ddG_bind)
 
     if evaluate:
         current.eval()
@@ -514,7 +548,6 @@ def data(evaluate=False, verbose = 0):
 
     # current.pepperargs['default'] = current.pepperargs['CONDENSED'].copy()
     # current.pepperargs['default'].update(rates)
-    # current.pepperargs['default'].update(ddG_bind)
 
     # if evaluate:
     #     current.eval()
