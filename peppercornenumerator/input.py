@@ -163,7 +163,7 @@ def read_pil(data, is_file = False, composite = False):
 
             if len(line) > 3 :
                 assert len(line[3]) == 3
-                complexes[name]._concentration = tuple(line[3])
+                complexes[name].concentration = tuple(line[3])
 
 
         elif line[0] == 'reaction':
@@ -361,7 +361,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                 structure = list('.....')
             complexes[wire] = PepperComplex(sequence, structure, 
                     name=name if name else wire)
-            complexes[wire]._concentration = ('i', 0, 'M')
+            complexes[wire].concentration = ('i', 0, 'M')
         return complexes[wire]
 
     def make_thld(t):
@@ -384,7 +384,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                 sequence = [dOt, dOa, '+', ~dIt, ~toe, ~dOa, ~dOt]
                 structure = list('((+..))')
             complexes[thld] = PepperComplex(sequence, structure, name=thld)
-            complexes[thld]._concentration = ('i', 0, 'M')
+            complexes[thld].concentration = ('i', 0, 'M')
 
             # Name the waste as well, for convenience...
             assert waste1 not in complexes
@@ -395,14 +395,14 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                 sequence = [dOt, dOa, toe, dIt, dIa, '+', ~dIt, ~toe, ~dOa, ~dOt]
                 structure = list('((((.+))))')
             complexes[waste1] = PepperComplex(sequence, structure, name=waste1)
-            complexes[waste1]._concentration = ('i', 0, 'M')
+            complexes[waste1].concentration = ('i', 0, 'M')
 
             if waste2 not in complexes:
                 if explicit:
                     raise NotImplementedError
                 else :
                     complexes[waste2] = PepperComplex([dOt, dOa], ['.','.'], name=waste2)
-                    complexes[waste2]._concentration = ('i', 0, 'M')
+                    complexes[waste2].concentration = ('i', 0, 'M')
 
         return complexes[thld], complexes[waste1], complexes[waste2]
 
@@ -459,7 +459,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
  
         if gate not in complexes:
             complexes[gate] = PepperComplex(sequence, structure, name=gate)
-            complexes[gate]._concentration = ('i', 0, 'M')
+            complexes[gate].concentration = ('i', 0, 'M')
         return complexes[gate]
 
     for line in parsed_file :
@@ -467,8 +467,8 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
             # use the given name if it is not a digit...
             name = None if line[1][0].isdigit() else line[1][0]
             w = make_wire(line[2], name)
-            assert w._concentration[1] == 0
-            w._concentration = None
+            assert w.concentration.value == 0
+            w.concentration = None
 
         elif line[0] == 'OUTPUT':
             # use the given name if it is not a digit...
@@ -486,7 +486,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                         complexes[fluor] = PepperComplex([clp, dFt, dFa, clp], ['.','.','.','.'], name=name)
                     else :
                         complexes[fluor] = PepperComplex([dFt, dFa], ['.','.'], name=name)
-                    complexes[fluor]._concentration = ('i', 0, 'M')
+                    complexes[fluor].concentration = ('i', 0, 'M')
                     #print(fluor, complexes[fluor], complexes[fluor].kernel_string)
             else:
                 raise InputFormatError('Unknown output format: {}'.format(line))
@@ -527,16 +527,16 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
             Iw = make_wire(['w',[g1, g2]])
             Th,w1,w2 = make_thld(['t',[g1, g2]]) 
             if line[0] == 'seesawOR':
-                assert Th._concentration[1] == 0
-                Th._concentration = ('i', 1.1 * 0.6 * conc, 'M')
+                assert Th.concentration.value == 0
+                Th.concentration = ('i', 1.1 * 0.6 * conc, 'M')
             else:
-                assert Th._concentration[1] == 0
-                Th._concentration = ('i', 1.1 * (n-1 + 0.2) * conc, 'M')
+                assert Th.concentration.value == 0
+                Th.concentration = ('i', 1.1 * (n-1 + 0.2) * conc, 'M')
 
             # Connection reaction (assign intial concentration)
             Ig = make_gate(['g', [g1, ['w', [g1, g2]]]])
-            assert Ig._concentration[1] == 0
-            Ig._concentration = ('i', n * conc, 'M')
+            assert Ig.concentration.value == 0
+            Ig.concentration = ('i', n * conc, 'M')
 
             # fanout for all outputs
             for d in out + ['f']:
@@ -547,13 +547,14 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                 Og = make_gate(['g', [['w', [g1, g2]], g2]]) #consumed gate
 
                 if d == 'f':
-                    #assert cxw._concentration is not None
-                    assert Ow._concentration[1] == 0
-                    fcon = list(Ow._concentration)
-                    fcon[1] += 2 * m * conc
-                    Ow._concentration = tuple(fcon)
+                    assert Ow.concentration.value == 0
+                    fmod = Ow.concentration.mode
+                    fcon = Ow.concentration.value
+                    funi = Ow.concentration.unit
+                    fcon += 2 * m * conc
+                    Ow.concentration = (fmod, fcon, funi)
                 else :
-                    Ig._concentration = ('i', conc, 'M')
+                    Ig.concentration = ('i', conc, 'M')
 
         elif line[0] == 'inputfanout':
             [g1, inp, out] = line[1]
@@ -562,22 +563,23 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
 
             make_wire(['w', [inp, g1]])
             cx,_,_ = make_thld(['t', [inp, g1]])
-            assert cx._concentration[1] == 0
-            cx._concentration = ('i', 1.1 * 0.2 * conc, 'M')
+            assert cx.concentration.value == 0
+            cx.concentration = ('i', 1.1 * 0.2 * conc, 'M')
             make_gate(['g', [['w',[inp, g1]], g1]])
 
             for d in out + ['f']:
                 cxw = make_wire(['w', [g1, d]])
                 cxg = make_gate(['g', [g1, ['w', [g1, d]]]])
                 if d == 'f':
-                    #assert cxw._concentration is not None
-                    assert cxw._concentration[1] == 0
-                    cxwcon = list(cxw._concentration)
-                    cxwcon[1] += 2 * m * conc
-                    cxw._concentration = tuple(cxwcon)
+                    assert cxw.concentration.value == 0
+                    cxwmod = Ow.concentration.mode
+                    cxwcon = Ow.concentration.value
+                    cxwuni = Ow.concentration.unit
+                    cxwcon += 2 * m * conc
+                    cxw.concentration = (cxwmod, cxwcon, cxwuni)
                 else :
-                    assert cxg._concentration[1] == 0
-                    cxg._concentration = ('i', conc, 'M')
+                    assert cxg.concentration.value == 0
+                    cxg.concentration = ('i', conc, 'M')
 
         elif line[0] == 'reporter':
             #['reporter', ['25', '31']]
@@ -596,7 +598,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                 sequence  = [dRt, dRa, '+', ~toe, ~dRa, ~dRt]
                 structure = list('((+.))')
             complexes[rep] = PepperComplex(sequence, structure, name=rep)
-            complexes[rep]._concentration = ('i', 1.5 * conc, 'M')
+            complexes[rep].concentration = ('i', 1.5 * conc, 'M')
 
             # TODO: swap F and Q!!!
             flr = "F_{}".format(nR)
@@ -606,7 +608,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                                                    ['.','.','.','.'], name=flr)
                 else :
                     complexes[flr] = PepperComplex([dRt, dRa], ['.','.'], name=flr)
-                complexes[flr]._concentration = ('i', 0, 'M')
+                complexes[flr].concentration = ('i', 0, 'M')
 
             que = "Q_{}".format(nR)
             if que not in complexes:
@@ -618,7 +620,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                     sequence  = [dRt, dRa, toe, dIt, dIa, '+', ~toe, ~dRa, ~dRt]
                     structure = list('(((..+)))')
                     complexes[que] = PepperComplex(sequence, structure, name=que)
-                    complexes[que]._concentration = ('i', 0, 'M')
+                    complexes[que].concentration = ('i', 0, 'M')
 
         elif line[0] == 'conc':
             if line[1][0] == 'w':
@@ -633,8 +635,8 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                 print(line)
                 raise NotImplementedError
             # input wires have None at default
-            assert cx._concentration is None or cx._concentration[1] == 0
-            cx._concentration = ('i', conc*float(line[2]), 'M')
+            assert cx.concentration is None or cx.concentration.value == 0
+            cx.concentration = ('i', conc*float(line[2]), 'M')
 
         else :
             print('WARNING: keyword not supported: {}'.format(line[0]))
@@ -710,25 +712,25 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
     if utbr and global_species :
         # Make the universal wire W
         # This is the fuel value... 
-        conc = sum(map(lambda x: x._concentration[1] if x._concentration else 0, wires))
+        conc = sum(map(lambda x: x.concentration.value if x.concentration else 0, wires))
         if conc:
             uW = PepperDomain('dummy_{}'.format('W'), dtype='long')
             uW = PepperComplex(sequence=[uW], structure=['.'], name='W')
-            uW._concentration = ('initial', conc, 'M')
+            uW.concentration = ('initial', conc, 'M')
             complexes[uW.name] = uW
 
         # Make the universal gate G (Gates and Reporters)
         uG = PepperDomain('dummy_{}'.format('G'), dtype='long')
         uG = PepperComplex(sequence=[uG], structure=['.'], name='G')
-        conc = sum(map(lambda x: x._concentration[1] if x._concentration else 0, gates + freps))
-        uG._concentration = ('initial', conc, 'M')
+        conc = sum(map(lambda x: x.concentration.value if x.concentration else 0, gates + freps))
+        uG.concentration = ('initial', conc, 'M')
         complexes[uG.name] = uG
 
         # Make the universal threshold TH 
         uT = PepperDomain('dummy_{}'.format('TH'), dtype='long')
         uT = PepperComplex(sequence=[uT], structure=['.'], name='TH')
-        conc = sum(map(lambda x: x._concentration[1] if x._concentration else 0, thlds))
-        uT._concentration = ('initial', conc, 'M')
+        conc = sum(map(lambda x: x.concentration.value if x.concentration else 0, thlds))
+        uT.concentration = ('initial', conc, 'M')
         complexes[uT.name] = uT
 
     for w in wires:
@@ -779,12 +781,12 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
 
             if utbr and global_species:
                 ## TODO: check if that makes sense...?
-                if w._concentration and w._concentration[1] != 0:
+                if w.concentration and w.concentration.value != 0:
                     try : # all Wires together
                         gWn = g.name + '_W'
                         gW = PepperDomain('dummy_{}'.format(gWn), dtype='long')
                         gW = PepperComplex(sequence=[gW], structure=['.'], name=gWn)
-                        gW._concentration = ('initial', 0, 'M')
+                        gW.concentration = ('initial', 0, 'M')
                         complexes[gWn] = gW
 
                         reactions.append(PepperReaction([g, uW], [gW], rtype='side-utbr', rate=kf))
@@ -796,7 +798,7 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
                         wGn = w.name + '_G'
                         wG = PepperDomain('dummy_{}'.format(wGn), dtype='long')
                         wG = PepperComplex(sequence=[wG], structure=['.'], name=wGn)
-                        wG._concentration = ('initial', 0, 'M')
+                        wG.concentration = ('initial', 0, 'M')
                         complexes[wGn] = wG
 
                         reactions.append(PepperReaction([w, uG], [wG], rtype='side-utbr', rate=kf))
@@ -824,12 +826,12 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
 
             if utbr and global_species:
                 # TODO: check if that makes sense...?
-                if w._concentration and w._concentration[1] != 0:
+                if w.concentration and w.concentration.value != 0:
                     try: # all-wires product
                         gWn = g.name + '_W'
                         gW = PepperDomain('dummy_{}'.format(gWn), dtype='long')
                         gW = PepperComplex(sequence=[gW], structure=['.'], name=gWn)
-                        gW._concentration = ('initial', 0, 'M')
+                        gW.concentration = ('initial', 0, 'M')
                         complexes[gWn] = gW
 
                         reactions.append(PepperReaction([g, uW], [gW], rtype='side-utbr', rate=kf))
@@ -841,7 +843,7 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
                         wGn = w.name + '_G'
                         wG = PepperDomain('dummy_{}'.format(wGn), dtype='long')
                         wG = PepperComplex(sequence=[wG], structure=['.'], name=wGn)
-                        wG._concentration = ('initial', 0, 'M')
+                        wG.concentration = ('initial', 0, 'M')
                         complexes[wGn] = wG
 
                         reactions.append(PepperReaction([w, uG], [wG], rtype='side-utbr', rate=kf))
@@ -870,12 +872,12 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
 
             if utbr and global_species:
                 # TODO: check if that makes sense...?
-                if w._concentration and w._concentration[1] != 0:
+                if w.concentration and w.concentration.value != 0:
                     try: # all Wires together
                         gWn = g.name + '_W'
                         gW = PepperDomain('dummy_{}'.format(gWn), dtype='long')
                         gW = PepperComplex(sequence=[gW], structure=['.'], name=gWn)
-                        gW._concentration = ('initial', 0, 'M')
+                        gW.concentration = ('initial', 0, 'M')
                         complexes[gWn] = gW
 
                         reactions.append(PepperReaction([g, uW], [gW], rtype='side-utbr', rate=kf))
@@ -887,7 +889,7 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
                         wGn = w.name + '_TH'
                         wG = PepperDomain('dummy_{}'.format(wGn), dtype='long')
                         wG = PepperComplex(sequence=[wG], structure=['.'], name=wGn)
-                        wG._concentration = ('initial', 0, 'M')
+                        wG.concentration = ('initial', 0, 'M')
                         complexes[wGn] = wG
 
                         reactions.append(PepperReaction([w, uT], [wG], rtype='side-utbr', rate=kf))

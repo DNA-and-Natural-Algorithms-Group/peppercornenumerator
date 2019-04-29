@@ -1,15 +1,17 @@
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function
+from builtins import map
+
 import logging
 import numpy as np
+from collections import namedtuple
 
 from dsdobjects import clear_memory
-from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingSet
+from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_Macrostate
 from dsdobjects import DSDObjectsError, DSDDuplicationError
-from dsdobjects.utils import split_complex
+from dsdobjects.utils import split_complex, convert_units
 # not needed here, but passing it on...
 from dsdobjects.utils import make_pair_table, pair_table_to_dot_bracket 
-from peppercornenumerator.utils import convert_units
 
 class PepperObjectsError(Exception):
     """
@@ -101,6 +103,7 @@ class PepperComplex(DSD_Complex):
     """
 
     PREFIX = 'e'
+    CONCENTRATION = namedtuple('concentration', 'mode value unit')
 
     @staticmethod
     def clear_memory(memory=True, names=True, ids=True):
@@ -122,10 +125,30 @@ class PepperComplex(DSD_Complex):
             logging.warning('Complex name existed, prefix has been changed to: {}'.format(backup))
         
         # Peppercorn IO:
-        # store and ignore concentration values if given..
-        self._concentration = None # e.g. (initial, 5, nM)
+        self._concentration = None
         self._elevation = None
         assert self.is_domainlevel_complement
+
+    @property
+    def concentration(self):
+        if self._concentration is not None:
+            return self._concentration
+        return None
+
+    @concentration.setter
+    def concentration(self, trip):
+        if trip is None:
+            self._concentration = None
+        else:
+            (mode,value,unit) = trip
+            self._concentration = PepperComplex.CONCENTRATION(mode,value,unit)
+
+    def concentrationformat(self, out):
+        mod = self._concentration.mode
+        val = self._concentration.value
+        uni = self._concentration.unit
+        val = convert_units(float(val), uni, out) 
+        return '@{} {} {}'.format(mod, val, out)
 
     @property
     def pair_table(self):
@@ -268,7 +291,7 @@ class PepperReaction(DSD_Reaction):
             return '[{:12g} {:4s} ] {} -> {}'.format(rate, units,
                     " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
 
-class PepperMacrostate(DSD_RestingSet):
+class PepperMacrostate(DSD_Macrostate):
     def __init__(self, *kargs, **kwargs):
         super(PepperMacrostate, self).__init__(*kargs, **kwargs)
         self._internal_reactions = set()

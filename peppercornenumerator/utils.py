@@ -22,16 +22,6 @@ class PeppercornUsageError(Exception):
             self.message += " ({})".format(val)
         super(PeppercornUsageError, self).__init__(self.message) 
 
-def convert_units(val, unit_in, unit_out):
-    conc = {'M':1, 'mM':1e-3, 'uM':1e-6, 'nM':1e-9, 'pM':1e-12}
-    time = {'ns':1e-9, 'us':1e-6, 'ms':1e-3, 's':1, 'min':60, 'hours':3600, 'days':86400}
-    if unit_in in conc:
-        return val*conc[unit_in]/conc[unit_out]
-    elif unit_in in time:
-        return val*time[unit_in]/time[unit_out]
-    else:
-        raise PeppercornUsageError('Unknown unit for conversion: {}'.format(unit_in))
-
 def wrap(x, m):
     """
     Mathematical modulo; wraps x so that 0 <= wrap(x,m) < m. x can be negative.

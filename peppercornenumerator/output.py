@@ -7,17 +7,9 @@
 #
 
 from peppercornenumerator import __version__
-from peppercornenumerator.utils import natural_sort, convert_units
+from peppercornenumerator.utils import natural_sort
 from peppercornenumerator.utils import PeppercornUsageError
 from peppercornenumerator.condense import PepperCondensation
-
-def format_units(cplx, unit = 'M'):
-    ini = cplx._concentration[0]
-    num = float(cplx._concentration[1])
-    old_unit = cplx._concentration[2]
-    num = convert_units(num, old_unit, unit)
-
-    return ' '.join([ini, str(num), unit])
 
 # DEPRECATED
 def write_kernel(enumerator, fh = None, detailed = True, condensed = False, 
@@ -75,9 +67,9 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
     output_string("\n# Resting complexes ({}) \n".format(len(
         enumerator.resting_complexes)))
     for cplx in natural_sort(enumerator.resting_complexes):
-        if cplx._concentration :
-            output_string("{:s} = {:s} @{}\n".format(cplx.name, 
-                cplx.kernel_string, format_units(cplx, unit = molarity)))
+        if cplx.concentration :
+            output_string("{:s} = {:s} {}\n".format(cplx.name, 
+                cplx.kernel_string, cplx.concentrationformat(molarity)))
         else:
             output_string("{:s} = {:s}\n".format(cplx.name, cplx.kernel_string))
  
@@ -99,8 +91,8 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
         output_string("\n# Transient complexes ({}) \n".format(len(enumerator.transient_complexes)))
         for cplx in natural_sort(enumerator.transient_complexes):
             if cplx._concentration :
-                output_string("{:s} = {:s} @{}\n".format(cplx.name, cplx.kernel_string, 
-                    format_units(cplx, unit = molarity)))
+                output_string("{:s} = {:s} {}\n".format(cplx.name, cplx.kernel_string, 
+                    cplx.concentrationformat(molarity)))
             else:
                 output_string("{:s} = {:s}\n".format(cplx.name, cplx.kernel_string))
 
