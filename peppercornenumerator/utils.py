@@ -181,7 +181,7 @@ class Loop(object):
         return ' '.join([(str(s) if s is not None else '+') for s in self.domains])
 
     def __repr__(self):
-        return "Loop(%s)" % list(self.domains)
+        return "Loop({:s})".format(list(self.domains))
 
     def __len__(self):
         return sum(len(dom) for dom in self.domains)

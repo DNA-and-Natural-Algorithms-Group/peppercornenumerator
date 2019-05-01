@@ -68,7 +68,7 @@ class TestEnumeratorInterface(unittest.TestCase):
         reaction [bind21         =      1.2e+06 /M/s ] t23 + gate -> e5 
         """)
 
-        enum = Enumerator(complexes.values(), reactions)
+        enum = Enumerator(list(complexes.values()), reactions)
         enum.release_cutoff = 7
         enum.enumerate()
         self.assertEqual(len(enum.reactions), len(reactions))

@@ -15,16 +15,6 @@ import peppercornenumerator.reactions as rxn
 
 SKIP = False
 
-# Helper functions
-def filter_bind11((dom1, struct1, loc1), (dom2, struct2, loc2)):
-    return struct1 is None and struct2 is None and dom2.can_pair(dom1)
-
-def filter_3way((dom1, struct1, loc1), (dom2, struct2, loc2)):
-    return (struct1 is None) and (struct2 is not None) and dom1.can_pair(dom2)
-
-def filter_4way((dom1, struct1, loc1), (dom2, struct2, loc2)):
-    return struct1 is not None and struct2 is not None and dom1 == dom2
-
 def triple(reactant, loc):
     return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
 
@@ -42,7 +32,7 @@ class FindOnLoop(unittest.TestCase):
         """)
         A = complexes['A']
 
-        folA = rxn.find_on_loop(A, (0,1), filter_bind11, direction=1)
+        folA = rxn.find_on_loop(A, (0,1), rxn.filter_bind11, direction=1)
         [s,x,t,y] = folA[0]
         self.assertEqual(s, [triple(A, (0,1))]) # b
         self.assertEqual(x, [triple(A, (0,2)),  # c
@@ -54,7 +44,7 @@ class FindOnLoop(unittest.TestCase):
         self.assertEqual(y, [triple(A, (0,9)),  # c*
                              triple(A, (0,10))])# a*
 
-        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_bind11)
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, rxn.filter_bind11)
         self.assertEqual(s, [triple(A, (0,1)),  # b
                              triple(A, (0,2)),  # c
                              triple(A, (0,3))]) # d
@@ -65,7 +55,7 @@ class FindOnLoop(unittest.TestCase):
         self.assertEqual(y, [triple(A, (0,9)),  # c*
                              triple(A, (0,10))])# a*
 
-        folA = rxn.find_on_loop(A, (0,2), filter_bind11, direction=1)
+        folA = rxn.find_on_loop(A, (0,2), rxn.filter_bind11, direction=1)
         [s,x,t,y] = folA[0]
         self.assertEqual(s, [triple(A, (0,2))]) # c
         self.assertEqual(x, [triple(A, (0,3)),  # d
@@ -77,7 +67,7 @@ class FindOnLoop(unittest.TestCase):
                              triple(A, (0,10)), # a*
                              triple(A, (0,1))]) # b
 
-        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_bind11)
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, rxn.filter_bind11)
         self.assertEqual(s, [triple(A, (0,1)),  # b
                              triple(A, (0,2)),  # c
                              triple(A, (0,3))]) # d
@@ -99,7 +89,7 @@ class FindOnLoop(unittest.TestCase):
         self.assertEqual(y, [triple(A, (0,10)), # a*
                              triple(A, (0,1))]) # b
 
-        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_bind11)
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, rxn.filter_bind11)
         self.assertEqual(s, [triple(A, (0,2))]) # c
         self.assertEqual(x, [triple(A, (0,3)),  # d
                              triple(A, (0,4)),  # e
@@ -115,7 +105,7 @@ class FindOnLoop(unittest.TestCase):
         B = a( b c d e( + ) d* + c* b* c* )
         """)
         B = complexes['B']
-        folB = rxn.find_on_loop(B, (0,1), filter_bind11, direction=1)
+        folB = rxn.find_on_loop(B, (0,1), rxn.filter_bind11, direction=1)
 
         # Find on Loop results
         [s,x,t,y] = folB[0]
@@ -131,7 +121,7 @@ class FindOnLoop(unittest.TestCase):
                              triple(B, (2,3))]) # a*
 
         # Zipper results
-        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, filter_bind11)
+        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, rxn.filter_bind11)
         self.assertEqual(s, [triple(B, (0,1)),  # b
                              triple(B, (0,2))]) # c
         self.assertEqual(x, [triple(B, (0,3)),  # d
@@ -143,7 +133,7 @@ class FindOnLoop(unittest.TestCase):
         self.assertEqual(y, [triple(B, (2,2)),  # c*
                              triple(B, (2,3))]) # a*
 
-        folB = rxn.find_on_loop(B, (0,2), filter_bind11, direction=1)
+        folB = rxn.find_on_loop(B, (0,2), rxn.filter_bind11, direction=1)
 
         self.assertEqual(len(folB), 2)
 
@@ -159,7 +149,7 @@ class FindOnLoop(unittest.TestCase):
                              triple(B, (2,3)),  # a*
                              triple(B, (0,1))]) # b
 
-        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, filter_bind11)
+        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, rxn.filter_bind11)
         self.assertEqual(s, [triple(B, (0,1)),  # b
                              triple(B, (0,2))]) # c
         self.assertEqual(x, [triple(B, (0,3)),  # d
@@ -183,7 +173,7 @@ class FindOnLoop(unittest.TestCase):
         self.assertEqual(y, [triple(B, (2,3)),  # a*
                              triple(B, (0,1))]) # b
 
-        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, filter_bind11)
+        s,x,t,y = rxn.zipper(B, s[0], x, t[0], y, rxn.filter_bind11)
         self.assertEqual(s, [triple(B, (0,2))]) # c
         self.assertEqual(x, [triple(B, (0,3)),  # d
                              triple(B, (0,4)),  # e
@@ -201,7 +191,7 @@ class FindOnLoop(unittest.TestCase):
         #                  ^(0.6)                  ^(2,2)
         """)
         A = complexes['A']
-        folA = rxn.find_on_loop(A, (0,6), filter_3way, direction=1)
+        folA = rxn.find_on_loop(A, (0,6), rxn.filter_3way, direction=1)
         self.assertEqual(len(folA), 1)
         [s,x,t,y] = folA[0]
         self.assertEqual(s, [triple(A, (0,6))]) # c
@@ -216,7 +206,7 @@ class FindOnLoop(unittest.TestCase):
                              triple(A, (0,4)),  # a
                              triple(A, (0,5))]) # b
 
-        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_3way)
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, rxn.filter_3way)
         self.assertEqual(s, [triple(A, (0,4)),  # a
                              triple(A, (0,5)),  # b
                              triple(A, (0,6))]) # c
@@ -235,7 +225,7 @@ class FindOnLoop(unittest.TestCase):
 
 
 
-        folA = rxn.find_on_loop(A, (0,6), filter_3way, direction=-1)
+        folA = rxn.find_on_loop(A, (0,6), rxn.filter_3way, direction=-1)
         self.assertEqual(len(folA), 1)
         [s,x,t,y] = folA[0]
         self.assertEqual(s, [triple(A, (0,6))]) # c
@@ -250,7 +240,7 @@ class FindOnLoop(unittest.TestCase):
         self.assertEqual(y, [triple(A, (0,8)),  # y
                              triple(A, (0,7))]) # b
 
-        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_3way)
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, rxn.filter_3way)
         self.assertEqual(s, [triple(A, (0,6)),  # c
                              triple(A, (0,7))]) # b
         self.assertEqual(x, [triple(A, (0,5)),  # b
@@ -272,7 +262,7 @@ class FindOnLoop(unittest.TestCase):
         #      ^(0,1)                     ^(1,5)                  ^(3,3)
         """)
         A = complexes['A']
-        folA = rxn.find_on_loop(A, (0,1), filter_4way)
+        folA = rxn.find_on_loop(A, (0,1), rxn.filter_4way)
         self.assertEqual(len(folA), 3)
 
         [s,x,t,y] = folA[0]
@@ -292,7 +282,7 @@ class FindOnLoop(unittest.TestCase):
         self.assertEqual(s, [triple(A, (0, 1))] )
         self.assertEqual(t, [triple(A, (3, 1))] )
 
-        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, filter_4way)
+        [s,x,t,y] = rxn.zipper(A, s[0], x, t[0], y, rxn.filter_4way)
         self.assertEqual(s, [triple(A, (0, 1)), 
                              triple(A, (0, 2)), 
                              triple(A, (0, 3))])
@@ -1110,7 +1100,7 @@ class DSD_PathwayTests(unittest.TestCase):
         self.assertEqual(output, [path2])
 
         #enum = Enumerator(domains.values(), strands.values(), complexes.values())
-        enum = Enumerator(complexes.values())
+        enum = Enumerator(list(complexes.values()))
         enum.enumerate()
         self.assertEqual(sorted(enum.reactions), sorted([path1, path2]))
 
@@ -1158,7 +1148,7 @@ class DSD_PathwayTests(unittest.TestCase):
         path3 = PepperReaction(sorted([R, LCF]), [LCRF1], 'bind21', memorycheck=False)
         path4 = PepperReaction([LCRF1], sorted([LR, T]), 'branch-3way', memorycheck=False)
 
-        enum = Enumerator(complexes.values())
+        enum = Enumerator(list(complexes.values()))
         enum.k_fast = self.k_fast
         enum.k_slow = self.k_slow
         enum.max_helix_migration = True

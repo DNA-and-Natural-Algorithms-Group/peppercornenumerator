@@ -23,8 +23,8 @@ setup(
     license='MIT',
     test_suite='tests',
     install_requires=[
+        'future',
         'numpy',
-        'pyparsing>=1.5.5', 
         'crnsimulator>=0.5',
         'dsdobjects>=0.7'],
     packages=['peppercornenumerator'],

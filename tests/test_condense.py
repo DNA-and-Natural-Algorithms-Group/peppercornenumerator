@@ -228,16 +228,16 @@ class CondenseTests(unittest.TestCase):
         cond_react = PepperReaction([rs1, rs2], [rs3, rs4], 'condensed', memorycheck=False)
         cond_react.const = 100 * (float(50)/(50+50))
 
-        enum = Enumerator(complexes.values(), reactions)
+        enum = Enumerator(list(complexes.values()), reactions)
         enum.dry_run() # does not change the rates!
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
 
-        self.assertEqual(sorted([rs1, rs2, rs3, rs4]),  sorted(enumRG.resting_sets))
+        self.assertEqual(sorted([rs1, rs2, rs3, rs4]),  sorted(enumRG.resting_macrostates))
         self.assertDictEqual(set_to_fate, enumRG.set_to_fate)
         self.assertDictEqual(cplx_to_fate, enumRG.cplx_to_fate)
-        #self.assertDictEqual(cplx_to_set,  info['complexes_to_resting_set'])
+        #self.assertDictEqual(cplx_to_set,  info['complexes_to_resting_macrostates'])
 
         self.assertEqual([cond_react], enumRG.condensed_reactions)
         self.assertEqual(cond_react.const, enumRG.condensed_reactions[0].const)
@@ -290,7 +290,7 @@ class CondenseTests(unittest.TestCase):
         reaction [bind21         =      2.4e+06 /M/s ] T1 + R2 -> L1R2
         """)
 
-        enum = Enumerator(complexes.values(), reactions)
+        enum = Enumerator(list(complexes.values()), reactions)
         enum.k_fast =0.01 
         enum.release_cutoff = 10
         #enum.enumerate() # or enum.dry_run()
@@ -443,7 +443,7 @@ class CondenseTests(unittest.TestCase):
         cr3  = PepperReaction([rs1, rs6], [rs5, rs4], 'condensed', rate=3e6/2, memorycheck=False)
         cr4  = PepperReaction([rs3, rs7], [rs5, rs4], 'condensed', rate=3e6/2, memorycheck=False)
 
-        enum = Enumerator(complexes.values(), reactions)
+        enum = Enumerator(list(complexes.values()), reactions)
 
         enum.k_fast = 25
 
@@ -456,7 +456,7 @@ class CondenseTests(unittest.TestCase):
         # Works...
         self.assertEqual(enum.k_fast, enumRG.k_fast)
         self.assertEqual(sorted([rs1, rs2, rs3, rs4, rs5, rs6, rs7]),  
-                         sorted(enumRG.resting_sets))
+                         sorted(enumRG.resting_macrostates))
 
         self.assertDictEqual(cplx_to_fate, enumRG.cplx_to_fate)
         self.assertEqual(sorted([cr1, cr1r, cr2, cr2r, cr3, cr4]), 
@@ -513,7 +513,7 @@ class CondenseTests(unittest.TestCase):
         reaction [bind21         =      1.5e+06 /M/s ] R + LC -> LCR
         reaction [bind21         =      1.5e+06 /M/s ] R + LCF -> LCRF1
         """)
-        enum = Enumerator(complexes.values())
+        enum = Enumerator(list(complexes.values()))
         enum.enumerate() # or enum.dry_run()
 
         enumRG = PepperCondensation(enum)
@@ -575,7 +575,7 @@ class CondenseTests(unittest.TestCase):
         """)
         gate = complexes['gate']
         t23 = complexes['t23']
-        enum = Enumerator(complexes.values())
+        enum = Enumerator(list(complexes.values()))
         enum.release_cutoff = 6
         enum.enumerate() # or enum.dry_run()
 
@@ -596,7 +596,7 @@ class CondenseTests(unittest.TestCase):
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
-        self.assertEqual(len(enumRG.resting_sets), 6)
+        self.assertEqual(len(enumRG.resting_macrostates), 6)
         self.assertEqual(len(enumRG.condensed_reactions), 2)
 
         PepperComplex.PREFIX = 'e'
@@ -683,7 +683,7 @@ class OldCondenseTests(unittest.TestCase):
         reaction [branch-4way    =  0.000623053 /s   ] e58 -> e47
         """)
 
-        enum = Enumerator(complexes.values(), reactions)
+        enum = Enumerator(list(complexes.values()), reactions)
         #enum.enumerate() # or 
         enum.dry_run()
         self.assertEqual(sorted(enum.reactions), sorted(reactions))
@@ -743,7 +743,7 @@ class CondenseCRNs(unittest.TestCase):
        self.reactions.add(PepperReaction(reactants, products, rtype.strip(), rate=k))
 
     def rs(self, names):
-        return PepperMacrostate(map(self.cplx, names), memorycheck=False)
+        return PepperMacrostate(list(map(self.cplx, names)), memorycheck=False)
 
     # Tests start here... 
     def test_CondenseGraphCRN_01(self):
@@ -758,17 +758,18 @@ class CondenseCRNs(unittest.TestCase):
         rxn('C -> F + G', k = 1)
         #rxn('B + C -> A') # raises error
 
-        enum = Enumerator(complexes.values(), list(reactions))
+        enum = Enumerator(list(complexes.values()), list(reactions))
         enum.dry_run()
-        #for r in enum.reactions: print r, r.rate
+        #for r in enum.reactions: print(r, r.rate)
         #print enum.complexes
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
         self.assertEqual(enumRG.condensed_reactions, [])
-        self.assertEqual(enumRG.resting_sets, [rs('E'), rs('D'), rs('F'), rs('G')])
+        self.assertEqual(sorted(enumRG.resting_macrostates), 
+                sorted([rs('D'), rs('E'), rs('F'), rs('G')]))
         self.assertEqual(enumRG.get_fates(cplx('A')), 
-                SetOfFates([[rs('E'), rs('D'), rs('F'), rs('G')]]))
+                SetOfFates([[rs('D'), rs('E'), rs('F'), rs('G')]]))
  
     def test_CondenseGraphCRN_02(self):
         complexes = self.complexes
@@ -784,14 +785,15 @@ class CondenseCRNs(unittest.TestCase):
         rxn('C -> F')
         rxn('C -> G')
 
-        enum = Enumerator(complexes.values(), list(reactions))
+        enum = Enumerator(list(complexes.values()), list(reactions))
         enum.dry_run()
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
-        self.assertEqual(enumRG.resting_sets, [rs('E'), rs('D'), rs('F'), rs('G')])
+        self.assertEqual(sorted(enumRG.resting_macrostates), 
+                sorted([rs('G'), rs('F'), rs('E'), rs('D')]))
         self.assertEqual(enumRG.get_fates(cplx('A')),
-                SetOfFates([[rs('E')], [rs('D')], [rs('F')], [rs('G')]]))
+                SetOfFates([[rs('D')], [rs('E')], [rs('F')], [rs('G')]]))
         self.assertEqual(enumRG.get_fates(cplx('C')),
                 SetOfFates([[rs('F')], [rs('G')]]))
         self.assertEqual(enumRG.get_fates(cplx('F')),
@@ -813,14 +815,14 @@ class CondenseCRNs(unittest.TestCase):
         rxn('T3 -> D')
         rxn('T3 -> C')
 
-        enum = Enumerator(complexes.values(), list(reactions))
+        enum = Enumerator(list(complexes.values()), list(reactions))
         enum.k_fast = 0.5
         enum.dry_run()
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
 
-        self.assertEqual(sorted(enumRG.resting_sets), 
+        self.assertEqual(sorted(enumRG.resting_macrostates), 
                 sorted([rs('X'), rs('A'), rs('B'), rs('C'), rs('D')]))
  
         self.assertEqual(enumRG.get_fates(cplx('X')),
@@ -874,7 +876,7 @@ class CondenseCRNs(unittest.TestCase):
         rxn('e47 -> e58       ', k =0.000623053, rtype='branch-4way')
         rxn('e58 -> e47       ', k =0.000623053, rtype='branch-4way')
 
-        enum = Enumerator(complexes.values(), list(reactions))
+        enum = Enumerator(list(complexes.values()), list(reactions))
         enum.dry_run()
 
         enumRG = PepperCondensation(enum)

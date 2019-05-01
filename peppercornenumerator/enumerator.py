@@ -6,10 +6,12 @@
 #  Modified by Stefan Badelt
 #
 
+from __future__ import absolute_import, print_function, division
+from builtins import input
+
 import sys
 import math
 import logging
-from builtins import input
 
 from peppercornenumerator.objects import PepperMacrostate, PepperComplex
 from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
@@ -72,6 +74,7 @@ class Enumerator(object):
     def __init__(self, initial_complexes, initial_reactions=None):
         # System initialization
         self._initial_complexes = initial_complexes
+        assert isinstance(initial_complexes, list)
         for cplx in initial_complexes:
             if not cplx.is_connected:
                 raise utils.PeppercornUsageError('Initial complex is not connected: {}'.format(cplx))
@@ -102,7 +105,7 @@ class Enumerator(object):
         # A list of "known" complexes, 
         #   e.g. expected to show up during enumeration.
         # This is useful when chosing representatives of resting macrostates.
-        self._named_complexes = PepperComplex.MEMORY.values()
+        self._named_complexes = list(PepperComplex.MEMORY.values())
         
         # Polymerization settings to prevent infinite looping
         self._max_complex_count = max(200, len(self._initial_complexes))
@@ -138,7 +141,7 @@ class Enumerator(object):
     def max_complex_size(self, value):
         assert isinstance(value, int)
         if not all(cx.size <= value for cx in self._initial_complexes):
-            msize = max(map(lambda c: c.size, self._initial_complexes))
+            msize = max([c.size for c in self._initial_complexes])
             raise utils.PeppercornUsageError(
                     'Maximum complex size must include all input complexes.',
                     'Set to at least: {}'.format(msize))
@@ -250,7 +253,7 @@ class Enumerator(object):
     def domains(self):
         domains = set()
         for cplx in self._initial_complexes:
-            map(lambda d: domains.add(d), cplx.domains)
+            [domains.add(d) for d in cplx.domains]
         return list(domains)
 
     @property
@@ -331,7 +334,7 @@ class Enumerator(object):
             raise utils.PeppercornUsageError('Cannot call dry-run after enumeration!')
 
         rep = set(self._named_complexes) if self._named_complexes else set(self._initial_complexes)
-        rxs = filter(lambda r: len(r.reactants) == 1, list(self._reactions))
+        rxs = [r for r in list(self._reactions) if len(r.reactants) == 1]
         info = segment_neighborhood(self.initial_complexes, rxs, self.p_min, represent=rep)
 
         self._complexes = self.initial_complexes
@@ -471,9 +474,6 @@ class Enumerator(object):
                 finish(premature=True)
             except PolymerizationError as e:
                 logging.exception(e)
-                # print e
-                # import traceback
-                # print traceback.format_exc()
                 logging.error("Polymerization error; gracefully exiting...")
                 finish(premature=True)
         else:
@@ -498,15 +498,12 @@ class Enumerator(object):
         input before continuing.
         """
         print("{} = {} ({})".format(root.name, root.kernel_string, rtype))
-        print()
+        if len(reactions) is 0:
+            print("(No {} reactions)".format(rtype))
         for r in reactions:
             print("{} ({}: {})".format(r, r.rtype, r.const))
             print(" {}".format(r.kernel_string))
-        if len(reactions) is 0:
-            print("(No {} reactions)".format(rtype))
-        print()
-        input("[Press Enter to continue...]")
-        print()
+        input("\n[Press Enter to continue...]")
 
     def process_neighborhood(self, source):
         """ Enumerate neighborhood of fast reactions.
@@ -632,11 +629,10 @@ class Enumerator(object):
                             remote = not self._reject_remote)
 
                 if self.local_elevation:
-                    reactions += filter(lambda rxn: self._k_slow <= local_elevation_rate(rxn) < \
-                                self._k_fast, move_reactions)
+                    reactions += [rxn for rxn in move_reactions if self._k_slow <= local_elevation_rate(rxn) < \
+                                self._k_fast]
                 else :
-                    reactions += filter(
-                            lambda r: self._k_slow <= r.const < self._k_fast, move_reactions)
+                    reactions += [r for r in move_reactions if self._k_slow <= r.const < self._k_fast]
             for rxn in reactions:
                 logging.info('adding unimolecular slow reaction {}'.format(rxn.full_string()))
 
@@ -650,7 +646,7 @@ class Enumerator(object):
         valid_reactions = []
         for rxn in reactions: 
             if maxsize and not all(p.size <= maxsize for p in rxn.products) :
-                logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max([p.size for p in rxn.products]), maxsize, str(rxn)))
                 continue
             valid_reactions.append(rxn)
 
@@ -693,22 +689,21 @@ class Enumerator(object):
             
             for rxn in move_reactions: 
                 if maxsize and any(p.size > maxsize for p in rxn.products):
-                    logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring fast reaction {}!".format( max(map(lambda p: p.size, rxn.products)), maxsize, str(rxn)))
+                    logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring fast reaction {}!".format( max([p.size for p in rxn.products]), maxsize, str(rxn)))
                     continue
                 reactions.append(rxn)
 
         if restrict: # apply the k-fast / k-slow filter
             if self.local_elevation:
                 # let's first remove reactions that cannot pass...
-                reactions = filter(lambda rxn: rxn.const >= self._k_slow, reactions)
+                reactions = [rxn for rxn in reactions if rxn.const >= self._k_slow]
                 assert cplx._elevation is None
                 el = self.get_local_elevation(cplx, reactions)
                 cplx._elevation = el
-                reactions = filter(lambda rxn: local_elevation_rate(rxn, el) >= \
-                                max(self._k_slow, self._k_fast), reactions)
+                reactions = [rxn for rxn in reactions if local_elevation_rate(rxn, el) >= \
+                                max(self._k_slow, self._k_fast)]
             else :
-                reactions = filter(
-                        lambda rxn: rxn.const >= max(self._k_slow, self._k_fast), reactions)
+                reactions = [rxn for rxn in reactions if rxn.const >= max(self._k_slow, self._k_fast)]
 
         return reactions
 
@@ -783,7 +778,7 @@ class Enumerator(object):
             if rxn.reverse_reaction is None:
                 rr = rev_rtype(rxn.rtype, rxn.arity)
                 r = self.get_fast_reactions(rxn.products[0], rtypes = [rr], restrict=False)
-                r = filter(lambda x: sorted(x.products) == sorted(rxn.reactants), r)
+                r = [x for x in r if sorted(x.products) == sorted(rxn.reactants)]
                 assert len(r) == 1
                 if len(r) == 1:
                     rxn.reverse_reaction = r[0]
@@ -808,8 +803,8 @@ class Enumerator(object):
 
             # First, make sure invader and target locations map to the reactant-rotation.
             if rotations is not None and rotations != 0:
-                invaders = map(lambda x: reactant.rotate_location(x, rotations), invader.locs)
-                targets = map(lambda x: reactant.rotate_location(x, rotations), target.locs)
+                invaders = [reactant.rotate_location(x, rotations) for x in invader.locs]
+                targets = [reactant.rotate_location(x, rotations) for x in target.locs]
             else :
                 invaders = list(invader.locs)
                 targets = list(target.locs)
@@ -830,7 +825,7 @@ class Enumerator(object):
                 raise NotImplementedError('rtype not considered in local neighborhood: {}'.format(
                     rtype))
 
-            targets = map(triple, targets)
+            targets = list(map(triple, targets))
             for [s,x,t,y] in results:
                 if t == targets:
                     return True
@@ -842,13 +837,11 @@ class Enumerator(object):
             # exclude open and branch-migration with arity 1,2
             if rxn.arity != (1,1): continue
             if rxn.rtype in ('branch-3way', 'branch-4way'): continue
-            #print 'RXN', rxn, rxn.kernel_string, rxn.rtype
             compat[rxn] = set()
             for other in reactions:
                 if rxn == other: continue
                 if other.arity != (1,1): continue
                 if other.rtype in ('branch-3way', 'branch-4way'): continue
-                #print 'OTH', other, other.kernel_string, other.rtype
                 # Try to append the other reaction to this reaction
                 success = try_move(rxn.products[0], rxn.rotations, other.rtype, other.meta)
                 if success:
@@ -964,7 +957,7 @@ def segment_neighborhood(complexes, reactions, p_min=None, represent=None):
     for scc in SCCs:
         try:
             if represent :
-                rcx = filter(lambda cx: cx in represent, scc)
+                rcx = [cx for cx in scc if cx in represent]
 
             rcx = sorted(rcx)[0] if rcx else None
             ms = PepperMacrostate(scc[:], prefix='', representative = rcx)

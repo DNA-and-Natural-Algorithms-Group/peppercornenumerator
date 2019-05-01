@@ -1,7 +1,4 @@
 
-from __future__ import absolute_import, division, print_function
-from builtins import map
-
 import logging
 import numpy as np
 from collections import namedtuple
@@ -213,12 +210,6 @@ class PepperComplex(DSD_Complex):
                     cplxs.append(e.existing)
             return sorted(cplxs)
 
-    def __cmp__(self, other):
-        """
-        Two complexes are compared on the basis of their complexes
-        """
-        return cmp(self.canonical_form, other.canonical_form)
-
 class PepperReaction(DSD_Reaction):
     RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
 
@@ -242,12 +233,6 @@ class PepperReaction(DSD_Reaction):
         #   * y-linker
         self.meta = None
         self.rotations = None
-
-    def __cmp__(self, other):
-        """
-        ReactionPathway objects are sorted by their canonical form.
-        """
-        return cmp(self.canonical_form, other.canonical_form)
 
     @property
     def reverse_reaction(self):
@@ -312,10 +297,6 @@ class PepperMacrostate(DSD_Macrostate):
         """True iff it is a transient macrostate. """
         return not self.is_resting
 
-    #@property
-    #def reactions(self):
-    #    return self._exit_reactions + self._internal_reactions
-
     def add_reaction(self, rxn):
         """Adds a reaction to the macrostate. """
         assert len(rxn.reactants) == 1
@@ -329,24 +310,6 @@ class PepperMacrostate(DSD_Macrostate):
 
         self._stationary_distribution = []
         self._exit_probabilities = []
-
-    def __str__(self):
-        return self.name
-
-    def __cmp__(self, other):
-        """
-        Two resting sets are compared on the basis of their complexes
-        """
-        return cmp(self.canonical_form, other.canonical_form)
-
-    def __len__(self):
-        """
-        The number of species in a resting set
-        """
-        return len(self._complexes)
-
-    #def is_exit(self, cplx):
-    #    return any(map(lambda r: cplx in r.reactants, self._exit_reactions))
 
     def get_exit_probabilities(self, warnings=True):
         """
@@ -417,8 +380,8 @@ class PepperMacrostate(DSD_Macrostate):
     
         # return dict mapping tuples of (incoming complex, outgoing reaction)
         # to exit probabilities
-        return {(c, r): B[i, j] for (c, i) in complex_indices.iteritems()
-                for (r, j) in exit_indices.iteritems()}
+        return {(c, r): B[i, j] for (c, i) in complex_indices.items()
+                for (r, j) in exit_indices.items()}
 
 
     def get_stationary_distribution(self, warnings=True):
@@ -452,7 +415,7 @@ class PepperMacrostate(DSD_Macrostate):
 
             # compute diagonal elements of T
             T_diag = np.sum(T, axis=0)  # sum over columns
-            for i in xrange(L):
+            for i in range(L):
                 T[i][i] = -T_diag[i]
 
             # calculate eigenvalues
@@ -488,5 +451,5 @@ class PepperMacrostate(DSD_Macrostate):
                         'should sum to 1 after normalization. Condensed reaction' +
                         'rates may be incorrect.')
 
-        return zip(self._complexes, self._stationary_distribution)
+        return list(zip(self._complexes, self._stationary_distribution))
 

@@ -78,8 +78,8 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
         output_string("\n# Resting macrostates ({}) \n".format(
             len(enumerator.resting_macrostates)))
         for resting in natural_sort(enumerator.resting_macrostates):
-            output_string("macrostate {:s} = [{}]\n".format(
-                resting, ', '.join(map(str,resting.complexes))))
+            output_string("macrostate {:s} = [{:s}]\n".format(str(resting), 
+                ', '.join(map(str,resting.complexes))))
 
         # Print reactions
         output_string("\n# Condensed reactions ({}) \n".format(len(enumerator.condensed_reactions)))

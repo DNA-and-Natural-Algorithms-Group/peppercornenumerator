@@ -5,7 +5,8 @@
 #  Created by Karthik Sarma on 6/26/10.
 #
 
-from __future__ import print_function
+
+from builtins import map
 import logging
 
 from dsdobjects.parser import parse_pil_string, parse_pil_file
@@ -115,12 +116,12 @@ def read_pil(data, is_file = False, composite = False):
         elif line[0] == 'composite-domain':
             # This could be a strand definition or a composite domain.
             assert name[-1] != '*'
-            sequences[name] = map(lambda x: domains[x], line[2])
+            sequences[name] = list([domains[x] for x in line[2]])
 
             def comp(name):
                 return name[:-1] if name[-1] == '*' else name + '*'
 
-            sequences[comp(name)] = map(lambda x: domains[comp(x)], reversed(line[2]))
+            sequences[comp(name)] = list([domains[comp(x)] for x in reversed(line[2])])
 
         elif line[0] == 'strand-complex':
             sequence = []
@@ -135,7 +136,7 @@ def read_pil(data, is_file = False, composite = False):
 
             # Replace names with domain objects.
             try :
-                sequence = map(lambda d : domains[d], sequence)
+                sequence = list([domains[d] for d in sequence])
             except KeyError:
                 for e, d in enumerate(sequence):
                     if isinstance(d, PepperDomain):
@@ -171,8 +172,8 @@ def read_pil(data, is_file = False, composite = False):
             if r is None: continue
 
             try :
-                reactants = map(lambda c : complexes[c], reactants)
-                products  = map(lambda c : complexes[c], products)
+                reactants = list([complexes[c] for c in reactants])
+                products  = list([complexes[c] for c in products])
             except KeyError:
                 logging.warning("Ignoring input reaction with undefined complex: {}".format(r))
                 continue
@@ -204,11 +205,11 @@ def from_kernel(lines):
     logging.warning('deprecated function: use read_pil') 
 
     # split string into lines if necessary
-    if isinstance(lines, basestring):
+    if isinstance(lines, str):
         lines = lines.split("\n")
 
     # remove blank lines
-    lines = filter(None, lines)
+    lines = [_f for _f in lines if _f]
 
     # reading pil in case of non-alphanumeric names
     complexes, _ = read_pil('\n'.join(lines))
@@ -256,7 +257,7 @@ def load_pil_crn(data):
             products = line[3]
             assert len(info) == 3
             rate = float(info[1][0])
-            if sysunit and filter(lambda x : x != sysunit, info[2][0].split('/')[1:-1]):
+            if sysunit and [x for x in info[2][0].split('/')[1:-1] if x != sysunit]:
                 raise PilFormatError('Conflicting units: {} vs. {}'.format(sysunit, info[2][0]))
             reactions.append([reactants, products, [rate]])
         elif line[0] == 'dl-domain' :
@@ -279,7 +280,7 @@ def load_pil_crn(data):
                 crnspecies[sp] = species.pop(sp, ('initial', 0))
 
     if not condensed and bool(species):
-        print("***WARNING***: Some species do not appear in the CRN: {}".format(species.keys()))
+        print("***WARNING***: Some species do not appear in the CRN: {}".format(list(species.keys())))
 
     return reactions, crnspecies
 
@@ -487,7 +488,6 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                     else :
                         complexes[fluor] = PepperComplex([dFt, dFa], ['.','.'], name=name)
                     complexes[fluor].concentration = ('i', 0, 'M')
-                    #print(fluor, complexes[fluor], complexes[fluor].kernel_string)
             else:
                 raise InputFormatError('Unknown output format: {}'.format(line))
 
@@ -695,7 +695,7 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
     gates = []
     thlds = []
     freps = []
-    for k,x in complexes.items():
+    for k,x in list(complexes.items()):
         if k[0] == 'w':
             x.seesawname = k
             wires.append(x)
@@ -712,7 +712,7 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
     if utbr and global_species :
         # Make the universal wire W
         # This is the fuel value... 
-        conc = sum(map(lambda x: x.concentration.value if x.concentration else 0, wires))
+        conc = sum([x.concentration.value if x.concentration else 0 for x in wires])
         if conc:
             uW = PepperDomain('dummy_{}'.format('W'), dtype='long')
             uW = PepperComplex(sequence=[uW], structure=['.'], name='W')
@@ -722,14 +722,14 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
         # Make the universal gate G (Gates and Reporters)
         uG = PepperDomain('dummy_{}'.format('G'), dtype='long')
         uG = PepperComplex(sequence=[uG], structure=['.'], name='G')
-        conc = sum(map(lambda x: x.concentration.value if x.concentration else 0, gates + freps))
+        conc = sum([x.concentration.value if x.concentration else 0 for x in gates + freps])
         uG.concentration = ('initial', conc, 'M')
         complexes[uG.name] = uG
 
         # Make the universal threshold TH 
         uT = PepperDomain('dummy_{}'.format('TH'), dtype='long')
         uT = PepperComplex(sequence=[uT], structure=['.'], name='TH')
-        conc = sum(map(lambda x: x.concentration.value if x.concentration else 0, thlds))
+        conc = sum([x.concentration.value if x.concentration else 0 for x in thlds])
         uT.concentration = ('initial', conc, 'M')
         complexes[uT.name] = uT
 

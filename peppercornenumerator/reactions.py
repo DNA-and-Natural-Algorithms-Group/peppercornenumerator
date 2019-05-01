@@ -5,13 +5,13 @@
 #  Created by Karthik Sarma on 4/18/2010.
 #  Modifications by Casey Grun and Erik Winfree 8/15/2014.
 #  Modifications by Stefan Badelt 09/2019
+from __future__ import absolute_import, print_function, division
 
-import copy
 import math
 
 from peppercornenumerator.utils import Loop, wrap
-
-from peppercornenumerator.objects import PepperComplex, PepperReaction, DSDDuplicationError
+from peppercornenumerator.objects import DSDDuplicationError
+from peppercornenumerator.objects import PepperComplex, PepperReaction 
 from peppercornenumerator.objects import make_pair_table, pair_table_to_dot_bracket
 
 # Rate constant formulas
@@ -63,8 +63,7 @@ def polymer_link_length(before, after):
         return L_before
     if not after.is_open:
         return L_after
-    assert False, "should not have reached this case -- how can both sides be open?"
-    raw_input("bad bad bad -- computing polymer lengths in disconnected complex!")
+    raise ValueError("Error: computing polymer lengths in disconnected complex!")
 
 
 def polymer_link_rate(linker_length):
@@ -120,16 +119,27 @@ def show_loops(before, after, message):
 
     ! indicates a stem, | indicates open loop break.  
     """
-    print "before: [ ",
+    print('\n{}:'.format(message))
+    stb = ''
     for step in before.parts:
-        print " | " if step is None else step[0].name + ("!" if step[1] is not None else "") + " ",
-    print " ] is_open = %r, stems = %d, bases = %d" % (before.is_open, before.stems, before.bases)
-    print "after: [ ",
+        if step is None: # strand break?
+            stb += " +"
+        else:
+            (dom, struct, loc) = step
+            bound = '!' if struct is not None else ''
+            stb += " {}{}".format(dom.name,bound)
+    print("before: [{} ] is_open = {}, stems = {:d}, bases = {:d}".format(stb,
+            before.is_open, before.stems, before.bases))
+    sta = ''
     for step in after.parts:
-        print " | " if step is None else step[0].name + ("!" if step[1] is not None else "") + " ",
-    print " ] is_open = %r, stems = %d, bases = %d" % (after.is_open, after.stems, after.bases)
-    print(message)
-
+        if step is None: # strand break?
+            sta += " +"
+        else:
+            (dom, struct, loc) = step
+            bound =  '!' if struct is not None else ''
+            sta += " {}{}".format(dom.name,bound)
+    print("after:  [{} ] is_open = {}, stems = {:d}, bases = {:d}".format(sta,
+            after.is_open, after.stems, after.bases))
 
 def branch_3way_remote_rate(length, before, after, debug = False):
     """
@@ -165,7 +175,7 @@ def branch_3way_remote_rate(length, before, after, debug = False):
     k2 = None # The time spent on branch migration scales with 1/L^2
 
     if debug :
-        show_loops(before, after, "before & after loops for 3-way branch migration.")
+        show_loops(before, after, "before & after loops for 3-way branch migration")
 
     # "standard" 3-way bm initiation (plus "after" being closed)
     if not before.is_open and before.stems == 1 and before.bases == 0:
@@ -185,7 +195,7 @@ def branch_3way_remote_rate(length, before, after, debug = False):
 
     return k1
 
-def branch_4way_remote_rate(length, before, after, debug=False):
+def branch_4way_remote_rate(length, before, after, debug = False):
     """
     Rate constant formula for 4-way branch migration, possibly with a remote toehold
     """
@@ -215,10 +225,6 @@ def branch_4way_remote_rate(length, before, after, debug=False):
         if before.bases == 0 and before.stems == 1:
             # we care about probability of taking this path, not actual time
             return 1.0 / init / length
-
-    if debug: 
-        show_loops(before, after, 
-                "run_tests.py should not have any remote toeholds for 4-way branch migration")
 
     # consider a slowdown analogous to Genot et al 2011 (remote) supp info derivation
     # bulge closing assumed to be similar to faster of two hairpin closings
@@ -281,7 +287,7 @@ def bind11(reactant, max_helix=True, remote=None):
                 if max_helix:
                     invader, xlinker, target, ylinker = zipper(
                             reactant, invader[0], xlinker, target[0], ylinker, filter_bind11)
-                results[e] = map(Loop, [invader, xlinker, target, ylinker])
+                results[e] = list(map(Loop, [invader, xlinker, target, ylinker]))
 
             # build products
             for (loc1s, before, loc2s, after) in results:
@@ -297,7 +303,7 @@ def bind11(reactant, max_helix=True, remote=None):
                     reaction.rotations = rotations
                     length = len(loc1s) # length of invading domain
                     reaction.const = binding_rate(length, before, after)
-                except DSDDuplicationError, e :
+                except DSDDuplicationError as e :
                     reaction = e.existing
 
                 reactions.append(reaction)
@@ -318,12 +324,12 @@ def do_bind11(reactant, loc1s, loc2s, sanitycheck = False):
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
         rotations = 0
-    except DSDDuplicationError, e:
+    except DSDDuplicationError as e:
         product = e.existing
         rotations = e.rotations
     return (product, rotations)
 
-def bind21(reactant1, reactant2, max_helix = True, remote=None):
+def bind21(reactant1, reactant2, max_helix = True, remote=None, pkwarning=False):
     """
     Returns a list of reaction pathways which can be produced by 2-1 binding
     reactions of the argument complexes. The 2-1 binding reaction is the
@@ -350,28 +356,31 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
                     reactant1, (strand_num1, dom_num1),
                     reactant2, (strand_num2, dom_num2)))
 
-    #if True: # check if potential pseudoknots are there:
-    #    pk1_doms = reactant1.pk_domains
-    #    pk2_doms = reactant2.pk_domains
-    #    # Iterate through all the free domains in reactant1
-    #    for (dom1, strand_num1, dom_num1) in r1_doms + pk1_doms:
-    #        # For each, find any domains in reactant2 that could bind
-    #        for (dom2, strand_num2, dom_num2) in r2_doms + pk2_doms:
-    #            if (dom1, strand_num1, dom_num1) in r1_doms and \
-    #                (dom2, strand_num2, dom_num2) in r2_doms:
-    #                # Exclude the non-pseudoknotted interactions
-    #                continue
-    #            if (dom1.can_pair(dom2)):
-    #                print("# WARNING: potential pk-interaction: {} and {}".format(
-    #                    reactant1, reactant2))
+    if pkwarning: # check if potential pseudoknots are there:
+        pk1_doms = reactant1.pk_domains
+        pk2_doms = reactant2.pk_domains
+        # Iterate through all the free domains in reactant1
+        for (dom1, strand_num1, dom_num1) in r1_doms + pk1_doms:
+            # For each, find any domains in reactant2 that could bind
+            for (dom2, strand_num2, dom_num2) in r2_doms + pk2_doms:
+                if (dom1, strand_num1, dom_num1) in r1_doms and \
+                    (dom2, strand_num2, dom_num2) in r2_doms:
+                    # Exclude the non-pseudoknotted interactions
+                    continue
+                if (dom1.can_pair(dom2)):
+                    print("# WARNING: potential pk-interaction: {} and {}".format(
+                        reactant1, reactant2))
 
    
     output = set()
     for complex, location1, location2 in reactions:
+        def findloc(trip1, trip2):
+            (dom1, struct1, loc1) = trip1 
+            (dom2, struct2, loc2) = trip2
+            return loc1 == location1 and loc2 == location2
+
         # build "before" and "after" loop structures via find_on_loop ...
-        out = find_on_loop(complex, location1, 
-            lambda (dom1, struct1, loc1), (dom2, struct2, loc2) : 
-                loc1 == location1 and loc2 == location2)
+        out = find_on_loop(complex, location1, findloc)
 
         [(loc1s, before, loc2s, after)] = out
 
@@ -380,13 +389,13 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None):
             loc1s, before, loc2s, after = zipper(
                     complex, loc1s[0], before, loc2s[0], after, filter_bind11)
 
-        [loc1s, before, loc2s, after] = map(Loop, [loc1s, before, loc2s, after])
+        [loc1s, before, loc2s, after] = list(map(Loop, [loc1s, before, loc2s, after]))
         (product,rotations) = do_bind11(complex, loc1s.locs, loc2s.locs)
 
         try :
             reaction = PepperReaction(sorted([reactant1, reactant2]), [product], 'bind21')
             reaction.const = bimolecular_binding_rate(len(loc1s))
-        except DSDDuplicationError, e :
+        except DSDDuplicationError as e :
             reaction = e.existing
 
         output.add(reaction)
@@ -453,7 +462,7 @@ def join_complexes_21(complex1, location1, complex2, location2):
 
     try :
         new_complex = PepperComplex(newseq, newstr)
-    except DSDDuplicationError, e:
+    except DSDDuplicationError as e:
         new_complex = e.existing
         # strands may be re-ordered in new complex, so we need to back
         # out where the new strands ended up
@@ -633,7 +642,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6, ddG=0):
                     try:
                         release_reactant = PepperComplex(reactant.sequence, newstr)
                         rotations = 0
-                    except DSDDuplicationError, e:
+                    except DSDDuplicationError as e:
                         release_reactant = e.existing
                         rotations = e.rotations
 
@@ -645,7 +654,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6, ddG=0):
                     new_struct = reactant.pair_table
 
                     # Delete all the pairs in the released helix
-                    breathing = range(helix_startA[1], helix_endA[1])
+                    breathing = list(range(helix_startA[1], helix_endA[1]))
                     if ext_bw:
                         breathing = reversed(breathing)
 
@@ -664,7 +673,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6, ddG=0):
                     try:
                         release_reactant = PepperComplex(reactant.sequence, newstr)
                         rotations = 0
-                    except DSDDuplicationError, e:
+                    except DSDDuplicationError as e:
                         release_reactant = e.existing
                         rotations = e.rotations
 
@@ -679,7 +688,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6, ddG=0):
             reaction.rotations = rotations
             reaction.meta = meta
             reaction.const = opening_rate(length, ddG=ddG, dissoc=(len(product_set) > 1))
-        except DSDDuplicationError, e :
+        except DSDDuplicationError as e :
             reaction = e.existing
 
         # discard reactions where the release cutoff is greater than the threshold
@@ -704,7 +713,7 @@ def do_single_open(reactant, loc):
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
         rotations = 0
-    except DSDDuplicationError, e:
+    except DSDDuplicationError as e:
         product = e.existing
         rotations = e.rotations
     return (product, rotations)
@@ -744,14 +753,14 @@ def branch_3way(reactant, max_helix = True, remote=True):
                     invader, xlinker, target, ylinker = zipper(
                             reactant, invader[0], xlinker, target[0], ylinker, filter_3way)
                 ylinker += invader
-                results.append(map(Loop, [invader[::-1], xlinker, target[::-1], ylinker]))
+                results.append(list(map(Loop, [invader[::-1], xlinker, target[::-1], ylinker])))
 
             for (invader, xlinker, target, ylinker) in bwresults:
                 if max_helix:
                     invader, xlinker, target, ylinker = zipper(
                             reactant, invader[0], xlinker, target[0], ylinker, filter_3way)
                 ylinker += invader[::-1]
-                results.append(map(Loop, [invader, xlinker, target, ylinker]))
+                results.append(list(map(Loop, [invader, xlinker, target, ylinker])))
 
             for (displacing, before, bound, after) in results:
                 (products, rotations) = do_3way_migration(reactant,
@@ -762,7 +771,7 @@ def branch_3way(reactant, max_helix = True, remote=True):
                     reaction.meta = (displacing, bound, before, after)
                     reaction.rotations = rotations
                     reaction.const = branch_3way_remote_rate(len(displacing), before, after)
-                except DSDDuplicationError, e :
+                except DSDDuplicationError as e :
                     reaction = e.existing
 
                 # skip remote toehold reactions if directed
@@ -811,7 +820,7 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
         rotations = 0
-    except DSDDuplicationError, e:
+    except DSDDuplicationError as e:
         product = e.existing
         rotations = e.rotations
   
@@ -856,7 +865,7 @@ def branch_4way(reactant, max_helix = False, remote=True):
                 if max_helix:
                     invader, _, target, _ = zipper(
                             reactant, invader[0], None, target[0], None, filter_4way)
-                results[e] = map(Loop, [invader, xlinker, target, ylinker])
+                results[e] = list(map(Loop, [invader, xlinker, target, ylinker]))
 
             for (displacing, before, displaced, after) in results:
                 (products,rotations) = do_4way_migration(reactant, displacing.locs,
@@ -868,8 +877,9 @@ def branch_4way(reactant, max_helix = False, remote=True):
                     reaction = PepperReaction([reactant], products, 'branch-4way')
                     reaction.meta = (displacing, displaced, before, after)
                     reaction.rotations = rotations
-                    reaction.const = branch_4way_remote_rate(len(displacing), before, after)
-                except DSDDuplicationError, e :
+                    reaction.const = branch_4way_remote_rate(
+                            len(displacing), before, after)
+                except DSDDuplicationError as e :
                     reaction = e.existing
 
                 # skip remote toehold reactions
@@ -916,19 +926,25 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
         product = PepperComplex(reactant.sequence, newstr)
         product.pair_table = struct
         rotations = 0
-    except DSDDuplicationError, e:
+    except DSDDuplicationError as e:
         product = e.existing
         rotations = e.rotations
     return (product.split(), rotations)
 
 # Filter functions for find_on_loop()
-def filter_bind11((dom1, struct1, loc1), (dom2, struct2, loc2)):
+def filter_bind11(trip1, trip2):
+    (dom1, struct1, loc1) = trip1
+    (dom2, struct2, loc2) = trip2
     return struct1 is None and struct2 is None and dom2.can_pair(dom1)
 
-def filter_3way((dom1, struct1, loc1), (dom2, struct2, loc2)):
+def filter_3way(trip1, trip2):
+    (dom1, struct1, loc1) = trip1 
+    (dom2, struct2, loc2) = trip2 
     return (struct1 is None) and (struct2 is not None) and dom1.can_pair(dom2)
 
-def filter_4way((dom1, struct1, loc1), (dom2, struct2, loc2)):
+def filter_4way(trip1, trip2):
+    (dom1, struct1, loc1) = trip1
+    (dom2, struct2, loc2) = trip2
     return struct1 is not None and struct2 is not None and dom1 == dom2
 
 def find_on_loop(reactant, start_loc, pattern, direction=1):
@@ -985,9 +1001,8 @@ def find_on_loop(reactant, start_loc, pattern, direction=1):
         directions (optional: -1,+1): Searching for binding partners in 
             5'->3' (+1) or 3'->5' (-1) direction.
 
-    Returns:
+    Returns: 
         TODO
-
     """
 
     results = []
@@ -1120,10 +1135,15 @@ def zipper(reactant, start_trp, before, bound_trp, after, pattern):
         if (bound_pair is None) != (bpair is None): return
 
             # ddomain hasn't passed bound_loc
-        if ((cmp(sloc, bound_loc) == cmp(start_loc, bound_loc)) and
+        if ((#TODO: python 2->3 code.. there must be a nicer way
+            #(cmp(sloc, bound_loc) == cmp(start_loc, bound_loc))
+            (sloc > bound_loc) - (sloc < bound_loc) == \
+            (start_loc > bound_loc) - (start_loc < bound_loc)) and
             # and bdomain hasn't passed start_loc
-            (cmp(bloc, start_loc) == cmp(bound_loc, start_loc)) and
-
+            (
+            #cmp(bloc, start_loc) == cmp(bound_loc, start_loc)
+            (bloc > start_loc) - (bloc < start_loc) == \
+            (bound_loc > start_loc) - (bound_loc < start_loc)) and
             # if paired, then also the paired domain must be adjacent
             ((start_pair is None) and (spair is None) or
                 start_pair[0] == spair[0] and         # same strand!

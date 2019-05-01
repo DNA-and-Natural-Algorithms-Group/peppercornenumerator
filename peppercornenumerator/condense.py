@@ -44,15 +44,20 @@ class PepperCondensation(object):
 
     @property
     def resting_sets(self):
+        print("# Deprecated function: PepperCondensation.resting_sets. Replace with PepperCondensation.resting_macrostates")
+        return self.resting_macrostates
+
+    @property
+    def resting_macrostates(self):
         if not self._set_to_fate:
             raise CondensationError('need to call condense first')
-        return self._set_to_fate.values()
+        return list(self._set_to_fate.values())
 
     @property
     def resting_set_representatives(self):
         if not self._set_to_fate:
             raise CondensationError('need to call condense first')
-        return map(lambda x:x.canonical, self._set_to_fate.values())
+        return [x.canonical for x in list(self._set_to_fate.values())]
 
     @property
     def set_to_fate(self):
@@ -130,7 +135,7 @@ class PepperCondensation(object):
         product `d` of r decays to the corresponding fate `f` in `fates`.
         """
         if combinations is None:
-            combinations = cartesian_product(map(self.get_fates, rxn.products))
+            combinations = cartesian_product(list(map(self.get_fates, rxn.products)))
 
         # NOTE: introdcued as a consequence of a bug discovered in the cooperative
         # binding case. Before you calculate (add to) reaction decay
@@ -184,7 +189,7 @@ class PepperCondensation(object):
             # build new resting set
             try :
                 resting_set = PepperMacrostate(scc)
-            except DSDDuplicationError, e:
+            except DSDDuplicationError as e:
                 resting_set = e.existing
 
             self._set_to_fate[scc_set] = resting_set
@@ -208,7 +213,7 @@ class PepperCondensation(object):
         else :
             # Compute all possible combinations of the fates of each product of r
             reaction_fate_combinations = [cartesian_product(
-                map(self.get_fates, rxn.products)) for rxn in outgoing_reactions]
+                list(map(self.get_fates, rxn.products))) for rxn in outgoing_reactions]
 
             # Compute the fates of each of the outgoing reactions by summing
             # each element above. Returns a list, with each element
@@ -219,7 +224,7 @@ class PepperCondensation(object):
             # note that these two are equivalent; the intermediate
             # reaction_fate_combinations is only calculated for rates
             assert reaction_fates == [sorted(cartesian_sum(
-                map(self.get_fates, rxn.products))) for rxn in outgoing_reactions]
+                list(map(self.get_fates, rxn.products)))) for rxn in outgoing_reactions]
 
             # calculate the exit probabilities
             self._exit_probabilities[scc_set] = self.get_exit_probabilities(scc)
@@ -288,8 +293,8 @@ class PepperCondensation(object):
                 #continue
 
             # Get the corresponding fates (resting sets)
-            reactant_fates = map(self.get_fates, reaction.reactants)
-            product_fates = map(self.get_fates, reaction.products)
+            reactant_fates = list(map(self.get_fates, reaction.reactants))
+            product_fates = list(map(self.get_fates, reaction.products))
 
             # Get all combinations of reactant and product fates,
             new_reactant_combinations = cartesian_sum(reactant_fates)
@@ -319,8 +324,8 @@ class PepperCondensation(object):
 
                 try :
                     reaction = PepperReaction(reactants, products, rtype='condensed')
-                except DSDDuplicationError, e:
-                    logging.debug('duplicating PepperReaction: {}'.format(e.existing))
+                except DSDDuplicationError as e:
+                    logging.debug('Duplicating PepperReaction: {}'.format(e.existing))
                     reaction = e.existing
 
                 reaction.const = self.get_condensed_rate(reaction)
@@ -426,7 +431,7 @@ class PepperCondensation(object):
     
         # compute diagonal elements of T
         T_diag = np.sum(T, axis=0)  # sum over columns
-        for i in xrange(L):
+        for i in range(L):
             T[i][i] = -T_diag[i]
     
         # calculate eigenvalues
@@ -455,7 +460,7 @@ class PepperCondensation(object):
             logging.error('Stationary distribution of resting set complex should sum to 1 after normalization. Condensed reaction rates may be incorrect.')
     
         # return dict mapping complexes to stationary probabilities
-        return {c: s[i] for (c, i) in complex_indices.iteritems()}
+        return {c: s[i] for (c, i) in complex_indices.items()}
     
     def get_exit_probabilities(self, scc):
         """
@@ -530,13 +535,13 @@ class PepperCondensation(object):
     
         # return dict mapping tuples of (incoming complex, outgoing reaction)
         # to exit probabilities
-        return {(c, r): B[i, j] for (c, i) in complex_indices.iteritems()
-                for (r, j) in exit_indices.iteritems()}
+        return {(c, r): B[i, j] for (c, i) in complex_indices.items()
+                for (r, j) in exit_indices.items()}
 
 class ReactionGraph(PepperCondensation):
     def __init__(self, *kargs, **kwargs):
-        print '''# WARNING: peppercorn-v0.6: using depricated object name:'''
-        print '''# Please rename peppercornenumerator.condense.ReactionGraph to peppercornenumerator.condense.PepperCondensation.  '''
+        print('''# WARNING: peppercorn-v0.6: using depricated object name:''')
+        print('''# Please rename peppercornenumerator.condense.ReactionGraph to peppercornenumerator.condense.PepperCondensation.  ''')
         super(ReactionGraph, self).__init__(*kargs, **kwargs)
 
 
@@ -745,7 +750,7 @@ def stationary_distribution(T, nodes = None):
 
     # compute diagonal elements of T
     T_diag = np.sum(T, axis=0)  # sum over columns
-    for i in xrange(L):
+    for i in range(L):
         T[i][i] = -T_diag[i]
 
     # calculate eigenvalues

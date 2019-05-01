@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from __future__ import print_function
+
+from __future__ import absolute_import, division, print_function
 
 import os
 import sys
@@ -35,7 +36,7 @@ class colors:
         if keys is None:
             l = enumerate(colors.colors)
         else:
-            l = zip(keys, colors.colors)
+            l = list(zip(keys, colors.colors))
         return "\n".join([(c + str(i) + colors.ENDC) for i, c in l])
 
 class ColorFormatter(logging.Formatter):
@@ -195,14 +196,14 @@ def main(args):
     try :
         complexes, reactions, composite = read_pil(systeminput, 
                 args.input_filename is not None, composite=True)
-    except ParseException, ex_pil:
+    except ParseException as ex_pil:
         try :
             complexes, reactions = read_seesaw(systeminput, 
                     args.input_filename is not None, 
                     conc=args.seesaw_conc, 
                     explicit=args.seesaw_explicit, 
                     reactions=args.seesaw_reactions)
-        except ParseException, ex_ssw:
+        except ParseException as ex_ssw:
             logging.error('Pil-format parsing error:')
             logging.error('Cannot parse line {:5d}: "{}"'.format(ex_pil.lineno, ex_pil.line))
             logging.error('                          {} '.format(' ' * (ex_pil.col-1) + '^'))
@@ -211,10 +212,10 @@ def main(args):
             logging.error('                          {} '.format(' ' * (ex_ssw.col-1) + '^'))
             raise SystemExit
 
-    init_cplxs = filter(lambda x: x._concentration is None or \
-                    float(x._concentration[1]) != (0.0), complexes.values())
+    init_cplxs = [x for x in list(complexes.values()) if x._concentration is None or \
+                    float(x._concentration[1]) != (0.0)]
     if args.dry_run:
-        enum = Enumerator(complexes.values(), reactions)
+        enum = Enumerator(list(complexes.values()), reactions)
     else:
         enum = Enumerator(init_cplxs, reactions)
 
