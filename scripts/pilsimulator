@@ -11,13 +11,30 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
-import imp
 import argparse
 
 from crnsimulator import ReactionGraph
 from crnsimulator.odelib_template import add_integrator_args
 from peppercornenumerator.input import load_pil_crn
 from peppercornenumerator import __version__
+
+def get_integrator(odename, filename):
+    """Workaround to avoid deprecation warnings for the imp module.
+    """
+    print(odename, filename)
+    try: # Python 3.7
+        import types
+        import importlib.machinery
+
+        loader = importlib.machinery.SourceFileLoader(odename, filename)
+        mod = types.ModuleType(loader.name)
+        loader.exec_module(mod)
+
+        return getattr(mod, 'integrate')
+    except ImportError as err: # Python 2.7
+        import imp
+        _temp = imp.load_source(odename, filename)
+        return getattr(_temp, 'integrate')
 
 class SimulationSetupError(Exception):
     pass
@@ -112,8 +129,7 @@ def main(args):
         print('# Simulating the ODE system. Change parameters using:')
         print("#  python {} --help ".format(filename))
 
-        _temp = imp.load_source(odename, filename)
-        integrate = getattr(_temp, 'integrate')
+        integrate = get_integrator(odename, filename)
 
         # ********************* #
         # ARGUMENT PROCESSING 2 #
