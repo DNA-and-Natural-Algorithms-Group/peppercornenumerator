@@ -1,4 +1,5 @@
-def zhang2009_F1DF_exchange_pil((m,n)) :
+def zhang2009_F1DF_exchange_pil(mandn) :
+    (m,n) = mandn
     assert m != 0
     assert n != 0
     return """
@@ -30,7 +31,8 @@ def zhang2009_F1DF_exchange_pil((m,n)) :
     F = a bt
     """.format(m, 13-m, n, 15-n)
 
-def zhang2009_F1DF_displacement_pil((n)) :
+def zhang2009_F1DF_displacement_pil(n) :
+    (n) = n
     assert n != 0
     return """
     # Toehold mediated strand displacement (no exchange)
@@ -57,7 +59,8 @@ def zhang2009_F1DF_displacement_pil((n)) :
     F = a b6
     """.format(n, 15-n)
 
-def zhang2009_F5_pil((n)):
+def zhang2009_F5_pil(n):
+    (n) = n
     return """
     # Domains
     length a = 16

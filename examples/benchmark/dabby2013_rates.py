@@ -1,5 +1,6 @@
 
-def dabby2013_4way_displacement((n,m)):
+def dabby2013_4way_displacement(nm):
+    (n,m) = nm
     assert n<7 and (m<7 or m==16)
     M = 0 if (m==6 or m==16) else 6-m
     N = 6-n

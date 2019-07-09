@@ -1,5 +1,6 @@
 
-def genot2011_F3_pil((m,n)) :
+def genot2011_F3_pil(mn) :
+    (m,n) = mn
     return """
     length d1 = 15
     length d2 = 22

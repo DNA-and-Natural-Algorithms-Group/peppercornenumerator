@@ -1,5 +1,6 @@
 
-def zhang2009_3way_displacement((c,d)):
+def zhang2009_3way_displacement(cd):
+    (c,d) = cd
     if c == 0 : # special leak case
         raise NotImplementedError()
     return """# Experiments Zhang 2009, 3-way strand displacement
@@ -39,7 +40,8 @@ def zhang2009_3way_displacement((c,d)):
                 '' if d==0 else 'd*',
                 '' if d==0 else 'd*')
 
-def zhang2009_3way_exchange((n,m)):
+def zhang2009_3way_exchange(nm):
+    (n,m) = nm
     return """# Experiments Zhang 2009, 3-way strand displacement toehold exchange
         \rlength A = 16
         \rlength b = {:d} # m

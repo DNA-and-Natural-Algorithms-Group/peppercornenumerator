@@ -4,7 +4,7 @@
 #   2) write tests
 #   4) merge into library
 
-from __future__ import division
+from __future__ import division, absolute_import, print_function
 
 import os
 import numpy as np
@@ -65,8 +65,8 @@ def peppercorn(pilstring, is_file = False, enumfile='',
         cxs, rxns = read_seesaw(pilstring, is_file, conc = ssw_conc, explicit = False)
         comp = []
 
-    init_cplxs = filter(lambda x: x._concentration is None or \
-                    float(x._concentration[1]) != (0.0), cxs.values())
+    init_cplxs = list(filter(lambda x: x._concentration is None or \
+                    float(x._concentration[1]) != (0.0), cxs.values()))
 
     enum = Enumerator(init_cplxs, rxns)
 
@@ -231,8 +231,8 @@ class FigureData(object):
 
             prate = None
             for r in rxns:
-                ed = map(str, r.reactants)
-                pr = map(str, r.products)
+                ed = list(map(str, r.reactants))
+                pr = list(map(str, r.products))
                 if self.canon_rxn([ed, pr]) == rxn:
                     prate = r.const
                     break
@@ -262,8 +262,9 @@ class FigureData(object):
     # Simulation mode
     def add_system_simulation_setup(self, 
                                     pilstring, simulation, 
-                                    reporter, metric, (time, conc),
+                                    reporter, metric, timeandconc,
                                     simargs = ''):
+        (time, conc) = timeandconc
         if pilstring in self._pil_to_file:
             pilname = self._pil_to_file[pilstring]
         else:
@@ -383,7 +384,7 @@ class FigureData(object):
 
         df = pd.DataFrame(data={
             'Input Filename': name,
-            'Simulation': map(lambda x: x.replace('_',' '), sim),
+            'Simulation': list(map(lambda x: x.replace('_',' '), sim)),
             'Reporter': rep,
             'Metric': met,
             'Concentration (experiment)': conc,
@@ -410,7 +411,7 @@ class FigureData(object):
             stime, sconc = (None, None) if scalc is None else zip(*scalc)
             df = pd.DataFrame(data={
                 'Input Filename': name,
-                'Simulation': map(lambda x: x.replace('_',' '), sim),
+                'Simulation': list(map(lambda x: x.replace('_',' '), sim)),
                 'Reporter': rep,
                 'Metric': met,
                 'Concentration (experiment)': conc,
@@ -475,7 +476,7 @@ def nxy_get_trajectory(nxyfile, species):
         (list[[str,str]]): A trajectory as lol: simulation-time & concentration.
     """
 
-    df = pd.read_table(nxyfile, sep='\s+', comment='#')
+    df = pd.read_csv(nxyfile, sep='\s+', comment='#')
     return df[['time', species]]
     #trajectory = []
     #with open(nxyfile, 'r') as nxy:
@@ -502,8 +503,8 @@ def nxy_get_conc_at_time(nxyfile, species, time):
     """ Returns the concentration of a species at (or after) a specific time.
     """
 
-    df = pd.read_table(nxyfile, sep='\s+')
-    print df.head()
+    df = pd.read_csv(nxyfile, sep='\s+')
+    print(df.head())
     raise SystemExit
 
     with open(nxyfile, 'r') as nxy:
@@ -521,7 +522,7 @@ def nxy_get_conc_at_time(nxyfile, species, time):
             if idx is None:
                 raise MissingDataError('Could not find species {} in {}'.format(species, nxyfile))
 
-            d = map(float, l.strip().split())
+            d = list(map(float, l.strip().split()))
             if d[0] >= time:
                 if any(map(lambda x: x<0, d)):
                     raise MissingDataError('broken data')
@@ -544,7 +545,7 @@ def nxy_get_time_at_conc(nxyfile, species, threshold):
     """
     [sign, th] = [-1, -threshold] if threshold < 0 else [1, threshold]
 
-    df = pd.read_table(nxyfile, sep='\s+', comment='#')
+    df = pd.read_csv(nxyfile, sep='\s+', comment='#')
     time = df['time'].values
     traj = df[species].values
     assert len(traj)>1
@@ -570,7 +571,7 @@ def nxy_get_diagonal_points(nxyfile, species, tmax, cmax):
     Returns:
         (float, float): time, concentration
     """
-    df = pd.read_table(nxyfile, sep='\s+', comment='#')
+    df = pd.read_csv(nxyfile, sep='\s+', comment='#')
 
     time = df['time'].values
     traj = df[species].values
@@ -606,7 +607,7 @@ def main():
 
     for fig in analysis:
         print("\n{}:".format(fig.name))
-        #fig.eval('default', verbose=1)
+        fig.eval('default', verbose=1)
         for df in fig.get_dataframes():
             print(df)
 
