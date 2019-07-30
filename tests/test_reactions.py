@@ -1530,7 +1530,18 @@ class Compare_MaxHelix(unittest.TestCase):
         #    print o, o.rate
         #    print o.kernel_string
 
+    def test_4way_maxhelix(self):
+        complexes, reactions = read_pil("""
+            A = k( a*( ) l( + ) a*( ) )
+            B = k( a*( a( l( + ) ) ) )
+        """)
 
+        A = complexes['A']
+        B = complexes['B']
+        ex = PepperReaction([A], [B], 'branch-4way', memorycheck=False)
+        rs = rxn.branch_4way(A, max_helix = True)
+        self.assertEqual(ex, rs[0])
+   
     def test_self_displacement_bug(self):
         complexes, reactions = read_pil("""
         B1 = x( y( x( y x + ) ) )

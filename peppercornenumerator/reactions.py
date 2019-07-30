@@ -1133,6 +1133,7 @@ def zipper(reactant, start_trp, before, bound_trp, after, pattern):
 
         if (start_pair is None) != (spair is None): return
         if (bound_pair is None) != (bpair is None): return
+        if sloc == start_pair or bloc == bound_pair: return
 
             # ddomain hasn't passed bound_loc
         if ((#TODO: python 2->3 code.. there must be a nicer way
