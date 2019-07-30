@@ -262,7 +262,7 @@ class FigureData(object):
     # Simulation mode
     def add_system_simulation_setup(self, 
                                     pilstring, simulation, 
-                                    reporter, metric, timeandconc,
+                                    reporter, metric, minfo, timeandconc,
                                     simargs = ''):
         (time, conc) = timeandconc
         if pilstring in self._pil_to_file:
@@ -275,7 +275,7 @@ class FigureData(object):
         elif simargs == 'pilname':
             simargs = pilname
         self._simargs[simargs]=simulation
-        self._simdata.append((pilname, pilstring, simargs, reporter, metric, time, conc))
+        self._simdata.append((pilname, pilstring, simargs, reporter, metric, minfo, time, conc))
         self._simmode = True
 
     def eval_system(self, pepperargs='default', cmpfig=False, verbose=0):
@@ -291,7 +291,7 @@ class FigureData(object):
         simcalc = []
         trajectories = None
         clast = ''
-        for name, pilstring, simargs, reporter, metric, time, conc in self._simdata:
+        for name, pilstring, simargs, reporter, metric, minfo, time, conc in self._simdata:
             clear_memory()
 
             if verbose:
@@ -333,16 +333,22 @@ class FigureData(object):
                 clast = cname
 
             # Third, analyze from file data
-            metric = metric.split(':')
-
-            if metric[0] == 'completion-time':
+            if metric == 'completion-time':
                 sim_time = nxy_get_time_at_conc(nxy, reporter, conc)
                 sim_conc = conc
                 simcalc.append((sim_time, sim_conc))
-            elif metric[0] == 'diagonal-crossing-time':
-                tmax = float(metric[1])
-                cmax = float(metric[2])
-                sim_time, sim_conc = nxy_get_diagonal_points(nxy, reporter, tmax, cmax)
+            elif metric == 'diagonal-crossing-time':
+                minfo = minfo.split(':')
+                tmax = float(minfo[0])
+                cmi = minfo[1].split(';')
+                if len(cmi) == 2:
+                    cmin = float(cmi[0])
+                    cmax = float(cmi[1])
+                else:
+                    assert len(cmi) == 1
+                    cmin = None
+                    cmax = float(cmi[0])
+                sim_time, sim_conc = nxy_get_diagonal_points(nxy, reporter, tmax, cmax, cmin = cmin)
                 simcalc.append((sim_time, sim_conc))
             else:
                 raise NotImplementedError('Metric "{}" not supported.'.format(metric))
@@ -373,7 +379,7 @@ class FigureData(object):
         return self.get_system_dataframe(pepperargs)
 
     def get_system_dataframe(self, pargs='default'):
-        name, pil, sim, rep, met, time, conc = zip(*self._simdata)
+        name, pil, sim, rep, met, minfo, time, conc = zip(*self._simdata)
         if pargs not in self._simcalc:
             raise MissingDataError(
                     'Cannot find key "{}" in pepperargs'.format(pargs))
@@ -387,12 +393,13 @@ class FigureData(object):
             'Simulation': list(map(lambda x: x.replace('_',' '), sim)),
             'Reporter': rep,
             'Metric': met,
+            'Metric-values': minfo,
             'Concentration (experiment)': conc,
             'Time (experiment)': time,
             'Time (simulation)': stime,
             'Concentration (simulation)': sconc,
             'Semantics': pargs},
-            columns=['Input Filename', 'Simulation', 'Reporter', 'Metric', 'Semantics',
+            columns=['Input Filename', 'Simulation', 'Reporter', 'Metric', 'Metric-values', 'Semantics',
                 'Concentration (simulation)', 'Time (simulation)',
                 'Concentration (experiment)', 'Time (experiment)'])
                 #'exp-time', 'pepperargs', 'sim-conc', 'sim-time'])
@@ -400,7 +407,7 @@ class FigureData(object):
         return df
 
     def get_system_dataframes(self):
-        name, pil, sim, rep, met, time, conc = zip(*self._simdata)
+        name, pil, sim, rep, met, minfo, time, conc = zip(*self._simdata)
 
         simcalc = {None: None} if not self._simcalc else self._simcalc
 
@@ -414,12 +421,13 @@ class FigureData(object):
                 'Simulation': list(map(lambda x: x.replace('_',' '), sim)),
                 'Reporter': rep,
                 'Metric': met,
+                'Metric-values': minfo,
                 'Concentration (experiment)': conc,
                 'Time (experiment)': time,
                 'Time (simulation)': stime,
                 'Concentration (simulation)': sconc,
                 'Semantics': pargs},
-            columns=['Input Filename', 'Simulation', 'Reporter', 'Metric', 'Semantics',
+            columns=['Input Filename', 'Simulation', 'Reporter', 'Metric', 'Metric-values', 'Semantics',
                     'Concentration (simulation)', 'Time (simulation)',
                     'Concentration (experiment)', 'Time (experiment)'])
                     #'exp-time', 'pepperargs', 'sim-conc', 'sim-time'])
@@ -559,7 +567,7 @@ def nxy_get_time_at_conc(nxyfile, species, threshold):
     return float('inf')
 
 #done
-def nxy_get_diagonal_points(nxyfile, species, tmax, cmax):
+def nxy_get_diagonal_points(nxyfile, species, tmax, cmax, cmin = None):
     """Return time and concentration when a trajectory crosses a diagonal line.
     
     Args:
@@ -573,11 +581,19 @@ def nxy_get_diagonal_points(nxyfile, species, tmax, cmax):
     """
     df = pd.read_csv(nxyfile, sep='\s+', comment='#')
 
+    [sign, cmax] = [-1, -cmax] if cmax < 0 else [1, cmax]
+
     time = df['time'].values
     traj = df[species].values
-    assert len(traj)>1
+    assert len(traj) > 1
 
-    positions = np.where(traj >= (cmax * (1 - time/tmax)))[0]
+    if sign == 1:
+        positions = np.where(traj >= (cmax * (1 - time/tmax)))[0]
+    elif sign == -1:
+        print('neg diag')
+        assert cmin is not None
+        positions = np.where(traj <= cmin + ((cmax-cmin) * (time/tmax)))[0]
+
     if len(positions) : 
         elem = positions[0]
         return time[elem], traj[elem]
