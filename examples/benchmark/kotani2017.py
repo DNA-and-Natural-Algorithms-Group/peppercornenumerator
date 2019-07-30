@@ -166,16 +166,27 @@ def data(evaluate=False, verbose = 0):
     sims = [psim + h10l + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=1",
             psim + h10l + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.5",
             psim + h10l + " --pyplot-labels D S1 S2 R C1 --p0 S1=10 S2=10 R=20 C1=0.05"]
-    litr = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
+    #litr = [(7733, 7.42), (11333, 6.18), (25533, 1.40)]
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(4893.97, 7.49), (9388.93, 6.29), (27435.62, 1.35)]
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'D'
         metric = 'diagonal-crossing-time'
         cmax = '10'
         tmax = '32400'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C1='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C1='):])
+
+    halfC = [(555.34, 5.00), (4514.48, 5.00)]
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'D'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('C1='):])
+
+
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default']['release_cutoff'] = 7
@@ -196,16 +207,25 @@ def data(evaluate=False, verbose = 0):
     sims = [psim + h30log + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.1",
             psim + h30log + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.01",
             psim + h30log + " --pyplot-labels D S1 S2 S3 S4 R C1 --p0 S1=10 S2=10 S3=10 S4=10 R=20 C1=0.001"]
-    litr = [(21220, 7.72), (64203, 3.12), (86996, 0.69)]
+    #litr = [(21220, 7.72), (64203, 3.12), (86996, 0.69)]
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(21370.60, 7.78), (66095.66, 3.17), (90663.66, 0.74)]
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'D'
         metric = 'diagonal-crossing-time'
         cmax = '10'
         tmax = '97200'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C1='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C1='):])
+
+    halfC = [(12994.28, 5)]
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'D'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('C1='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default']['release_cutoff'] = 7
@@ -227,14 +247,24 @@ def data(evaluate=False, verbose = 0):
             psim + h20l + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.01",
             psim + h20l + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0.001",
             psim + h20l + " --pyplot-labels D S5 S6 R C1 --p0 S5=10 S6=10 R=20 C1=0"]
-    litr = [(6136, 5), (9150, 5), (10776, 5), (11637, 5)]
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(6800.87, 6.11), (9054.78, 4.88), (10322.61, 4.21), (10921.30, 3.85)]
+    for (sim, res) in zip(sims, diagX):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'D'
+        metric = 'diagonal-crossing-time'
+        cmax = '10'
+        tmax = '18000'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C1='):])
+
+    halfC = [(6131.74, 5), (9125.22, 5), (10780.43, 5), (11520.00, 5)]
+    for (sim, res) in zip(sims, halfC):
         pilstring  = template(None)
         simulation = sim
         reporter = 'D'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res, simargs=sim[sim.find('C1='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('C1='):])
 
     current.pepperargs['default'] = current.pepperargs['DETAILED'].copy()
     current.pepperargs['default']['release_cutoff'] = 8

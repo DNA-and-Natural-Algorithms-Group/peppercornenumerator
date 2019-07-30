@@ -128,7 +128,7 @@ def data(evaluate=False, verbose = 0):
     psim += "--t-lin 10000 --t8 1000"
     rates = {'k_slow': 1e-10, 'k_fast': 0.01}
 
-    G11_F3 = FigureData('Fig. 3: a=14, b=22, varying: n, m')
+    G11_F3 = FigureData('Fig. 3: |a|=14, |b|=22, varying: |n|, |m|')
     G11_F3.fname = 'Genot2011-F3'
     current = G11_F3
     template = genot2011_F3_pil
@@ -142,7 +142,7 @@ def data(evaluate=False, verbose = 0):
         simulation = psim + " --pyplot-labels S I T W --p0 S=6.6 I=660"
         reporter = 'T'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)#, simargs='pilname')
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '1.98', res)#, simargs='pilname')
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -155,7 +155,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
 
-    G11_F4A = FigureData('Fig. 4A: n=m=0, varying: a=11 a=9)')
+    G11_F4A = FigureData('Fig. 4A: |n|=|m|=0, either |a|=11 or |a|=9')
     G11_F4A.fname = 'Genot2011-F4A'
     current = G11_F4A
     template = genot2011_F4A_pil
@@ -169,7 +169,7 @@ def data(evaluate=False, verbose = 0):
         simulation = psim + " --pyplot-labels S I T W --p0 S=6.6 I=22"
         reporter = 'T'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)#, simargs='pilname')
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '1.98', res)#, simargs='pilname')
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -182,7 +182,7 @@ def data(evaluate=False, verbose = 0):
             print(df)
 
 
-    G11_F4B = FigureData('Fig. 4B: n=m=1, varying: a=11 a=9)')
+    G11_F4B = FigureData('Fig. 4B: |n|=|m|=1, either |a|=11 or |a|=9')
     G11_F4B.fname = 'Genot2011-F4B'
     current = G11_F4B
     template = genot2011_F4B_pil
@@ -196,7 +196,7 @@ def data(evaluate=False, verbose = 0):
         simulation = psim + " --pyplot-labels S I T W --p0 S=6.6 I=22"
         reporter = 'T'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)#, simargs='pilname')
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '1.98', res)#, simargs='pilname')
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -208,7 +208,7 @@ def data(evaluate=False, verbose = 0):
         for df in current.get_dataframes():
             print(df)
 
-    G11_F4C = FigureData('Fig. 4C: n=m=0, a=6, varying: [invader]$_0$')
+    G11_F4C = FigureData('Fig. 4C: |n|=|m|=0, |a|=6, varying: [invader]$_0$')
     G11_F4C.fname = 'Genot2011-F4C'
     current = G11_F4C
     template = genot2011_F4C_pil
@@ -224,7 +224,7 @@ def data(evaluate=False, verbose = 0):
         simulation = sim
         reporter = 'T'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)#, simargs=sim[sim.find('I='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '1.98', res)#, simargs=sim[sim.find('I='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -236,7 +236,7 @@ def data(evaluate=False, verbose = 0):
         for df in current.get_dataframes():
             print(df)
 
-    G11_F4D = FigureData('Fig. 4D: n=m=17, a=14, varying: [invader]$_0$')
+    G11_F4D = FigureData('Fig. 4D: |n|=|m|=17, |a|=14, varying: [invader]$_0$')
     G11_F4D.fname = 'Genot2011-F4D'
     current = G11_F4D
     template = genot2011_F4D_pil
@@ -251,7 +251,7 @@ def data(evaluate=False, verbose = 0):
         simulation = sim
         reporter = 'T'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)#, simargs=sim[sim.find('I='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '1.98', res)#, simargs=sim[sim.find('I='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -263,7 +263,7 @@ def data(evaluate=False, verbose = 0):
         for df in current.get_dataframes():
             print(df)
 
-    G11_SF4A = FigureData('Sup. Fig. 4A: a=14, b=22 varying: n,m')
+    G11_SF4A = FigureData('Sup. Fig. 4A: |a|=14, |b|=22 varying: |n|,|m|')
     G11_SF4A.fname = 'Genot2011-SF4A'
     current = G11_SF4A
     template = genot2011_SF4A_pil
@@ -278,7 +278,7 @@ def data(evaluate=False, verbose = 0):
         simulation = psim + " --pyplot-labels S X R F --p0 R=30 X=40 S=10"
         reporter = 'F'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '3', res)
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -289,7 +289,7 @@ def data(evaluate=False, verbose = 0):
         for df in current.get_dataframes():
             print(df)
 
-    G11_SF5 = FigureData('Sup. Fig. 5: m=n=20, varying: a')
+    G11_SF5 = FigureData('Sup. Fig. 5: |m|=|n|=20, varying: |a|')
     G11_SF5.fname = 'Genot2011-SF5'
     current = G11_SF5
     template = genot2011_SF5_pil
@@ -310,8 +310,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '86400'
         cmax = '10'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res)
 
     current.pepperargs['default'] = current.pepperargs['detailed'].copy()
     current.pepperargs['default'].update({'k_slow': 1e-10, 'k_fast': 1e-5})

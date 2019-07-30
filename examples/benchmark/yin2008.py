@@ -49,16 +49,55 @@ def data(evaluate=False, verbose = 0):
             psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.1',
             psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.06',
             psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.02',
-            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.01',
-            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0']
-    litr = [(43,  -10), (1064, -10), (3505, -10), (5341, -10), (6893, -10), (7706, -10), (8842, -10), (9731, -10), (10242, -10), (10696, -10), (10885, -10), (11112, -10)]
+            psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0.01']
+            #psim + ' --pyplot-labels A B C D I --p0 A=20 B=20 C=20 D=20 I=0']
 
-    for (sim, res) in zip(sims, litr):
+    # Diagonal crossing
+    diagX = [
+    (297.38, 3.30),
+    (2256.56, 5.23), 
+    (4411.66, 7.37),
+    (5811.08, 8.72),
+    (6930.61, 9.83),
+    (7546.36, 10.45), 
+    (8302.04, 11.17),
+    (8973.76, 11.76),
+    (9281.63, 12.11),
+    (9561.52, 12.38),
+    (9701.46, 12.52),
+    (9841.40, 12.66)]
+
+    for (sim, res) in zip(sims, diagX):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'A'
+        metric = 'diagonal-crossing-time'
+        tmax = '18000'
+        cmax = '2;-20'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, ':'.join([tmax, cmax]), res, simargs=sim[sim.find('I='):])
+
+
+    # Half completion
+    halfC = [
+    (45.48, -10.00),
+    (1067.06, -10.00), 
+    (3488.05, -10.00),
+    (5321.28, -10.00),
+    (6874.64, -10.00),
+    (7700.29, -10.00),
+    (8847.81, -10.00),
+    (9729.45, -10.00),
+    (10247.23, -10.00), 
+    (10681.05, -10.00),
+    (10876.97, -10.00),
+    (11086.88, -10.00)]
+
+    for (sim, res) in zip(sims, halfC):
         pilstring  = template(None)
         simulation = sim
         reporter = 'A'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res, simargs=sim[sim.find('I='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '-10', res, simargs=sim[sim.find('I='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)

@@ -109,16 +109,42 @@ def data(evaluate=False, verbose = 0):
             psim + ' --pyplot-labels ROX S F OR C --p0 S=10 F=13 OR=30 C=0.1',
             psim + ' --pyplot-labels ROX S F OR C --p0 S=10 F=13 OR=30 C=0.05',
             psim + ' --pyplot-labels ROX S F OR C --p0 S=10 F=13 OR=30 C=0.02']
-    litr = [(1206, 7.42), (1662, 6.83), (2450, 5.79), (3420, 4.47), (4350, 3.25), (5414, 1.84), (6070,1.0), (6383,0.58), (6602,0.27)] # seconds
 
-    for (sim, res) in zip(sims, litr):
+    # DIAGONAL CROSSING
+    diagX = [
+        (1216.44, 7.44),
+        (1660.27, 6.83),
+        (2457.53, 5.78),
+        (3435.62, 4.49),
+        (4364.38, 3.26),
+        (5424.66, 1.88),
+        (6073.97, 1.03),
+        (6386.30, 0.57),
+        (6550.68, 0.32)]
+        #(6715.07, 0.09) 0 input
+    
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'ROX'
         metric = 'diagonal-crossing-time'
         tmax = '7200'
         cmax = '10'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C='):])
+
+    # Half completion
+    halfC = [
+        (550.68, 5.00),
+        (953.42, 5.00),
+        (1906.85, 5.00),
+        (4076.71, 5.00)]
+
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'ROX'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('C='):])
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
 
@@ -142,17 +168,48 @@ def data(evaluate=False, verbose = 0):
             psim + ' --pyplot-labels ROX S0 S1 F0 F1 OR C0 --p0 S1=10 F1=13 S0=10 F0=13 OR=30 C0=0.2',
             psim + ' --pyplot-labels ROX S0 S1 F0 F1 OR C0 --p0 S1=10 F1=13 S0=10 F0=13 OR=30 C0=0.1',
             psim + ' --pyplot-labels ROX S0 S1 F0 F1 OR C0 --p0 S1=10 F1=13 S0=10 F0=13 OR=30 C0=0.05',
-            psim + ' --pyplot-labels ROX S0 S1 F0 F1 OR C0 --p0 S1=10 F1=13 S0=10 F0=13 OR=30 C0=0.02']
-    litr = [(1235, 5.0), (1813, 5.0), (2708, 5.5), (3041, 5.0), (3837, 4.0), (4513, 3.1), (4901, 2.6), (5605, 1.7), (5901, 1.2), (6030, 1.1)] 
+            psim + ' --pyplot-labels ROX S0 S1 F0 F1 OR C0 --p0 S1=10 F1=13 S0=10 F0=13 OR=30 C0=0.02',
+            psim + ' --pyplot-labels ROX S0 S1 F0 F1 OR C0 --p0 S1=10 F1=13 S0=10 F0=13 OR=30 C0=0.01']
 
-    for (sim, res) in zip(sims, litr):
+    #Diagonal Dataset
+    diagX = [
+        (1860.53, 6.56),
+        (2302.30, 5.98),
+        (2744.07, 5.40),
+        (3066.90, 4.98),
+        (3856.99, 3.92),
+        (4519.65, 3.07),
+        (4910.44, 2.54),
+        (5607.08, 1.63),
+        (5904.42, 1.23),
+        (6065.84, 1.02)]
+        #(6320.71, 0.66), # 0x
+        #(6720.00, 0.15)] # control
+
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'ROX'
         metric = 'diagonal-crossing-time'
         tmax = '7200'
         cmax = '10'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C0='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C0='):])
+
+
+    # Half completion
+    halfC = [
+        (1257.35, 5.00), 
+        (1852.04, 5.00),
+        (2514.69, 5.00),
+        (3066.90, 5.00),
+        (4850.97, 5.00)]
+
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'ROX'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('C0='):])
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
 
@@ -172,20 +229,59 @@ def data(evaluate=False, verbose = 0):
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=7',
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=5',
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=3',
+            psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=2',
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=1',
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=0.7',
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=0.5',
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=0.3',
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=0.2',
             psim + ' --pyplot-labels TET S F SR A --p0 S=10 F=13 SR=20 A=0.1']
-    litr = [(240, 5), (342, 5), (394, 5), (609, 5), (688, 5), (884, 5), (1080, 5), (1122, 5), (1273, 5), (1369, 5), (1473, 5)] # seconds
 
-    for (sim, res) in zip(sims, litr):
+    #Diagonal Dataset
+    diagX = [
+        (496.08, 7.62), 
+        (600.76, 7.32),
+        (655.37, 7.16),
+        (855.63, 6.61),
+        (910.24, 6.45),
+        (1064.98, 6.04), 
+        (1206.07, 5.64),
+        (1237.93, 5.54),
+        (1333.50, 5.26),
+        (1392.67, 5.10),
+        (1465.49, 4.91)]
+        #(1756.76, 4.10)]
+
+    for (sim, res) in zip(sims, diagX):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'TET'
+        metric = 'diagonal-crossing-time'
+        tmax = '3600'
+        cmax = '10'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, ':'.join([tmax, cmax]), res, simargs=sim[sim.find('A='):])
+
+    #Half completion
+    halfC = [
+        (241.21, 5.0),
+        (350.44, 5.0), 
+        (393.68, 5.0),
+        (609.86, 5.0),
+        (694.06, 5.0),
+        (892.04, 5.0),
+        (1087.74, 5.0), 
+        (1121.87, 5.0),
+        (1276.61, 5.0),
+        (1376.74, 5.0),
+        (1470.04, 5.0)]
+        #(1966.12, 5.0)]
+ 
+    for (sim, res) in zip(sims, halfC):
         pilstring  = template(None)
         simulation = sim
         reporter = 'TET'
         metric = 'completion-time'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, res, simargs=sim[sim.find('A='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('A='):])
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
 

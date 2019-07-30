@@ -95,17 +95,26 @@ def data(evaluate=False, verbose = 0):
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels S F OR C ROX --p0 S=100 F=200 OR=300 C=10',
             psim + ' --pyplot-labels S F OR C ROX --p0 S=100 F=200 OR=300 C=1']
-    litr = [(2235, 86.25), (11389, 43.93)] 
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(2557.53, 88.07), (11842.47, 44.61)]
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'ROX'
         metric = 'diagonal-crossing-time'
         tmax = '21600'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C='):])
+
+    halfC = [(611.58, 50.00), (15956.76, 50.00)]
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'ROX'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '50',
+                res, simargs=sim[sim.find('C='):])
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
 
@@ -123,17 +132,26 @@ def data(evaluate=False, verbose = 0):
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels S F OR C ROX --p0 S=30 F=60 OR=90 C=3',
             psim + ' --pyplot-labels S F OR C ROX --p0 S=30 F=60 OR=90 C=0.9']
-    litr = [(3887, 23.70), (8687, 17.04)]
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(4200.75, 24.15), (9051.94, 17.45)]
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'ROX'
         metric = 'diagonal-crossing-time'
         tmax = '21600'
         cmax = '30'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C='):])
+
+    halfC = [(1571.89, 15), (6938.02, 15)]
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'ROX'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '15',
+                res, simargs=sim[sim.find('C='):])
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
 
@@ -151,17 +169,25 @@ def data(evaluate=False, verbose = 0):
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels S F OR C ROX --p0 S=3 F=6 OR=9 C=0.9',
             psim + ' --pyplot-labels S F OR C ROX --p0 S=3 F=6 OR=9 C=0.3']
-    litr = [(9600, 2.24), (16066, 1.76)]
-
-    for (sim, res) in zip(sims, litr):
+    diagX = [(10199.26, 2.30), (17034.36, 1.82)]
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'ROX'
         metric = 'diagonal-crossing-time'
         tmax = '43200'
         cmax = '3'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C='):])
+
+    halfC = [(4485.54, 1.50), (12388.63, 1.50)]
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'ROX'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '1.5',
+                res, simargs=sim[sim.find('C='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -179,17 +205,27 @@ def data(evaluate=False, verbose = 0):
     template = zhang2007_F1_pil
     sims = [psim + ' --pyplot-labels S F OR C ROX --p0 S=1 F=2 OR=3 C=1',
             psim + ' --pyplot-labels S F OR C ROX --p0 S=1 F=2 OR=3 C=0.1']
-    litr = [(13332, 0.82), (37775, 0.51)]
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(14382.50, 0.83), (40417.98, 0.53)]
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'ROX'
         metric = 'diagonal-crossing-time'
         tmax = '86400'
         cmax = '1'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C='):])
+
+    halfC = [(5354.07, 0.50), (36323.69, 0.50)]
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'ROX'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '0.5',
+                res, simargs=sim[sim.find('C='):])
+
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -208,17 +244,27 @@ def data(evaluate=False, verbose = 0):
     sims = [psim + ' --pyplot-labels S4 F4 OR4 C4 ROX --p0 S4=30 F4=60 OR4=90 C4=3',
             psim + ' --pyplot-labels S4 F4 OR4 C4 ROX --p0 S4=30 F4=60 OR4=90 C4=0.09',
             psim + ' --pyplot-labels S4 F4 OR4 C4 ROX --p0 S4=30 F4=60 OR4=90 C4=0.03']
-    litr = [(14475, 11.55), (24750, 5.88), (30425, 2.75)]
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(14893.10, 11.70), (25416.48, 5.91), (31189.31, 2.72)]
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'ROX'
         metric = 'diagonal-crossing-time'
         tmax = '36000'
         cmax = '20'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C4='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C4='):])
+
+    #NOTE: That doesn't make sense!
+    #halfC = [(10663.70, 10.01)]
+    #for (sim, res) in zip(sims, halfC):
+    #    pilstring  = template(None)
+    #    simulation = sim
+    #    reporter = 'ROX'
+    #    metric = 'completion-time'
+    #    current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '10',
+    #            res, simargs=sim[sim.find('C4='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -237,17 +283,28 @@ def data(evaluate=False, verbose = 0):
     sims = [psim + ' --pyplot-labels S43 F43 OR43 C43 RG --p0 S43=10 F43=20 OR43=30 C43=3',
             psim + ' --pyplot-labels S43 F43 OR43 C43 RG --p0 S43=10 F43=20 OR43=30 C43=0.09',
             psim + ' --pyplot-labels S43 F43 OR43 C43 RG --p0 S43=10 F43=20 OR43=30 C43=0.03']
-    litr = [(3358, 3.98), (5139, 2.04), (6075, 1.04)]
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(3545.01, 4.06), (5321.74, 2.07), (6277.79, 1.01)]
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(None)
         simulation = sim
         reporter = 'RG'
         metric = 'diagonal-crossing-time'
         tmax = '7200'
         cmax = '8'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('C43='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('C43='):])
+
+    #NOTE: That doesn't make sense!
+    #halfC = [(3426.56, 4.00)]
+    #for (sim, res) in zip(sims, halfC):
+    #    pilstring  = template(None)
+    #    simulation = sim
+    #    reporter = 'RG'
+    #    metric = 'completion-time'
+    #    current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '4',
+    #           res, simargs=sim[sim.find('C43='):])
+
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -258,7 +315,7 @@ def data(evaluate=False, verbose = 0):
         for df in current.get_dataframes():
             print(df)
 
-    return [F3A, F3B, F3C, F3D, F10C, F10F]
+    return [F3A, F3B, F3C, F3D]#, F10C, F10F]
 
 if __name__ == '__main__':
     data(evaluate=True, verbose=1)

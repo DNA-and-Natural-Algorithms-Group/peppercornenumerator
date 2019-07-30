@@ -166,7 +166,7 @@ def data(evaluate=False, verbose = 0):
             metric = 'diagonal-crossing-time'
             tmax = '36000'
             cmax = '50'
-            current.add_system_simulation_setup(pilstring, simulation, reporter, ':'.join([metric, tmax, cmax]), res, simargs=rep + '-' + arg)
+            current.add_system_simulation_setup(pilstring, simulation, reporter, metric, ':'.join([tmax, cmax]), res, simargs=rep + '-' + arg)
 
     current.pepperargs['default'] = current.pepperargs['CONDENSED'].copy()
     #current.pepperargs['default'].update(rates)

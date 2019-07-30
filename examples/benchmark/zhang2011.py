@@ -41,25 +41,36 @@ def data(evaluate=False, verbose = 0):
     rates = {'k_slow': 0.001, 'k_fast': 0.01}
 
     # Setup
-    F3A = FigureData('Zhang (2011) Fig. 3A (?) - Cooperative strand displacement')
+    F3A = FigureData('Zhang (2011) Fig. 3A - Cooperative strand displacement')
     F3A.fname = 'Zhang2011-F3A'
     current = F3A
     template = zhang2011_F1_pil
     sims = [psim + ' --pyplot-labels R D1 T1 T2 F --p0 R=60 D1=20 T1=18 T2=18',
             psim + ' --pyplot-labels R D1 T1 T2 F --p0 R=60 D1=20 T1=12 T2=12',
             psim + ' --pyplot-labels R D1 T1 T2 F --p0 R=60 D1=20 T1=6 T2=6']
-    # NOTE: It is actually not clear to me if these are the correct values...
-    litr = [(463, 9.45), (751, 7.28), (1104, 4.73)] 
 
-    for (sim, res) in zip(sims, litr):
+    diagX = [(409.46, 9.15), (425.68, 6.14), (300.00, 3.25)]
+    diagXe = [('1800','12'), ('1800','8'), ('1800','4')]
+
+    for (sim, res, tc) in zip(sims, diagX, diagXe):
         pilstring  = template(None)
         simulation = sim
         reporter = 'F'
         metric = 'diagonal-crossing-time'
-        tmax = '21600'
-        cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('T1='):])
+        tmax = tc[0]
+        cmax = tc[1]
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('T1='):])
+
+    halfC = [(381.08, 9.02), (385.14, 6.01), (263.51, 3.02)]
+
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(None)
+        simulation = sim
+        reporter = 'F'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                '50%', res, simargs=sim[sim.find('T1='):])
 
     current.pepperargs['default'] = current.pepperargs['Detailed'].copy()
     current.pepperargs['default'].update(rates)

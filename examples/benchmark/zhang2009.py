@@ -104,17 +104,28 @@ def data(evaluate=False, verbose = 0):
     sims = [psim + ' --pyplot-labels F R S X --p0 R=3 S=1 X=0.6',
             psim + ' --pyplot-labels F R S X --p0 R=3 S=1 X=0.4',
             psim + ' --pyplot-labels F R S X --p0 R=3 S=1 X=0.2']
-    litr = [(1260, 0.31), (1867, 0.27), (3498, 0.17)]
+    diagX = [(1260, 0.31), (1867, 0.27), (3498, 0.17)]
 
-    for (sim, res) in zip(sims, litr):
+    for (sim, res) in zip(sims, diagX):
         pilstring  = template(5)
         simulation = sim
         reporter = 'F'
         metric = 'diagonal-crossing-time'
         tmax = '7200'
         cmax = '0.4'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('X='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('X='):])
+
+    # Half completion
+    halfC = [(1241.01, 0.30), (2430.95, 0.30)]
+
+    for (sim, res) in zip(sims, halfC):
+        pilstring  = template(5)
+        simulation = sim
+        reporter = 'F'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '0.3',
+                res, simargs=sim[sim.find('X='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -131,17 +142,32 @@ def data(evaluate=False, verbose = 0):
     current = F4
     template = zhang2009_F1DF_exchange_pil
     pilp = [(4,7), (5,7), (6,7), (7,7)]
-    litr = [(785, 0.28), (823, 0.27), (1192, 0.23), (1622, 0.18)]
 
-    for (pip, res) in zip(pilp, litr):
+    halfC = [
+    (527.64, 0.20),  
+    (578.28, 0.20),
+    (983.36, 0.20),
+    (1877.93, 0.20)]
+
+    for (pip, res) in zip(pilp, halfC):
+        pilstring  = template(pip)
+        simulation = psim + ' --pyplot-labels F R S X --p0 R=3 S=1 X=0.4'
+        reporter = 'F'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '0.2',
+                res, simargs=sim[sim.find('X='):])
+
+    diagX = [(785, 0.28), (823, 0.27), (1192, 0.23), (1622, 0.18)]
+
+    for (pip, res) in zip(pilp, diagX):
         pilstring  = template(pip)
         simulation = psim + ' --pyplot-labels F R S X --p0 R=3 S=1 X=0.4'
         reporter = 'F'
         metric = 'diagonal-crossing-time'
         tmax = '3600'
         cmax = '0.4'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('X='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('X='):])
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 
@@ -158,18 +184,38 @@ def data(evaluate=False, verbose = 0):
     current = F5
     template = zhang2009_F5_pil
     pilp = [6,7,5,8,4,9,3,2]
-    litr = [(2822, 7.55), (3440, 7.11), (4716, 6.24), (9103, 3.23), 
-            (10727, 2.13), (11249, 1.75), (13298, 0.34), (13626, 0.11)]
 
-    for (pip, res) in zip(pilp, litr):
+    diagX = [
+    (2825.85, 7.53), 
+    (3485.78, 7.09),
+    (4737.96, 6.19),
+    (9103.64, 3.20),
+    (10728.08, 2.08), 
+    (11269.57, 1.71),
+    (13300.12, 0.30),
+    (13672.39, 0.08)]
+
+    for (pip, res) in zip(pilp, diagX):
         pilstring  = template(pip)
         simulation = psim + ' --pyplot-labels F R S Z X --p0 R=30 S=10 Z=100 X=1'
         reporter = 'F'
         metric = 'diagonal-crossing-time'
         tmax = '14400'
         cmax = '10'
-        current.add_system_simulation_setup(pilstring, simulation, reporter, 
-                ':'.join([metric, tmax, cmax]), res, simargs=sim[sim.find('X='):])
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=sim[sim.find('X='):])
+
+
+    halfC = [ (1066.04, 5.01), (1472.15, 5.01), (3096.59, 5.01)]
+
+    for (pip, res) in zip(pilp, halfC):
+        pilstring  = template(pip)
+        simulation = psim + ' --pyplot-labels F R S Z X --p0 R=30 S=10 Z=100 X=1'
+        reporter = 'F'
+        metric = 'completion-time'
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5.01',
+               res, simargs=sim[sim.find('X='):])
+
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
 

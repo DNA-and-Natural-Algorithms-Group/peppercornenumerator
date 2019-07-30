@@ -195,8 +195,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '2700'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res)
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -235,8 +235,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '10800'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res)
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -266,8 +266,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '18000'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res)
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -298,8 +298,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '43200'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res)
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -335,8 +335,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '21600'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -372,8 +372,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '21600'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -428,8 +428,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '28800'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -474,8 +474,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '10800'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -512,8 +512,8 @@ def data(evaluate=False, verbose = 0):
         metric = 'diagonal-crossing-time'
         tmax = '36000'
         cmax = '100'
-        current.add_system_simulation_setup(pilstring, simulation, 
-                reporter, ':'.join([metric, tmax, cmax]), res, simargs=arg)
+        current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+                ':'.join([tmax, cmax]), res, simargs=arg)
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
@@ -543,8 +543,8 @@ def data(evaluate=False, verbose = 0):
     #         metric = 'diagonal-crossing-time'
     #         tmax = '10800'
     #         cmax = '1'
-    #         current.add_system_simulation_setup(pilstring, simulation, 
-    #                 reporter, ':'.join([metric, tmax, cmax]), res)
+    #         current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
+    #                 ':'.join([tmax, cmax]), res)
 
     # current.pepperargs['default'] = current.pepperargs['CONDENSED'].copy()
     # current.pepperargs['default'].update(rates)
