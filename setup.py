@@ -21,11 +21,16 @@ setup(
     author='Stefan Badelt, Casey Grun, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree',
     author_email='winfree@caltech.edu',
     license='MIT',
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        ],
     test_suite='tests',
     install_requires=[
         'future',
         'numpy',
-        'crnsimulator>=0.5',
+        'crnsimulator>=0.6',
         'dsdobjects>=0.7'],
     packages=['peppercornenumerator'],
     scripts=['scripts/peppercorn',
