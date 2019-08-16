@@ -164,7 +164,7 @@ def read_pil(data, is_file = False, composite = False):
 
             if len(line) > 3 :
                 assert len(line[3]) == 3
-                complexes[name].concentration = tuple(line[3])
+                complexes[name].concentration = tuple([line[3][0], float(line[3][1]), line[3][2]])
 
 
         elif line[0] == 'reaction':

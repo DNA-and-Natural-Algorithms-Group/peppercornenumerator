@@ -137,15 +137,16 @@ class PepperComplex(DSD_Complex):
         if trip is None:
             self._concentration = None
         else:
-            (mode,value,unit) = trip
-            self._concentration = PepperComplex.CONCENTRATION(mode,value,unit)
+            (mode, value, unit) = trip
+            assert isinstance(value, float)
+            self._concentration = PepperComplex.CONCENTRATION(mode, value, unit)
 
     def concentrationformat(self, out):
         mod = self._concentration.mode
         val = self._concentration.value
         uni = self._concentration.unit
-        val = convert_units(float(val), uni, out) 
-        return '@{} {} {}'.format(mod, val, out)
+        val = convert_units(val, uni, out) 
+        return PepperComplex.CONCENTRATION(mod, val, out)
 
     @property
     def pair_table(self):

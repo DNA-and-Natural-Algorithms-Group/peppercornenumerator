@@ -68,8 +68,8 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
         enumerator.resting_complexes)))
     for cplx in natural_sort(enumerator.resting_complexes):
         if cplx.concentration :
-            output_string("{:s} = {:s} {}\n".format(cplx.name, 
-                cplx.kernel_string, cplx.concentrationformat(molarity)))
+            output_string("{:s} = {:s} @{} {} {}\n".format(cplx.name, 
+                cplx.kernel_string, *cplx.concentrationformat(molarity)))
         else:
             output_string("{:s} = {:s}\n".format(cplx.name, cplx.kernel_string))
  
@@ -91,8 +91,8 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
         output_string("\n# Transient complexes ({}) \n".format(len(enumerator.transient_complexes)))
         for cplx in natural_sort(enumerator.transient_complexes):
             if cplx._concentration :
-                output_string("{:s} = {:s} {}\n".format(cplx.name, cplx.kernel_string, 
-                    cplx.concentrationformat(molarity)))
+                output_string("{:s} = {:s} @{} {} {}\n".format(cplx.name, cplx.kernel_string, 
+                    *cplx.concentrationformat(molarity)))
             else:
                 output_string("{:s} = {:s}\n".format(cplx.name, cplx.kernel_string))
 
@@ -122,4 +122,163 @@ def write_crn(enumerator, crn, condensed = False, molarity = 'M', time = 's'):
             units = [molarity] * (reaction.arity[0] - 1) + [time]
             rate = reaction.rateformat(units)
             crn.write("{} [k = {}]\n".format(reaction, rate.constant))
+
+def write_vdsd(enumerator, fh = None, detailed = True, condensed = False,
+        composite = None, molarity = 'nM', time = 's'):
+    """ Write an Enumerator Object into VisualDSD \*.crn format.
+
+    directive simulation {plots=[sp_0; sp_1; sp_2; sp_3; sp_4; sp_5; sp_6; sp_7; sp_8; sp_9; sp_10]; }
+
+    | 10 sp_0
+    | 100 sp_1
+    | sp_1 <->{displace}{displace} sp_10
+    | sp_9 ->{displace} sp_7 + sp_6
+    | sp_0 + sp_1 <->{bind}{unbind} sp_9
+    | sp_9 <->{displace}{displace} sp_8
+    | sp_0 + sp_10 <->{bind}{unbind} sp_8
+    | sp_5 ->{displace} sp_7 + sp_6
+    | sp_8 <->{displace}{displace} sp_5
+    | sp_5 ->{displace} sp_4 + sp_3
+    | sp_3 <->{displace}{displace} sp_2
+
+    Args:
+      fh (filehandle): The function prints to this filehandle.
+      ...
+    
+    directive simulator deterministic
+    directive simulator cme
+    directive stochastic { scale = 1 }
+
+    directive simulation {
+        initial=0.0; 
+        final=6000.0; 
+        points=1000; 
+        plots=[Signal]
+    }
+
+    directive inference { 
+        burnin = 1000; 
+        samples = 5000; 
+        thin = 100 
+    }
+
+    directive parameters [
+      k=0.0003, {distribution=Uniform(1E-05, 0.002); interval=Log; variation=Random};
+      bad=0.2, {distribution=Uniform(0.0, 0.3); interval=Real; variation=Random};
+      T1=600.0, {distribution=Uniform(0.0, 1800.0); interval=Real;  variation=Random};
+      N = 0.6;
+    ]
+    """
+
+    if detailed == condensed:
+        raise Exception('Choose either detailed or condensed for vdsd output.')
+
+    if detailed:
+        complexes = natural_sort(enumerator.resting_complexes) + \
+                    natural_sort(enumerator.transient_complexes)
+    else:
+        complexes = natural_sort(enumerator.resting_macrostates)
+
+    def logicDSD(cplx):
+        """Translates a complex sequence / structure into LogicDSD notation."""
+        seq = cplx.sequence
+        dpp = cplx.structure
+        lst = [str(d) for d in seq]
+        stack, c = [], 1
+        for i, (dom, pair) in enumerate(zip(seq, dpp)):
+            if pair == '.':
+                assert lst[i] == str(dom)
+                if dom.dtype == 'short':
+                    lst[i] = dom.name[:-1]+'^*' if dom.name[-1] == '*' else str(dom)+'^'
+            elif pair == '+':
+                assert lst[i] == '+'
+                lst[i] = '> | <'
+            elif pair == '(':
+                assert lst[i] == str(dom)
+                if dom.dtype == 'short':
+                    lst[i] = dom.name[:-1]+'^*' if dom.name[-1] == '*' else str(dom)+'^'
+                stack.append(i)
+            elif pair == ')':
+                assert lst[i] == str(dom)
+                if dom.dtype == 'short':
+                    lst[i] = dom.name[:-1]+'^*' if dom.name[-1] == '*' else str(dom)+'^'
+                try:
+                    j = stack.pop()
+                except IndexError as e:
+                    raise NuskellObjectError(
+                        "Too many closing brackets in secondary structure")
+                lst[i] += '!' + str(c)
+                lst[j] += '!' + str(c)
+                c += 1
+            else:
+                raise Exception('weird character:', pair)
+        return "< {:s} >".format(' '.join(lst))
+
+    out = []
+    def output_string(string):
+        if fh is None:
+            out.append(string)
+        else :
+            fh.write(string)
+
+    output_string("(* File autogenerated by peppercorn-{} *)\n\n".format(__version__))
+
+    #t0, t8, tnum = 0, 10, 100
+    output_string("directive simulation {\n" + 
+            #"   initial={:.2f};\n".format(t0) + 
+            #"   final={:d};\n".format(t8) +
+            #"   points={:d};\n".format(tnum) +
+            "   plots=[{:s}];\n}}\n\n".format(
+                "; ".join(map(str, complexes))))
+ 
+    #output_string("directive stochastic {scale = 1}\n\n")
+    #output_string("directive simulator cme\n\n")
+    
+    output_string("(* LogicDSD species:\n")
+    for cplx in complexes:
+        if condensed: cplx = cplx.canonical
+        output_string("{:s} = {:s}\n".format(cplx.name, logicDSD(cplx)))
+    output_string("*)\n\n")
+
+    if condensed :
+        # Print resting macrostates
+        output_string("\n(* Resting macrostate concentrations ({}) *)\n".format(len(complexes)))
+
+        for resting in complexes:
+            clist = [c.concentrationformat('nM').value \
+                    for c in resting.complexes if c.concentration is not None]
+            mconc = sum(clist)
+            if mconc:
+                output_string("| {:d} {:s}\n".format(int(mconc), resting.canonical_name))
+            elif len(clist) < len(resting):
+                output_string("| {:d} {:s}\n".format(1, resting.canonical_name))
+
+        # Print reactions
+        output_string("\n(* Condensed reactions ({}) *)\n".format(
+            len(enumerator.condensed_reactions)))
+        for rxn in natural_sort(enumerator.condensed_reactions):
+            output_string("| {:s} -> {{{:g}}} {:s}\n".format(
+                ' + '.join(map(str, rxn.reactants)), rxn.const, 
+                ' + '.join(map(str, rxn.products))))
+
+    else:
+        # Print resting and transient complexes
+        output_string("(* Initial complex concentrations ({}) *)\n".format(len(complexes)))
+        for cplx in complexes:
+            if cplx.concentration:
+                if cplx.concentration.value:
+                    output_string("| {:d} {:s}\n".format(
+                        int(cplx.concentrationformat('nM').value), cplx.name))
+            else:
+                output_string("| {:d} {:s}\n".format(1, cplx.name))
+
+        # Print reactions
+        output_string("\n(* Detailed reactions ({}) *)\n".format(len(enumerator.reactions)))
+        for rxn in natural_sort(enumerator.reactions):
+            units = ['nM' if u == 'M' else u for u in rxn.rate.units]
+            output_string("| {:s} -> {{{:g}}} {:s}\n".format(
+                ' + '.join(map(str, rxn.reactants)), rxn.rateformat(units).constant, 
+                ' + '.join(map(str, rxn.products))))
+
+    return ''.join(out)
 
