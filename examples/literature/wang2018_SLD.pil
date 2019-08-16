@@ -1,0 +1,27 @@
+length lX1 = 15
+length dX1 =  5
+length lX2 = 15
+length dX2 =  5
+length lY1 = 15
+length dY1 =  5
+length lY2 = 15
+length dY2 =  5
+
+sup-sequence X1 = dX1 lX1
+sup-sequence X2 = dX2 lX2
+sup-sequence Y1 = dY1 lY1
+sup-sequence Y2 = dY2 lY2
+
+X = X2 dX1
+Y = Y2 Y1
+
+F1 = Y1 X2( + dX1* )
+F2 = Y2 Y1( + dX2* )
+R = Y2( + dY1* )
+
+F1T = Y1 X2
+RT = Y2
+
+W1 = X2( dX1( + ) )
+W2 = Y1( dX2( lX2 + ) )
+W3 = Y2( dY1( lY1 + ) )

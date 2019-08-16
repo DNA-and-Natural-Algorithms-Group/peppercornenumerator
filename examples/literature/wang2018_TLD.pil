@@ -1,0 +1,36 @@
+length rX1 = 10
+length DX1 = 10
+length rX2 = 10
+length DX2 = 10
+length rX3 = 10
+length DX3 = 10
+length rY1 = 10
+length DY1 = 10
+length rY2 = 10
+length DY2 = 10
+length rY3 = 10
+length DY3 = 10
+
+sup-sequence X1 = DX1 rX1
+sup-sequence X2 = DX2 rX2
+sup-sequence X3 = DX3 rX3
+sup-sequence Y1 = DY1 rY1
+sup-sequence Y2 = DY2 rY2
+sup-sequence Y3 = DY3 rY3
+
+X = X3 X2 X1
+Y = Y3 Y2 Y1 DX3
+
+F1 = Y1 X3( X2( DX1( + rX1* ) ) )
+F2 = Y2 Y1( X3( DX2( + rX2* ) ) )
+F3 = Y3 Y2( Y1( DX3( + rX3* ) ) )
+R = Y3( Y2( DY1( + rY1* ) ) )
+
+F1T = Y1 X3 X2 DX1
+F2T = Y2 Y1 X3 DX2
+RT = Y3 Y2 DY1
+
+W1 = X3( X2( X1( + ) ) )
+W2 = Y1( X3( X2( DX1 + ) ) )
+W3 = Y2( Y1( X3( DX2 + ) ) )
+W4 = Y3( Y2( Y1( DX3 + ) ) )
