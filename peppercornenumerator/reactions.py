@@ -948,7 +948,7 @@ def filter_4way(trip1, trip2):
     return struct1 is not None and struct2 is not None and dom1 == dom2
 
 def find_on_loop(reactant, start_loc, pattern, direction=1):
-    """Find a reaction pattern within a loop.
+    r"""Find a reaction pattern within a loop.
     
     Starts at a particular locus and searches for every possible pattern that
     preseves secondary structure (matches within the "loop").  Where a loop
@@ -1074,7 +1074,7 @@ def find_on_loop(reactant, start_loc, pattern, direction=1):
              loop[i+1:]) for (bound_loc, i) in results]
 
 def zipper(reactant, start_trp, before, bound_trp, after, pattern):
-    """Max-helix mode zipping to extend a given move type.
+    r"""Max-helix mode zipping to extend a given move type.
 
     Takes a result from `find_on_loop` and finds as many adjacent domains as
     possible such that the `pattern` function still returns True.

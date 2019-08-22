@@ -125,7 +125,7 @@ def write_crn(enumerator, crn, condensed = False, molarity = 'M', time = 's'):
 
 def write_vdsd(enumerator, fh = None, detailed = True, condensed = False,
         composite = None, molarity = 'nM', time = 's'):
-    """ Write an Enumerator Object into VisualDSD \*.crn format.
+    """ Write an Enumerator Object into VisualDSD *.crn format.
 
     directive simulation {plots=[sp_0; sp_1; sp_2; sp_3; sp_4; sp_5; sp_6; sp_7; sp_8; sp_9; sp_10]; }
 
