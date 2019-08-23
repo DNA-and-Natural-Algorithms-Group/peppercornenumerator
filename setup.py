@@ -4,13 +4,12 @@ from setuptools import setup, find_packages
 
 LONG_DESCRIPTION="""
 This package enumerates domain-level strand displacement (DSD) reaction
-networks assuming low species concentrations, such that unimolecular reaction
-pathways always equilibrate before bimolecular reactions initiate. The
-enumerator can handle arbitrary non-pseudoknotted secondary structures and
-supports a complete set of unimolecular and bimolecular domain-level reactions:
-bind/unbind reactions, 3-way branch-migration and 4-way branch-migration
-reactions and remote-toehold migration. For more background on reaction
-semantics we refer to the publication [Grun et al. (2014)].
+networks assuming a timescale separation, such that fast reaction pathways
+always equilibrate before slow reactions initiate. The enumerator can handle
+arbitrary non-pseudoknotted secondary structures and supports all typical
+unimolecular and bimolecular domain-level reactions: bind, unbind, 3-way
+branch-migration and 4-way branch-migration including remote-toehold branch
+migration. For more background on reaction semantics we refer to the README.
 """
 
 setup(
@@ -29,6 +28,7 @@ setup(
     test_suite='tests',
     install_requires=[
         'future',
+        'pandas', # for case-studies
         'numpy',
         'crnsimulator>=0.6',
         'dsdobjects>=0.7'],

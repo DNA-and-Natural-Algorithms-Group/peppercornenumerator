@@ -1,0 +1,31 @@
+#
+# Badelt, Grun, Sarma, Wolfe, Shin, Winfree (in preparation)
+#
+# Figure 5: Delayed choice.
+#
+
+# Domains
+length a = 5
+length b = 15
+length c = 15
+length d = 15
+length e = 15
+length z = 15
+
+# Initial resting complexes (3)
+R0 = a b c
+RC1a = d( e( z ) ) b*( a* + ) c( + ) d
+RC1b = d e( z ) d*( b*( a* + ) c( + ) )
+
+# Names for potential resting complexes (5)
+R21 = b c( + ) d @i 0.0 M
+R22 = d( e( z ) ) b*( a*( + ) ) c @i 0.0 M
+R31 = b c @i 0.0 M
+Rc32a = d( e( z ) ) b*( a*( + ) ) c( + ) d @i 0.0 M
+RC32b = d e( z ) d*( b*( a*( + ) ) c( + ) ) @i 0.0 M
+
+# Names for potential transient complexes (3)
+TC1 = a( b c + b( c( + ) d + d( e( z ) ) ) ) @i 0.0 M
+TC2 = a( b c + b( c( + ) d( + d e( z ) ) ) ) @i 0.0 M
+TC3 = a( b( c + b c( + ) d( + d e( z ) ) ) ) @i 0.0 M
+

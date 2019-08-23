@@ -9,7 +9,6 @@ from __future__ import division, absolute_import, print_function
 import os
 import numpy as np
 import pandas as pd
-#import tempfile as tmp
 from subprocess import Popen
 from crnsimulator import parse_crn_string
 
@@ -37,7 +36,7 @@ def seesaw_model(pilstring, is_file = False, enumfile='',
             conc=kwargs['seesaw-conc'], 
             reactions = kwargs['seesaw-rxns'])
 
-    enum = Enumerator(cxs.values(), rxns)
+    enum = Enumerator(list(cxs.values()), rxns)
     enum.dry_run()
 
     if enumfile :
@@ -486,56 +485,6 @@ def nxy_get_trajectory(nxyfile, species):
 
     df = pd.read_csv(nxyfile, sep='\s+', comment='#')
     return df[['time', species]]
-    #trajectory = []
-    #with open(nxyfile, 'r') as nxy:
-    #    idx = None
-    #    for l in nxy.readlines():
-    #        if l[0:25] == '# Initial concentrations:' : 
-    #            data = eval(l.strip().split(': ')[1])
-    #            for e, (sp,ini) in enumerate(data,1):
-    #                if sp == species:
-    #                    idx = e
-    #            continue
-    #        elif l[0] == '#' : 
-    #            continue
-
-    #        if idx is None:
-    #            raise MissingDataError('Could not find species {} in {}'.format(species, nxyfile))
-
-    #        d = l.strip().split()
-    #        trajectory.append([d[0], d[idx]])
-    #return trajectory
-
-#done
-def nxy_get_conc_at_time(nxyfile, species, time):
-    """ Returns the concentration of a species at (or after) a specific time.
-    """
-
-    df = pd.read_csv(nxyfile, sep='\s+')
-    print(df.head())
-    raise SystemExit
-
-    with open(nxyfile, 'r') as nxy:
-        idx = None
-        for l in nxy.readlines():
-            if l[0:25] == '# Initial concentrations:' : 
-                data = eval(l.strip().split(': ')[1])
-                for e, (sp,ini) in enumerate(data,1):
-                    if sp == species:
-                        idx = e
-                continue
-            elif l[0] == '#' : 
-                continue
-
-            if idx is None:
-                raise MissingDataError('Could not find species {} in {}'.format(species, nxyfile))
-
-            d = list(map(float, l.strip().split()))
-            if d[0] >= time:
-                if any(map(lambda x: x<0, d)):
-                    raise MissingDataError('broken data')
-                return d[idx]
-    return None
 
 #done
 def nxy_get_time_at_conc(nxyfile, species, threshold):
@@ -590,7 +539,6 @@ def nxy_get_diagonal_points(nxyfile, species, tmax, cmax, cmin = None):
     if sign == 1:
         positions = np.where(traj >= (cmax * (1 - time/tmax)))[0]
     elif sign == -1:
-        print('neg diag')
         assert cmin is not None
         positions = np.where(traj <= cmin + ((cmax-cmin) * (time/tmax)))[0]
 
@@ -612,11 +560,17 @@ def main():
     from genot2011  import data as g11
     from qian2011   import data as q11 
     from qian2011sqrt import data as q11sq # missing data
-    from zhang2011  import data as z11 # Only Figure 2, and it is a bit strange...
+    from zhang2011  import data as z11 # Only Figure 2
     from kotani2017 import data as k17
     
     from zhang2009_rates import data as z09r # 3-way branch migration rates
     from dabby2013_rates import data as d13r # 4-way branch migration rates
+
+    # There are more Papers ... 
+    # seelig2006.py
+    # groves2015.py
+    # srinivas2017.py
+    # sun2018.py
 
     analysis = z07() + y08() + z09() + z10() + z11() + g11() + q11() + k17()
     #analysis = z09r() + d13r()
@@ -627,20 +581,7 @@ def main():
         for df in fig.get_dataframes():
             print(df)
 
-    # There is more ...:
-    # seelig2006.py
-    # groves2015.py
-    # srinivas2017.py
-    # sun2018.py
-    
-    # ~~~~~~~~~~~~~~~~~~~~~~~~ #
-    # Choose data for analysis #
-    # ~~~~~~~~~~~~~~~~~~~~~~~~ #
-    # feedforward: z07_F3, q11, k17_F3
-    # Catalysts : z07_F1, z09_F5, k17_F2
-    # Auto-catalysts : z07_F4, y08_F3, k17_F4
-    # missing: z10, z11c, g11
-
+   
 if __name__ == '__main__':
     main()
 

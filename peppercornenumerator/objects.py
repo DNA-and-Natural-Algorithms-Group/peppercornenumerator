@@ -138,7 +138,7 @@ class PepperComplex(DSD_Complex):
             self._concentration = None
         else:
             (mode, value, unit) = trip
-            assert isinstance(value, float)
+            assert isinstance(value, (int, float))
             self._concentration = PepperComplex.CONCENTRATION(mode, value, unit)
 
     def concentrationformat(self, out):

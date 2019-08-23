@@ -1,52 +1,80 @@
 # peppercornenumerator 
+This is a package for domain-level strand displacement (DSD) system analysis.
+The reaction enumerator **Peppercorn** reads a file with initially present
+domain-level complexes, and returns all possible reactions and products.
 
-This package enumerates domain-level strand displacement (DSD) reaction
-networks assuming low species concentrations, such that unimolecular reaction
-pathways always equilibrate before bimolecular reactions initiate. The
-enumerator can handle arbitrary non-pseudoknotted structures and supports a
-diverse set of unimolecular and bimolecular domain-level reactions: bind/unbind
-reactions, 3-way branch-migration and 4-way branch-migration reactions and
-remote toehold migration. For more background on reaction semantics we refer to
-the publication [Grun et al. (2014)].
+Peppercorn supports arbitrary non-pseudoknotted structures and the following
+domain-level reactions: bind, open, proximal 3-way and 4-way branch migration,
+remote 3-way and 4-way branch migration.  For more background on reaction
+semantics we refer to [Badelt et al. (2019)].
+
+Given a specification of initial species concentrations, the simulation
+software **Pilsimulator** can read Peppercorn's output and simulate expected
+species concentrations over time. Note that the reaction rates assume DNA
+molecules!
 
 ## Installation
+Please use Python 3 if possible. Python 3 is supported starting with version
+0.7 (now).  Python 2.7 support will be dropped at version 1.0 (released upon manuscript acceptance)
+
+
 ```bash
 $ python setup.py install
 ```
-or
+Please consider testing the installation first, e.g. using
 ```
-$ python setup.py install --user
+$ python setup.py test
 ```
 
 ## Quickstart using the executable "peppercorn"
 
-### Quickstart
-Load the file `system.pil`, write results to `system-enum.pil`:
-
+### General workflow
+After installation of the **peppercornenumerator** package, you must have
+two excutable scripts, try if they work and look at the options:
 ```sh
-$ peppercorn -o system-enum.pil system.pil
-```
-or read from STDIN and write to STDOUT:
-
-```sh
-$ cat system.pil | peppercorn > system-enum.pil
+$ peppercorn --help
+$ pilsimulator --help
 ```
 
+Use the executable **peppercorn** to load the file [example.pil] and write results to example-enum.pil:
+
+```sh
+# either using commandline flags
+$ peppercorn -o example-enum.pil example.pil
+# or read from STDIN and write to STDOUT:
+$ cat example.pil | peppercorn > example-enum.pil
+```
+Your can simulate the enumerated system using the **pilsimulator** executable.
+```sh
+$ cat example-enum.pil | pilsimulator --t8 1000 --p0 S1=1e-8 S2=1e-8 C1=1e07 
+```
+Note that default reaction rate constants assume 'M' concentration units, thus,
+you have to specify initial concentrations (--p0) using the same units. Check
+commandline options of peppercorn to change them, e.g. to 'nM'.
 
 ### Input/Output format
 
-The following input format is recommended. Sequence-level details may be
-provided, however they will be ignored during enumeration and rate computation.
+The following input format is recommended. The lengths of all domains are
+defined first, then all initial complexes are defined in terms of their
+sequence and secondary structure. For more details on the **kernel notation**
+of complexes, see Figure 1 or Section 2 of [Badelt et al. (2019)]. 
 
 ```
+# <- this is a comment
+#
 # Shohei Kotani and William L. Hughes (2017)
 # Multi-Arm Junctions for Dynamic DNA Nanotechnology
 # 
 # Figure 2A: Single-layer catalytic system with three-arm junction substrates.
-length a   = 22
+#
+
+#
+# Initialize domains (and their complements) and specify their lengths:
+#
+length a   = 22  # Domains a and a* with length = 22
 length b   = 22
 length c   = 22
-length t1  = 6   # name = 1 in Figure 
+length t1  = 6   # name = 1 in Figure
 length t2  = 6   # name = 2 in Figure
 length t3  = 10  # name = 3 in Figure
 length T2  = 2
@@ -54,9 +82,21 @@ length T2  = 2
 length d1s = 16
 length d2  = 6
 
-S1 = d1s T2 b( a( t2( + ) ) c*( t1* + ) )
-S2 = t1( c( a( + t2* ) b*( d2 t3 + ) ) )
+#
+# Initialize all initial complexes using kernel notation, 
+# which combines name, sequence and structure into a single line!
+# Always use 5' to 3' direction of sequences.
+#
+
+# The following complex is called C1, has a single strand with 3 unpaired domains:
 C1 = t1 c a
+
+# The complex S1 has multiple strands and is connected via paired domains!
+# Sequence of S1:  d1s T2 b a t2 + t2* a* c* t1* + c b* 
+# Structure of S1:  .  .  ( ( (  +  )  )  (   .  + ) )
+S1 = d1s T2 b( a( t2( + ) ) c*( t1* + ) ) 
+
+S2 = t1( c( a( + t2* ) b*( d2 t3 + ) ) )
 
 P1 = t2* a*( c*( t1*( + ) ) )
 I1 = d1s T2 b( a t2 + c )
@@ -71,10 +111,15 @@ D = d1s d2
 RW = d1s( T2 b( a( t2( + ) ) ) d2( t3( + ) ) )
 ```
 
+Let's use reaction condensation for a more compact representation of the
+reaction network. Also, this system requires us to increase the default 
+max size of complexes ...
 ```
-$ peppercorn -o system-enum.pil --max-complex-size 10 < system.pil
+$ peppercorn -o system-enum.pil --max-complex-size 10 --condensed < system.pil
 ```
 
+And then the output file should look something like this. The layout may vary
+between different Peppercorn versions.
 ```
 # File generated by peppercorn-v0.6
 
@@ -125,11 +170,68 @@ reaction [condensed      =       588645 /M/s ] S2 + I1 -> P3 + P2 + C1
 reaction [condensed      =        3e+06 /M/s ] S2 + R -> e51
 ```
 
+### Tips & Tricks
+  * You can specify concentrations of complexes in the input file, e.g.:
+
+        C1 = t1 c a @initial 10 nM
+
+    The benefit of hard-coding initial concentrations in the input file, is
+    that they do not have to be specified again when simulating the output
+    using the Pilsimulator software.
+
+  * You can name complexes, even though you do not want them initially present. To do that, give them explicitly 0 initial concentration:
+
+        I1 = d1s T2 b( a t2 + c ) @initial 0 nM
+
+  * Every file produced by Peppercorn, can be used as an input to Peppercorn,
+    although some types of input (e.g. macrostate assignments, condensed
+    reactions) may be ignored with a warning.  You can use that to specify
+    a reaction with a specific type and rate constant and that reaction will
+    then be part of the enumerated and condensed output of peppercorn. If
+    Peppercorn enumerates an already specified reaction (same type, same
+    complexes), the rate will not be updated.
+
+        reaction [branch-4way    =        1e-10 /s   ] I2 -> P3 + P2
+
+    Of course, all reactants and products must be previously defined complexes.
+    You can use the supported reaction types: 
+    open, bind21, bind11, branch-3way, branch-4way ... but not condensed!
+
+  * You can use a short-hand notation for a *super sequence* that is composed
+    of multiple domains. For example, if a domain *k* is sometimes split into
+    *k1*, *k2*, and *k3*, e.g. when they are not all bound at the same time,
+    you can define
+
+        sup-sequence k = k1 k2 k3
+
+    and use the domain *k* as a shorthand for *k1 k2 k3* when applicable.
+    Note, that the output will always use the extended format, explicitly
+    listing the most detailed domain composition.
+        
+  * You can specify the nucleotide sequence of a domain, and it will remain
+    present in the ouput file. Hower, note that rates (at the moment) only
+    depend on domain length, and not on the nucleotide sequence. Use the keyword
+    `sequence` to initialize a domain with the nucleotide sequence:
+
+        sequence a = ACGTUGCA : 8
+
+    The digit at the end denotes the length of the domain, it can be omitted,
+    but must not be wrong.
+
+  * Peppercorn supports a range of different input file formats, e.g. the
+    specification language of the [Seesaw Compiler]. You can use the option
+    `--dry-run` to translate every valid input into kernel format without
+    enumeration.
+
+        $ cat seesaw_ciruit.ssw | peppercorn --dry-run
+
 ## Version
 0.7
 
 ## Authors
-Casey Grun, Stefan Badelt, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.
+Stefan Badelt, Casey Grun, Karthik V. Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.
 
 [Grun et al. (2014)]: <https://arxiv.org/abs/1505.03738>
-
+[Badelt et al. (2019)]: <https://arxiv.org/abs/1505.03738>
+[example.pil]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator/blob/development/tests/files/examples/literature/kotani2017_F2.pil>
+[Seesaw Compiler]: <http://www.qianlab.caltech.edu/SeesawCompiler/AOtoSEESAW.php>
