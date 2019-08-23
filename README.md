@@ -233,5 +233,5 @@ Stefan Badelt, Casey Grun, Karthik V. Sarma, Brian Wolfe, Seung Woo Shin and Eri
 
 [Grun et al. (2014)]: <https://arxiv.org/abs/1505.03738>
 [Badelt et al. (2019)]: <https://arxiv.org/abs/1505.03738>
-[example.pil]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator/blob/development/tests/files/examples/literature/kotani2017_F2.pil>
+[example.pil]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator/blob/development/tests/examples/literature/kotani2017_F2.pil>
 [Seesaw Compiler]: <http://www.qianlab.caltech.edu/SeesawCompiler/AOtoSEESAW.php>
