@@ -17,67 +17,82 @@ from peppercornenumerator.objects import make_pair_table, pair_table_to_dot_brac
 # Rate constant formulas
 # ----------------------------------------------------------------------------
 
-def opening_rate(length, ddG=0, dissoc=True):
-    """
-    Rate constant formula for opening a duplex of a given `length`.
-    """
-    # use k_open = k_hybrid exp( (length * dG_bp + dG_assoc) / RT )
-    # where k_hybrid = 3x10^6 /M/s   from Zhang&Winfree 2009 and Srinivas et al 2013
-    #       dG_bp = -1.7 kcal/mol
-    #       dG_assoc = +1.9 kcal/mol
-    #       R = 0.001987 kcal/mol/K
-    #       T = (273.15 + 25) K
-    # return 7.41e7 * (0.0567 ** length)
-    #
-    # instead, use k_hybrid = L * 3 * 10^5, which matches the above for L=10.
-    # this is to be consistent with the bimolecular binding rate.
+class PeppercornRateModelError(Exception):
+    pass
 
-    RT = 0.001987 * 298.15 
+def opening_rate(length, dG_bp = -1.7, dG_assoc = 1.9, kelvin = 298.15, dissoc = True):
+    """ Rate constant for opening a duplex of a given `length`.
 
-    if True or dissoc: # Let's stick with the simple model for now.
+    k_open = k_bind * exp( (length * dG_bp + dG_assoc) / RT )
+
+    Args: 
+        dG_bp (flt): Energy contribution of a single WC base pair. 
+            Defaults to -1.7 kcal/mol.
+        dG_assoc (flt): Association energy penalty.
+            Defaults to 1.9 kcal/mol.
+        kelvin (flt): Temperature in K. Defaults to 298.15 (25 C).
+
+    Returns:
+        [float]: The rate constant.
+    """
+    # R = 0.001987 kcal/mol/K
+    # T = (273.15 + 25) K
+    RT = 0.001987 * kelvin
+
+    if True or dissoc: # stay with simple model!
         k_bind21 = bimolecular_binding_rate(length)
-        dG = length * (-1.7 + ddG) + 1.9 
+        dG = (length * dG_bp) + dG_assoc
         rate = k_bind21 * math.exp(dG/RT)
-    else :
-        k_bind11 = 1e6*length # using zipping and not bubble-closing
-        dG = length * (-1.7 + ddG)
+    else:
+        k_bind11 = 1e6 * length # using zipping rate, not bubble-closing
+        dG = length * dG_bp
         rate = k_bind11 * math.exp(dG/RT)
-
-    #return length * 7.41e6 * (0.0567 ** length)
     return rate
 
 def polymer_link_length(before, after):
-    """
-    Effective length estimate for (ss+ds) linkers between two domains, 
-    one or both of which may be open.
+    """ Length estimate [nt] for linkers loops connecting two domains.
+
+    Args:
+        before (Loop): A loop object for which we measure the length.
+        after (Loop): A loop object for which we measure the length.
+
+    Returns:
+        [float]: The length of the shorter loop.
     """
     L_stem = 2.0 / 0.43  # rough equivalent number of single-stranded nucleotides to span a stem
-    if not before.is_open:
-        L_before = 1 + before.bases + before.stems + L_stem * before.stems
-    if not after.is_open:
-        L_after = 1 + after.bases + after.stems + L_stem * after.stems
-    # for both closed & open cases, assume shorter length matters most
-    if not after.is_open and not before.is_open:
-        return min(L_before, L_after)
-    if not before.is_open:
-        return L_before
-    if not after.is_open:
-        return L_after
-    raise ValueError("Error: computing polymer lengths in disconnected complex!")
 
+    L_before = float('inf') if before.is_open else \
+            1 + before.bases + before.stems + L_stem * before.stems 
 
-def polymer_link_rate(linker_length):
+    L_after = float('inf') if after.is_open else \
+            1 + after.bases + after.stems + L_stem * after.stems
+
+    if after.is_open and before.is_open:
+        raise PeppercornRateModelError("Error: computing polymer lengths in disconnected complex!")
+
+    return min(L_before, L_after)
+
+def polymer_link_rate(hllen, ha = 1e6, hb = -2.5, kmax = 33000):
+    """ Unimolecular hairpin closing rate, as a function of hairpin loop length. 
+
+    References for default values: 
+    Bonnet et al 1998, Kuznetsov et al 2008, Nayak et al 2012, Tsukanov et al 2013ab
+
+    Args:
+        hllen (flt): Hairpin loop length. The number of unpaired bases in a
+            hairpin loop, or an arbitrary linker length in terms of an
+            equivalently long chain of unpaired bases.
+        ha (flt, optional): The rate for closing the first base-pair. 
+            Defaults to 1_000_000 [/s].
+        hb (flt, optional): Exponential factor to relate hllen to the
+            probability of forming the initial contact. Defaults to -2.5.
+        kmax (flt, optional): Fastest hairpin closing rate. Defaults to 33_000 [/s]. 
+            (E.g. hairpins shorter than 4 nt cannot close any faster than this.)
+
+    Returns:
+        [flt]: The rate for closing the initial base-pair of a hairpin.
     """
-    Unimolecular hairpin closing rate, as a function of effective linker length. 
-    """
-    # a = 2.5e7    # per second; fit from data in Bonnet et al 1998 only
-    a = 1e6        # per second; Kuznetsov et al 2008, Nayak et al 2012, Tsukanov et al 2013ab, all say at least 10x slower
-    # fit from data in Bonnet et al 1998, consistent with Kuznetsov et al 2008
-    b = -2.5
-    # hairpin closing adapted (simplified) from data in Bonnet et al 1998, modified as above
-    k = a * linker_length**b
-    # hairpins shorter than about 4 nt can't close any faster.
-    return min(k, 33000)
+    return min(ha * hllen**hb, kmax)
 
 
 def binding_rate(length, before, after):
@@ -234,20 +249,26 @@ def branch_4way_remote_rate(length, before, after, debug = False):
     # we slow down initiation and thus success probability (note: ratio < 1/30)
     return ratio / init / length
 
+def bimolecular_binding_rate(length, k_nuc = 3e5):
+    """ Rate constant formula for bimolecular association (binding).
 
-def bimolecular_binding_rate(length):
-    """
-    Rate constant formula for bimolecular association (binding).
-    """
-    # use k_hybrid = 3x10^6 /M/s   from Zhang&Winfree 2009
-    # return 3.0e6
-    #
-    # instead, use k_hybrid = L * 3 * 10^5, which matches the above for L=10.
-    # see Wetmur 1976 review, and Srinivas et al 2013 AEL model.
-    # another motivation is to have binding rate approx = if a domain is
-    # divided into two domains.
-    return length * 3e5
+    Hybridization is determined by well-aligned initial contacts, therefore 
+    dependent linearly on length
 
+    Literature: 
+        Wetmur 1976 review,
+        Srinivas et al. 2013 AEL model, 
+        Zhang & Winfree 2009.
+
+    Args:
+        length (int): The length of a domain.
+        k_nuc (flt, optional): The hybridization rate per nucleotide. 
+            Defaults to 3*10^5.
+
+    Returns:
+        [float]: The rate constant for bimolecular binding.
+    """
+    return length * k_nuc
 
 # Reaction functions
 # ----------------------------------------------------------------------------
@@ -474,7 +495,7 @@ def join_complexes_21(complex1, location1, complex2, location2):
 
     return new_complex, loc1, loc2
 
-def open(reactant, max_helix = True, release_11=6, release_1N=6, ddG=0):
+def open(reactant, max_helix = True, release_11 = 6, release_1N = 6, dG_bp = -1.7):
     """ Returns a list of open reactions.
 
     Args:
@@ -687,7 +708,7 @@ def open(reactant, max_helix = True, release_11=6, release_1N=6, ddG=0):
             reaction = PepperReaction([reactant], sorted(product_set), 'open')
             reaction.rotations = rotations
             reaction.meta = meta
-            reaction.const = opening_rate(length, ddG=ddG, dissoc=(len(product_set) > 1))
+            reaction.const = opening_rate(length, dG_bp = dG_bp)
         except DSDDuplicationError as e :
             reaction = e.existing
 

@@ -13,11 +13,30 @@ import os
 import sys
 import argparse
 
-from crnsimulator import ReactionGraph, get_integrator
+from crnsimulator import ReactionGraph
 from crnsimulator.odelib_template import add_integrator_args
 from peppercornenumerator.input import load_pil_crn
 from peppercornenumerator import __version__
 
+
+def get_integrator(filename, function = 'integrate'):
+    """Workaround to avoid deprecation warnings for the imp module. 
+
+    Switch to crnsimulator.get_integrator as soon as we drop Python 2.7 support.
+    """
+    try: # Python 3.7
+        import types
+        import importlib.machinery
+
+        loader = importlib.machinery.SourceFileLoader('myloader', filename)
+        mod = types.ModuleType(loader.name)
+        loader.exec_module(mod)
+
+        return getattr(mod, function)
+    except ImportError as err: # Python 2.7
+        import imp
+        _temp = imp.load_source('mysource', filename) # used to b odename instaed of 'mysource'
+        return getattr(_temp, function)
 
 class SimulationSetupError(Exception):
     pass
@@ -112,7 +131,7 @@ def main(args):
         print('# Simulating the ODE system. Change parameters using:')
         print("#  python {} --help ".format(filename))
 
-        integrate = get_integrator(odename, filename)
+        integrate = get_integrator(filename)
 
         # ********************* #
         # ARGUMENT PROCESSING 2 #

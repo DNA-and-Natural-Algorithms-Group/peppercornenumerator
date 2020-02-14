@@ -6,7 +6,7 @@ domain-level complexes, and returns all possible reactions and products.
 Peppercorn supports arbitrary non-pseudoknotted structures and the following
 domain-level reactions: bind, open, proximal 3-way and 4-way branch migration,
 remote 3-way and 4-way branch migration.  For more background on reaction
-semantics we refer to [Badelt et al. (2019)].
+semantics we refer to [Badelt et al. (2020)].
 
 Given a specification of initial species concentrations, the simulation
 software **Pilsimulator** can read Peppercorn's output and simulate expected
@@ -15,15 +15,18 @@ molecules!
 
 ## Installation
 Please use Python 3 if possible. Python 3 is supported starting with version
-0.7 (now).  Python 2.7 support will be dropped at version 1.0 (released upon manuscript acceptance)
+0.7.  Python 2.7 support will be dropped at version 1.0 (released upon
+manuscript acceptance).
 
 
 ```bash
 $ python setup.py install
 ```
-Please consider testing the installation first, e.g. using
-```
+Please consider testing the installation first, e.g. using any of the following
+commands:
+``` 
 $ python setup.py test
+$ pytest tests
 ```
 
 ## Quickstart using the executable "peppercorn"
@@ -36,28 +39,31 @@ $ peppercorn --help
 $ pilsimulator --help
 ```
 
-Use the executable **peppercorn** to load the file [example.pil] and write results to example-enum.pil:
+Use the executable **peppercorn** to load the file [example.pil] and write results to example_enum.pil:
 
 ```sh
 # either using commandline flags
-$ peppercorn -o example-enum.pil example.pil
+$ peppercorn -o example_enum.pil example.pil
 # or read from STDIN and write to STDOUT:
-$ cat example.pil | peppercorn > example-enum.pil
+$ cat example.pil | peppercorn > example_enum.pil
 ```
 Your can simulate the enumerated system using the **pilsimulator** executable.
 ```sh
-$ cat example-enum.pil | pilsimulator --t8 1000 --p0 S1=1e-8 S2=1e-8 C1=1e07 
+$ cat example_enum.pil | pilsimulator --t8 1800 --p0 S1=1e-7 S2=1e-7 C1=1e-9 --atol 1e-10 --rtol 1e-10
 ```
-Note that default reaction rate constants assume 'M' concentration units, thus,
-you have to specify initial concentrations (--p0) using the same units. Check
-commandline options of peppercorn to change them, e.g. to 'nM'.
+Note that default reaction rate constants assume 'M' concentration units, hence
+we use the same units for specification of initial concentrations (--p0). Due
+to those small numbers (molar concentrations), we have to specify more
+sensitive realtive and absolute tolerances for the solver.
+Check commandline options of peppercorn to change units, e.g. to 'nM', as well 
+as to provide initial concentrations directly in the input file.
 
 ### Input/Output format
 
 The following input format is recommended. The lengths of all domains are
 defined first, then all initial complexes are defined in terms of their
 sequence and secondary structure. For more details on the **kernel notation**
-of complexes, see Figure 1 or Section 2 of [Badelt et al. (2019)]. 
+of complexes, see Figure 1 or Section 2 of [Badelt et al. (2020)]. 
 
 ```
 # <- this is a comment
@@ -112,8 +118,8 @@ RW = d1s( T2 b( a( t2( + ) ) ) d2( t3( + ) ) )
 ```
 
 Let's use reaction condensation for a more compact representation of the
-reaction network. Also, this system requires us to increase the default 
-max size of complexes ...
+reaction network and increase the default maximum complex size to avoid
+(warnings about) incomplete enumeration.
 ```
 $ peppercorn -o system-enum.pil --max-complex-size 10 --condensed < system.pil
 ```
@@ -232,6 +238,6 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e51
 Stefan Badelt, Casey Grun, Karthik V. Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.
 
 [Grun et al. (2014)]: <https://arxiv.org/abs/1505.03738>
-[Badelt et al. (2019)]: <https://arxiv.org/abs/1505.03738>
+[Badelt et al. (2020)]: <https://arxiv.org/abs/1505.03738>
 [example.pil]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator/blob/development/tests/examples/literature/kotani2017_F2.pil>
 [Seesaw Compiler]: <http://www.qianlab.caltech.edu/SeesawCompiler/AOtoSEESAW.php>

@@ -85,6 +85,11 @@ class Enumerator(object):
         else :
             self._reactions = set()
 
+        # A list of "known" complexes, 
+        #   e.g. expected to show up during enumeration.
+        # This is useful when chosing representatives of resting macrostates.
+        self._named_complexes = list(PepperComplex.MEMORY.values())
+        
         # Enumeration results
         self._complexes = None
         self._resting_complexes = None
@@ -96,27 +101,16 @@ class Enumerator(object):
         self._detailed_reactions = None
         self._condensed_reactions = None
 
-        # Experimental support or debugging features
-        self.DFS = True
-        self.interruptible = False
-        self.interactive = False
-        self.local_elevation = False
-
-        # A list of "known" complexes, 
-        #   e.g. expected to show up during enumeration.
-        # This is useful when chosing representatives of resting macrostates.
-        self._named_complexes = list(PepperComplex.MEMORY.values())
-        
         # Polymerization settings to prevent infinite looping
         self._max_complex_count = max(200, len(self._initial_complexes))
         self._max_reaction_count = max(1000, len(self._reactions))
 
         # Settings for reaction enumeration. 
-        self._max_helix = True
+        self.max_helix = True
+        self.reject_remote = False
         self._release_11 = 7
         self._release_12 = 7
         self._max_complex_size = 6
-        self._reject_remote = False
 
         # Rate-dependent enumeration settings:
         #
@@ -130,7 +124,16 @@ class Enumerator(object):
         self._k_slow = 0 
         self._k_fast = 0
 
-        self.ddG_bind= 0 # adjust bimolecular binding strength
+        # Rate parameter adjustments
+        self.dG_bp = -1.7 # adjust bimolecular binding strength
+
+        # Debugging features
+        self.DFS = True
+        self.interactive = False
+        self.interruptible = False
+
+        # Not officially supported parameters
+        self.local_elevation = False
         self.p_min = 0 # minimum complex steady state probability to engage in slow reaction.
 
     @property
@@ -226,21 +229,24 @@ class Enumerator(object):
 
     @property
     def remote_migration(self):
-        return not self._reject_remote
+        print(DeprecationWarning('Peppercorn>=v0.7: use Enumerator.reject_remote instead of Enumerator.remote_migration.'))
+        return not self.reject_remote
 
     @remote_migration.setter
     def remote_migration(self, remote):
         assert isinstance(remote, bool)
-        self._reject_remote = not remote
+        print(DeprecationWarning('Peppercorn>=v0.7: use Enumerator.reject_remote instead of Enumerator.remote_migration.'))
+        self.reject_remote = not remote
 
     @property
     def max_helix_migration(self):
-        """ """
-        return self._max_helix
+        print(DeprecationWarning('Peppercorn>=v0.7: use Enumerator.max_helix instead of Enumerator.max_helix_migration.'))
+        return self.max_helix
 
     @max_helix_migration.setter
     def max_helix_migration(self, max_helix):
-      self._max_helix = max_helix
+        print(DeprecationWarning('Peppercorn>=v0.7: use Enumerator.max_helix instead of Enumerator.max_helix_migration.'))
+        self.max_helix = max_helix
 
     @property
     def initial_complexes(self):
@@ -619,14 +625,14 @@ class Enumerator(object):
             for move in FAST_REACTIONS[1]:
                 if move.__name__ == 'open':
                     move_reactions = move(complex, 
-                            max_helix = self._max_helix, 
+                            max_helix = self.max_helix, 
                             release_11 = self._release_11,
                             release_1N = self._release_12,
-                            ddG = self.ddG_bind)
+                            dG_bp = self.dG_bp)
                 else :
                     move_reactions = move(complex, 
-                            max_helix = self._max_helix, 
-                            remote = not self._reject_remote)
+                            max_helix = self.max_helix, 
+                            remote = not self.reject_remote)
 
                 if self.local_elevation:
                     reactions += [rxn for rxn in move_reactions if self._k_slow <= local_elevation_rate(rxn) < \
@@ -673,19 +679,19 @@ class Enumerator(object):
             if move.__name__ == 'open':
                 if restrict:
                     move_reactions = move(cplx, 
-                        max_helix = self._max_helix, 
+                        max_helix = self.max_helix, 
                         release_11 = self._release_11,
                         release_1N = self._release_12,
-                        ddG = self.ddG_bind)
+                        dG_bp = self.dG_bp)
                 else :
                     move_reactions = move(cplx, 
-                        max_helix = self._max_helix, 
+                        max_helix = self.max_helix, 
                         release_11 = 0, release_1N = 0,
-                        ddG = self.ddG_bind)
+                        dG_bp = self.dG_bp)
             else :
                 move_reactions = move(cplx, 
-                        max_helix = self._max_helix, 
-                        remote = not self._reject_remote)
+                        max_helix = self.max_helix, 
+                        remote = not self.reject_remote)
             
             for rxn in move_reactions: 
                 if maxsize and any(p.size > maxsize for p in rxn.products):

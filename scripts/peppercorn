@@ -112,9 +112,11 @@ def add_peppercorn_args(parser):
     semantics.add_argument('--k-fast', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be marked as slow.")
     semantics.add_argument('--p-min', default=0.0, type=float, metavar='<flt>',
-        help="""Minimal occupancy of a complex in steady state to engage in slow reactions.""")
-    semantics.add_argument('--ddG-bind', default=0.0, type=float, metavar='<flt>',
-        help="Adjust the toehold-binding energy (affects only the opening rate).")
+        #help="""Minimal occupancy of a complex in steady state to engage in slow reactions.""")
+        help=argparse.SUPPRESS)
+    semantics.add_argument('--dG-bp', default = -1.7, type = float, metavar = '<flt>',
+        help="""Adjust the average strength [kcal/mol] of a base-pair for toehold-binding 
+        (affects only the opening rate). """)
     semantics.add_argument('--local-elevation', action='store_true', 
         #help="""Local probability threshold to accept an unfavorable reaction.""")
         help=argparse.SUPPRESS)
@@ -259,9 +261,9 @@ def main(args):
     enum.k_slow = args.k_slow
     enum.k_fast = args.k_fast
     enum.p_min = args.p_min
-    enum.ddG_bind = args.ddG_bind
+    enum.dG_bp = args.dG_bp
 
-    enum.remote_migration = not args.reject_remote 
+    enum.reject_remote = args.reject_remote 
 
     if (args.k_fast or args.k_slow) and args.local_elevation:
         logging.warning('Turning off max-helix mode, since you are using: local-elevation')
@@ -269,7 +271,7 @@ def main(args):
         args.no_max_helix = True
     elif args.local_elevation:
         logging.warning('Ignoring local-elevation, since you are using the rate-independent model ')
-    enum.max_helix_migration = not args.no_max_helix
+    enum.max_helix = not args.no_max_helix
 
     enum.DFS = not args.bfs
     enum.interactive = args.interactive
@@ -334,8 +336,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            description="""Peppercorn: Domain-level nucleic acid reaction
-            enumerator. See README.{html, pdf} for usage examples. """)
+            description="""Peppercorn: Domain-level nucleic acid reaction enumerator.""")
     add_peppercorn_args(parser)
     args = parser.parse_args()
     main(args)
