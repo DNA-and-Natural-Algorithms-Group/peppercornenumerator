@@ -3,14 +3,13 @@
 #
 # Unittests for the Enumerator Object,
 #   I/O using pil / seesaw
-#   local-elevation
 #
 
 import unittest
 import logging
 logging.disable(logging.CRITICAL)
 
-from peppercornenumerator import Enumerator
+from peppercornenumerator.enumerator import Enumerator, enumerate_pil, enumerate_ssw
 from peppercornenumerator.input import read_pil, read_seesaw
 from peppercornenumerator.objects import PepperReaction, clear_memory, DSDObjectsError
 import peppercornenumerator.reactions as reactlib
@@ -153,8 +152,71 @@ class TestEnumeratorInterface(unittest.TestCase):
 
         self.assertTrue(F in [rms.canonical for rms in enum.resting_macrostates])
 
-    def test_local_folding(self):
+class TestWrappers(unittest.TestCase):
+
+    def setUp(self):
         pass
+
+    def tearDown(self):
+        clear_memory()
+
+    def test_enumerate_pil(self):
+        Zhang2009_F5 = """ 
+        # Domains
+        length a = 16
+        length bm = 5  # m
+        length br = 1  # m
+        length bc = 7
+        length bt  = 7
+        length n = 2  # n
+        length c = 13  # 15-n
+
+        # Species
+        S = a bm( br( bc( bt( + c* n* ) ) ) )
+        X = br bc bt n
+        L = br( bc( bt( n( + c* ) ) ) ) bm*
+        Y = a bm br bc bt
+        Z = bm br bc bt
+        W = bm( br( bc( bt( + c* n* ) ) ) )
+
+        R = a( bm( br( + bc* ) ) )
+        YW = a( bm( br( bc( bt + ) ) ) )
+        F = a bm br
+        """
+
+        enum, outp = enumerate_pil(Zhang2009_F5, is_file = False, enumfile = None, 
+                detailed = True, condensed = True, enumconc = 'nM',
+                dG_bp = -1.3, k_fast = 0.1, k_slow = 0.001)
+
+        assert isinstance(enum,  Enumerator)
+        assert isinstance(outp,  str)
+
+    def test_enumerate_seesaw(self):
+        Qian2011_F2C_OR = """
+        INPUT(x1) = w[1,2]
+        INPUT(x2) = w[3,2]
+        OUTPUT(y) = Fluor[6]
+        seesaw[2, {1,3}, {5}]
+        seesaw[5, {2}, {6,7}]
+        reporter[6,5]
+        
+        conc[w[5,7], 2*c]
+        conc[g[5, w[5,6]], 1*c]
+        conc[th[w[2,5],5], 0.66*c] # OR gate simulated using * 1.1
+        conc[g[2,w[2,5]], 2*c]
+        """
+        enum, outp = enumerate_ssw(Qian2011_F2C_OR, is_file = False,
+            ssw_expl = False,
+            ssw_conc = 100e-9,
+            ssw_rxns = 'T20-utbr-leak-reduced',
+            dry_run = True,
+            enumfile = None,
+            detailed = True, 
+            condensed = False, 
+            enumconc = 'nM')
+
+        assert isinstance(enum,  Enumerator)
+        assert isinstance(outp,  str)
 
 if __name__ == '__main__':
   unittest.main()

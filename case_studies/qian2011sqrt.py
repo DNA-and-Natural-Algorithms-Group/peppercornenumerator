@@ -43,9 +43,15 @@ reporter[25, 8]
 def data(evaluate=False, verbose = 0):
     from figure_analysis import FigureData
 
-    ddG_bind = {'ddG_bind': 0.0}
     rates = {'k_slow': 0.01, 'k_fast': 1}
-    seesaw = {'seesaw-rxns': 'seesaw-T25-utbr-leak-reduced', 'seesaw-conc': 50e-9}
+    seesaw_on = {'ssw_rxns': 'seesaw-T25-utbr-leak-reduced',
+            'ssw_expl': False,
+            'ssw_conc': 50e-9,
+            'dry_run': True}
+    seesaw_off = {'ssw_rxns': None,
+            'ssw_expl': False,
+            'ssw_conc': 50e-9,
+            'dry_run': False}
 
     # Default pilsimulator call
     psim = "pilsimulator --no-jacobian --nxy --header --atol 1e-13 --rtol 1e-13 --mxstep 1000 --t8 36000 --t-lin 18000"
@@ -170,8 +176,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['CONDENSED'].copy()
     #current.pepperargs['default'].update(rates)
-    #current.pepperargs['default'].update(ddG_bind)
-    current.pepperargs['default']['seesaw-conc'] = 50e-9
+    current.pepperargs['default'].update(seesaw_off)
     if evaluate:
         current.eval()
 

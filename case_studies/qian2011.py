@@ -156,10 +156,11 @@ def data(evaluate=False, verbose = 0):
     """ """
     from figure_analysis import FigureData
 
-    #ddG_bind = {'ddG_bind': 0.0}
     rates  = {'k_slow': 0.01, 'k_fast': 1}
-    seesaw = {'seesaw-rxns': 'seesaw-T20-utbr-leak-reduced', 
-              'seesaw-conc': 100e-9}
+    seesaw = {'ssw_rxns': None, #'T20-utbr-leak-reduced',
+            'ssw_expl': False,
+            'ssw_conc': 100e-9,
+            'dry_run': False}
 
     # Default pilsimulator call
     psim = "pilsimulator --no-jacobian --nxy --header"
@@ -200,6 +201,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate:
         current.eval()
@@ -240,6 +242,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate:
         current.eval()
@@ -271,6 +274,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate:
         current.eval()
@@ -303,6 +307,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate:
         current.eval()
@@ -340,6 +345,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate:
         current.eval()
@@ -377,6 +383,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate:
         current.eval()
@@ -433,6 +440,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate: 
         current.eval()
@@ -479,6 +487,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate:
         current.eval()
@@ -517,6 +526,7 @@ def data(evaluate=False, verbose = 0):
 
     current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
+    current.pepperargs['default'].update(seesaw)
 
     if evaluate:
         current.eval()

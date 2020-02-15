@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# TODO: 
-#   2) write tests
-#   4) merge into library
-
 from __future__ import division, absolute_import, print_function
 
 import os
@@ -11,89 +7,17 @@ import numpy as np
 import pandas as pd
 from subprocess import Popen
 from crnsimulator import parse_crn_string
+from pyparsing import ParseException
 
 from peppercornenumerator import Enumerator, __version__
+from peppercornenumerator.enumerator import enumerate_pil, enumerate_ssw
 from peppercornenumerator.objects import clear_memory
-from peppercornenumerator.condense import PepperCondensation
-from peppercornenumerator.input import read_pil, read_seesaw, ParseException
-from peppercornenumerator.output import write_pil
 
 class MissingDataError(Exception):
     pass
 
-#todo: docstring, libraryweakness, moveit
-def seesaw_model(pilstring, is_file = False, enumfile='',
-        detailed = True, condensed = False, conc = 'nM', **kwargs):
-    """
-    # return output format:
-    #   1) object
-    #   2) file   -> file 
-    #      string -> string 
-    """
-    utbr = kwargs.get('utbr_species', True)
-    cxs, rxns = read_seesaw(pilstring, is_file, 
-            explicit = False,
-            conc=kwargs['seesaw-conc'], 
-            reactions = kwargs['seesaw-rxns'])
-
-    enum = Enumerator(list(cxs.values()), rxns)
-    enum.dry_run()
-
-    if enumfile :
-        with open(enumfile, 'w') as fh :
-            write_pil(enum, fh=fh, detailed = detailed, condensed = condensed, 
-                    molarity = conc)
-            outstring = enumfile
-    else :
-        outstring = write_pil(enum, fh=None, detailed = detailed, condensed = condensed, 
-                molarity = conc)
-    
-    return enum, outstring
-
-def peppercorn(pilstring, is_file = False, enumfile='',
-        detailed = True, condensed = False, conc = 'nM', ssw_conc = 100e-9, **kwargs):
-    """
-    # return output format:
-    #   1) object
-    #   2) file   -> file 
-    #      string -> string 
-    """
-    try:
-        cxs, rxns, comp = read_pil(pilstring, is_file, composite = True)
-    except ParseException as ex_pil:
-        cxs, rxns = read_seesaw(pilstring, is_file, conc = ssw_conc, explicit = False)
-        comp = []
-
-    init_cplxs = list(filter(lambda x: x._concentration is None or \
-                    float(x._concentration[1]) != (0.0), cxs.values()))
-
-    enum = Enumerator(init_cplxs, rxns)
-
-    # set kwargs parameters
-    for k, w in kwargs.items():
-        if hasattr(enum, k):
-            setattr(enum, k, w)
-        else:
-            raise ValueError('No peppercorn attribute called: {}'.format(k))
-
-    enum.enumerate()
-
-    if enumfile :
-        with open(enumfile, 'w') as fh :
-            write_pil(enum, fh=fh, detailed = detailed, condensed = condensed, 
-                    composite = comp, molarity = conc)
-        outstring = enumfile
-    else :
-        outstring = write_pil(enum, fh=None, detailed = detailed, condensed = condensed, 
-                composite = comp, molarity = conc)
-    
-    return enum, outstring
-
-#NOTE: produces temporary files
 class FigureData(object):
-    """Produce DataFrames that compare Peppercorn's model with experimental data.
-
-    
+    """ Produce DataFrames that compare Peppercorn's model with experimental data.
 
     Examples:
         for a pilfile and arguments:
@@ -104,7 +28,7 @@ class FigureData(object):
                 reporter x and metric y gives tuple (t,c)
     """
 
-    def __init__(self, name, tmpdir='tmp/', force=True):
+    def __init__(self, name, tmpdir = 'tmp/', force = True):
         self.name = name
         self.fname = name.replace(' ', '_').replace('\n', '_').replace('(', '').replace(')', '')
         self.tmpdir = tmpdir
@@ -118,31 +42,31 @@ class FigureData(object):
 
         # Mapping of keyword to enumeration parameters
         self._pepperargs = {
-                'detailed' : {'conc' : 'nM'},
-                'Detailed' : {'conc' : 'nM',
-                             'max_complex_size' : 10, 
-                             'max_complex_count' : 1000,
-                             'max_reaction_count' : 5000},
-                'DETAILED' : {'conc' : 'nM',
-                             'max_complex_size' : 15, 
-                             'max_complex_count' : 10000,
-                             'max_reaction_count' : 50000},
-                'condensed': {'conc' : 'nM',
+                'detailed' : {'enumconc': 'nM'},
+                'Detailed' : {'enumconc': 'nM',
+                             'max_complex_size': 10, 
+                             'max_complex_count': 1000,
+                             'max_reaction_count': 5000},
+                'DETAILED' : {'enumconc': 'nM',
+                             'max_complex_size': 15, 
+                             'max_complex_count': 10000,
+                             'max_reaction_count': 50000},
+                'condensed': {'enumconc': 'nM',
                               'condensed': True},
-                'Condensed': {'conc' : 'nM',
+                'Condensed': {'enumconc': 'nM',
                               'condensed': True,
-                              'max_complex_size' : 10, 
-                              'max_complex_count' : 1000,
-                              'max_reaction_count' : 5000},
-                'CONDENSED': {'conc' : 'nM',
+                              'max_complex_size': 10, 
+                              'max_complex_count': 1000,
+                              'max_reaction_count': 5000},
+                'CONDENSED': {'enumconc': 'nM',
                               'condensed': True,
-                              'max_complex_size' : 15, 
-                              'max_complex_count' : 10000,
-                              'max_reaction_count' : 50000},
+                              'max_complex_size': 15, 
+                              'max_complex_count': 10000,
+                              'max_reaction_count': 50000},
                 }
 
         # Mapping of keyword to simulation parameters
-        self._simargs = { }
+        self._simargs = {}
         
         self._ratemode = False
         self._ratedata = []
@@ -157,11 +81,13 @@ class FigureData(object):
         self._simulated = set() # 
         self._simexecs = set() # 
 
-    def delete_tempfiles(self):
+    def delete_tempfiles(self, pretend = False, verbose = True):
         for ef in self._enumerated:
-            print('removing', ef)
-            #os.remove(ef)
-        #self._enumerated = set()
+            if verbose or pretend:
+                print('removing', ef)
+            if not pretend: os.remove(ef)
+        if not pretend:
+            self._enumerated = set()
 
     @property
     def pepperargs(self):
@@ -186,7 +112,7 @@ class FigureData(object):
         elif self._simmode:
             return self.get_system_dataframes()
 
-    def eval(self, pepperargs='default', cmpfig=False, verbose=0):
+    def eval(self, pepperargs = 'default', cmpfig = False, verbose = 0):
         if self._ratemode:
             return self.eval_reactions(pepperargs, verbose = verbose)
         elif self._simmode:
@@ -198,7 +124,7 @@ class FigureData(object):
     def canon_rxn(self, rxn):
         return '{} -> {}'.format(' + '.join(sorted(rxn[0])), ' + '.join(sorted(rxn[1])))
 
-    def add_reaction_rate_setup(self, pilstring, reaction, pilid=None):
+    def add_reaction_rate_setup(self, pilstring, reaction, pilid = None):
         # Supports only single reactions
         rxn, _ = parse_crn_string(reaction)
         reaction = self.canon_rxn(rxn[0])
@@ -208,8 +134,9 @@ class FigureData(object):
 
         self._ratedata.append((pilname, pilstring, reaction, rate, pilid))
         self._ratemode = True
+        assert not self._simmode
 
-    def eval_reactions(self, pepperargs='default', verbose=0):
+    def eval_reactions(self, pepperargs = 'default', verbose = 0):
         if not self._ratemode:
             raise MissingDataError('Cannot find ratedata for evaluation')
 
@@ -224,7 +151,7 @@ class FigureData(object):
 
             pname = name + '-input.pil'
             ename = name + '-enum.pil'
-            enumOBJ, _ = peppercorn(pname, is_file=True, enumfile=ename, **pargs)
+            enumOBJ, _ = enumerate_pil(pname, is_file = True, enumfile = ename, **pargs)
             rxns = enumOBJ.condensed_reactions \
                     if pargs.get('condensed', False) else enumOBJ.detailed_reactions
 
@@ -276,25 +203,22 @@ class FigureData(object):
         self._simargs[simargs]=simulation
         self._simdata.append((pilname, pilstring, simargs, reporter, metric, minfo, time, conc))
         self._simmode = True
+        assert not self._ratemode
 
-    def eval_system(self, pepperargs='default', cmpfig=False, verbose=0):
+    def eval_system(self, pepperargs = 'default', cmpfig = False, verbose = 0):
         if pepperargs in self._pepperargs:
             pargs = self._pepperargs[pepperargs].copy()
             condensed = pargs.pop('condensed', False)
-            if not 'seesaw-rxns' in pargs:
-                ssw_conc = pargs.pop('seesaw-conc', 100e-9)
         else:
-            raise MissingDataError(
-                    'Cannot find key "{}" in pepperargs'.format(pepperargs))
+            raise MissingDataError('Cannot find key "{}" in pepperargs'.format(pepperargs))
 
         simcalc = []
         trajectories = None
-        clast = ''
         for name, pilstring, simargs, reporter, metric, minfo, time, conc in self._simdata:
             clear_memory()
 
             if verbose:
-                print("{}: {}".format(name, pepperargs))
+                print("Evaluating {}: {}".format(name, pepperargs))
 
             pname = '{}-{}.pil'.format(name, 'input')
             ename = '{}-{}-{}.pil'.format(name, pepperargs, 'enum')
@@ -303,35 +227,35 @@ class FigureData(object):
             if '/' in simargs : #NOTE hack
                 sname = '{}-{}-{}'.format(name, pepperargs, 'simu')
             else :
-                sname = '{}-{}-{}-{}'.format(name, 
-                        pepperargs, simargs, 'simu')
+                sname = '{}-{}-{}-{}'.format(name, pepperargs, simargs, 'simu')
 
             # First, enumerate
             if ename not in self._enumerated:
-                """ do enumerate """
-                if 'seesaw-rxns' in pargs:
-                    _ , xname = seesaw_model(pname, is_file=True, 
-                                             enumfile=ename, **pargs)
-                else:
-                    _ , xname = peppercorn(pname, is_file=True, enumfile=ename, 
-                        detailed = (not condensed), condensed = condensed, 
-                        ssw_conc = ssw_conc, **pargs)
-                assert xname == ename
+                if verbose:
+                    print("Enumerating ... ")
+                try:
+                    enumerate_pil(pname, is_file = True, enumfile = ename, 
+                        detailed = (not condensed), condensed = condensed, **pargs)
+                except ParseException as err:
+                    enumerate_ssw(pname, is_file = True, enumfile = ename, 
+                        detailed = (not condensed), condensed = condensed, **pargs)
                 self._enumerated.add(ename)
 
             # Second, simulate 
             if sname not in self._simulated:
+                if verbose:
+                    print("Simulating ... ")
                 sim = self._simargs[simargs]
                 nxy = simulate_pil(ename, sexec, sname, sim.split(), 
-                        force= not (sexec in self._simexecs))
+                        force = not (sexec in self._simexecs))
                 self._simexecs.add(sexec)
                 self._simulated.add(sname)
-                clast = cname
             else :
                 nxy = sname + '.nxy'
-                clast = cname
 
             # Third, analyze from file data
+            if verbose:
+                print("Analyze ... ")
             if metric == 'completion-time':
                 sim_time = nxy_get_time_at_conc(nxy, reporter, conc)
                 sim_conc = conc
@@ -353,6 +277,8 @@ class FigureData(object):
                 raise NotImplementedError('Metric "{}" not supported.'.format(metric))
 
             if cmpfig :
+                if verbose:
+                    print("Compare ... ")
                 tr = nxy_get_trajectory(nxy, reporter)
                 if cmpfig is True:
                     tr.rename(columns={reporter:simargs}, inplace=True)
@@ -577,7 +503,7 @@ def main():
 
     for fig in analysis:
         print("\n{}:".format(fig.name))
-        fig.eval('default', verbose=1)
+        fig.eval('default', verbose = 0)
         for df in fig.get_dataframes():
             print(df)
 

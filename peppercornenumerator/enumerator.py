@@ -13,12 +13,13 @@ import sys
 import math
 import logging
 
+from peppercornenumerator.condense import PepperCondensation
 from peppercornenumerator.objects import PepperMacrostate, PepperComplex
 from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
-from peppercornenumerator.condense import PepperCondensation
-import peppercornenumerator.utils as utils
-import peppercornenumerator.reactions as reactlib
+from peppercornenumerator.utils import PeppercornUsageError
+from peppercornenumerator.input import read_pil, read_seesaw
 from peppercornenumerator.output import write_pil
+import peppercornenumerator.reactions as reactlib
 
 
 # There should be better control of this limit -- only set it when
@@ -77,7 +78,7 @@ class Enumerator(object):
         assert isinstance(initial_complexes, list)
         for cplx in initial_complexes:
             if not cplx.is_connected:
-                raise utils.PeppercornUsageError('Initial complex is not connected: {}'.format(cplx))
+                raise PeppercornUsageError('Initial complex is not connected: {}'.format(cplx))
 
         # list containing all detailed reactions after enumeration
         if initial_reactions:
@@ -145,7 +146,7 @@ class Enumerator(object):
         assert isinstance(value, int)
         if not all(cx.size <= value for cx in self._initial_complexes):
             msize = max([c.size for c in self._initial_complexes])
-            raise utils.PeppercornUsageError(
+            raise PeppercornUsageError(
                     'Maximum complex size must include all input complexes.',
                     'Set to at least: {}'.format(msize))
         self._max_complex_size = value
@@ -178,12 +179,12 @@ class Enumerator(object):
             (rc, k_rc) = (0, None)
             while True:
                 rc += 1
-                k_rc = reactlib.opening_rate(rc)
+                k_rc = reactlib.opening_rate(rc, dG_bp = self.dG_bp)
                 if k_rc < value: break
             self.release_cutoff = max(rc, self.release_cutoff)
 
         if 0 < self.k_fast < value :
-            raise utils.PeppercornUsageError('k-slow must not be bigger than k-fast.')
+            raise PeppercornUsageError('k-slow must not be bigger than k-fast.')
 
         self._k_slow = value
 
@@ -194,13 +195,13 @@ class Enumerator(object):
     @k_fast.setter
     def k_fast(self, value):
         if 0 < value < self.k_slow:
-            raise utils.PeppercornUsageError('k-fast must not be smaller than k-slow.')
+            raise PeppercornUsageError('k-fast must not be smaller than k-slow.')
         self._k_fast = value
 
     @property
     def release_cutoff(self):
         if self._release_11 != self._release_12 :
-            raise utils.PeppercornUsageError('Ambiguous release cutoff request.')
+            raise PeppercornUsageError('Ambiguous release cutoff request.')
         return self._release_11
 
     @release_cutoff.setter
@@ -292,7 +293,7 @@ class Enumerator(object):
         called before access.
         """
         if self._resting_macrostates is None:
-            raise utils.PeppercornUsageError("enumerate not yet called!")
+            raise PeppercornUsageError("enumerate not yet called!")
         return self._resting_macrostates[:]
 
     @property
@@ -302,7 +303,7 @@ class Enumerator(object):
         called before access.
         """
         if self._complexes is None:
-            raise utils.PeppercornUsageError("enumerate not yet called!")
+            raise PeppercornUsageError("enumerate not yet called!")
         return self._complexes[:]
 
     @property
@@ -312,7 +313,7 @@ class Enumerator(object):
         :py:meth:`.enumerate` must be called before access.
         """
         if self._resting_complexes is None:
-            raise utils.PeppercornUsageError("enumerate not yet called!")
+            raise PeppercornUsageError("enumerate not yet called!")
         return self._resting_complexes[:]
 
     @property
@@ -323,7 +324,7 @@ class Enumerator(object):
         called before access.
         """
         if self._transient_complexes is None:
-            raise utils.PeppercornUsageError("enumerate not yet called!")
+            raise PeppercornUsageError("enumerate not yet called!")
         return self._transient_complexes[:]
 
     def __eq__(self, other):
@@ -337,7 +338,7 @@ class Enumerator(object):
         Make it look like you've enumerated, but actually do nothing...
         """
         if self._complexes:
-            raise utils.PeppercornUsageError('Cannot call dry-run after enumeration!')
+            raise PeppercornUsageError('Cannot call dry-run after enumeration!')
 
         rep = set(self._named_complexes) if self._named_complexes else set(self._initial_complexes)
         rxs = [r for r in list(self._reactions) if len(r.reactants) == 1]
@@ -478,8 +479,8 @@ class Enumerator(object):
             except KeyboardInterrupt:
                 logging.warning("Interrupted; gracefully exiting...")
                 finish(premature=True)
-            except PolymerizationError as e:
-                logging.exception(e)
+            except PolymerizationError as err:
+                logging.exception(err)
                 logging.error("Polymerization error; gracefully exiting...")
                 finish(premature=True)
         else:
@@ -520,7 +521,7 @@ class Enumerator(object):
         lists and list of reactions accordingly.
 
         Args:
-            source (:obj:`utils.Complex`): Initial complex to generate a
+            source (:obj:`PepperComplex`): Initial complex to generate a
                 neighborhood of fast reactions.
         """
 
@@ -881,6 +882,108 @@ class Enumerator(object):
             eleven = 0
 
         return eleven
+
+def enumerate_pil(pilstring, 
+        is_file = False, 
+        enumfile = None,
+        detailed = True, 
+        condensed = False, 
+        enumconc = 'M', 
+        **kwargs):
+    """ A wrapper function to directly enumerate a pilstring or file.
+
+    Args:
+        pilstring (str): Either a full pil string or a file name containing that string.
+        is_file (bool, optional): True if pilstring is a filename, False otherwise. 
+            Defaults to False.
+        enumfile (str, optional): A filename for the enumerated output. The function 
+            returns the output string if no enumfile is specified. Defaults to None.
+        detailed (bool, optional): Returns the detailed reaction network. Defaults to True.
+        condensed (bool, optional): Returns the condensed reaction network. Defaults to False.
+        enumconc (str, optional): Chose concentation units for output: 'M', 'mM', 'uM', 'nM', ...
+        **kwargs: Attributes of the peppercornenumerator.Enumerator object.
+
+    Returns:
+        Enumerator-object, Outputstring
+    """
+    cxs, rxns, comp = read_pil(pilstring, is_file, composite = True)
+
+    init_cplxs = list(filter(lambda x: x._concentration is None or \
+                    float(x._concentration[1]) != (0.0), cxs.values()))
+
+    enum = Enumerator(init_cplxs, rxns)
+
+    # set kwargs parameters
+    for k, w in kwargs.items():
+        if hasattr(enum, k):
+            setattr(enum, k, w)
+        else:
+            raise PeppercornUsageError('No Enumerator attribute called: {}'.format(k))
+
+    enum.enumerate()
+
+    outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, 
+                composite = comp, molarity = enumconc)
+    
+    return enum, outstring
+
+def enumerate_ssw(sswstring, 
+        is_file = False, 
+        ssw_expl = False,
+        ssw_conc = 100e-9,
+        ssw_rxns = 'T25-utbr-leak-reduced',
+        dry_run = True,
+        enumfile = None,
+        detailed = True, 
+        condensed = False, 
+        enumconc = 'M', 
+        **kwargs):
+    """ A wrapper function to directly enumerate a seesaw string or file.
+
+    Args:
+        sswstring (str): Either a full seesaw string or a file name containing that string.
+        is_file (bool, optional): True if sswstring is a filename, False otherwise. 
+            Defaults to False.
+
+        ssw_expl (bool, optional): Explict domain-level specification? Defaults to False.
+        ssw_conc (str, optional): 1x concentation in 'M'. Defaulst to 1e-7.
+        ssw_rxns (str, optional): Specify the kind of seesaw reactions. Defaults to 
+            T25-utbr-leak-reduced.
+        dry_run (bool, optional): True if peppercorn enumeration is desired. Defaults to False.
+        enumfile (str, optional): A filename for the output. The function 
+            returns the output string if no enumfile is specified. Defaults to None.
+        detailed (bool, optional): Returns the detailed reaction network. Defaults to True.
+        condensed (bool, optional): Returns the condensed reaction network. Defaults to False.
+        enumconc (str, optional): Chose concentation units for output: 'M', 'mM', 'uM', 'nM', ...
+        **kwargs: Attributes of the peppercornenumerator.Enumerator object.
+
+    Returns:
+        Enumerator-object, Outputstring
+    """
+    utbr = kwargs.get('utbr_species', True)
+    cxs, rxns = read_seesaw(sswstring, is_file, 
+            explicit = ssw_expl,
+            conc = ssw_conc,
+            reactions = ssw_rxns)
+
+    enum = Enumerator(list(cxs.values()), rxns)
+
+    # set kwargs parameters
+    for k, w in kwargs.items():
+        if hasattr(enum, k):
+            setattr(enum, k, w)
+        else:
+            raise PeppercornUsageError('No Enumerator attribute called: {}'.format(k))
+
+    if dry_run:
+        enum.dry_run()
+    else:
+        enum.enumerate()
+
+    outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, molarity = enumconc)
+   
+    return enum, outstring
+
 
 def segment_neighborhood(complexes, reactions, p_min=None, represent=None):
     """
