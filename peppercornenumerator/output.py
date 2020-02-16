@@ -282,10 +282,11 @@ def write_vdsd(enumerator, fh = None, detailed = True, condensed = False,
 
     return ''.join(out)
 
-def write_sbml(enumerator, fh = None, condensed = False, molarity = 'M', time = 's'):
-    assert molarity == 'M'
-    import xml.dom.minidom # hmmm ...
+def write_sbml(enumerator, fh = None, condensed = False):
+    molarity = 'M'
     filename = 'tmpname'
+
+    import xml.dom.minidom # hmmm ...
 
     if condensed :
         complexes = natural_sort(enumerator.resting_macrostates)
@@ -321,7 +322,7 @@ def write_sbml(enumerator, fh = None, condensed = False, molarity = 'M', time = 
     if condensed:
         for rm in complexes:
             clist = [c.concentrationformat(molarity).value \
-                    for c in resting.complexes if c.concentration is not None]
+                    for c in rm.complexes if c.concentration is not None]
             mconc = sum(clist) if sum(clist) else 0.0 # if else needed?
             out.append('<species compartment="reaction" id="{:s}" name="{:s}" initialConcentration="{:g}"/>'.format(rm.canonical_name, rm.canonical_name, mconc))
     else:
@@ -336,10 +337,10 @@ def write_sbml(enumerator, fh = None, condensed = False, molarity = 'M', time = 
     for (i, rxn) in enumerate(reactions):
         out += ['<reaction id="{:d}" reversible="false">'.format(i), 
                 '<listOfReactants>'] + \
-                 ['<speciesReference species="{:s}"/>'.format(s) for s in rxn.reactants] + \
+                 ['<speciesReference species="{:s}"/>'.format(str(s)) for s in rxn.reactants] + \
                 ['</listOfReactants>', 
                  '<listOfProducts>'] + \
-                 ['<speciesReference species="{:s}"/>'.format(s) for s in rxn.products] + \
+                 ['<speciesReference species="{:s}"/>'.format(str(s)) for s in rxn.products] + \
                 ['</listOfProducts>']
 
         # unimolecular rate constants have units 1/s, bimolecular rate
@@ -349,7 +350,7 @@ def write_sbml(enumerator, fh = None, condensed = False, molarity = 'M', time = 
         out += ['<kineticLaw>', 
                 '<math xmlns="http://www.w3.org/1998/Math/MathML">', 
                 '<apply>', '<times />', 
-                '<ci>k</ci>'] + [ '<ci>{:s}</ci>'.format(s) for s in rxn.reactants] + \
+                '<ci>k</ci>'] + [ '<ci>{:s}</ci>'.format(str(s)) for s in rxn.reactants] + \
                 ['</apply>', 
                  '</math>', 
                  '<listOfParameters>', 
