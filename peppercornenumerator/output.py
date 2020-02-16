@@ -282,3 +282,90 @@ def write_vdsd(enumerator, fh = None, detailed = True, condensed = False,
 
     return ''.join(out)
 
+def write_sbml(enumerator, fh = None, condensed = False, molarity = 'M', time = 's'):
+    assert molarity == 'M'
+    import xml.dom.minidom # hmmm ...
+    filename = 'tmpname'
+
+    if condensed :
+        complexes = natural_sort(enumerator.resting_macrostates)
+        reactions = natural_sort(enumerator.condensed_reactions)
+    else:
+        complexes = natural_sort(enumerator.resting_complexes + enumerator.transient_complexes)
+        reactions = natural_sort(enumerator.reactions)
+
+    header = '<?xml version="1.0" encoding="UTF-8"?>'
+    out = [header,
+            '<sbml level="2" version="3" xmlns="http://www.sbml.org/sbml/level2/version3">',
+            '<model name="{:s}">'.format(filename),
+            '<listOfUnitDefinitions>',
+                '<unitDefinition id="per_second">',
+                    '<listOfUnits>',
+                        '<unit kind="second" exponent="-1"/>',
+                    '</listOfUnits>',
+                '</unitDefinition>',
+                '<unitDefinition id="litre_per_mole_per_second">',
+                    '<listOfUnits>',
+                        '<unit kind="mole"   exponent="-1"/>',
+                        '<unit kind="litre"  exponent="1"/>',
+                        '<unit kind="second" exponent="-1"/>',
+                    '</listOfUnits>',
+                '</unitDefinition>',
+            '</listOfUnitDefinitions>',
+            '<listOfCompartments>',
+                '<compartment id="reaction" size="1e-3" />',
+            '</listOfCompartments>',
+            '<listOfSpecies>']
+
+    # Tags for each species.
+    if condensed:
+        for rm in complexes:
+            clist = [c.concentrationformat(molarity).value \
+                    for c in resting.complexes if c.concentration is not None]
+            mconc = sum(clist) if sum(clist) else 0.0 # if else needed?
+            out.append('<species compartment="reaction" id="{:s}" name="{:s}" initialConcentration="{:g}"/>'.format(rm.canonical_name, rm.canonical_name, mconc))
+    else:
+        for cplx in complexes:
+            conc = cplx.concentrationformat(molarity).value if cplx.concentration else 0.0
+            out.append('<species compartment="reaction" id="{:s}" name="{:s}" initialConcentration="{}"/>'.format(cplx.name, cplx.name, conc))
+
+    out += ['</listOfSpecies>',
+            '<listOfReactions>']
+
+    # Tags for each reaction.
+    for (i, rxn) in enumerate(reactions):
+        out += ['<reaction id="{:d}" reversible="false">'.format(i), 
+                '<listOfReactants>'] + \
+                 ['<speciesReference species="{:s}"/>'.format(s) for s in rxn.reactants] + \
+                ['</listOfReactants>', 
+                 '<listOfProducts>'] + \
+                 ['<speciesReference species="{:s}"/>'.format(s) for s in rxn.products] + \
+                ['</listOfProducts>']
+
+        # unimolecular rate constants have units 1/s, bimolecular rate
+        # constants have units 1/M/s
+        units = 'per_second' if rxn.arity[0] == 1 else 'litre_per_mole_per_second'
+
+        out += ['<kineticLaw>', 
+                '<math xmlns="http://www.w3.org/1998/Math/MathML">', 
+                '<apply>', '<times />', 
+                '<ci>k</ci>'] + [ '<ci>{:s}</ci>'.format(s) for s in rxn.reactants] + \
+                ['</apply>', 
+                 '</math>', 
+                 '<listOfParameters>', 
+                    '<parameter id="k"  value="{:10f}" units="{:s}"/>'.format(
+                        rxn.const, units), 
+                    '</listOfParameters>', '</kineticLaw>', '</reaction>']
+
+    out.extend(['</listOfReactions>',
+                '</model>',
+                '</sbml>']);
+
+    doc = xml.dom.minidom.parseString("".join(out))
+    
+    if fh is None:
+        return header + '\n' + doc.documentElement.toprettyxml(indent="  ")
+    else:
+        fh.write(header+'\n'+doc.documentElement.toprettyxml(indent="  "))
+        return ''
+

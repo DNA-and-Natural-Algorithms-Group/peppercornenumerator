@@ -332,6 +332,8 @@ def main(args):
                          detailed=detailed, condensed=condensed, composite=composite, 
                          molarity=args.concentration_unit, time = args.time_unit)
     print(output, end='')
+    from peppercornenumerator.output import write_sbml
+    print(write_sbml(enum, None, condensed = False, molarity = 'M'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
