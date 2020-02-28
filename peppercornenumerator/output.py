@@ -1,10 +1,12 @@
 #
-#  output.py
+#  peppercornenumerator/output.py
 #  EnumeratorProject
 #
-#  Created by Karthik Sarma on 6/21/10.
-#  modifications by Stefan Badelt.
-#
+from __future__ import absolute_import, print_function, division
+from builtins import map
+
+import logging
+log = logging.getLogger(__name__)
 
 from peppercornenumerator import __version__
 from peppercornenumerator.utils import natural_sort

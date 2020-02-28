@@ -1,11 +1,9 @@
+#!/usr/bin/env python
 #
 #  test_reactions.py
+#  EnumeratorProject
 #
-
-import copy
 import unittest
-import logging
-logging.disable(logging.CRITICAL)
 
 from peppercornenumerator import Enumerator
 from peppercornenumerator.input import read_pil

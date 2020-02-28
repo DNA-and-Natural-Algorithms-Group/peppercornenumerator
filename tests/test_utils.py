@@ -1,14 +1,9 @@
+#!/usr/bin/env python
 #
 #  test_utils.py
 #  EnumeratorProject
 #
-#  Created by Karthik Sarma on 4/21/10.
-#
-
 import unittest
-
-import logging
-logging.disable(logging.CRITICAL)
 
 from peppercornenumerator.utils import *
 from peppercornenumerator.input import read_pil

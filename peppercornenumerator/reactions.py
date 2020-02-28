@@ -1,11 +1,12 @@
 #
-#  reactions.py
+#  peppercornenumerator/reactions.py
 #  EnumeratorProject
 #
-#  Created by Karthik Sarma on 4/18/2010.
-#  Modifications by Casey Grun and Erik Winfree 8/15/2014.
-#  Modifications by Stefan Badelt 09/2019
 from __future__ import absolute_import, print_function, division
+from builtins import map
+
+import logging
+log = logging.getLogger(__name__)
 
 import math
 

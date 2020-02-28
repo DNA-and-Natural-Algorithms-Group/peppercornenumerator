@@ -1,17 +1,14 @@
 #
-#  utils.py
+#  peppercornenumerator/utils.py
 #  EnumeratorProject
 #
-#  Created by Karthik Sarma on 4/18/10.
-#  Modifications by Casey Grun and Erik Winfree 8/15/2014.#
-#  Modifications by Stefan Badelt (see GiT history)
+from __future__ import absolute_import, print_function, division
+
+import logging
+log = logging.getLogger(__name__)
 
 import re
 import sys
-import logging
-
-SHORT_DOMAIN_LENGTH = 6
-LONG_DOMAIN_LENGTH = 12
 
 class PeppercornUsageError(Exception):
     """Error class to catch usage errors."""
@@ -49,15 +46,6 @@ def find(f, seq, default=None):
         if f(item):
             return item
     return default
-
-def warning(message):
-    # from termcolor import colored, cprint
-    # cprint("Warning: " + message, 'yellow')
-    logging.warning(message)
-
-def error(message):
-    logging.error(message)
-    sys.exit(1)
 
 def index_parts(enum):
     """

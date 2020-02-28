@@ -1,13 +1,9 @@
+#!/usr/bin/env python
 #
 #  test_enumerator.py
+#  EnumeratorProject
 #
-# Unittests for the Enumerator Object,
-#   I/O using pil / seesaw
-#
-
 import unittest
-import logging
-logging.disable(logging.CRITICAL)
 
 from peppercornenumerator.enumerator import Enumerator, enumerate_pil, enumerate_ssw
 from peppercornenumerator.input import read_pil, read_seesaw

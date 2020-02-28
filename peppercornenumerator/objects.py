@@ -1,5 +1,13 @@
+#
+#  peppercornenumerator/objects.py
+#  EnumeratorProject
+#
+from __future__ import absolute_import, print_function, division
+from builtins import map
 
 import logging
+log = logging.getLogger(__name__)
+
 import numpy as np
 from collections import namedtuple
 
@@ -119,7 +127,7 @@ class PepperComplex(DSD_Complex):
         except DSDObjectsError :
             backup = 'enum' if prefix != 'enum' else 'pepper'
             super(PepperComplex, self).__init__(sequence, structure, name, backup, memorycheck)
-            logging.warning('Complex name existed, prefix has been changed to: {}'.format(backup))
+            log.warning('Complex name existed, prefix has been changed to: {}'.format(backup))
         
         # Peppercorn IO:
         self._concentration = None
@@ -166,14 +174,6 @@ class PepperComplex(DSD_Complex):
     def triple(self, *loc):
         # overwrite standard func
         return (self.get_domain(loc), self.get_paired_loc(loc), loc)
-
-    def get_strand(self, loc):
-        """
-        Returns the strand at the given index in this complex
-        """
-        if(loc is not None):
-            return self._strands[loc]
-        return None
 
     @property
     def available_domains(self):
@@ -371,7 +371,7 @@ class PepperMacrostate(DSD_Macrostate):
 
         # make sure all elements of fundamental matrix are >= 0
         if not (N >= 0).all() :  # --- commented out by EW (temporarily)
-            logging.error('Negative elements in fundamental matrix. Condensed reaction rates may be incorrect.')
+            log.error('Negative elements in fundamental matrix. Condensed reaction rates may be incorrect.')
     
         # calculate the absorption matrix (B = NR)
         B = np.dot(N, R)
@@ -429,7 +429,7 @@ class PepperMacrostate(DSD_Macrostate):
             epsilon = 1e-5
             i = np.argmin(np.abs(w))
             if abs(w[i]) > epsilon:
-                logging.warn(
+                log.warn(
                     ("Bad stationary distribution for resting set transition matrix. " +
                      "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
                      "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
@@ -442,13 +442,13 @@ class PepperMacrostate(DSD_Macrostate):
                 #    print(cl, '=', cl.kernel_string, sd)
                 #for rxn in reactions:
                 #    print(rxn, rxn.rate)
-                logging.error('Stationary distribution of resting set complex' +
+                log.error('Stationary distribution of resting set complex' +
                         'should not be an eigenvector of mixed sign.')
 
             self._stationary_distribution = s / np.sum(s)
 
             if not (abs(np.sum(self._stationary_distribution) - 1) < epsilon) :
-                logging.error('Stationary distribution of resting set complex' +
+                log.error('Stationary distribution of resting set complex' +
                         'should sum to 1 after normalization. Condensed reaction' +
                         'rates may be incorrect.')
 
