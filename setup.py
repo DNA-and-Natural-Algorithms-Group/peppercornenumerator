@@ -14,7 +14,7 @@ migration. For more background on reaction semantics we refer to the README.
 
 setup(
     name='peppercornenumerator',
-    version='0.7',
+    version='0.7.1',
     description='Domain-level nucleic acid reaction enumerator',
     long_description=LONG_DESCRIPTION,
     author='Stefan Badelt, Casey Grun, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree',

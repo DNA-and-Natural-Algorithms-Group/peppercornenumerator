@@ -2,7 +2,7 @@
 #  __init__.py
 #  EnumeratorProject
 #
-__version__ = "v0.7"
+__version__ = "v0.7.1"
 
 import sys
 import logging
