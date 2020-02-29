@@ -6,7 +6,7 @@ __version__ = "v0.7.1"
 
 import sys
 import logging
-logging.basicConfig(stream = sys.stdout, level = logging.CRITICAL)
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 from peppercornenumerator.enumerator import Enumerator, PolymerizationError
 from peppercornenumerator.enumerator import enumerate_pil, enumerate_ssw
