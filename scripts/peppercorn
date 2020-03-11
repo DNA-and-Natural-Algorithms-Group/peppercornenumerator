@@ -287,16 +287,12 @@ def main(args):
         logger.info('Rate-dependent enumeration: k-slow = {}'.format(enum.k_slow))
         logger.info('  - corresponding release-cutoff: {} < L < {}'.format(rc-1, rc))
     else:
-        if args.release_cutoff_1_1 == args.release_cutoff_1_2:
-            args.release_cutoff = args.release_cutoff_1_1 
-
         if args.release_cutoff is not None:
             enum.release_cutoff = args.release_cutoff
             logger.info('Rate-independent enumeration: release cutoff L = {}'.format(
                 enum.release_cutoff))
             logger.info('  - corresponding k-slow: {}'.format(opening_rate(enum.release_cutoff)))
         else:
-            assert args.release_cutoff_1_1 != args.release_cutoff_1_2
             logger.info("Rate-independent enumeration:")
             enum.release_cutoff_1_1 = args.release_cutoff_1_1
             logger.info("  - release cutoff for reaction arity (1,1) = {}".format(
