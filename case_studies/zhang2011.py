@@ -38,7 +38,7 @@ def data(evaluate=False, verbose = 0):
     psim = "pilsimulator --no-jacobian --nxy --header"
     psim += " --atol 1e-10 --rtol 1e-10 --mxstep 1000"
     psim += " --t8 54000 --t-lin 54000"
-    rates = {'k_slow': 0.001, 'k_fast': 0.01}
+    rates = {'k_slow': 0.001, 'k_fast': 0.1}
 
     # Setup
     F3A = FigureData('Zhang (2011) Fig. 3A - Cooperative strand displacement')
@@ -72,7 +72,7 @@ def data(evaluate=False, verbose = 0):
         current.add_system_simulation_setup(pilstring, simulation, reporter, metric,
                 '50%', res, simargs=sim[sim.find('T1='):])
 
-    current.pepperargs['default'] = current.pepperargs['Detailed'].copy()
+    current.pepperargs['default'] = current.pepperargs['Condensed'].copy()
     current.pepperargs['default'].update(rates)
 
     if evaluate:

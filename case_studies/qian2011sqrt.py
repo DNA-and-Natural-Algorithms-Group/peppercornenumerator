@@ -57,7 +57,7 @@ def data(evaluate=False, verbose = 0):
     psim = "pilsimulator --no-jacobian --nxy --header --atol 1e-13 --rtol 1e-13 --mxstep 1000 --t8 36000 --t-lin 18000"
 
     # Setup
-    SF31 = FigureData('Sup. Fig. 31: Integer 4-bit squareroot circuit')
+    SF31 = FigureData('Sup. Fig. 31: Integer 4-bit square-root circuit')
     SF31.fname = 'Qian2011-SF31'
     current = SF31
     template = qian2011_SF31
