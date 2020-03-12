@@ -265,7 +265,6 @@ def data(evaluate=False, verbose = 0):
         current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('C1='):])
 
     current.pepperargs['default'] = current.pepperargs['CONDENSED'].copy()
-    current.pepperargs['default']['release_cutoff'] = 8
     current.pepperargs['default']['max_complex_size'] = 24
     current.pepperargs['default']['k_slow'] = 1e-4
     current.pepperargs['default']['k_fast'] = 1e-3

@@ -471,6 +471,7 @@ class PepperCondensation(object):
     def get_exit_probabilities(self, scc):
         """
         """
+        log.debug("Exit probabilities: {}".format([x.name for x in scc]))
         # build set and list of elements in SCC; assign a numerical index to each complex
         scc_set = frozenset(scc)
         scc_list = sorted(scc)
@@ -519,15 +520,21 @@ class PepperCondensation(object):
         # then normalize P along each row, to get the overall transition
         # probabilities, e.g. P_ij = P(i -> j), where i,j in 0...L+e
         P = P / np.sum(P, 1)[:, np.newaxis]
+        log.debug("P:\n{}".format(P))
     
         # extract the interior transition probabilities (Q_{LxL})
         Q = P[:, 0:L]
+        log.debug("Q:\n{}".format(Q))
+    
     
         # extract the exit probabilities (R_{Lxe})
         R = P[:, L:L + e]
+        log.debug("R:\n{}".format(R))
+
     
         # calculate the fundamental matrix (N = (I_L - Q)^-1)
         N = np.linalg.inv(np.eye(L) - Q)
+        log.debug("N:\n{}".format(N))
 
         # make sure all elements of fundamental matrix are >= 0
         if not (N >= 0).all() :  # --- commented out by EW (temporarily)

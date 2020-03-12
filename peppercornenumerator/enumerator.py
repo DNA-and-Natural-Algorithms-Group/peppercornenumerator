@@ -422,17 +422,17 @@ class Enumerator(object):
         self._resting_macrostates = []
 
         def do_enumerate():
-            log.debug("Fast reactions from initial complexes...")
+            log.debug("Fast reactions from initial complexes ...")
             while len(self._B) > 0:
                 # Generate a neighborhood from `source`
                 source = self._B.pop()
                 self.process_neighborhood(source)
 
             # Consider slow reactions between resting set complexes
-            log.debug("Slow reactions between resting set complexes...")
+            log.debug("Slow reactions between resting set complexes ...")
             while len(self._S) > 0:
 
-                # Find slow reactions from `element`
+                # Find slow reactions from 'element'
                 if self.DFS:
                     element = self._S.pop()
                 else:
