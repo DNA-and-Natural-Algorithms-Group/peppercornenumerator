@@ -36,7 +36,7 @@ setup(
         'pandas', # for case-studies
         'numpy',
         'crnsimulator>=0.6',
-        'dsdobjects>=0.7'],
+        'dsdobjects>=0.7.1'],
     packages=['peppercornenumerator'],
     entry_points = {
         'console_scripts': [
