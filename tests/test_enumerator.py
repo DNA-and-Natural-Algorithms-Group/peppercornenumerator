@@ -1,13 +1,9 @@
+#!/usr/bin/env python
 #
 #  test_enumerator.py
+#  EnumeratorProject
 #
-# Unittests for the Enumerator Object,
-#   I/O using pil / seesaw
-#
-
 import unittest
-import logging
-logging.disable(logging.CRITICAL)
 
 from peppercornenumerator.enumerator import Enumerator, enumerate_pil, enumerate_ssw
 from peppercornenumerator.input import read_pil, read_seesaw
@@ -108,7 +104,7 @@ class TestEnumeratorInterface(unittest.TestCase):
         enum.dry_run()
         self.assertEqual(sorted(enum.complexes), sorted([X,Y]))
         self.assertEqual(sorted(enum.resting_complexes), sorted([X,Y]))
-        self.assertEqual(sorted(r.canonical for r in enum.resting_macrostates), sorted([X,Y]))
+        self.assertEqual(sorted(r.canonical_complex for r in enum.resting_macrostates), sorted([X,Y]))
 
         with self.assertRaises(DSDObjectsError) as e:
             enum.enumerate()
@@ -150,7 +146,7 @@ class TestEnumeratorInterface(unittest.TestCase):
         enum.max_reaction_count = 5000
         enum.enumerate()
 
-        self.assertTrue(F in [rms.canonical for rms in enum.resting_macrostates])
+        self.assertTrue(F in [rms.canonical_complex for rms in enum.resting_macrostates])
 
 class TestWrappers(unittest.TestCase):
 

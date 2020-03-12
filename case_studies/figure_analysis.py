@@ -112,11 +112,11 @@ class FigureData(object):
         elif self._simmode:
             return self.get_system_dataframes()
 
-    def eval(self, pepperargs = 'default', cmpfig = False, verbose = 0):
+    def eval(self, pepperargs = 'default', cmpfig = False, verbose = 0, enumprofile = False):
         if self._ratemode:
             return self.eval_reactions(pepperargs, verbose = verbose)
         elif self._simmode:
-            return self.eval_system(pepperargs, cmpfig, verbose = verbose)
+            return self.eval_system(pepperargs, cmpfig, verbose = verbose, enumprofile = enumprofile)
         else:
             raise MissingDataError('Cannot find data for evaluation')
 
@@ -205,7 +205,7 @@ class FigureData(object):
         self._simmode = True
         assert not self._ratemode
 
-    def eval_system(self, pepperargs = 'default', cmpfig = False, verbose = 0):
+    def eval_system(self, pepperargs = 'default', cmpfig = False, verbose = 0, enumprofile = False):
         if pepperargs in self._pepperargs:
             pargs = self._pepperargs[pepperargs].copy()
             condensed = pargs.pop('condensed', False)
@@ -230,7 +230,7 @@ class FigureData(object):
                 sname = '{}-{}-{}-{}'.format(name, pepperargs, simargs, 'simu')
 
             # First, enumerate
-            if ename not in self._enumerated:
+            if ename not in self._enumerated or enumprofile:
                 if verbose:
                     print("Enumerating ... ")
                 try:
@@ -240,6 +240,8 @@ class FigureData(object):
                     enumerate_ssw(pname, is_file = True, enumfile = ename, 
                         detailed = (not condensed), condensed = condensed, **pargs)
                 self._enumerated.add(ename)
+                if enumprofile:
+                    return None
 
             # Second, simulate 
             if sname not in self._simulated:
@@ -276,14 +278,14 @@ class FigureData(object):
             else:
                 raise NotImplementedError('Metric "{}" not supported.'.format(metric))
 
-            if cmpfig :
+            if cmpfig and pepperargs not in self.cmpfig:
                 if verbose:
                     print("Compare ... ")
                 tr = nxy_get_trajectory(nxy, reporter)
                 if cmpfig is True:
-                    tr.rename(columns={reporter:simargs}, inplace=True)
-                elif cmpfig == 'hack':
-                    tr.rename(columns={reporter:cname}, inplace=True)
+                    tr.rename(columns={reporter: simargs}, inplace = True)
+                elif cmpfig == 'hack': # used for zhang09 ...
+                    tr.rename(columns={reporter: cname}, inplace = True)
 
                 if trajectories is None:
                     trajectories = tr
@@ -294,7 +296,7 @@ class FigureData(object):
                     elif cmpfig == 'hack':
                         trajectories[cname] = tr[cname]
 
-        if cmpfig: 
+        if cmpfig and pepperargs not in self.cmpfig: 
             trajectories.to_csv(cname, sep='\t', float_format='%.9e', index=False,
                 header = ['{:15s}'.format(x) for x in list(trajectories)])
 
@@ -499,7 +501,7 @@ def main():
     # sun2018.py
 
     analysis = z07() + y08() + z09() + z10() + z11() + g11() + q11() + k17()
-    #analysis = z09r() + d13r()
+    analysis = z09r() + d13r()
 
     for fig in analysis:
         print("\n{}:".format(fig.name))

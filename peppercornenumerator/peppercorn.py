@@ -1,19 +1,22 @@
 #!/usr/bin/env python
-
+#
+#  scripts/peppercorn
+#  EnumeratorProject
+#
 from __future__ import absolute_import, division, print_function
+
+import logging
 
 import os
 import sys
-import logging
 import argparse
 
 # Import global default variables from peppercornenumerator library
+import peppercornenumerator 
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.enumerator import FAST_REACTIONS
 from peppercornenumerator.input import read_pil, read_seesaw, ParseException
 from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
-
-version = __import__('peppercornenumerator').__version__
 
 class colors:
     RED = '\033[91m'
@@ -68,9 +71,9 @@ def add_peppercorn_args(parser):
 
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     parser.add_argument( '-v', '--verbose', action='count', default=0,
-        help="Print more output (-vv for extra debugging information)")
+        help="Print logging output. (-vv increases verbosity.)")
     parser.add_argument('--logfile', default='', action='store', metavar='<str>',
-        help="""Redirect verbose information to a file.""")
+        help="""Redirect logging information to a file.""")
     parser.add_argument('input_filename', default=None, nargs='?', metavar='<str>',
             help="Path to the input file.")
 
@@ -121,23 +124,23 @@ def add_peppercorn_args(parser):
         #help="""Local probability threshold to accept an unfavorable reaction.""")
         help=argparse.SUPPRESS)
 
-    semantics.add_argument( '--release-cutoff', default=None, type=int, metavar='<int>',
+    semantics.add_argument('-L', '--release-cutoff', default=None, type=int, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         an `open` reaction.""")
-    semantics.add_argument( '--release-cutoff-1-1', type=int, default=7, metavar='<int>',
+    semantics.add_argument('--release-cutoff-1-1', type=int, default=7, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         an `open` reaction with one product.""")
-    semantics.add_argument( '--release-cutoff-1-2', type=int, default=7, metavar='<int>',
+    semantics.add_argument('--release-cutoff-1-2', type=int, default=7, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         an `open` reaction with two products.""")
 
-    semantics.add_argument( '--no-max-helix', action='store_true', 
+    semantics.add_argument('--no-max-helix', action='store_true', 
         help="Do not apply 'max helix' semantics.")
-    semantics.add_argument( '--ignore-branch-3way', action='store_true', 
+    semantics.add_argument('--ignore-branch-3way', action='store_true', 
         help="Ignore 3-way branch migration reactions during enumeration.")
-    semantics.add_argument( '--ignore-branch-4way', action='store_true',
+    semantics.add_argument('--ignore-branch-4way', action='store_true',
         help="Ignore 4-way branch migration reactions during enumeration.")
-    semantics.add_argument( '--reject-remote', action='store_true', 
+    semantics.add_argument('--reject-remote', action='store_true', 
         help="""Discard remote toehold mediated 3-way and 4-way branch
         migration reactions.""")
 
@@ -155,45 +158,62 @@ def add_peppercorn_args(parser):
 
     return
 
-def main(args):
-    logger = logging.getLogger()
-    if args.verbose == 1:
-        logger.setLevel(logging.INFO)
-    elif args.verbose == 2:
-        logger.setLevel(logging.DEBUG)
-    elif args.verbose >= 3:
-        logger.setLevel(logging.NOTSET)
+def set_handle_verbosity(h, v):
+    if v == 0:
+        h.setLevel(logging.WARNING)
+    elif v == 1:
+        h.setLevel(logging.INFO)
+    elif v == 2:
+        h.setLevel(logging.DEBUG)
+    elif v >= 3:
+        h.setLevel(logging.NOTSET)
 
+def main():
+    parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            description="""Peppercorn: Domain-level nucleic acid reaction enumerator.""")
+    add_peppercorn_args(parser)
+    args = parser.parse_args()
+ 
+    # ~~~~~~~~~~~~~
+    # Logging Setup 
+    # ~~~~~~~~~~~~~
     title = "Peppercorn Domain-level Reaction Enumerator"
+    logger = logging.getLogger('peppercornenumerator')
+    logger.setLevel(logging.DEBUG)
+
     if args.logfile:
-        ch = logging.FileHandler(args.logfile)
+        banner = "{} {}".format(title, __version__)
+        fh = logging.FileHandler(args.logfile)
         formatter = logging.Formatter('%(levelname)s - %(message)s')
-        banner = title + (" (%s)" % version)
+        set_handle_verbosity(fh, args.verbose)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
     else:
+        banner = "{} {}".format(colors.BOLD + title + colors.ENDC, 
+                                  colors.GREEN + __version__ + colors.ENDC)
         ch = logging.StreamHandler()
-        formatter = ColorFormatter('%(levelname)s %(message)s', use_color=True)
-        banner = (colors.BOLD + title + colors.ENDC + " " + colors.GREEN + version + colors.ENDC)
+        formatter = ColorFormatter('%(levelname)s %(message)s', use_color = True)
+        set_handle_verbosity(ch, args.verbose)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
 
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
-    logging.info(banner)
+    logger.info(banner)
 
     systeminput = args.input_filename
     if not systeminput :
         if sys.stdout.isatty():
-            logging.info("Reading file from STDIN, Ctrl-D to stop")
+            logger.info("Reading file from STDIN, Ctrl-D to stop")
         systeminput = ''
         for l in sys.stdin:
             systeminput += l
         if args.interactive:
-            logging.error("Interactive mode needs to read input from file, not STDIN.")
+            loger.error("Interactive mode needs to read input from file, not STDIN.")
             raise SystemExit
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    # Load an input parser to generate complexes for enumeration #
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+    # Input parsing to set initial complexes for enumeration #
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     composite = None
     try :
         complexes, reactions, composite = read_pil(systeminput, 
@@ -202,101 +222,131 @@ def main(args):
         try :
             complexes, reactions = read_seesaw(systeminput, 
                     args.input_filename is not None, 
-                    conc=args.seesaw_conc, 
-                    explicit=args.seesaw_explicit, 
-                    reactions=args.seesaw_reactions)
+                    conc = args.seesaw_conc, 
+                    explicit = args.seesaw_explicit, 
+                    reactions = args.seesaw_reactions)
         except ParseException as ex_ssw:
-            logging.error('Pil-format parsing error:')
-            logging.error('Cannot parse line {:5d}: "{}"'.format(ex_pil.lineno, ex_pil.line))
-            logging.error('                          {} '.format(' ' * (ex_pil.col-1) + '^'))
-            logging.error('SeeSaw-format parsing error:')
-            logging.error('Cannot parse line {:5d}: "{}"'.format(ex_ssw.lineno, ex_ssw.line))
-            logging.error('                          {} '.format(' ' * (ex_ssw.col-1) + '^'))
+            logger.error('Pil-format parsing error:')
+            logger.error('Cannot parse line {:5d}: "{}"'.format(ex_pil.lineno, ex_pil.line))
+            logger.error('                          {} '.format(' ' * (ex_pil.col-1) + '^'))
+            logger.error('SeeSaw-format parsing error:')
+            logger.error('Cannot parse line {:5d}: "{}"'.format(ex_ssw.lineno, ex_ssw.line))
+            logger.error('                          {} '.format(' ' * (ex_ssw.col-1) + '^'))
             raise SystemExit
 
-    init_cplxs = [x for x in list(complexes.values()) if x._concentration is None or \
-                    float(x._concentration[1]) != (0.0)]
+
     if args.dry_run:
         enum = Enumerator(list(complexes.values()), reactions)
     else:
+        init_cplxs = [x for x in list(complexes.values()) if \
+                x.concentration is None or float(x.concentration.value) != 0]
         enum = Enumerator(init_cplxs, reactions)
 
-    if args.profile:
-        try:
-            import statprof
-        except ImportError as err:
-            print("Python-module statprof not found, disabled Peppercorn profiling.")
-            args.profile = False
-
-    # Print initial complexes
-    logging.info("Initial complexes: ")
+    # Log initial complexes
+    logger.info("")
+    logger.info("Initial complexes:")
     for c in enum.initial_complexes:
-        logging.info("{}: {}".format(c, c.kernel_string))
+        logger.info("{}: {}".format(c, c.kernel_string))
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Transfer options to enumerator object #
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+    logger.info("")
+    logger.info("Enumeration settings:")
     enum.max_complex_size = args.max_complex_size
+    logger.info("Max complex size = {}".format(enum.max_complex_size))
     enum.max_complex_count = max(args.max_complex_count, len(complexes))
+    logger.info("Max complex count = {}".format(enum.max_complex_count))
     enum.max_reaction_count = max(args.max_reaction_count, len(reactions))
+    logger.info("Max reaction count = {}".format(enum.max_reaction_count))
+    enum.max_helix = not args.no_max_helix
+    logger.info('Max-helix semantics = {}'.format(enum.max_helix))
+    enum.reject_remote = args.reject_remote 
+    logger.info('Reject-remote semantics = {}'.format(enum.reject_remote))
+    enum.dG_bp = args.dG_bp
+    logger.info('Average strength of a toehold base-pair dG_bp = {}'.format(enum.dG_bp))
+    if args.ignore_branch_3way:
+        if branch_3way in FAST_REACTIONS[1]:
+            FAST_REACTIONS[1].remove(branch_3way)
+        logger.info('No 3-way branch migration.')
+    if args.ignore_branch_4way:
+        if branch_4way in FAST_REACTIONS[1]:
+            FAST_REACTIONS[1].remove(branch_4way)
+        logger.info('No 4-way branch migration.')
 
+    # Set either k-slow or release cutoff.
     if args.k_slow:
-        rc = 0
-        k_rc = None
+        if args.release_cutoff is not None:
+            args.release_cutoff = None
+            logger.warning('Release-cutoff overwritten by k-slow!')
+        if args.release_cutoff_1_1 != args.release_cutoff_1_2:
+            logger.warning('Release-cutoff (1,1) overwritten by k-slow!')
+            logger.warning('Release-cutoff (1,2) overwritten by k-slow!')
+        rc, k_rc = 0, None
         while True:
             rc += 1
             k_rc = opening_rate(rc)
             if k_rc < args.k_slow:
                 break
-        release_cutoff = max(rc, args.release_cutoff, args.release_cutoff_1_1, args.release_cutoff_1_2)
-        logging.info('Corresponding release-cutoff between {} and {}'.format(rc-1, rc))
-        logging.info('Setting release-cutoff to {}'.format(max(rc, release_cutoff)))
+        enum.release_cutoff = rc
+        enum.k_slow = args.k_slow
+        logger.info('Rate-dependent enumeration: k-slow = {}'.format(enum.k_slow))
+        logger.info('  - corresponding release-cutoff: {} < L < {}'.format(rc-1, rc))
+    else:
+        if args.release_cutoff is not None:
+            enum.release_cutoff = args.release_cutoff
+            logger.info('Rate-independent enumeration: release cutoff L = {}'.format(
+                enum.release_cutoff))
+            logger.info('  - corresponding k-slow: {}'.format(opening_rate(enum.release_cutoff)))
+        else:
+            logger.info("Rate-independent enumeration:")
+            enum.release_cutoff_1_1 = args.release_cutoff_1_1
+            logger.info("  - release cutoff for reaction arity (1,1) = {}".format(
+                enum.release_cutoff_1_1))
+            enum.release_cutoff_1_2 = args.release_cutoff_1_2
+            logger.info("  - release cutoff for reaction arity (1,2) = {}".format(
+                enum.release_cutoff_1_2))
+    if args.k_fast:
+        enum.k_fast = args.k_fast
+        logger.info('Rate-dependent enumeration: k-fast = {}'.format(enum.k_fast))
 
-    enum.release_cutoff_1_1 = args.release_cutoff_1_1
-    enum.release_cutoff_1_2 = args.release_cutoff_1_2
-    if args.release_cutoff is not None:
-        enum.release_cutoff = args.release_cutoff
-        logging.info('Opening reaction rate at release-cutoff {} = {}'.format(
-            enum.release_cutoff, opening_rate(enum.release_cutoff)))
-    enum.k_slow = args.k_slow
-    enum.k_fast = args.k_fast
-    enum.p_min = args.p_min
-    enum.dG_bp = args.dG_bp
-
-    enum.reject_remote = args.reject_remote 
-
-    if (args.k_fast or args.k_slow) and args.local_elevation:
-        logging.warning('Turning off max-helix mode, since you are using: local-elevation')
-        enum.local_elevation = True
-        args.no_max_helix = True
-    elif args.local_elevation:
-        logging.warning('Ignoring local-elevation, since you are using the rate-independent model ')
-    enum.max_helix = not args.no_max_helix
-
+    # DEBUGGING
     enum.DFS = not args.bfs
     enum.interactive = args.interactive
     enum.interruptible = args.interruptible
 
-    # Modify enumeration events based on command line options.
-    if args.ignore_branch_3way:
-        if branch_3way in FAST_REACTIONS[1]:
-            FAST_REACTIONS[1].remove(branch_3way)
-
-    if args.ignore_branch_4way:
-        if branch_4way in FAST_REACTIONS[1]:
-            FAST_REACTIONS[1].remove(branch_4way)
+    # EXPERIMENTAL
+    if args.p_min != 0:
+        enum.p_min = args.p_min
+        logger.warning('Using experimental option: --p-min = {}'.format(enum.p_min))
+    if (args.k_fast or args.k_slow) and args.local_elevation:
+        logger.warning('Using experimental option: --local-elevation.')
+        enum.local_elevation = True
+        if enum.max_helix:
+            enum.no_max_helix = False
+            logger.warning('Turning off max-helix mode for local-elevation semantics.')
+    elif args.local_elevation:
+        logger.warning('Local-elevation and rate-independent semantics are incompatible.')
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Run reaction enumeration (or not) #
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+    logger.info("")
+    if args.profile:
+        try:
+            import statprof
+        except ImportError as err:
+            logger.warning("Python-module statprof not found, disabled Peppercorn profiling.")
+            args.profile = False
+
     if args.dry_run:
-        logging.info("Dry run (not enumerating any reactions)... ")
+        logger.info("Dry run (not enumerating any reactions)... ")
         enum.dry_run()
-        logging.info("Done.")
+        logger.info("Done.")
     else:
-        logging.info("Enumerating reactions...")
+        logger.info("Enumerating reactions...")
         if args.interactive:
-            logging.info("Interactive mode enabled: Fast and slow reactions " + \
+            logger.info("Interactive mode enabled: Fast and slow reactions " + \
                         "will be printed for each complex as enumerated." + \
                         "Press ^C at any time to terminate and write accumulated" + \
                         "complexes to output.")
@@ -309,7 +359,7 @@ def main(args):
                 statprof.display()
         else:
             enum.enumerate()
-        logging.info("Done.")
+        logger.info("Done.")
 
     # ~~~~~~~~~~~~~~~~~~~ #
     # Handle condensation #
@@ -317,7 +367,7 @@ def main(args):
     condensed = args.condensed
     detailed = (not args.condensed or args.detailed)
     if condensed:
-        logging.info("Output will be condensed to remove transient complexes.")
+        logger.info("Output will be condensed to remove transient complexes.")
         if args.profile:
             statprof.start()
             try:
@@ -334,10 +384,5 @@ def main(args):
     print(output, end='')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            description="""Peppercorn: Domain-level nucleic acid reaction enumerator.""")
-    add_peppercorn_args(parser)
-    args = parser.parse_args()
-    main(args)
+   main()
 

@@ -1,17 +1,15 @@
 #
-#  enumerator.py
+#  peppercornenumerator/enumerator.py
 #  EnumeratorProject
 #
-#  Created by Karthik Sarma on 4/18/10.
-#  Modified by Stefan Badelt
-#
-
 from __future__ import absolute_import, print_function, division
 from builtins import input
 
+import logging
+log = logging.getLogger(__name__)
+
 import sys
 import math
-import logging
 
 from peppercornenumerator.condense import PepperCondensation
 from peppercornenumerator.objects import PepperMacrostate, PepperComplex
@@ -424,23 +422,23 @@ class Enumerator(object):
         self._resting_macrostates = []
 
         def do_enumerate():
-            logging.debug("Fast reactions from initial complexes...")
+            log.debug("Fast reactions from initial complexes ...")
             while len(self._B) > 0:
                 # Generate a neighborhood from `source`
                 source = self._B.pop()
                 self.process_neighborhood(source)
 
             # Consider slow reactions between resting set complexes
-            logging.debug("Slow reactions between resting set complexes...")
+            log.debug("Slow reactions between resting set complexes ...")
             while len(self._S) > 0:
 
-                # Find slow reactions from `element`
+                # Find slow reactions from 'element'
                 if self.DFS:
                     element = self._S.pop()
                 else:
                     element = self._S.pop(0)
 
-                logging.debug("Slow reactions from complex {:s} ({:d} remaining in S)".format(
+                log.debug("Slow reactions from complex {:s} ({:d} remaining in S)".format(
                     str(element), len(self._S)))
                 slow_reactions = self.get_slow_reactions(element)
                 self._E.append(element)
@@ -448,8 +446,8 @@ class Enumerator(object):
                 # Find the new complexes which were generated
                 self._B = self.get_new_products(slow_reactions)
                 self._reactions |= set(slow_reactions)
-                logging.debug("Generated {:d} new slow reactions".format(len(slow_reactions)))
-                logging.debug("Generated {:d} new products".format(len(self._B)))
+                log.debug("Generated {:d} new slow reactions".format(len(slow_reactions)))
+                log.debug("Generated {:d} new products".format(len(self._B)))
 
                 # Display new reactions in interactive mode
                 if self.interactive:
@@ -477,11 +475,11 @@ class Enumerator(object):
                 do_enumerate()
                 finish()
             except KeyboardInterrupt:
-                logging.warning("Interrupted; gracefully exiting...")
+                log.warning("Interrupted; gracefully exiting...")
                 finish(premature=True)
             except PolymerizationError as err:
-                logging.exception(err)
-                logging.error("Polymerization error; gracefully exiting...")
+                log.exception(err)
+                log.error("Polymerization error; gracefully exiting...")
                 finish(premature=True)
         else:
             do_enumerate()
@@ -531,7 +529,7 @@ class Enumerator(object):
         # N_reactions holds reactions which are part of the current neighborhood
         N_reactions = []
 
-        logging.debug("Processing neighborhood: %s" % source)
+        log.debug("Processing neighborhood: %s" % source)
 
         interrupted = False
         try:
@@ -539,7 +537,7 @@ class Enumerator(object):
 
                 # Find fast reactions from `element`
                 element = self._F.pop()
-                logging.debug("Fast reactions from {:s}... ({:d} remaining in F)".format(
+                log.debug("Fast reactions from {:s}... ({:d} remaining in F)".format(
                     str(element), len(self._F)))
 
                 # Return valid fast reactions:
@@ -553,22 +551,22 @@ class Enumerator(object):
                 N_reactions += (reactions)
                 self._N.append(element)
 
-                logging.debug("Generated {:d} new fast reactions.".format(len(reactions)))
-                logging.debug("Generated {:d} new products.".format(len(new_products)))
+                log.debug("Generated {:d} new fast reactions.".format(len(reactions)))
+                log.debug("Generated {:d} new products.".format(len(new_products)))
                    
                 # Display new reactions in interactive mode
                 if self.interactive:
                     self.reactions_interactive(element, reactions, 'fast')
 
         except KeyboardInterrupt:
-            logging.warning("Exiting neighborhood %s prematurely..." % source)
+            log.warning("Exiting neighborhood %s prematurely..." % source)
             if self.interruptible:
                 interrupted = True
             else :
                 raise KeyboardInterrupt
 
-        logging.debug("In neighborhood %s..." % source)
-        logging.debug("Segmenting %d complexes and %d reactions" %
+        log.debug("In neighborhood %s..." % source)
+        log.debug("Segmenting %d complexes and %d reactions" %
                       (len(self._N), len(N_reactions)))
 
         # Now segment the neighborhood into transient and resting complexes
@@ -591,15 +589,15 @@ class Enumerator(object):
         self._reactions |= set(N_reactions)
 
         # Reset neighborhood
-        logging.debug("Generated {:d} new fast reactions".format(len(N_reactions)))
-        logging.debug("Generated {:d} new complexes: ({:d} transient, {:d} resting)".format(
+        log.debug("Generated {:d} new fast reactions".format(len(N_reactions)))
+        log.debug("Generated {:d} new complexes: ({:d} transient, {:d} resting)".format(
             len(self._N), len(segmented_neighborhood['transient_complexes']), 
                 len(segmented_neighborhood['resting_complexes'])))
         self._N = []
 
-        logging.debug("Generated {:d} resting macrostates".format(
+        log.debug("Generated {:d} resting macrostates".format(
             len(segmented_neighborhood['resting_macrostates'])))
-        logging.debug("Done processing neighborhood: {:s}".format(str(source)))
+        log.debug("Done processing neighborhood: {:s}".format(str(source)))
 
         if interrupted:
             raise KeyboardInterrupt
@@ -641,7 +639,7 @@ class Enumerator(object):
                 else :
                     reactions += [r for r in move_reactions if self._k_slow <= r.const < self._k_fast]
             for rxn in reactions:
-                logging.info('adding unimolecular slow reaction {}'.format(rxn.full_string()))
+                log.info('adding unimolecular slow reaction {}'.format(rxn.full_string()))
 
         # Do bimolecular reactions
         for move in SLOW_REACTIONS[2]:
@@ -653,7 +651,7 @@ class Enumerator(object):
         valid_reactions = []
         for rxn in reactions: 
             if maxsize and not all(p.size <= maxsize for p in rxn.products) :
-                logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max([p.size for p in rxn.products]), maxsize, str(rxn)))
+                log.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max([p.size for p in rxn.products]), maxsize, str(rxn)))
                 continue
             valid_reactions.append(rxn)
 
@@ -696,7 +694,7 @@ class Enumerator(object):
             
             for rxn in move_reactions: 
                 if maxsize and any(p.size > maxsize for p in rxn.products):
-                    logging.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring fast reaction {}!".format( max([p.size for p in rxn.products]), maxsize, str(rxn)))
+                    log.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring fast reaction {}!".format( max([p.size for p in rxn.products]), maxsize, str(rxn)))
                     continue
                 reactions.append(rxn)
 

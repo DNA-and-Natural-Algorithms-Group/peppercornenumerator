@@ -1,5 +1,12 @@
+#
+#  peppercornenumerator/condense.py
+#  EnumeratorProject
+#
+from __future__ import absolute_import, print_function, division
 
 import logging
+log = logging.getLogger(__name__)
+
 import operator
 import collections
 import itertools as it
@@ -304,7 +311,7 @@ class PepperCondensation(object):
             #   F(c) is a singleton for each reactant c
             for e, Fc in enumerate(reactant_fates):
                 if not Fc.is_singleton() :
-                    logging.error("Cannot condense reaction {}: ".format(reaction) + \
+                    log.error("Cannot condense reaction {}: ".format(reaction) + \
                             "reactant {} has multiple fates: F({}) = {}".format(
                                 str(reaction.reactants[e]), str(reaction.reactants[e]), str(Fc)))
                     raise CondensationError()
@@ -325,7 +332,7 @@ class PepperCondensation(object):
                 try :
                     reaction = PepperReaction(reactants, products, rtype='condensed')
                 except DSDDuplicationError as e:
-                    logging.debug('Duplicating PepperReaction: {}'.format(e.existing))
+                    log.debug('Duplicating PepperReaction: {}'.format(e.existing))
                     reaction = e.existing
 
                 reaction.const = self.get_condensed_rate(reaction)
@@ -388,9 +395,8 @@ class PepperCondensation(object):
 
             if isinstance(reaction_rate, complex):
                 if reaction_rate.imag > 0:
-                    logging.warn("Detailed reaction {} contributes a complex rate of {} + {} " + \
-                         " to condensed reaction {}.".format( 
-                             r, reaction_rate.real, reaction_rate.imag, rxn))
+                    log.warn("Detailed reaction {} contributes a complex rate of {} + {} " + \
+                         " to condensed reaction {}.".format(r, reaction_rate.real, reaction_rate.imag, rxn))
 
         return reaction_rate
 
@@ -444,7 +450,7 @@ class PepperCondensation(object):
         epsilon = 1e-5
         i = np.argmin(np.abs(w))
         if abs(w[i]) > epsilon:
-            logging.warn(
+            log.warn(
                 ("Bad stationary distribution for resting set transition matrix. " +
                  "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
                  "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
@@ -453,11 +459,11 @@ class PepperCondensation(object):
     
         # check that the stationary distribution is good
         if not ((s >= 0).all() or (s <= 0).all()) : 
-            logging.error('Stationary distribution of resting set complex should not be an eigenvector of mixed sign. Condensed reaction rates may be incorrect.')
+            log.error('Stationary distribution of resting set complex should not be an eigenvector of mixed sign. Condensed reaction rates may be incorrect.')
 
         s = s / np.sum(s)
         if not (abs(np.sum(s) - 1) < epsilon) :
-            logging.error('Stationary distribution of resting set complex should sum to 1 after normalization. Condensed reaction rates may be incorrect.')
+            log.error('Stationary distribution of resting set complex should sum to 1 after normalization. Condensed reaction rates may be incorrect.')
     
         # return dict mapping complexes to stationary probabilities
         return {c: s[i] for (c, i) in complex_indices.items()}
@@ -465,6 +471,7 @@ class PepperCondensation(object):
     def get_exit_probabilities(self, scc):
         """
         """
+        log.debug("Exit probabilities: {}".format([x.name for x in scc]))
         # build set and list of elements in SCC; assign a numerical index to each complex
         scc_set = frozenset(scc)
         scc_list = sorted(scc)
@@ -513,19 +520,25 @@ class PepperCondensation(object):
         # then normalize P along each row, to get the overall transition
         # probabilities, e.g. P_ij = P(i -> j), where i,j in 0...L+e
         P = P / np.sum(P, 1)[:, np.newaxis]
+        log.debug("P:\n{}".format(P))
     
         # extract the interior transition probabilities (Q_{LxL})
         Q = P[:, 0:L]
+        log.debug("Q:\n{}".format(Q))
+    
     
         # extract the exit probabilities (R_{Lxe})
         R = P[:, L:L + e]
+        log.debug("R:\n{}".format(R))
+
     
         # calculate the fundamental matrix (N = (I_L - Q)^-1)
         N = np.linalg.inv(np.eye(L) - Q)
+        log.debug("N:\n{}".format(N))
 
         # make sure all elements of fundamental matrix are >= 0
         if not (N >= 0).all() :  # --- commented out by EW (temporarily)
-            logging.error('Negative elements in fundamental matrix. Condensed reaction rates may be incorrect.')
+            log.error('Negative elements in fundamental matrix. Condensed reaction rates may be incorrect.')
     
         # calculate the absorption matrix (B = NR)
         B = np.dot(N, R)
@@ -763,7 +776,7 @@ def stationary_distribution(T, nodes = None):
     epsilon = 1e-5
     i = np.argmin(np.abs(w))
     if abs(w[i]) > epsilon:
-        logging.warn(
+        log.warn(
             ("Bad stationary distribution for resting set transition matrix. " +
              "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
              "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
@@ -774,11 +787,11 @@ def stationary_distribution(T, nodes = None):
     if not ((s >= 0).all() or (s <= 0).all()) : 
         #for x,y in zip(s, nodes):
         #    print y, '"', y.kernel_string, x
-        logging.error('Stationary distribution of resting set complex should not be an eigenvector of mixed sign. Condensed reaction rates may be incorrect.')
+        log.error('Stationary distribution of resting set complex should not be an eigenvector of mixed sign. Condensed reaction rates may be incorrect.')
 
     s = s / np.sum(s)
     if not (abs(np.sum(s) - 1) < epsilon) :
-        logging.error('Stationary distribution of resting set complex should sum to 1 after normalization. Condensed reaction rates may be incorrect.')
+        log.error('Stationary distribution of resting set complex should sum to 1 after normalization. Condensed reaction rates may be incorrect.')
 
     return s
     ## return dict mapping complexes to stationary probabilities

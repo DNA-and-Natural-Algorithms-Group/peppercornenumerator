@@ -1,11 +1,9 @@
+#!/usr/bin/env python
 #
 #  test_reactions.py
+#  EnumeratorProject
 #
-
-import copy
 import unittest
-import logging
-logging.disable(logging.CRITICAL)
 
 from peppercornenumerator import Enumerator
 from peppercornenumerator.input import read_pil
@@ -562,7 +560,7 @@ class NewBranch3WayTests(unittest.TestCase):
         #print output[0].kernel_string()
         self.assertEqual(output, [backward])
 
-    def test_max_helix_migration(self):
+    def test_max_helix(self):
         """ 
         A series of 3-way branch migration reactions.
         """
@@ -1151,7 +1149,7 @@ class DSD_PathwayTests(unittest.TestCase):
         enum = Enumerator(list(complexes.values()))
         enum.k_fast = self.k_fast
         enum.k_slow = self.k_slow
-        enum.max_helix_migration = True
+        enum.max_helix = True
         enum.enumerate()
         #for r in enum.reactions:
         #    if r == path1:
@@ -1376,13 +1374,13 @@ class IsomorphicSets(unittest.TestCase):
         enum = Enumerator([complexes['I'], complexes['C'], complexes['J'], complexes['D']])
         enum.k_fast = self.k_fast
         enum.k_slow = self.k_slow
-        enum.max_helix_migration = True
+        enum.max_helix = True
         enum.enumerate()
 
         enum2 = Enumerator([complexes['cI'], complexes['cC'], complexes['cJ'], complexes['cD']])
         enum2.k_fast = self.k_fast
         enum2.k_slow = self.k_slow
-        enum2.max_helix_migration = True
+        enum2.max_helix = True
         enum2.enumerate()
 
         #for r in enum.reactions:
@@ -1436,7 +1434,7 @@ class IsomorphicSets(unittest.TestCase):
         enum = Enumerator([A1, A2])
         enum.k_fast = 0
         enum.k_slow = 0
-        enum.max_helix_migration = True
+        enum.max_helix = True
         enum.enumerate()
 
         path1 = PepperReaction([A1], sorted([A1_2, YZ]), 'branch-3way', memorycheck=False)
@@ -1457,7 +1455,7 @@ class IsomorphicSets(unittest.TestCase):
         enum = Enumerator([B1, B2])
         enum.k_fast = 0
         enum.k_slow = 0
-        enum.max_helix_migration = True
+        enum.max_helix = True
         enum.enumerate()
 
         path1 = PepperReaction([B1], sorted([B1_2, YZ2]), 'branch-3way', memorycheck=False)
@@ -1469,7 +1467,7 @@ class IsomorphicSets(unittest.TestCase):
         enum = Enumerator([C])
         enum.k_fast = 0
         enum.k_slow = 0
-        enum.max_helix_migration = True
+        enum.max_helix = True
         enum.enumerate()
         self.assertEqual(len(enum.reactions), 2)
 
@@ -1567,7 +1565,7 @@ class Compare_MaxHelix(unittest.TestCase):
         path4  = PepperReaction([B3], [B1], 'branch-3way', memorycheck=False)
 
         enum = Enumerator([B1])
-        enum.max_helix_migration = True
+        enum.max_helix = True
         enum.enumerate()
         #for r in sorted(enum.reactions): print 'max-helix', r, r.kernel_string(), r.rate
         self.assertEqual(sorted([path1, path1r, path2, path3, path3r, path4]), sorted(enum.reactions))
@@ -1599,7 +1597,7 @@ class Compare_MaxHelix(unittest.TestCase):
         backward= PepperReaction([B2], [B1], 'branch-3way', memorycheck=False)
 
         enum = Enumerator([B1])
-        enum.max_helix_migration = True
+        enum.max_helix = True
         enum.enumerate()
         #for r in sorted(enum.reactions): print 'max-helix', r, r.kernel_string, r.rtype, r.rate
         self.assertEqual(sorted([path1, path1r, path1f, path2, path2r, path2f]), sorted(enum.reactions))
@@ -1623,7 +1621,7 @@ class Compare_MaxHelix(unittest.TestCase):
         T4 = complexes['T4']
  
         enum = Enumerator([T])
-        enum.max_helix_migration = True
+        enum.max_helix = True
         enum.enumerate()
 
         path1  = PepperReaction([T], [T1], 'branch-3way', memorycheck=False)
@@ -1684,7 +1682,7 @@ class Compare_MaxHelix(unittest.TestCase):
         PR_FLh2w = complexes['PR_FLh2w']
  
         enum = Enumerator([B2, helper, PR_FL_B2])
-        enum.max_helix_migration = True
+        enum.max_helix = True
 
         path1  = PepperReaction(sorted([PR_FL_B2, helper]), [PR_FLh1B2], 'bind21', memorycheck=False)
         path1r = PepperReaction([PR_FLh1B2], sorted([PR_FL_B2, helper]), 'open', memorycheck=False)

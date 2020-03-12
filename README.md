@@ -232,7 +232,7 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e51
         $ cat seesaw_ciruit.ssw | peppercorn --dry-run
 
 ## Version
-0.7
+0.8
 
 ## Authors
 Stefan Badelt, Casey Grun, Karthik V. Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.

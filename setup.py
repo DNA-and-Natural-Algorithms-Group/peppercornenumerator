@@ -12,28 +12,37 @@ branch-migration and 4-way branch-migration including remote-toehold branch
 migration. For more background on reaction semantics we refer to the README.
 """
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
     name='peppercornenumerator',
-    version='0.7',
+    version='0.8',
     description='Domain-level nucleic acid reaction enumerator',
     long_description=LONG_DESCRIPTION,
+    long_description_content_type="text/markdown",
     author='Stefan Badelt, Casey Grun, Karthik Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree',
     author_email='winfree@caltech.edu',
     license='MIT',
     classifiers=[
         'Development Status :: 4 - Beta',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 2.7',
         ],
+    python_requires='>=2.7',
     test_suite='tests',
     install_requires=[
         'future',
         'pandas', # for case-studies
         'numpy',
         'crnsimulator>=0.6',
-        'dsdobjects>=0.7'],
+        'dsdobjects>=0.7.1'],
     packages=['peppercornenumerator'],
-    scripts=['scripts/peppercorn',
-             'scripts/pilsimulator']
+    entry_points = {
+        'console_scripts': [
+            'peppercorn=peppercornenumerator.peppercorn:main',
+            'pilsimulator=peppercornenumerator.pilsimulator:main'
+            ],
+        }
 )
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 def kotani2017_F2_pil(x):
     return """
@@ -111,7 +112,7 @@ def kotani2017_F4_pil(x):
     """.format(x)
 
 def kotani2017_F4_pil_simple(x):
-    return """
+    return """Splits the reporter reaction into a shorter domain (t3 -> t3a t3b) to reduce large intermediates.
     \tlength a   = 22
     \tlength b   = 22
     \tlength o   = 22
@@ -152,8 +153,7 @@ def data(evaluate=False, verbose = 0):
     from figure_analysis import FigureData
 
     # Default pilsimulator call
-    # If you use --no-jacobian, #7 doesn't show the 0 nM trajectory
-    psim = "pilsimulator --nxy --header --atol 1e-12 --rtol 1e-12 --mxstep 1000"
+    psim = "pilsimulator --no-jacobian --nxy --header --atol 1e-12 --rtol 1e-12 --mxstep 1000"
     h10l = " --t0 0 --t8 36000 --t-lin 18000"
     h20l = " --t0 0 --t8 72000 --t-lin 18000"
     h30log = " --t0 0.1 --t8 108000 --t-log 18000"
@@ -185,8 +185,6 @@ def data(evaluate=False, verbose = 0):
         reporter = 'D'
         metric = 'completion-time'
         current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('C1='):])
-
-
 
     current.pepperargs['default'] = current.pepperargs['condensed'].copy()
     current.pepperargs['default']['release_cutoff'] = 7
@@ -266,23 +264,13 @@ def data(evaluate=False, verbose = 0):
         metric = 'completion-time'
         current.add_system_simulation_setup(pilstring, simulation, reporter, metric, '5', res, simargs=sim[sim.find('C1='):])
 
-    current.pepperargs['default'] = current.pepperargs['DETAILED'].copy()
-    current.pepperargs['default']['release_cutoff'] = 8
+    current.pepperargs['default'] = current.pepperargs['CONDENSED'].copy()
     current.pepperargs['default']['max_complex_size'] = 24
-    #current.pepperargs['default']['k_slow'] = 1e-10
-    #current.pepperargs['default']['k_fast'] = 1e-2
+    current.pepperargs['default']['k_slow'] = 1e-4
+    current.pepperargs['default']['k_fast'] = 1e-3
 
     if evaluate:
         current.eval(cmpfig=True)
-
-    # current.pepperargs['#1-detailed']  = {'condensed': False, 'conc': 'nM', 'release_cutoff': 8}
-    # current.pepperargs['#1-condensed'] = {'condensed': True, 'conc': 'nM', 'release_cutoff': 8}
-    # current.pepperargs['#2-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-3, 'max_complex_size': 20} # doesn't work, no 4-way branch migration, no D
-    # current.pepperargs['#3-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'max_complex_size': 10} # works! but not as good as detailed...
-    # current.pepperargs['#4-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'k_fast': 1e-3, 'max_complex_size': 16}
-    # current.pepperargs['#5-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-4, 'k_fast': 1e-2, 'max_complex_size': 24} # solver cannot handle leak
-    # current.pepperargs['#6-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-5, 'k_fast': 1e-2, 'max_complex_size': 24}
-    # current.pepperargs['#7-condensed'] = {'condensed': True, 'conc': 'nM', 'k_slow': 1e-10, 'k_fast': 1e-2, 'max_complex_size': 24}
 
     if verbose:
         for df in current.get_dataframes():
@@ -291,5 +279,8 @@ def data(evaluate=False, verbose = 0):
     return [k17_F2, k17_F3, k17_F4]
 
 if __name__ == '__main__':
+    print(kotani2017_F2_pil(None))
+    print(kotani2017_F3_pil(None))
+    print(kotani2017_F4_pil(None))
     data(evaluate=True, verbose=1)
 

@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+#
+#  test_condense.py
+#  EnumeratorProject
+#
 import unittest
 
 from peppercornenumerator.input import read_pil

@@ -1,13 +1,12 @@
 #
-#  input.py
+#  peppercornenumerator/input.py
 #  EnumeratorProject
 #
-#  Created by Karthik Sarma on 6/26/10.
-#
-
-
+from __future__ import absolute_import, print_function, division
 from builtins import map
+
 import logging
+log = logging.getLogger(__name__)
 
 from dsdobjects.parser import parse_pil_string, parse_pil_file
 from dsdobjects.parser import parse_seesaw_string, parse_seesaw_file
@@ -47,11 +46,11 @@ def read_reaction(line):
 
     if rate is None:
         r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
-        logging.warning("Ignoring input reaction without a rate: {}".format(r))
+        log.warning("Ignoring input reaction without a rate: {}".format(r))
         return None, None, None, None, None, None
     elif rtype is None or rtype == 'condensed' or rtype not in PepperReaction.RTYPES:
         r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
-        logging.warning("Ignoring input reaction of with rtype='{}': {}".format(rtype, r))
+        log.warning("Ignoring input reaction of with rtype='{}': {}".format(rtype, r))
         return None, None, None, None, None, None
     else :
         r = "[{} = {:12g} {}] {} -> {}".format(
@@ -90,7 +89,6 @@ def read_pil(data, is_file = False, composite = False):
                 (dtype, dlen) = (None, int(line[2]))
             if name not in domains:
                 domains[name] = PepperDomain(name, dtype = dtype, length = dlen)
-            logging.info('Domain {} with length {}'.format(domains[name], len(domains[name])))
             cname = name[:-1] if domains[name].is_complement else name + '*'
             if cname in domains:
                 assert domains[cname] == ~domains[name]
@@ -98,7 +96,7 @@ def read_pil(data, is_file = False, composite = False):
                 domains[cname] = ~domains[name]
 
         elif line[0] == 'sl-domain':
-            logging.info("Ignoring sequence information for domain {}.".format(name))
+            log.info("Ignoring sequence information for domain {}.".format(name))
             if len(line) == 4:
                 if int(line[3]) != len(line[2]):
                     raise InputFormatError("Sequence/Length information inconsistent {} vs {}.".format(line[3], len(line[2])))
@@ -152,7 +150,7 @@ def read_pil(data, is_file = False, composite = False):
                                 structure.insert(e+i, structure[e])
 
                     elif d not in domains :
-                        logging.warning("Assuming {} is a long domain.".format(d))
+                        log.warning("Assuming {} is a long domain.".format(d))
                         domains[d] = PepperDomain(d, 'long')
                         cdom = ~domains[d]
                         domains[cdom.name] = cdom
@@ -175,17 +173,17 @@ def read_pil(data, is_file = False, composite = False):
                 reactants = list([complexes[c] for c in reactants])
                 products  = list([complexes[c] for c in products])
             except KeyError:
-                logging.warning("Ignoring input reaction with undefined complex: {}".format(r))
+                log.warning("Ignoring input reaction with undefined complex: {}".format(r))
                 continue
             
             reaction = PepperReaction(reactants, products, rtype=rtype, rate=rate)
             if reaction.rateunits != units:
-                logging.error("Rate units must be given in {}, not: {}.".format(reaction.rateunits, units))
+                log.error("Rate units must be given in {}, not: {}.".format(reaction.rateunits, units))
                 raise SystemExit
             reactions.append(reaction)
 
         else :
-            logging.warning("Ignoring {} specification: {}".format(line[0], name))
+            log.warning("Ignoring {} specification: {}".format(line[0], name))
         
     if composite :
         return complexes, reactions, sequences
@@ -197,12 +195,12 @@ def read_kernel(data, is_file = False):
 
     including state and reaction, ignores concetrations
     """
-    logging.warning("deprecated function: use read_pil")
+    log.warning("deprecated function: use read_pil")
     return read_pil(data, is_file)
 
 def from_kernel(lines):
     """ Tranlsate a list of kernel strings. """
-    logging.warning('deprecated function: use read_pil') 
+    log.warning('deprecated function: use read_pil') 
 
     # split string into lines if necessary
     if isinstance(lines, str):
