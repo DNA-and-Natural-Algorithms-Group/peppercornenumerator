@@ -12,10 +12,9 @@ import numpy as np
 from collections import namedtuple
 
 from dsdobjects import clear_memory
-from dsdobjects import DL_Domain, DSD_Complex, DSD_Reaction, DSD_Macrostate
 from dsdobjects import DSDObjectsError, DSDDuplicationError
+from dsdobjects.core import DL_Domain, DSD_Complex, DSD_Reaction, DSD_Macrostate
 from dsdobjects.utils import split_complex, convert_units
-# not needed here, but passing it on...
 from dsdobjects.utils import make_pair_table, pair_table_to_dot_bracket 
 
 class PepperObjectsError(Exception):

@@ -104,7 +104,7 @@ class TestEnumeratorInterface(unittest.TestCase):
         enum.dry_run()
         self.assertEqual(sorted(enum.complexes), sorted([X,Y]))
         self.assertEqual(sorted(enum.resting_complexes), sorted([X,Y]))
-        self.assertEqual(sorted(r.canonical for r in enum.resting_macrostates), sorted([X,Y]))
+        self.assertEqual(sorted(r.canonical_complex for r in enum.resting_macrostates), sorted([X,Y]))
 
         with self.assertRaises(DSDObjectsError) as e:
             enum.enumerate()
@@ -146,7 +146,7 @@ class TestEnumeratorInterface(unittest.TestCase):
         enum.max_reaction_count = 5000
         enum.enumerate()
 
-        self.assertTrue(F in [rms.canonical for rms in enum.resting_macrostates])
+        self.assertTrue(F in [rms.canonical_complex for rms in enum.resting_macrostates])
 
 class TestWrappers(unittest.TestCase):
 
