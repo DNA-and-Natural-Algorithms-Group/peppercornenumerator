@@ -41,8 +41,28 @@ def get_integrator(filename, function = 'integrate'):
 class SimulationSetupError(Exception):
     pass
 
-def main(args):
+def main():
     """Translate a CRN into a system of ODEs. Optional: Simulate ODEs on-the-fly. """
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    pilsim = parser.add_argument_group('pilsimulator I/O')
+
+    pilsim.add_argument('--version', action='version', 
+            version='%(prog)s ' + __version__)
+    pilsim.add_argument("--dry-run", action='store_true',
+            help="Do not run the simulation, only write the files.")
+    pilsim.add_argument("-o", "--output", default='odesystem', metavar='<str>',
+            help="Name of ODE library files.")
+    pilsim.add_argument("--force", action='store_true',
+            help="Overwrite existing files")
+    pilsim.add_argument("--no-jacobian", action='store_true',
+            help="Do not write the Jacobi-Matrix. Let the solver do the work.")
+
+    add_integrator_args(parser)
+
+    args = parser.parse_args()
+
 
     # ********************* #
     # ARGUMENT PROCESSING 1 #
@@ -142,24 +162,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    pilsim = parser.add_argument_group('pilsimulator I/O')
-
-    pilsim.add_argument('--version', action='version', 
-            version='%(prog)s ' + __version__)
-    pilsim.add_argument("--dry-run", action='store_true',
-            help="Do not run the simulation, only write the files.")
-    pilsim.add_argument("-o", "--output", default='odesystem', metavar='<str>',
-            help="Name of ODE library files.")
-    pilsim.add_argument("--force", action='store_true',
-            help="Overwrite existing files")
-    pilsim.add_argument("--no-jacobian", action='store_true',
-            help="Do not write the Jacobi-Matrix. Let the solver do the work.")
-
-    add_integrator_args(parser)
-
-    args = parser.parse_args()
-
-    main(args)
+    main()

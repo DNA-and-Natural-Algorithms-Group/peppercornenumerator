@@ -161,14 +161,20 @@ def add_peppercorn_args(parser):
 def set_handle_verbosity(h, v):
     if v == 0:
         h.setLevel(logging.WARNING)
-    elif args.verbose == 1:
+    elif v == 1:
         h.setLevel(logging.INFO)
-    elif args.verbose == 2:
+    elif v == 2:
         h.setLevel(logging.DEBUG)
-    elif args.verbose >= 3:
+    elif v >= 3:
         h.setLevel(logging.NOTSET)
 
-def main(args):
+def main():
+    parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            description="""Peppercorn: Domain-level nucleic acid reaction enumerator.""")
+    add_peppercorn_args(parser)
+    args = parser.parse_args()
+ 
     # ~~~~~~~~~~~~~
     # Logging Setup 
     # ~~~~~~~~~~~~~
@@ -378,10 +384,5 @@ def main(args):
     print(output, end='')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            description="""Peppercorn: Domain-level nucleic acid reaction enumerator.""")
-    add_peppercorn_args(parser)
-    args = parser.parse_args()
-    main(args)
+   main()
 
