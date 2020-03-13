@@ -8,6 +8,9 @@ from builtins import map
 import logging
 log = logging.getLogger(__name__)
 
+import xml.dom.minidom 
+from collections import Counter
+
 from peppercornenumerator import __version__
 from peppercornenumerator.utils import natural_sort
 from peppercornenumerator.utils import PeppercornUsageError
@@ -284,91 +287,120 @@ def write_vdsd(enumerator, fh = None, detailed = True, condensed = False,
 
     return ''.join(out)
 
-def write_sbml(enumerator, fh = None, condensed = False):
+def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube'):
+    """ Export reaction system to SBML Version 3 Lvl 2:
+
+    Potentially useful links ...
+        http://sbml.org/Documents/Specifications
+        https://github.com/matthiaskoenig/sbmlutils
+        https://sys-bio.github.io/roadrunner/python_docs/introduction.html
+    """
     molarity = 'M'
-    filename = 'tmpname'
+    c_size = 1
 
-    import xml.dom.minidom # hmmm ...
+    # -----------------
+    # Helper functions:
+    # -----------------
+    def xml_list_of_species():
+        def xml_species(name, init, unit):
+            assert unit == "mole"
+            return """<species compartment="{:s}" id="{:s}" initialAmount="{:g}" 
+                            boundaryCondition="false" hasOnlySubstanceUnits="false" 
+                            substanceUnits="mole" constant="false"/>""".format(
+                                    compartment, name, init, unit)
+        xml = ''
+        if condensed:
+            for rm in enumerator.resting_macrostates:
+                clist = [c.concentrationformat(molarity).value \
+                         for c in rm.complexes if c.concentration is not None]
+                mconc = sum(clist) # if sum(clist) else 0.0 # if else needed?
+                xml += xml_species(rm.canonical_complex.name, mconc, 'mole')
+        else:
+            for cplx in enumerator.resting_complexes + enumerator.transient_complexes:
+                conc = cplx.concentrationformat(molarity).value if cplx.concentration else 0.0
+                xml += xml_species(cplx.name, conc, 'mole')
+        return xml
 
-    if condensed :
-        complexes = natural_sort(enumerator.resting_macrostates)
-        reactions = natural_sort(enumerator.condensed_reactions)
-    else:
-        complexes = natural_sort(enumerator.resting_complexes + enumerator.transient_complexes)
-        reactions = natural_sort(enumerator.reactions)
+    def xml_list_of_reactions():
+        def xml_species(name, count):
+            return '<speciesReference species="{:s}" stoichiometry="{:d}" constant="true"/>'.format(
+                    name, count)
+        def xml_reaction(rxn):
+            reactants = Counter([str(s) for s in rxn.reactants])
+            products = Counter([str(s) for s in rxn.products])
+            reac = '\n'.join([xml_species(k,v) for k,v in reactants.items()])
+            prod = '\n'.join([xml_species(k,v) for k,v in products.items()])
 
-    header = '<?xml version="1.0" encoding="UTF-8"?>'
-    out = [header,
-            '<sbml level="2" version="3" xmlns="http://www.sbml.org/sbml/level2/version3">',
-            '<model name="{:s}">'.format(filename),
-            '<listOfUnitDefinitions>',
-                '<unitDefinition id="per_second">',
-                    '<listOfUnits>',
-                        '<unit kind="second" exponent="-1"/>',
-                    '</listOfUnits>',
-                '</unitDefinition>',
-                '<unitDefinition id="litre_per_mole_per_second">',
-                    '<listOfUnits>',
-                        '<unit kind="mole"   exponent="-1"/>',
-                        '<unit kind="litre"  exponent="1"/>',
-                        '<unit kind="second" exponent="-1"/>',
-                    '</listOfUnits>',
-                '</unitDefinition>',
-            '</listOfUnitDefinitions>',
-            '<listOfCompartments>',
-                '<compartment id="reaction" size="1e-3" />',
-            '</listOfCompartments>',
-            '<listOfSpecies>']
+            rxnID = '{}__{}'.format('_'.join(reactants.elements()),'_'.join(products.elements()))
+            
+            law = '<apply> <times/> <ci>k</ci> {:s} </apply>'.format(
+                        ' '.join(['<ci>{:s}</ci>'.format(e) for e in reactants.elements()]))
+            par = '<localParameter id="k" value="{:g}" units="litre_per_mole_second"/>'.format(
+                    rxn.const)
 
-    # Tags for each species.
-    if condensed:
-        for rm in complexes:
-            clist = [c.concentrationformat(molarity).value \
-                    for c in rm.complexes if c.concentration is not None]
-            mconc = sum(clist) if sum(clist) else 0.0 # if else needed?
-            out.append('<species compartment="reaction" id="{:s}" name="{:s}" initialConcentration="{:g}"/>'.format(rm.canonical_name, rm.canonical_name, mconc))
-    else:
-        for cplx in complexes:
-            conc = cplx.concentrationformat(molarity).value if cplx.concentration else 0.0
-            out.append('<species compartment="reaction" id="{:s}" name="{:s}" initialConcentration="{}"/>'.format(cplx.name, cplx.name, conc))
+            return """
+                <reaction id="{:s}" reversible="false">
+                    <listOfReactants>
+                        {:s}
+                    </listOfReactants>
+                    <listOfProducts>
+                        {:s}
+                    </listOfProducts>
+                    <kineticLaw>
+                        <math xmlns="http://www.w3.org/1998/Math/MathML">
+                        <apply> <times/> <ci>{:s}</ci> 
+                            {:s}
+                        </apply>
+                        </math>
+                        <listOfLocalParameters>
+                            {:s}
+                        </listOfLocalParameters>
+                    </kineticLaw>
+                </reaction>
+                """.format(rxnID, reac, prod, compartment, law, par)
+        xml = ''
+        reactions = enumerator.condensed_reactions if condensed else enumerator.reactions
+        for rxn in reactions:
+            xml += xml_reaction(rxn)
+        return xml
 
-    out += ['</listOfSpecies>',
-            '<listOfReactions>']
+    # Ok, so let's set this up ...
+    xmlspex = """
+    <sbml xmlns="http://www.sbml.org/sbml/level3/version2/core" level="3" version="2">
+    <model extentUnits="mole" timeUnits="second">
+        <listOfUnitDefinitions>
+            <unitDefinition id="per_second">
+                <listOfUnits>
+                    <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
+                </listOfUnits>
+            </unitDefinition>
+            <unitDefinition id="litre_per_mole_second">
+                <listOfUnits>
+                <unit kind="mole" exponent="-1" scale="0" multiplier="1"/>
+                <unit kind="litre" exponent="1" scale="0" multiplier="1"/>
+                <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
+                </listOfUnits>
+            </unitDefinition>
+        </listOfUnitDefinitions>
+        <listOfCompartments>
+            <compartment id="{:s}" 
+                size="{:g}" spatialDimensions="3" units="litre" constant="true"/>
+        </listOfCompartments>
+        <listOfSpecies>
+            {:s}
+        </listOfSpecies>
+        <listOfReactions>
+            {:s}
+        </listOfReactions>
+    </model>
+    </sbml>
+    """.format(compartment, c_size, xml_list_of_species(), xml_list_of_reactions())
 
-    # Tags for each reaction.
-    for (i, rxn) in enumerate(reactions):
-        out += ['<reaction id="{:d}" reversible="false">'.format(i), 
-                '<listOfReactants>'] + \
-                 ['<speciesReference species="{:s}"/>'.format(str(s)) for s in rxn.reactants] + \
-                ['</listOfReactants>', 
-                 '<listOfProducts>'] + \
-                 ['<speciesReference species="{:s}"/>'.format(str(s)) for s in rxn.products] + \
-                ['</listOfProducts>']
+    doc = xml.dom.minidom.parseString(xmlspex)
+    doc = doc.toprettyxml(indent = ' ', encoding="UTF-8")
+    doc = '\n'.join([s.decode() for s in doc.splitlines() if s.strip()]) + '\n'
 
-        # unimolecular rate constants have units 1/s, bimolecular rate
-        # constants have units 1/M/s
-        units = 'per_second' if rxn.arity[0] == 1 else 'litre_per_mole_per_second'
-
-        out += ['<kineticLaw>', 
-                '<math xmlns="http://www.w3.org/1998/Math/MathML">', 
-                '<apply>', '<times />', 
-                '<ci>k</ci>'] + [ '<ci>{:s}</ci>'.format(str(s)) for s in rxn.reactants] + \
-                ['</apply>', 
-                 '</math>', 
-                 '<listOfParameters>', 
-                    '<parameter id="k"  value="{:10f}" units="{:s}"/>'.format(
-                        rxn.const, units), 
-                    '</listOfParameters>', '</kineticLaw>', '</reaction>']
-
-    out.extend(['</listOfReactions>',
-                '</model>',
-                '</sbml>']);
-
-    doc = xml.dom.minidom.parseString("".join(out))
-    
-    if fh is None:
-        return header + '\n' + doc.documentElement.toprettyxml(indent="  ")
-    else:
-        fh.write(header+'\n'+doc.documentElement.toprettyxml(indent="  "))
-        return ''
+    if fh:
+        fh.write(doc)
+    return '' if fh else doc
 

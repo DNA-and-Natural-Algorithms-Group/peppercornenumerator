@@ -90,8 +90,6 @@ class Test_SBML_output(unittest.TestCase):
         print(write_sbml(enum))
         print()
         print(write_sbml(enum, condensed = True))
-
-
  
 
 if __name__ == '__main__':
