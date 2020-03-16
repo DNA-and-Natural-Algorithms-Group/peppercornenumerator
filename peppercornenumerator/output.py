@@ -295,13 +295,23 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
         https://github.com/matthiaskoenig/sbmlutils
         https://sys-bio.github.io/roadrunner/python_docs/introduction.html
     """
-    molarity = 'M'
-    c_size = 1
+    molarity = 'M' # as opposed to nM, uM, mM, etc; [mole / liter]
+    time = 's'
+    volume = 1 # 1.66 * 1e-15 # liter 
+
+    if molarity != 'M':
+        log.error('M is currently the only supported concentration format for SBML.')
+        molarity = 'M'
+
+    if time != 's':
+        log.error('Seconds (s) is currently the only supported time unit for SBML.')
+        time = 's'
 
     # -----------------
     # Helper functions:
     # -----------------
     def xml_list_of_species():
+        # Returs species in counts [mole], not concentration [mole/liter]
         def xml_species(name, init, unit):
             assert unit == "mole"
             return """<species compartment="{:s}" id="{:s}" initialAmount="{:g}" 
@@ -311,17 +321,19 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
         xml = ''
         if condensed:
             for rm in enumerator.resting_macrostates:
-                clist = [c.concentrationformat(molarity).value \
+                mole_list = [c.concentrationformat(molarity).value * volume \
                          for c in rm.complexes if c.concentration is not None]
-                mconc = sum(clist) # if sum(clist) else 0.0 # if else needed?
-                xml += xml_species(rm.canonical_complex.name, mconc, 'mole')
+                moles = sum(mole_list) # if sum(clist) else 0.0 # if else needed?
+                xml += xml_species(rm.canonical_complex.name, moles, 'mole')
         else:
             for cplx in enumerator.resting_complexes + enumerator.transient_complexes:
-                conc = cplx.concentrationformat(molarity).value if cplx.concentration else 0.0
-                xml += xml_species(cplx.name, conc, 'mole')
+                moles = cplx.concentrationformat(molarity).value * volume if \
+                        cplx.concentration else 0.0
+                xml += xml_species(cplx.name, moles, 'mole')
         return xml
 
     def xml_list_of_reactions():
+        # Returns rate constants in /s, /M/s, /M/M/s, ... to yield rates in M/s (= mole/L/s)
         def xml_species(name, count):
             return '<speciesReference species="{:s}" stoichiometry="{:d}" constant="true"/>'.format(
                     name, count)
@@ -335,8 +347,12 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
             
             law = '<apply> <times/> <ci>k</ci> {:s} </apply>'.format(
                         ' '.join(['<ci>{:s}</ci>'.format(e) for e in reactants.elements()]))
-            par = '<localParameter id="k" value="{:g}" units="litre_per_mole_second"/>'.format(
-                    rxn.const)
+
+            rar = rxn.arity[0] - 1
+            units = [molarity] * rar + [time]
+            ratec = rxn.rateformat(units).constant # /M ... /sec
+            txtunits = 'per_molar_' * rar + 'per_second'
+            par = '<localParameter id="k" value="{:g}" units="{:s}"/>'.format(ratec, txtunits)
 
             return """
                 <reaction id="{:s}" reversible="false">
@@ -374,10 +390,25 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
                     <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
                 </listOfUnits>
             </unitDefinition>
-            <unitDefinition id="litre_per_mole_second">
+            <!--<unitDefinition id="litre_per_mole_second">-->
+            <unitDefinition id="per_molar_per_second">
                 <listOfUnits>
                 <unit kind="mole" exponent="-1" scale="0" multiplier="1"/>
                 <unit kind="litre" exponent="1" scale="0" multiplier="1"/>
+                <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
+                </listOfUnits>
+            </unitDefinition>
+            <unitDefinition id="per_molar_per_molar_per_second">
+                <listOfUnits>
+                <unit kind="mole" exponent="-2" scale="0" multiplier="1"/>
+                <unit kind="litre" exponent="2" scale="0" multiplier="1"/>
+                <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
+                </listOfUnits>
+            </unitDefinition>
+            <unitDefinition id="per_molar_per_molar_per_molar_per_second">
+                <listOfUnits>
+                <unit kind="mole" exponent="-3" scale="0" multiplier="1"/>
+                <unit kind="litre" exponent="3" scale="0" multiplier="1"/>
                 <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
                 </listOfUnits>
             </unitDefinition>
@@ -394,7 +425,7 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
         </listOfReactions>
     </model>
     </sbml>
-    """.format(compartment, c_size, xml_list_of_species(), xml_list_of_reactions())
+    """.format(compartment, volume, xml_list_of_species(), xml_list_of_reactions())
 
     doc = xml.dom.minidom.parseString(xmlspex)
     doc = doc.toprettyxml(indent = ' ', encoding="UTF-8")
