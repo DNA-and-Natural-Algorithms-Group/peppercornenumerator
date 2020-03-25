@@ -1,4 +1,12 @@
 # peppercornenumerator 
+
+[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/dna-and-natural-algorithms-group/peppercornenumerator)](https://github.com/dna-and-natural-algorithms-group/peppercornenumerator/tags)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/dna-and-natural-algorithms-group/peppercornenumerator?include_prereleases)](https://github.com/dna-and-natural-algorithms-group/peppercornenumerator/releases)
+[![GitHub](https://img.shields.io/github/license/dna-and-natural-algorithms-group/peppercornenumerator)](https://opensource.org/licenses/MIT)
+[![Travis (.org)](https://img.shields.io/travis/dna-and-natural-algorithms-group/peppercornenumerator)](https://travis-ci.com/github/dna-and-natural-algorithms-group/peppercornenumerator)
+[![Codecov](https://img.shields.io/codecov/c/github/dna-and-natural-algorithms-group/peppercornenumerator)](https://codecov.io/gh/dna-and-natural-algorithms-group/peppercornenumerator)
+
+
 This is a package for domain-level strand displacement (DSD) system analysis.
 The reaction enumerator **Peppercorn** reads a file with initially present
 domain-level complexes, and returns all possible reactions and products.
