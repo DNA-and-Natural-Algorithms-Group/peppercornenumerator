@@ -1,0 +1,5 @@
+future
+pandas
+numpy
+crnsimulator>=0.6
+dsdobjects>=0.7.1
