@@ -2,18 +2,8 @@
 
 from setuptools import setup, find_packages
 
-LONG_DESCRIPTION="""
-This package enumerates domain-level strand displacement (DSD) reaction
-networks assuming a timescale separation, such that fast reaction pathways
-always equilibrate before slow reactions initiate. The enumerator can handle
-arbitrary non-pseudoknotted secondary structures and supports all typical
-unimolecular and bimolecular domain-level reactions: bind, unbind, 3-way
-branch-migration and 4-way branch-migration including remote-toehold branch
-migration. For more background on reaction semantics we refer to the README.
-"""
-
 with open("README.md", "r") as fh:
-    long_description = fh.read()
+    LONG_DESCRIPTION = fh.read()
 
 setup(
     name='peppercornenumerator',

@@ -18,7 +18,9 @@ semantics we refer to [Badelt et al. (2020)].
 
 Given a specification of initial species concentrations, the simulation
 software **Pilsimulator** can read Peppercorn's output and simulate expected
-species concentrations over time. Note that the reaction rates assume DNA
+species concentrations over time. Alternatively, you can export the results
+into **SBML** format for analysis in your favorite simulator.
+Note that the reaction rates assume DNA
 molecules!
 
 ## Installation

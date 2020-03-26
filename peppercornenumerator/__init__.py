@@ -4,7 +4,6 @@
 #
 __version__ = "v0.8"
 
-import sys
 import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
