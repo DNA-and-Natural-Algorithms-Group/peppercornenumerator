@@ -2,9 +2,6 @@
 #  peppercornenumerator/input.py
 #  EnumeratorProject
 #
-from __future__ import absolute_import, print_function, division
-from builtins import map
-
 import logging
 log = logging.getLogger(__name__)
 
@@ -228,6 +225,7 @@ def load_pil_crn(data):
         if line[0] == 'kernel-complex':
             name = line[1]
             conc = 0
+            mode = 'initial'
             if len(line) > 3 :
                 init = line[3][0]
                 conc = float(line[3][1])
@@ -235,20 +233,23 @@ def load_pil_crn(data):
                     sysunit = line[3][2]
                 else :
                     if sysunit != line[3][2]:
-                        raise PilFormatError(
-                                'Conflicting units: {} vs. {}'.format(sysunit, line[3][2]))
-                if init[0] != 'i':
-                    raise NotImplementedError('concentrations must be specified as *initial*')
-            species[name] = ('initial', conc)
+                        raise PilFormatError('Conflicting units: {} vs. {}'.format(sysunit, line[3][2]))
+                if init[0] == 'c':
+                    mode = 'constant'
+            species[name] = (mode, conc)
         elif line[0] == 'resting-macrostate':
             name = line[1]
-            conc = ['initial', 0]
+            conc = 0
+            mode = None
             for sp in line[2]:
                 assert sp in species
-                if species[sp][0][0] != 'i':
-                    raise NotImplementedError('concentrations must be specified as *initial*')
-                conc[1] += species[sp][1]
-            macrostates[name] = tuple(conc)
+                conc += species[sp][1]
+                if mode: 
+                    if mode[0] != species[sp][0][0]:
+                        raise PilFormatError('Constant and initial species in the same resting macrostate.')
+                else:
+                    mode = 'initial' if species[sp][0][0] == 'i' else 'constant'
+            macrostates[name] = (mode, conc)
         elif line[0] == 'reaction':
             info = line[1]
             reactants = line[2]
@@ -261,7 +262,7 @@ def load_pil_crn(data):
         elif line[0] == 'dl-domain' :
             pass
         else :
-            print('# Ignoring Keyword: {}'.format(line[0]))
+            logging.warning('Ignoring Keyword: {}'.format(line[0]))
 
     crnspecies = dict()
     condensed = bool(macrostates)
@@ -630,8 +631,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
                 tmp[0] = 't'
                 cx,_,_ = make_thld(tmp)
             else:
-                print(line)
-                raise NotImplementedError
+                raise NotImplementedError('Cannot interpret line {}'.format(line))
             # input wires have None at default
             assert cx.concentration is None or cx.concentration.value == 0
             cx.concentration = ('i', conc*float(line[2]), 'M')
@@ -652,7 +652,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
 
     return complexes, reactions
 
-def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, global_species=False):
+def get_seesaw_compiler_reactions(complexes, T = 20, utbr = False, leak = False, global_species = False):
     """Write the standard seesaw reactions. 
 
     Takes a dictionary of seesaw complexes and finds all designed and side
@@ -757,28 +757,24 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
                 # a regular interaction
                 og = complexes['G_' + w.seesawname + '_' + 'g' + gn]
                 reactions.append(PepperReaction([w, g], [gw, og], rtype='seesaw', rate=ks))
-                #print("reaction [seesaw = {} /M/s ] {} + {} -> {} + {}".format(ks, w, g, gw, og))
                 continue
 
             if G == '-' and wi == gn:
                 # a regular interaction
                 og = complexes['G_' + 'g' + gn + '_' + w.seesawname]
                 reactions.append(PepperReaction([w, g], [gw, og], rtype='seesaw', rate=ks))
-                #print("reaction [seesaw = {} /M/s ] {} + {} -> {} + {}".format(ks, w, g, gw, og))
                 continue
 
             if leak and G == '+' and wi == gwi:# and wo != gwo:
                 og = complexes['G_' + 'g' + gn + '_' + w.seesawname]
                 reactions.append(PepperReaction([w, g], [gw, og], rtype='side-leak', rate=kl))
-                #print("reaction [seesaw-leak = {} /M/s ] {} + {} -> {} + {}".format(kl,w,g,gw, og))
 
             if leak and G == '-' and wo == gwo:# and wi != gwi:
                 og = complexes['G_' + w.seesawname + '_' + 'g' + gn]
                 reactions.append(PepperReaction([w, g], [gw, og], rtype='side-leak', rate=kl))
-                #print("reaction [seesaw-leak = {} /M/s ] {} + {} -> {} + {}".format(kl,w,g,gw, og))
 
             if utbr and global_species:
-                ## TODO: check if that makes sense...?
+                # TODO: check if that makes sense...?
                 if w.concentration and w.concentration.value != 0:
                     try : # all Wires together
                         gWn = g.name + '_W'
@@ -819,7 +815,6 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
                 of = complexes['F_'+wo]
                 oq = complexes['Q_'+wo]
                 reactions.append(PepperReaction([w, g], [of, oq], rtype='seesaw-rep', rate=ks))
-                #print("reaction [seesaw = {} /M/s ] {} + {} -> {} + {}".format(ks, w, g, of, oq))
                 continue
 
             if utbr and global_species:
@@ -856,8 +851,6 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
                 complexes[a.name] = a
                 reactions.append(PepperReaction([w, g], [a], rtype='side-utbr', rate=kf))
                 reactions.append(PepperReaction([a], [w, g], rtype='side-utbr', rate=krf))
-                #print("reaction [seesaw-rep = {} /M/s ] {} + {} -> {}".format(kf,w,g,a))
-                #print("reaction [seesaw-rep = {} /s ] {} -> {} + {}".format(krf,a,w,g))
 
         for g in thlds:
             # T2_5
@@ -865,7 +858,6 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
                 tc = complexes['Waste{}_{}'.format(wi, wo)]
                 tw = complexes['Waste_'+wo]
                 reactions.append(PepperReaction([w, g], [tc, tw], rtype='seesaw-thld', rate=kf))
-                #print("reaction [seesaw = {} /M/s ] {} + {} -> {}_c + W_{}".format(kf, w, g, g, wo))
                 continue
 
             if utbr and global_species:
@@ -902,7 +894,5 @@ def get_seesaw_compiler_reactions(complexes, T=20, utbr=False, leak=False, globa
                 complexes[a.name] = a
                 reactions.append(PepperReaction([w, g], [a], rtype='side-utbr', rate=kf))
                 reactions.append(PepperReaction([a], [w, g], rtype='side-utbr', rate=krs))
-                #print("reaction [seesaw-thd = {} /M/s ] {} + {} -> {}".format(kf,w,g,a))
-                #print("reaction [seesaw-thd = {} /s ] {} -> {} + {}".format(krs,a,w,g))
 
     return reactions

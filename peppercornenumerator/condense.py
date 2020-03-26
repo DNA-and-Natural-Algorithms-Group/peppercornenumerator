@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function, division
 
 import logging
 log = logging.getLogger(__name__)
+import warnings
 
 import operator
 import collections
@@ -51,7 +52,8 @@ class PepperCondensation(object):
 
     @property
     def resting_sets(self):
-        print("# Deprecated function: PepperCondensation.resting_sets. Replace with PepperCondensation.resting_macrostates")
+        warnings.warn("resting_sets is deprecated, use resting_macrostates instead", 
+                DeprecationWarning)
         return self.resting_macrostates
 
     @property
@@ -553,8 +555,8 @@ class PepperCondensation(object):
 
 class ReactionGraph(PepperCondensation):
     def __init__(self, *kargs, **kwargs):
-        print('''# WARNING: peppercorn-v0.6: using depricated object name:''')
-        print('''# Please rename peppercornenumerator.condense.ReactionGraph to peppercornenumerator.condense.PepperCondensation.  ''')
+        warnings.warn("ReactionGraph is deprecated, use PepperCondensation instead", 
+                DeprecationWarning)
         super(ReactionGraph, self).__init__(*kargs, **kwargs)
 
 

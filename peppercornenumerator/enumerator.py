@@ -7,6 +7,7 @@ from builtins import input
 
 import logging
 log = logging.getLogger(__name__)
+import warnings
 
 import sys
 import math
@@ -228,23 +229,27 @@ class Enumerator(object):
 
     @property
     def remote_migration(self):
-        print(DeprecationWarning('Peppercorn>=v0.7: use Enumerator.reject_remote instead of Enumerator.remote_migration.'))
+        warnings.warn("remote_migration is deprecated, use reject_remote instead", 
+                DeprecationWarning)
         return not self.reject_remote
 
     @remote_migration.setter
     def remote_migration(self, remote):
         assert isinstance(remote, bool)
-        print(DeprecationWarning('Peppercorn>=v0.7: use Enumerator.reject_remote instead of Enumerator.remote_migration.'))
+        warnings.warn("remote_migration is deprecated, use reject_remote instead", 
+                DeprecationWarning)
         self.reject_remote = not remote
 
     @property
     def max_helix_migration(self):
-        print(DeprecationWarning('Peppercorn>=v0.7: use Enumerator.max_helix instead of Enumerator.max_helix_migration.'))
+        warnings.warn("max_helix_migration is deprecated, use max_helix instead", 
+                DeprecationWarning)
         return self.max_helix
 
     @max_helix_migration.setter
     def max_helix_migration(self, max_helix):
-        print(DeprecationWarning('Peppercorn>=v0.7: use Enumerator.max_helix instead of Enumerator.max_helix_migration.'))
+        warnings.warn("max_helix_migration is deprecated, use max_helix instead", 
+                DeprecationWarning)
         self.max_helix = max_helix
 
     @property
@@ -281,7 +286,8 @@ class Enumerator(object):
 
     @property
     def resting_sets(self):
-        print("# Deprecated function: Enumerator.resting_sets. Replace with Enumerator.resting_macrostates")
+        warnings.warn("resting_sets is deprecated, use resting_macrostates instead", 
+                DeprecationWarning)
         return self.resting_macrostates
 
     @property

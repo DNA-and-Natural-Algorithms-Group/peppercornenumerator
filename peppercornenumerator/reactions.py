@@ -390,8 +390,7 @@ def bind21(reactant1, reactant2, max_helix = True, remote=None, pkwarning=False)
                     # Exclude the non-pseudoknotted interactions
                     continue
                 if (dom1.can_pair(dom2)):
-                    print("# WARNING: potential pk-interaction: {} and {}".format(
-                        reactant1, reactant2))
+                    log.warning("potential pk-interaction: {} and {}".format(reactant1, reactant2))
 
    
     output = set()
