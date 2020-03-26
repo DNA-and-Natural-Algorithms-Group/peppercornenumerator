@@ -307,6 +307,13 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
         log.error('Seconds (s) is currently the only supported time unit for SBML.')
         time = 's'
 
+    max_rar = 2 # Determine maximum number of reactants to define global units later ...
+    reactions = enumerator.condensed_reactions if condensed else enumerator.reactions
+    for rxn in reactions:
+        rar = rxn.arity[0] - 1
+        if rar > max_rar:
+            max_rar = rar
+
     # -----------------
     # Helper functions:
     # -----------------
@@ -380,6 +387,23 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
             xml += xml_reaction(rxn)
         return xml
 
+    def xml_list_of_units(max_reactants):
+        def unit_definition(rar):
+            txtunits = 'per_molar_' * rar + 'per_second'
+            return f"""
+                    <unitDefinition id="{txtunits}">
+                        <listOfUnits>
+                        <unit kind="mole" exponent="-{rar}" scale="0" multiplier="1"/>
+                        <unit kind="litre" exponent="{rar}" scale="0" multiplier="1"/>
+                        <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
+                        </listOfUnits>
+                    </unitDefinition>
+                    """
+        xml = ''
+        for e in range(1, max_reactants + 1):
+            xml += unit_definition(e)
+        return xml
+
     # Ok, so let's set this up ...
     xmlspex = """
     <sbml xmlns="http://www.sbml.org/sbml/level3/version2/core" level="3" version="2">
@@ -390,28 +414,7 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
                     <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
                 </listOfUnits>
             </unitDefinition>
-            <!--<unitDefinition id="litre_per_mole_second">-->
-            <unitDefinition id="per_molar_per_second">
-                <listOfUnits>
-                <unit kind="mole" exponent="-1" scale="0" multiplier="1"/>
-                <unit kind="litre" exponent="1" scale="0" multiplier="1"/>
-                <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
-                </listOfUnits>
-            </unitDefinition>
-            <unitDefinition id="per_molar_per_molar_per_second">
-                <listOfUnits>
-                <unit kind="mole" exponent="-2" scale="0" multiplier="1"/>
-                <unit kind="litre" exponent="2" scale="0" multiplier="1"/>
-                <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
-                </listOfUnits>
-            </unitDefinition>
-            <unitDefinition id="per_molar_per_molar_per_molar_per_second">
-                <listOfUnits>
-                <unit kind="mole" exponent="-3" scale="0" multiplier="1"/>
-                <unit kind="litre" exponent="3" scale="0" multiplier="1"/>
-                <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
-                </listOfUnits>
-            </unitDefinition>
+            {:s}
         </listOfUnitDefinitions>
         <listOfCompartments>
             <compartment id="{:s}" 
@@ -425,7 +428,7 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
         </listOfReactions>
     </model>
     </sbml>
-    """.format(compartment, volume, xml_list_of_species(), xml_list_of_reactions())
+    """.format(xml_list_of_units(max_rar), compartment, volume, xml_list_of_species(), xml_list_of_reactions())
 
     doc = xml.dom.minidom.parseString(xmlspex)
     doc = doc.toprettyxml(indent = ' ', encoding="UTF-8")
