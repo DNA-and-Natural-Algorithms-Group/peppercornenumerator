@@ -79,6 +79,8 @@ def add_peppercorn_args(parser):
 
     output.add_argument('-o', '--output', dest='output_filename', default=None, metavar='<str>',
         help="""Redirect output to a file.""")
+    output.add_argument('--sbml', default=None, metavar='<str>',
+        help="""Print system as SBML (XML) file.""")
     output.add_argument('-c', '--condensed', action='store_true',
         help="Condense reactions into only resting complexes.")
     output.add_argument('-d', '--detailed', action='store_true',
@@ -378,9 +380,15 @@ def main():
         else:
             enum.condense()
 
+    if args.sbml:
+        if detailed and condensed:
+            logger.error("SBML output can be detailed OR condensed, not both.")
+        enum.to_sbml(args.sbml, condensed = condensed)
+
     output = enum.to_pil(args.output_filename, 
                          detailed=detailed, condensed=condensed, composite=composite, 
                          molarity=args.concentration_unit, time = args.time_unit)
+
     print(output, end='')
 
 if __name__ == '__main__':

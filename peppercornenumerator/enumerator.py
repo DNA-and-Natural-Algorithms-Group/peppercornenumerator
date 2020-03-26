@@ -16,7 +16,7 @@ from peppercornenumerator.objects import PepperMacrostate, PepperComplex
 from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
 from peppercornenumerator.utils import PeppercornUsageError
 from peppercornenumerator.input import read_pil, read_seesaw
-from peppercornenumerator.output import write_pil
+from peppercornenumerator.output import write_pil, write_sbml
 import peppercornenumerator.reactions as reactlib
 
 
@@ -491,11 +491,19 @@ class Enumerator(object):
 
     def to_pil(self, filename = None, **kwargs):
         if filename:
-            with open(filename, 'w') as pil :
+            with open(filename, 'w') as pil:
                 write_pil(self, fh=pil, **kwargs)
             return ''
         else:
             return write_pil(self, **kwargs)
+
+    def to_sbml(self, filename = None, **kwargs):
+        if filename:
+            with open(filename, 'w') as sbml:
+                write_sbml(self, fh = sbml, **kwargs)
+            return ''
+        else:
+            return write_sbml(self, **kwargs)
 
     def reactions_interactive(self, root, reactions, rtype='fast'):
         """

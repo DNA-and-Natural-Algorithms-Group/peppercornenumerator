@@ -278,7 +278,7 @@ def load_pil_crn(data):
                 crnspecies[sp] = species.pop(sp, ('initial', 0))
 
     if not condensed and bool(species):
-        print("***WARNING***: Some species do not appear in the CRN: {}".format(list(species.keys())))
+        log.warning("Some species do not appear in the CRN: {}".format(list(species.keys())))
 
     return reactions, crnspecies
 
@@ -637,7 +637,7 @@ def read_seesaw(data, is_file = False, conc = 100e-9, explicit = True, reactions
             cx.concentration = ('i', conc*float(line[2]), 'M')
 
         else :
-            print('WARNING: keyword not supported: {}'.format(line[0]))
+            log.warning('Keyword not supported: {}'.format(line[0]))
 
     if reactions: # e.g. 'seesaw-T25-utbr-leak-reduced'
         for term in reactions.split('-'):
