@@ -16,13 +16,6 @@ from peppercornenumerator.utils import natural_sort
 from peppercornenumerator.utils import PeppercornUsageError
 from peppercornenumerator.condense import PepperCondensation
 
-# DEPRECATED
-def write_kernel(enumerator, fh = None, detailed = True, condensed = False, 
-        composite = None, molarity = 'M', time = 's'):
-    
-    print("# Deprecated function: use peppercornenumerator.output.write_pil instead of write_kernel")
-    return write_pil(enumerator, fh, detailed, condensed, composite, molarity, time)
-
 def write_pil(enumerator, fh = None, detailed = True, condensed = False, 
         composite = None, molarity = 'M', time = 's'):
     """Write the contents of :obj:`Enumerator()` into a *.pil file.
@@ -390,15 +383,15 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
     def xml_list_of_units(max_reactants):
         def unit_definition(rar):
             txtunits = 'per_molar_' * rar + 'per_second'
-            return f"""
-                    <unitDefinition id="{txtunits}">
+            return """
+                    <unitDefinition id="{:s}">
                         <listOfUnits>
-                        <unit kind="mole" exponent="-{rar}" scale="0" multiplier="1"/>
-                        <unit kind="litre" exponent="{rar}" scale="0" multiplier="1"/>
+                        <unit kind="mole" exponent="-{:d}" scale="0" multiplier="1"/>
+                        <unit kind="litre" exponent="{:d}" scale="0" multiplier="1"/>
                         <unit kind="second" exponent="-1" scale="0" multiplier="1"/>
                         </listOfUnits>
                     </unitDefinition>
-                    """
+                    """.format(txtunits, rar, rar)
         xml = ''
         for e in range(1, max_reactants + 1):
             xml += unit_definition(e)
