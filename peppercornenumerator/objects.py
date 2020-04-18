@@ -2,9 +2,6 @@
 #  peppercornenumerator/objects.py
 #  EnumeratorProject
 #
-from __future__ import absolute_import, print_function, division
-from builtins import map
-
 import logging
 log = logging.getLogger(__name__)
 

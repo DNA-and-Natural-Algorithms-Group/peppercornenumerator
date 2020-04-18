@@ -338,7 +338,7 @@ def main():
         try:
             import statprof
         except ImportError as err:
-            logger.warning("Python-module statprof not found, disabled Peppercorn profiling.")
+            logger.warning("Python-module statprof not found (pip install statprof-smarkets). Peppercorn profiling disabled.")
             args.profile = False
 
     if args.dry_run:

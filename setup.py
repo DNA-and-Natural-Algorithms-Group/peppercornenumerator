@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='peppercornenumerator',
-    version='0.9',
+    version='1.0',
     description='Domain-level nucleic acid reaction enumerator',
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
@@ -16,16 +16,15 @@ setup(
     license='MIT',
     classifiers=[
         'Development Status :: 4 - Beta',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         ],
-    python_requires='>=2.7',
+    python_requires='>=3.7',
     test_suite='tests',
     install_requires=[
-        'future',
         'pandas', # for case-studies
         'numpy',
-        'crnsimulator>=0.6',
+        'crnsimulator>=0.8',
         'dsdobjects>=0.7.1'],
     packages=['peppercornenumerator'],
     entry_points = {

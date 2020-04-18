@@ -2,9 +2,6 @@
 #  peppercornenumerator/enumerator.py
 #  EnumeratorProject
 #
-from __future__ import absolute_import, print_function, division
-from builtins import input
-
 import logging
 log = logging.getLogger(__name__)
 import warnings
