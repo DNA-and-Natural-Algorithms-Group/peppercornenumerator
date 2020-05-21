@@ -394,7 +394,7 @@ def simulate_pil(pilfile, execute, output, command, force = False, verbose = 0):
             open(output + '.nxy', 'w') as nxy, \
             open(output + '.err', 'w') as err:
         proc = Popen(simu, stdin=crn, stdout=nxy, stderr=err)
-        proc.communicate(None)
+        proc.communicate()
         if proc.returncode:
             raise Exception(err)
     return output + '.nxy'
