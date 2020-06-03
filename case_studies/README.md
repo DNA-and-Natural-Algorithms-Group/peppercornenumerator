@@ -1,5 +1,5 @@
 # Case study data 
-This directory contains the data used for the publication (in preparation):
+This directory contains the data used for the publication [Badelt et al. (2020)]:
 
 Badelt, Grun, Sarma, Wolfe, Shin, Winfree: 
 *A domain-level DNA strand displacement reaction enumerator allowing arbitrary non-pseudoknotted secondary structures*
@@ -42,3 +42,4 @@ the analysis.
   * Qian2011.ipynb (Badelt et al. submitted, Figure 9)
   * Many_systems.ipynb (Badelt et al. submitted, Figure 10)
 
+[Badelt et al. (2020)]: <https://doi.org/10.1098/rsif.2019.0866>

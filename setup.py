@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='peppercornenumerator',
-    version='0.8',
+    version='0.9',
     description='Domain-level nucleic acid reaction enumerator',
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",

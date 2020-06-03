@@ -2,7 +2,7 @@
 #  __init__.py
 #  EnumeratorProject
 #
-__version__ = "v0.8"
+__version__ = "v0.9"
 
 import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())

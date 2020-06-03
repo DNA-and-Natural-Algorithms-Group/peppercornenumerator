@@ -242,12 +242,11 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e51
         $ cat seesaw_ciruit.ssw | peppercorn --dry-run
 
 ## Version
-0.8
+0.9 -- Python 2.7 and Python 3 compatible, including SBML output standard.
 
 ## Authors
 Stefan Badelt, Casey Grun, Karthik V. Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.
 
-[Grun et al. (2014)]: <https://arxiv.org/abs/1505.03738>
-[Badelt et al. (2020)]: <https://arxiv.org/abs/1505.03738>
+[Badelt et al. (2020)]: <https://doi.org/10.1098/rsif.2019.0866>
 [example.pil]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator/blob/development/tests/examples/literature/kotani2017_F2.pil>
 [Seesaw Compiler]: <http://www.qianlab.caltech.edu/SeesawCompiler/AOtoSEESAW.php>
