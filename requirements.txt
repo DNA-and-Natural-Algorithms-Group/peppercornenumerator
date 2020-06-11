@@ -1,4 +1,3 @@
-future
 pandas
 numpy
 crnsimulator>=0.6
