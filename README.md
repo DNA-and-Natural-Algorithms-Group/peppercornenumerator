@@ -2,7 +2,8 @@
 
 [![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/dna-and-natural-algorithms-group/peppercornenumerator)](https://github.com/dna-and-natural-algorithms-group/peppercornenumerator/tags)
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/dna-and-natural-algorithms-group/peppercornenumerator?include_prereleases)](https://github.com/dna-and-natural-algorithms-group/peppercornenumerator/releases)
-[![GitHub](https://img.shields.io/github/license/dna-and-natural-algorithms-group/peppercornenumerator)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/peppercornenumerator.svg)](https://badge.fury.io/py/peppercornenumerator)
+[![PyPI - License](https://img.shields.io/pypi/l/peppercornenumerator)](https://opensource.org/licenses/MIT)
 [![Travis (.org)](https://api.travis-ci.com/dna-and-natural-algorithms-group/peppercornenumerator.svg)](https://travis-ci.com/github/dna-and-natural-algorithms-group/peppercornenumerator)
 [![Codecov](https://img.shields.io/codecov/c/github/dna-and-natural-algorithms-group/peppercornenumerator)](https://codecov.io/gh/dna-and-natural-algorithms-group/peppercornenumerator)
 
