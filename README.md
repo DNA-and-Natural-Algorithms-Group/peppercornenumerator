@@ -9,7 +9,7 @@
 
 
 This is a package for domain-level strand displacement (DSD) system analysis.
-After installation, you should be able to execute the scripts  **Peppercorn** and  **Pilsimulator**.
+After installation, you should be able to execute the scripts  **peppercorn** and  **pilsimulator**.
 
 The reaction enumerator Peppercorn reads a file with initially present
 domain-level complexes, and returns all possible reactions and products.
@@ -42,7 +42,7 @@ $ python setup.py test
 $ pytest tests
 ```
 
-## Quickstart using Peppercorn
+## Quickstart using executable scripts
 
 ### General workflow
 After installation of **peppercornenumerator**, you must have
