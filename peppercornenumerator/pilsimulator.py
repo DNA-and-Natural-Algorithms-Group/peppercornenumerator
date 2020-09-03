@@ -62,9 +62,9 @@ def main():
     logger.addHandler(handler)
 
     if args.no_jacobian:
-        logging.warning('Deprecated argument: --no-jacobian, OFF by default.', DeprecationWarning)
+        logging.warning('Deprecated argument: --no-jacobian, OFF by default.')
     if args.pyplot_labels:
-        warning.warning('Deprecated argument: --pyplot_labels, use --labels.', DeprecationWarning)
+        logging.warning('Deprecated argument: --pyplot_labels, use --labels.')
         args.labels = args.pyplot_labels
         args.pyplot_labels = None
 
@@ -89,7 +89,7 @@ def main():
 
     # Move interesting species to the front, in their given order.
     const = []
-    labels = args.pyplot_labels
+    labels = args.labels
     for s in labels:
         if s in seen :
             raise SimulationSetupError('Multiple occurances of {} in labels.'.format(s))
