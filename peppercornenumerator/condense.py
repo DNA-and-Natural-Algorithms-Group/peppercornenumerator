@@ -2,8 +2,6 @@
 #  peppercornenumerator/condense.py
 #  EnumeratorProject
 #
-from __future__ import absolute_import, print_function, division
-
 import logging
 log = logging.getLogger(__name__)
 import warnings
@@ -14,10 +12,10 @@ import itertools as it
 import numpy as np
 from functools import reduce
 
-from peppercornenumerator.objects import PepperComplex
-from peppercornenumerator.objects import PepperReaction
-from peppercornenumerator.objects import PepperMacrostate
-from peppercornenumerator.objects import DSDDuplicationError
+from peppercornenumerator.objects import (PepperComplex, 
+                                          PepperReaction,
+                                          PepperMacrostate,
+                                          DSDDuplicationError)
 
 class CondensationError(Exception):
     pass

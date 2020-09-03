@@ -2,13 +2,10 @@
 #  peppercornenumerator/utils.py
 #  EnumeratorProject
 #
-from __future__ import absolute_import, print_function, division
-
 import logging
 log = logging.getLogger(__name__)
 
 import re
-import sys
 
 class PeppercornUsageError(Exception):
     """Error class to catch usage errors."""
@@ -125,11 +122,6 @@ class Loop(object):
     @property
     def structures(self):
         return (part[1] if part is not None else None for part in self._parts)
-
-    @property
-    def structs(self):
-        raise DeprecationWarning('Use of Loop.structs has been replaced by Loop.structures.')
-        return self.structures
 
     @property
     def parts(self):

@@ -5,11 +5,16 @@
 import logging
 log = logging.getLogger(__name__)
 
-from dsdobjects.parser import parse_pil_string, parse_pil_file
-from dsdobjects.parser import parse_seesaw_string, parse_seesaw_file
-from dsdobjects.parser import ParseException, PilFormatError
-
-from peppercornenumerator.objects import PepperDomain, PepperComplex, PepperReaction, DSDDuplicationError
+from dsdobjects.parser import (parse_pil_string, 
+                               parse_pil_file,
+                               parse_seesaw_string,
+                               parse_seesaw_file,
+                               ParseException, 
+                               PilFormatError)
+from peppercornenumerator.objects import (PepperDomain, 
+                                          PepperComplex, 
+                                          PepperReaction, 
+                                          DSDDuplicationError)
 
 class InputFormatError(Exception):
     pass
@@ -186,30 +191,6 @@ def read_pil(data, is_file = False, composite = False):
         return complexes, reactions, sequences
     else :
         return complexes, reactions
-
-def read_kernel(data, is_file = False):
-    """ New input standard, kernel notation.
-
-    including state and reaction, ignores concetrations
-    """
-    log.warning("deprecated function: use read_pil")
-    return read_pil(data, is_file)
-
-def from_kernel(lines):
-    """ Tranlsate a list of kernel strings. """
-    log.warning('deprecated function: use read_pil') 
-
-    # split string into lines if necessary
-    if isinstance(lines, str):
-        lines = lines.split("\n")
-
-    # remove blank lines
-    lines = [_f for _f in lines if _f]
-
-    # reading pil in case of non-alphanumeric names
-    complexes, _ = read_pil('\n'.join(lines))
-
-    return (PepperDomain.MEMORY, None, complexes)
 
 def load_pil_crn(data):
     """ Input for pilsimulator
