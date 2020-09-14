@@ -247,10 +247,18 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e60
   * Consider taking a look at the [case studies] directory for more examples.
 
 ## Version
+1.0.1 -- bugfix for pilsimulator --labels option.
 1.0 -- stable release, requires python >= 3.7
 
 ## Authors
 Stefan Badelt, Casey Grun, Karthik V. Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.
+
+## Cite
+If you are using this package, plese cite:
+ - Stefan Badelt, Casey Grun, Karthik V. Sarma, Seung Woo Shin, Brian Wolfe, and Erik Winfree (2020)
+    "Enumeration, condensation and simulation of pseudoknot-free domain-level DNA strand displacement systems"
+    [[Badelt et al. (2020)]].
+
 
 [Badelt et al. (2020)]: <https://doi.org/10.1098/rsif.2019.0866>
 [example.pil]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator/blob/master/tests/examples/literature/kotani2017_F2.pil>
