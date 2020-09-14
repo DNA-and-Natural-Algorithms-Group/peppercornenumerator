@@ -248,6 +248,7 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e60
 
 ## Version
 1.0.1 -- bugfix for pilsimulator --labels option.
+
 1.0 -- stable release, requires python >= 3.7
 
 ## Authors
