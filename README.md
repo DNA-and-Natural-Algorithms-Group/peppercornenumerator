@@ -25,6 +25,10 @@ into **SBML** format for analysis in your favorite simulator.
 Note that the reaction rates assume DNA
 molecules!
 
+For a quick overview of the software, you can also have a look at [this talk]
+held at the 26th International Conference on DNA Computing and Molecular
+Programming ([DNA 26]).
+
 ## Installation
 ```sh
 ~$ pip install peppercornenumerator
@@ -265,3 +269,6 @@ If you are using this package, plese cite:
 [example.pil]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator/blob/master/tests/examples/literature/kotani2017_F2.pil>
 [Seesaw Compiler]: <http://www.qianlab.caltech.edu/SeesawCompiler/AOtoSEESAW.php>
 [case studies]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator/blob/master/case_studies/>
+[DNA 26]: <http://dna26.iopconfs.org/home>
+[this talk]: <http://www.tbi.univie.ac.at/~stef/files/dna26-badelt-peppercorn.mp4>
+
