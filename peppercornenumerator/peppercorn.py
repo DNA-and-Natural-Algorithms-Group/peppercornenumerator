@@ -8,12 +8,13 @@ import logging
 import os
 import sys
 import argparse
+from pyparsing import ParseException
 
 # Import global default variables from peppercornenumerator library
 import peppercornenumerator 
 from peppercornenumerator import Enumerator, __version__
-from peppercornenumerator.enumerator import FAST_REACTIONS
-from peppercornenumerator.input import read_pil, read_seesaw, ParseException
+from peppercornenumerator.enumerator import UNI_REACTIONS
+from peppercornenumerator.input import read_pil, read_seesaw
 from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
 
 class colors:
@@ -85,7 +86,7 @@ def add_peppercorn_args(parser):
         help="Print detailed reactions even if --condensed is chosen.")
     output.add_argument('--dry-run', action='store_true', 
         help="Dry run: read input, write output. Do not enumerate any reactions.")
-    output.add_argument("--concentration-unit", default='M', action='store',
+    output.add_argument("--concentration-unit", default='nM', action='store',
         choices=('M', 'mM', 'uM', 'nM', 'pM'),
         help="""Specify output concentration units for species and reaction rates.""")
     output.add_argument("--time-unit", default='s', action='store',
@@ -214,10 +215,8 @@ def main():
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Input parsing to set initial complexes for enumeration #
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    composite = None
     try :
-        complexes, reactions, composite = read_pil(systeminput, 
-                args.input_filename is not None, composite=True)
+        complexes, reactions = read_pil(systeminput, args.input_filename is not None)
     except ParseException as ex_pil:
         try :
             complexes, reactions = read_seesaw(systeminput, 
@@ -239,8 +238,8 @@ def main():
         enum = Enumerator(list(complexes.values()), reactions)
     else:
         init_cplxs = [x for x in list(complexes.values()) if \
-                x.concentration is None or float(x.concentration.value) != 0]
-        enum = Enumerator(init_cplxs, reactions)
+                x.concentration is None or x.concentration != 0]
+        enum = Enumerator(init_cplxs, reactions, named_complexes = list(complexes.values()))
 
     # Log initial complexes
     logger.info("")
@@ -266,12 +265,12 @@ def main():
     enum.dG_bp = args.dG_bp
     logger.info('Average strength of a toehold base-pair dG_bp = {}'.format(enum.dG_bp))
     if args.ignore_branch_3way:
-        if branch_3way in FAST_REACTIONS[1]:
-            FAST_REACTIONS[1].remove(branch_3way)
+        if branch_3way in UNI_REACTIONS:
+            UNI_REACTIONS.remove(branch_3way)
         logger.info('No 3-way branch migration.')
     if args.ignore_branch_4way:
-        if branch_4way in FAST_REACTIONS[1]:
-            FAST_REACTIONS[1].remove(branch_4way)
+        if branch_4way in UNI_REACTIONS:
+            UNI_REACTIONS.remove(branch_4way)
         logger.info('No 4-way branch migration.')
 
     # Set either k-slow or release cutoff.
@@ -384,7 +383,7 @@ def main():
         enum.to_sbml(args.sbml, condensed = condensed)
 
     output = enum.to_pil(args.output_filename, 
-                         detailed=detailed, condensed=condensed, composite=composite, 
+                         detailed=detailed, condensed=condensed, 
                          molarity=args.concentration_unit, time = args.time_unit)
 
     print(output, end='')

@@ -1,4 +1,4 @@
 pandas
 numpy
-crnsimulator>=0.6
-dsdobjects>=0.7.1
+crnsimulator>=0.8
+dsdobjects>=0.8

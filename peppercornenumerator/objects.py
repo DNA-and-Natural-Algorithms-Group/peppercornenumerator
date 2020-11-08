@@ -5,275 +5,38 @@
 import logging
 log = logging.getLogger(__name__)
 
-import numpy as np
-from collections import namedtuple
+from dsdobjects import SingletonError, clear_singletons
+from dsdobjects.base_classes import ObjectInitError, DomainS, ComplexS, MacrostateS, ReactionS
 
-from dsdobjects import clear_memory
-from dsdobjects import DSDObjectsError, DSDDuplicationError
-from dsdobjects.core import DL_Domain, DSD_Complex, DSD_Reaction, DSD_Macrostate
-from dsdobjects.utils import split_complex, convert_units
-from dsdobjects.utils import make_pair_table, pair_table_to_dot_bracket 
+def clear_memory():
+    # This is for unittests only!  The memory of a Singleton clears
+    # automatically if there is no hard reference to the object.
+    clear_singletons(PepperDomain)
+    clear_singletons(PepperComplex)
+    clear_singletons(PepperReaction)
+    clear_singletons(PepperMacrostate)
 
-class PepperObjectsError(Exception):
-    """
-    pepperobjects error class.
-    """
-
-    def __init__(self, message, *kargs):
-        if kargs:
-            self.message = "{} [{}]".format(message, ', '.join(map(str,kargs)))
-        else :
-            self.message = message
-        super(PepperObjectsError, self).__init__(self.message)
-
-class PepperDomain(DL_Domain):
-    """
-    Represents a single domain. We allow several options for specifying domain
-    properties. Domains might have an explicit integer (bp) length, or may be
-    designated as short or long. If the latter method is used, the code will use
-    the relevant constant as the integer domain length.
-    """
-
-    def __new__(cls, name, dtype=None, length=None):
-        # The new method returns the present instance of an object, if it exists
-        self = DL_Domain.__new__(cls)
-        try:
-            super(PepperDomain, self).__init__(name, dtype, length)
-        except DSDDuplicationError as e :
-            other = e.existing
-            if dtype and (other.dtype != dtype) :
-                raise PepperObjectsError('Conflicting dtype assignments for {}: "{}" vs. "{}"'.format(
-                    name, dtype, other.dtype))
-            elif length and (other.length != length) :
-                raise PepperObjectsError('Conflicting length assignments for {}: "{}" vs. "{}"'.format(
-                    name, length, other.length))
-            return e.existing
-        self._nucleotides = None
-        return self
-
-    def __init__(self, name, dtype=None, length=None):
-        # Remove default initialziation to get __new__ to work
-        pass
-
-    @property
-    def nucleotides(self):
-        return self._nucleotides
-
-    @nucleotides.setter
-    def nucleotides(self, value):
-        self._nucleotides = value
-
-    @property
-    def complement(self):
-        # If we initialize the complement, we need to know the class.
-        if self._complement is None:
-            cname = self._name[:-1] if self.is_complement else self._name + '*'
-            if cname in DL_Domain.MEMORY:
-                self._complement = DL_Domain.MEMORY[cname]
-            else :
-                self._complement = PepperDomain(cname, self.dtype, self.length)
-        return self._complement
+class PepperDomain(DomainS):
+    def __init__(self, *args, **kwargs):
+        super(PepperDomain, self).__init__(*args, **kwargs)
+        self.sequence = None
 
     def can_pair(self, other):
         """
         Returns True if this domain is complementary to the argument.
         """
-        return self == ~other
+        return self is ~other
 
-    @property
-    def identity(self):
-        """
-        Returns the identity of this domain, which is its name without a
-        complement specifier (i.e. A and A* both have identity A).
-        """
-        return self._name[:-1] if self._name[-1] == '*' else self._name
-
-    @property
-    def is_complement(self):
-        """
-        Returns true if this domain is a complement (e.g. A* rather than A),
-        false otherwise.
-        """
-        return self._name[-1:] == '*'
-
-class PepperComplex(DSD_Complex):
-    """
-    Peppercorn complex object. 
-
-    Overwrites some functions with new names, adds some convenient stuff..
-    """
-
-    PREFIX = 'e'
-    CONCENTRATION = namedtuple('concentration', 'mode value unit')
-
-    @staticmethod
-    def clear_memory(memory=True, names=True, ids=True):
-        if memory:
-            DSD_Complex.MEMORY = dict()
-        if names:
-            DSD_Complex.NAMES = dict()
-        if ids:
-            DSD_Complex.ID = dict()
-
-    def __init__(self, sequence, structure, name='', prefix='', memorycheck=True):
-        try :
-            if not prefix :
-                prefix = PepperComplex.PREFIX
-            super(PepperComplex, self).__init__(sequence, structure, name, prefix, memorycheck)
-        except DSDObjectsError :
-            backup = 'enum' if prefix != 'enum' else 'pepper'
-            super(PepperComplex, self).__init__(sequence, structure, name, backup, memorycheck)
-            log.warning('Complex name existed, prefix has been changed to: {}'.format(backup))
-        
-        # Peppercorn IO:
-        self._concentration = None
-        self._elevation = None
-        assert self.is_domainlevel_complement
-
-    @property
-    def concentration(self):
-        if self._concentration is not None:
-            return self._concentration
-        return None
-
-    @concentration.setter
-    def concentration(self, trip):
-        if trip is None:
-            self._concentration = None
-        else:
-            (mode, value, unit) = trip
-            assert isinstance(value, (int, float))
-            self._concentration = PepperComplex.CONCENTRATION(mode, value, unit)
-
-    def concentrationformat(self, out):
-        mod = self._concentration.mode
-        val = self._concentration.value
-        uni = self._concentration.unit
-        val = convert_units(val, uni, out) 
-        return PepperComplex.CONCENTRATION(mod, val, out)
-
-    @property
-    def pair_table(self):
-        return super(PepperComplex, self).pair_table
-    
-    @pair_table.setter
-    def pair_table(self, pt):
-        self._pair_table = pt
-
-    def full_string(self):
-        return "Complex(%s): %s %s" % (
-            self.name, str(self.strands), str(self.structure))
-
-    def get_structure(self, loc):
-        return self.get_paired_loc(loc)
-
-    def triple(self, *loc):
-        # overwrite standard func
-        return (self.get_domain(loc), self.get_paired_loc(loc), loc)
-
+class PepperComplex(ComplexS):
+    #PREFIX = 'e'
     @property
     def available_domains(self):
         ad = []
-        for (x,y) in self.exterior_domains:
+        for x, y in self.exterior_domains:
             ad.append((self.get_domain((x,y)), x, y))
         return ad
 
-    @property
-    def pk_domains(self):
-        pd = []
-        for (x,y) in self.enclosed_domains:
-            pd.append((self.get_domain((x,y)), x, y))
-        return pd
-
-
-    def rotate_location(self, loc, n=None):
-        return self.rotate_pairtable_loc(loc, n)
-
-    def split(self):
-        """ Split PepperComplex into disconneted components.
-        """
-        if self.is_connected:
-            return [self]
-        else :
-            ps = self.lol_sequence
-            pt = self.pair_table
-            parts = split_complex(ps, pt)
-            cplxs = []
-            # assign new_complexes
-            for (se,ss) in parts:
-                try:
-                    cplxs.append(PepperComplex(se, ss))
-                except DSDDuplicationError as e:
-                    cplxs.append(e.existing)
-            return sorted(cplxs)
-
-class PepperReaction(DSD_Reaction):
-    RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
-
-    def __init__(self, *kargs, **kwargs):
-    #def __init__(self, reactants, products, rtype=None, rate=None, memorycheck=True):
-        super(PepperReaction, self).__init__(*kargs, **kwargs)
-        if self._rtype not in PepperReaction.RTYPES:
-            try:
-                del DSD_Reaction.MEMORY[self.canonical_form]
-            except KeyError:
-                pass
-            raise DSDObjectsError('Reaction type not supported! ' + 
-            'Set supported reaction types using PepperReaction.RTYPES')
-
-        self._reverse_reaction = None
-
-        # Store the 4 relevant Loop() objects (reactant based):
-        #   * initial-locus
-        #   * target-locus
-        #   * x-linker
-        #   * y-linker
-        self.meta = None
-        self.rotations = None
-
-    @property
-    def reverse_reaction(self):
-        return self._reverse_reaction
-
-    @reverse_reaction.setter
-    def reverse_reaction(self, rxn):
-        def rev_rtype(rtype, arity):
-            """Returns the reaction type of a corresponding reverse reaction. """
-            if rtype == 'open' and arity == (1,1):
-                return 'bind11'
-            elif rtype == 'open' and arity == (1,2):
-                return 'bind21'
-            elif rtype == 'bind11' or rtype == 'bind21':
-                return 'open'
-            else:
-                return rtype
-
-        if rxn is not False:
-            assert rxn.rtype == rev_rtype(self.rtype, self.arity)
-        self._reverse_reaction = rxn
-
-    def full_string(self, molarity='M', time='s'):
-        """Prints the reaction in PIL format.
-        Reaction objects *always* specify rate in /M and /s.  """
-
-        if self.rate :
-            newunits = [molarity] * (self.arity[0] - 1) + [time]
-            newrate = self.rateformat(newunits)
-            rate = newrate.constant
-            assert newunits == newrate.units
-            units = ''.join(map('/{}'.format, newrate.units))
-        else :
-            rate = float('nan')
-            units = ''
-
-        if self.rtype :
-            return '[{:14s} = {:12g} {:4s} ] {} -> {}'.format(self.rtype, rate, units,
-                    " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
-        else :
-            return '[{:12g} {:4s} ] {} -> {}'.format(rate, units,
-                    " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
-
-class PepperMacrostate(DSD_Macrostate):
+class PepperMacrostate(MacrostateS):
     def __init__(self, *kargs, **kwargs):
         super(PepperMacrostate, self).__init__(*kargs, **kwargs)
         self._internal_reactions = set()
@@ -449,4 +212,100 @@ class PepperMacrostate(DSD_Macrostate):
                         'rates may be incorrect.')
 
         return list(zip(self._complexes, self._stationary_distribution))
+
+class PepperReaction(ReactionS):
+    RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
+
+    @property
+    def const(self):
+        log.warning('deprecated property PepperReaction.const')
+        return self.rate_constant[0]
+
+class Loop:
+    """ A (part of a) single open or closed loop region.
+
+    Args: 
+        loop [(domain, paired_loc, domain_loc), ...]: A list of domains and
+            their structure: 
+                [0] A Domain Object, 
+                [1] its binding partner position (or None), 
+                [2] the domain position.
+            None marks the 3' or 5' end of a strand.
+    """
+    def __init__(self, loop):
+        self._parts = loop
+
+        bases = 0
+        stems = 0
+        is_open = False
+        stem_list = set()
+        for step in loop:
+            if step is None:
+                if is_open:
+                    raise ObjectInitError('Double strand break in Loop Object.')
+                is_open = True
+            else:
+                (dom, ploc, dloc) = step
+                if ploc is None:
+                    bases += len(dom)
+                elif ploc in stem_list:
+                    raise ObjectInitError('Double stem count in Loop Object.')
+                else:
+                    stems += 1
+                    stem_list.add(dloc)
+        # cache properties
+        self._is_open = is_open
+        self._bases = bases
+        self._stems = stems
+
+    @property
+    def domains(self):
+        return (part[0] if part is not None else None for part in self._parts)
+
+    @property
+    def pair_locs(self):
+        return (part[1] if part is not None else None for part in self._parts)
+
+    @property
+    def domain_locs(self):
+        return (part[2] if part is not None else None for part in self._parts)
+
+    @property
+    def parts(self):
+        """ list: (dom, struct, loc) tuples associated with this loop.  """
+        return self._parts[:]
+
+    @property
+    def stems(self):
+        """ int: the number of stems. """
+        return self._stems
+
+    @property
+    def bases(self):
+        """ int: the number of bases. """
+        return self._bases
+
+    @property
+    def is_open(self):
+        """ bool: True if there is a strand break in the loop. """
+        return self._is_open
+
+    @property
+    def dlength(self):
+        """ int: the sum over all involved domain lengths. """
+        assert None not in self.domains
+        return sum(len(d) for d in self.domains)
+
+    @property
+    def llength(self):
+        """ flt: the *linker length* expressed in number of nucleotides. """
+        if self.is_open:
+            return float('inf')
+        else:
+            # approximate number of single-stranded nucleotides to span a stem
+            stemL = 2.0 / 0.43
+            return 1 + self.bases + self.stems + (stemL * self.stems)
+
+    def __repr__(self):
+        return f"Loop({self.parts})"
 

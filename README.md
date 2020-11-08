@@ -251,6 +251,8 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e60
   * Consider taking a look at the [case studies] directory for more examples.
 
 ## Version
+1.1 -- rewrite using dsdobjects v.0.8 
+
 1.0.1 -- bugfix for pilsimulator --labels option.
 
 1.0 -- stable release, requires python >= 3.7

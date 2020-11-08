@@ -12,10 +12,10 @@ import itertools as it
 import numpy as np
 from functools import reduce
 
-from peppercornenumerator.objects import (PepperComplex, 
+from peppercornenumerator.objects import (SingletonError,
+                                          PepperComplex, 
                                           PepperReaction,
-                                          PepperMacrostate,
-                                          DSDDuplicationError)
+                                          PepperMacrostate)
 
 class CondensationError(Exception):
     pass
@@ -103,7 +103,7 @@ class PepperCondensation(object):
             from peppercornenumerator.enumerator import local_elevation_rate
             k = local_elevation_rate(rxn)
         else :
-            k = rxn.const
+            k = rxn.rate_constant[0]
         return k >= self.k_fast
 
     def reactions_consuming(self, cplx):
@@ -194,10 +194,10 @@ class PepperCondensation(object):
         # If this SCC is a resting set:
         if len(outgoing_reactions) == 0 :
             # build new resting set
-            try :
+            try:
                 resting_set = PepperMacrostate(scc)
-            except DSDDuplicationError as e:
-                resting_set = e.existing
+            except SingletonError as err:
+                resting_set = err.existing
 
             self._set_to_fate[scc_set] = resting_set
 
@@ -329,13 +329,8 @@ class PepperCondensation(object):
                 if reactants == products :
                     continue
 
-                try :
-                    reaction = PepperReaction(reactants, products, rtype='condensed')
-                except DSDDuplicationError as e:
-                    log.debug('Duplicating PepperReaction: {}'.format(e.existing))
-                    reaction = e.existing
-
-                reaction.const = self.get_condensed_rate(reaction)
+                reaction = PepperReaction(reactants, products, rtype='condensed')
+                reaction.rate_constant = (self.get_condensed_rate(reaction), '/M' * (len(reaction.reactants)-1) + '/s')
                 self._condensed_reactions.add(reaction)
         return
 
@@ -387,7 +382,7 @@ class PepperCondensation(object):
             assert reactant_probabilities <= 1.000001
 
             # rate of the detailed reaction
-            k = r.const
+            k = r.rate_constant[0]
             assert k > 0
 
             # overall contribution of detailed reaction r to rate of the condensed reaction 
@@ -431,7 +426,7 @@ class PepperCondensation(object):
             # T_{b,a} = rate(r : a -> b)
             a = r.reactants[0]
             b = r.products[0]
-            T[complex_indices[b]][complex_indices[a]] = r.const
+            T[complex_indices[b]][complex_indices[a]] = r.rate_constant[0]
     
         T0 = np.copy(T)
     
@@ -498,13 +493,13 @@ class PepperCondensation(object):
             assert len(r.products) == 1
             a = r.reactants[0]
             b = r.products[0]
-            T[complex_indices[a]][complex_indices[b]] = r.const
+            T[complex_indices[a]][complex_indices[b]] = r.rate_constant[0]
 
         # add transition rates for each outgoing reaction
         Te = np.zeros((L, e))
         for r in r_outgoing:
             a = r.reactants[0]
-            Te[complex_indices[a]][exit_indices[r]] = r.const
+            Te[complex_indices[a]][exit_indices[r]] = r.rate_constant[0]
     
         # the full transition matrix P_{L+e x L+e} would be
         #

@@ -5,22 +5,19 @@
 #
 import unittest
 
-from peppercornenumerator.enumerator import Enumerator, enumerate_pil, enumerate_ssw
 from peppercornenumerator.input import read_pil, read_seesaw
-from peppercornenumerator.objects import PepperReaction, clear_memory, DSDObjectsError
-import peppercornenumerator.reactions as reactlib
+from peppercornenumerator.objects import clear_memory
+from peppercornenumerator.enumerator import (PeppercornUsageError,
+                                             Enumerator, enumerate_pil, enumerate_ssw)
 
 SKIP = False
 
 @unittest.skipIf(SKIP, "skipping tests")
 class TestEnumeratorInterface(unittest.TestCase):
-    def setUp(self):
-        pass
-
     def tearDown(self):
         clear_memory()
 
-    def test_rxn_input(self):
+    def test_interface_01(self):
         complexes, reactions = read_pil("""
         # Domain Specifications
         length a = 8
@@ -68,12 +65,7 @@ class TestEnumeratorInterface(unittest.TestCase):
         enum.enumerate()
         self.assertEqual(len(enum.reactions), len(reactions))
 
-
-    def test_interface(self):
-        #   - initialization
-        #   - initial-complexes
-        #   - resting-macrostates
-        #   - transient-macrostates
+    def test_interface_02(self):
         complexes, _ = read_pil("""
         length a = 3
         length n = 1
@@ -81,7 +73,7 @@ class TestEnumeratorInterface(unittest.TestCase):
         length c = 4
         length ab = 4
 
-        X = a( b( n c( + ) ) )
+        X = a( b( c( + ) ) )
         Y = ab( c( + ) )
 
         Xf = a b( c( + ) ) a*
@@ -99,20 +91,17 @@ class TestEnumeratorInterface(unittest.TestCase):
         Y1 = complexes['Y1']
         Y2 = complexes['Y2']
 
-        enum = Enumerator([X, Y])
-
+        enum = Enumerator([X, Y], named_complexes = [X, Y, Xf, Xff, Xb, Y1, Y2])
+        enum.max_helix = False
         enum.dry_run()
         self.assertEqual(sorted(enum.complexes), sorted([X,Y]))
         self.assertEqual(sorted(enum.resting_complexes), sorted([X,Y]))
-        self.assertEqual(sorted(r.canonical_complex for r in enum.resting_macrostates), sorted([X,Y]))
-
-        with self.assertRaises(DSDObjectsError) as e:
-            enum.enumerate()
-
-        #enum = Enumerator([X, Y])
-        #enum.enumerate()
-        #with self.assertRaises(DSDObjectsError) as e:
-        #    enum.dry_run()
+        self.assertEqual(sorted(r.representative for r in enum.resting_macrostates), 
+                         sorted([X, Y]))
+        enum.enumerate()
+        assert len(enum.complexes) == 16
+        with self.assertRaises(PeppercornUsageError) as e:
+            enum.dry_run()
 
     def test_named_complexes(self):
         complexes, reactions = read_pil("""
@@ -141,18 +130,14 @@ class TestEnumeratorInterface(unittest.TestCase):
         B = complexes['B']
         F = complexes['F']
 
-        enum = Enumerator([A,B])
+        enum = Enumerator([A, B], named_complexes = [A, B, F])
         enum.max_complex_count = 1000
         enum.max_reaction_count = 5000
         enum.enumerate()
+        self.assertTrue(F in [rms.representative for rms in enum.resting_macrostates])
 
-        self.assertTrue(F in [rms.canonical_complex for rms in enum.resting_macrostates])
-
+@unittest.skipIf(SKIP, "skipping tests")
 class TestWrappers(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
     def tearDown(self):
         clear_memory()
 
@@ -179,10 +164,11 @@ class TestWrappers(unittest.TestCase):
         YW = a( bm( br( bc( bt + ) ) ) )
         F = a bm br
         """
-
-        enum, outp = enumerate_pil(Zhang2009_F5, is_file = False, enumfile = None, 
-                detailed = True, condensed = True, enumconc = 'nM',
-                dG_bp = -1.3, k_fast = 0.1, k_slow = 0.001)
+        enum, outp = enumerate_pil(Zhang2009_F5, 
+                is_file = False, enumfile = None, 
+                detailed = True, condensed = True, 
+                enumconc = 'nM', dG_bp = -1.3, 
+                k_fast = 0.1, k_slow = 0.001)
 
         assert isinstance(enum,  Enumerator)
         assert isinstance(outp,  str)

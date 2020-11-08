@@ -10,21 +10,22 @@ import sys
 import math
 
 from peppercornenumerator.condense import PepperCondensation
-from peppercornenumerator.objects import PepperMacrostate, PepperComplex
-from peppercornenumerator.objects import DSDDuplicationError, DSDObjectsError
+from peppercornenumerator.objects import SingletonError, PepperMacrostate, PepperComplex
 from peppercornenumerator.utils import PeppercornUsageError
 from peppercornenumerator.input import read_pil, read_seesaw
 from peppercornenumerator.output import write_pil, write_sbml
-import peppercornenumerator.reactions as reactlib
 
+from peppercornenumerator.reactions import (bind11, 
+                                            bind21,
+                                            open1N,
+                                            branch_3way,
+                                            branch_4way,
+                                            opening_rate,
+                                            find_on_loop,
+                                            filter_bind11)
 
-# There should be better control of this limit -- only set it when
-# necessary (Erik Winfree based on Chris Thachuk's advice...)
-sys.setrecursionlimit(20000)
-
-
-FAST_REACTIONS = {1: [reactlib.bind11, reactlib.open,
-                      reactlib.branch_3way, reactlib.branch_4way]}
+UNI_REACTIONS = [bind11, open1N, branch_3way, branch_4way]
+BI_REACTIONS = [bind21]
 """
 Dictionary of reaction functions considered *fast* for a given "arity".
 Keys are arities (e.g. 1 = unimolecular, 2 = bimolecular, 3 = trimolecular,
@@ -34,7 +35,7 @@ unimolecular fast reactions (arity = 1) are supported.
 
 SLOW_REACTIONS = {
     1: [],
-    2: [reactlib.bind21]
+    2: [bind21]
 }
 """
 A dictionary of reaction functions considered *slow* for a given "arity".
@@ -45,15 +46,9 @@ k-fast, also unimolecular reactions can fall into the *slow* regime.
 """
 
 class PolymerizationError(Exception):
-    """Error class to catch polymerization."""
+    pass
 
-    def __init__(self, msg, val=None):
-        self.message = msg
-        if val :
-            self.message += " ({})".format(val)
-        super(PolymerizationError, self).__init__(self.message) 
-
-class Enumerator(object):
+class Enumerator:
     """
     The main enumerator object, collecting all the parameters to enumerate the
     Chemical Reaction Network (CRN) from an initial set of domain-level
@@ -67,27 +62,26 @@ class Enumerator(object):
             reactions will be considered when finding SCCs and when condensing
             the CRN after enumeration.
     """
-
-    def __init__(self, initial_complexes, initial_reactions=None):
-        # System initialization
-        self._initial_complexes = initial_complexes
-        assert isinstance(initial_complexes, list)
+    def __init__(self, initial_complexes, initial_reactions = None, 
+                 named_complexes = None):
+        # Sanity checks for input.
         for cplx in initial_complexes:
             if not cplx.is_connected:
-                raise PeppercornUsageError('Initial complex is not connected: {}'.format(cplx))
+                raise PeppercornUsageError(f'Initial complex is not connected: {cplx}')
+        # A set of initially present complexes.
+        self._initial_complexes = set(initial_complexes)
+        # A set of all detailed reactions before and after enumeration.
+        self._initial_reactions = set(initial_reactions) if initial_reactions else set()
+        # A list of "known" complexes: 
+        #   - expected to show up during enumeration.
+        #   - used to prioritize macrostate representatives.
+        #   - preserving names for output (could be just strand names!).
+        self._named_complexes = set(named_complexes) if named_complexes else set()
 
-        # list containing all detailed reactions after enumeration
-        if initial_reactions:
-            self._reactions = set(initial_reactions)
-        else :
-            self._reactions = set()
-
-        # A list of "known" complexes, 
-        #   e.g. expected to show up during enumeration.
-        # This is useful when chosing representatives of resting macrostates.
-        self._named_complexes = list(PepperComplex.MEMORY.values())
+        self.representatives = sorted(self._initial_complexes | self._named_complexes)
         
         # Enumeration results
+        self._reactions = set(initial_reactions) if initial_reactions else set()
         self._complexes = None
         self._resting_complexes = None
         self._transient_complexes = None
@@ -131,7 +125,46 @@ class Enumerator(object):
 
         # Not officially supported parameters
         self.local_elevation = False
-        self.p_min = 0 # minimum complex steady state probability to engage in slow reaction.
+
+    @property
+    def initial_complexes(self):
+        """ Complexes present in the system's initial configuration. """
+        return set(self._initial_complexes)
+
+    @initial_complexes.setter
+    def initial_complexes(self, value):
+        raise PeppercornUsageError('Initial complexes must be provided at initialization!')
+
+    @property
+    def initial_reactions(self):
+        """ Reactions to be included in the system's enumeration. """
+        return set(self._reactions)
+
+    @initial_reactions.setter
+    def initial_reactions(self, value):
+        # NOTE: there is no need to enforce this.
+        raise PeppercornUsageError('Initial reactions must be provided at initialization!')
+
+    @property
+    def named_complexes(self):
+        """ Known complexes which do not necessarily take place in enumeration. """
+        return set(self._named_complexes)
+
+    @named_complexes.setter
+    def named_complexes(self, value):
+        # NOTE: there is no need to enforce this.
+        raise PeppercornUsageError('Named complexes must be provided at initialization!')
+
+
+
+
+
+
+
+
+
+
+
 
     @property
     def max_complex_size(self):
@@ -175,7 +208,7 @@ class Enumerator(object):
             (rc, k_rc) = (0, None)
             while True:
                 rc += 1
-                k_rc = reactlib.opening_rate(rc, dG_bp = self.dG_bp)
+                k_rc = opening_rate(rc, dG_bp = self.dG_bp)
                 if k_rc < value: break
             self.release_cutoff = max(rc, self.release_cutoff)
 
@@ -225,38 +258,6 @@ class Enumerator(object):
         self._release_12 = value
 
     @property
-    def remote_migration(self):
-        warnings.warn("remote_migration is deprecated, use reject_remote instead", 
-                DeprecationWarning)
-        return not self.reject_remote
-
-    @remote_migration.setter
-    def remote_migration(self, remote):
-        assert isinstance(remote, bool)
-        warnings.warn("remote_migration is deprecated, use reject_remote instead", 
-                DeprecationWarning)
-        self.reject_remote = not remote
-
-    @property
-    def max_helix_migration(self):
-        warnings.warn("max_helix_migration is deprecated, use max_helix instead", 
-                DeprecationWarning)
-        return self.max_helix
-
-    @max_helix_migration.setter
-    def max_helix_migration(self, max_helix):
-        warnings.warn("max_helix_migration is deprecated, use max_helix instead", 
-                DeprecationWarning)
-        self.max_helix = max_helix
-
-    @property
-    def initial_complexes(self):
-        """
-        Complexes present in the system's initial configuration
-        """
-        return self._initial_complexes[:]
-
-    @property
     def domains(self):
         domains = set()
         for cplx in self._initial_complexes:
@@ -265,10 +266,7 @@ class Enumerator(object):
 
     @property
     def reactions(self):
-        """
-        List of reactions enumerated. :py:meth:`.enumerate` must be
-        called before access.
-        """
+        """ List of detailed reactions before or after enumeration. """
         return list(self._reactions)
 
     @property
@@ -280,12 +278,6 @@ class Enumerator(object):
         if self.condensation is None:
             self.condense()
         return self.condensation.condensed_reactions
-
-    @property
-    def resting_sets(self):
-        warnings.warn("resting_sets is deprecated, use resting_macrostates instead", 
-                DeprecationWarning)
-        return self.resting_macrostates
 
     @property
     def resting_macrostates(self):
@@ -341,54 +333,27 @@ class Enumerator(object):
         if self._complexes:
             raise PeppercornUsageError('Cannot call dry-run after enumeration!')
 
-        rep = set(self._named_complexes) if self._named_complexes else set(self._initial_complexes)
         rxs = [r for r in list(self._reactions) if len(r.reactants) == 1]
-        info = segment_neighborhood(self.initial_complexes, rxs, self.p_min, represent=rep)
+        info = segment_neighborhood(self.initial_complexes, rxs, represent = self.representatives)
 
-        self._complexes = self.initial_complexes
+        self._complexes = list(self.initial_complexes)
         self._resting_complexes = info['resting_complexes']
         self._transient_complexes = info['transient_complexes']
         self._resting_macrostates = info['resting_macrostates']
 
     def enumerate(self):
+        """ Enumerate the reaction network from initial complexes.
+
+        The results of this method are accessible via the following properties
+        of this class:
+            - complexes
+            - resting_complexes
+            - transient_complexes
+            - resting_macrostates
+            - transient_macrostates (todo)
+            - reactions
+            - detailed_reactions
         """
-        Generates the reaction graph consisting of all complexes reachable from
-        the initial set of complexes. Produces a full list of :py:meth:`complexes`, resting
-        sets, and :py:meth:`reactions, which are stored in the associated members of this
-        class.
-        """
-
-        # Will be called once enumeration halts, either because it's finished or
-        # because too many complexes/reactions have been enumerated
-        def finish(premature=False):
-            # copy E and T into complexes
-            self._complexes += (self._E)
-            self._complexes += (self._T)
-
-            # preserve resting and transient complexes separately
-            self._transient_complexes = self._T
-            self._resting_complexes = self._E
-
-            # If we're bailing because of too many reactions or complexes, search
-            # self._reactions to ensure there are no reactions which contain
-            # products that never made it into self._complexes...
-            if premature:
-                self._resting_complexes += self._S
-                self._complexes += self._S
-                complexes = set(self._complexes)
-
-                rm_reactions = []
-                for reaction in self.reactions:
-                    #NOTE: This should only matter in the Ctrl-C case, right?
-                    reaction_ok = all((prod in complexes) for prod in reaction.products) and \
-                                  all((reac in complexes) for reac in reaction.reactants)
-
-                    if reaction_ok:
-                        pass
-                    else :
-                        rm_reactions.append(reaction)
-
-                self._reactions -= set(rm_reactions)
 
         # List E contains enumerated resting complexes. Every time a new
         # complex is added (from S), all cross reactions with other resting
@@ -419,71 +384,86 @@ class Enumerator(object):
         # List B contains initial complexes, or products of bimolecular
         # reactions that have had no reactions enumerated yet. They will be
         # moved to F for their fast neighborhood to be enumerated.
-        self._B = self.initial_complexes
+        self._B = list(self._initial_complexes)
+
+        def do_enumerate():
+            log.debug("Enumerating fast reactions from initial complexes.")
+            while len(self._B) > 0:
+                source = self._B.pop()
+                self.process_fast_neighborhood(source)
+
+            log.debug("Enumerating slow reactions between resting complexes.")
+            while len(self._S) > 0:
+                element = self._S.pop() if self.DFS else self._S.pop(0)
+                log.debug(f"Finding slow reactions from '{element}'. " + \
+                          f"({len(self._S)} remaining in S).")
+                slow_reactions = set(self.get_slow_reactions(element))
+                self._B = list(self.get_new_products(slow_reactions))
+                log.debug(f"Generated {len(slow_reactions)} new slow reactions " + \
+                          f"with {len(self._B)} new products.")
+
+                self._E.append(element)
+                self._reactions |= slow_reactions
+                if self.interactive:
+                    # Display new reactions in interactive mode
+                    self.reactions_interactive(element, slow_reactions, 'slow')
+
+                while len(self._B) > 0:
+                    # Check whether too many complexes have been generated
+                    if len(self._E) + len(self._T) + len(self._S) > self._max_complex_count:
+                        raise PolymerizationError("Too many complexes enumerated! ({:d})".format(
+                                len(self._E) + len(self._T) + len(self._S)))
+                    # Check whether too many reactions have been generated
+                    if len(self._reactions) > self._max_reaction_count:
+                        raise PolymerizationError("Too many reactions enumerated! ({:d})".format(
+                                len(self._reactions)))
+                    # Generate a neighborhood from `source`
+                    source = self._B.pop()
+                    self.process_fast_neighborhood(source)
 
         self._complexes = []
         self._resting_macrostates = []
+        def finish(premature = False):
+            # Will be called once enumeration halts, either because it's finished or
+            # because too many complexes/reactions have been enumerated
 
-        def do_enumerate():
-            log.debug("Fast reactions from initial complexes ...")
-            while len(self._B) > 0:
-                # Generate a neighborhood from `source`
-                source = self._B.pop()
-                self.process_neighborhood(source)
+            # copy E and T into complexes
+            self._complexes += (self._E)
+            self._complexes += (self._T)
 
-            # Consider slow reactions between resting set complexes
-            log.debug("Slow reactions between resting set complexes ...")
-            while len(self._S) > 0:
+            # preserve resting and transient complexes separately
+            self._transient_complexes = self._T
+            self._resting_complexes = self._E
 
-                # Find slow reactions from 'element'
-                if self.DFS:
-                    element = self._S.pop()
-                else:
-                    element = self._S.pop(0)
-
-                log.debug("Slow reactions from complex {:s} ({:d} remaining in S)".format(
-                    str(element), len(self._S)))
-                slow_reactions = self.get_slow_reactions(element)
-                self._E.append(element)
-
-                # Find the new complexes which were generated
-                self._B = self.get_new_products(slow_reactions)
-                self._reactions |= set(slow_reactions)
-                log.debug("Generated {:d} new slow reactions".format(len(slow_reactions)))
-                log.debug("Generated {:d} new products".format(len(self._B)))
-
-                # Display new reactions in interactive mode
-                if self.interactive:
-                    self.reactions_interactive(element, slow_reactions, 'slow')
-
-                # Now find all complexes reachable by fast reactions from these new complexes
-                while len(self._B) > 0:
-
-                    # Check whether too many complexes have been generated
-                    if (len(self._E) + len(self._T) + len(self._S) > self._max_complex_count):
-                        raise PolymerizationError("Too many complexes enumerated!", 
-                                len(self._E) + len(self._T) + len(self._S))
-
-                    # Check whether too many reactions have been generated
-                    if (len(self._reactions) > self._max_reaction_count):
-                        raise PolymerizationError("Too many reactions enumerated!", 
-                                len(self._reactions))
-
-                    # Generate a neighborhood from `source`
-                    source = self._B.pop()
-                    self.process_neighborhood(source)
+            # If we're bailing because of too many reactions or complexes, search
+            # self._reactions to ensure there are no reactions which contain
+            # products that never made it into self._complexes ...
+            if premature:
+                self._resting_complexes += self._S
+                self._complexes += self._S
+                complexes = set(self._complexes)
+                rm_reactions = []
+                for reaction in self.reactions:
+                    #NOTE: This should only matter in the Ctrl-C case, right?
+                    reaction_ok = all((prod in complexes) for prod in reaction.products) and \
+                                  all((reac in complexes) for reac in reaction.reactants)
+                    if reaction_ok:
+                        pass
+                    else :
+                        rm_reactions.append(reaction)
+                self._reactions -= set(rm_reactions)
 
         if self.interruptible:
             try:
                 do_enumerate()
                 finish()
             except KeyboardInterrupt:
-                log.warning("Interrupted; gracefully exiting...")
-                finish(premature=True)
+                log.warning("Interrupted. Gracefully exiting ...")
+                finish(premature = True)
             except PolymerizationError as err:
                 log.exception(err)
-                log.error("Polymerization error; gracefully exiting...")
-                finish(premature=True)
+                log.error("Polymerization error. Gracefully exiting ...")
+                finish(premature = True)
         else:
             do_enumerate()
             finish()
@@ -514,14 +494,14 @@ class Enumerator(object):
         input before continuing.
         """
         print("{} = {} ({})".format(root.name, root.kernel_string, rtype))
-        if len(reactions) is 0:
+        if len(reactions) == 0:
             print("(No {} reactions)".format(rtype))
         for r in reactions:
             print("{} ({}: {})".format(r, r.rtype, r.const))
             print(" {}".format(r.kernel_string))
         input("\n[Press Enter to continue...]")
 
-    def process_neighborhood(self, source):
+    def process_fast_neighborhood(self, source):
         """ Enumerate neighborhood of fast reactions.
 
         Takes a single complex, generates the 'neighborhood' of complexes
@@ -533,230 +513,136 @@ class Enumerator(object):
             source (:obj:`PepperComplex`): Initial complex to generate a
                 neighborhood of fast reactions.
         """
-
+        log.debug(f"Processing neighborhood of '{source}'")
+        assert len(self._N) == 0
         assert len(self._F) == 0
         self._F = [source]
-
-        # N_reactions holds reactions which are part of the current neighborhood
-        N_reactions = []
-
-        log.debug("Processing neighborhood: %s" % source)
-
+        rxns_N = [] # reactions which are part of the current neighborhood.
         interrupted = False
         try:
+            # Find fast reactions from `element`
             while len(self._F) > 0 :
-
-                # Find fast reactions from `element`
                 element = self._F.pop()
-                log.debug("Fast reactions from {:s}... ({:d} remaining in F)".format(
-                    str(element), len(self._F)))
-
-                # Return valid fast reactions:
-                reactions = self.get_fast_reactions(element)
-                   
-                # Add new products to F
-                new_products = self.get_new_products(reactions)
-                self._F += (new_products)
-
-                # Add new reactions to N_reactions
-                N_reactions += (reactions)
+                log.debug(f"Finding fast reactions from '{element}'. " + \
+                          f"({len(self._F)} remaining in F).")
+                reactions = list(self.get_fast_reactions(element))
+                nproducts = self.get_new_products(reactions)
+                log.debug(f"Generated {len(reactions)} new fast reactions " + \
+                          f"with {len(nproducts)} new products.")
+                rxns_N += reactions
+                self._F += list(nproducts)
                 self._N.append(element)
-
-                log.debug("Generated {:d} new fast reactions.".format(len(reactions)))
-                log.debug("Generated {:d} new products.".format(len(new_products)))
-                   
-                # Display new reactions in interactive mode
                 if self.interactive:
+                    # Display new reactions in interactive mode
                     self.reactions_interactive(element, reactions, 'fast')
-
         except KeyboardInterrupt:
-            log.warning("Exiting neighborhood %s prematurely..." % source)
+            log.warning(f"Exiting neighborhood of '{source}' prematurely ...")
             if self.interruptible:
                 interrupted = True
-            else :
+            else:
                 raise KeyboardInterrupt
-
-        log.debug("In neighborhood %s..." % source)
-        log.debug("Segmenting %d complexes and %d reactions" %
-                      (len(self._N), len(N_reactions)))
-
-        # Now segment the neighborhood into transient and resting complexes
-        # by finding the strongly connected components.
-        rep = set(self._named_complexes) if self._named_complexes else set(self._initial_complexes)
-        segmented_neighborhood = segment_neighborhood(self._N, N_reactions, 
-                                                      p_min = self.p_min,
-                                                      represent = rep)
-
-        # Resting complexes are added to S
-        self._S += (segmented_neighborhood['resting_complexes'])
-
-        # Transient complexes are added to T
-        self._T += (segmented_neighborhood['transient_complexes'])
-
-        # Resting macrostates are added to global list
-        self._resting_macrostates += (segmented_neighborhood['resting_macrostates'])
-
-        # Reactions from this neighborhood are added to the list
-        self._reactions |= set(N_reactions)
-
-        # Reset neighborhood
-        log.debug("Generated {:d} new fast reactions".format(len(N_reactions)))
-        log.debug("Generated {:d} new complexes: ({:d} transient, {:d} resting)".format(
-            len(self._N), len(segmented_neighborhood['transient_complexes']), 
-                len(segmented_neighborhood['resting_complexes'])))
-        self._N = []
-
-        log.debug("Generated {:d} resting macrostates".format(
-            len(segmented_neighborhood['resting_macrostates'])))
-        log.debug("Done processing neighborhood: {:s}".format(str(source)))
-
+        log.debug(f"Segmenting neighborhood of {source}: " + \
+                  f"{len(self._N)} complexes and {len(rxns_N)} reactions.")
+        sn = segment_neighborhood(self._N, rxns_N, represent = self.representatives)
+        self._S += sn['resting_complexes']
+        self._T += sn['transient_complexes']
+        self._resting_macrostates += sn['resting_macrostates']
+        self._reactions |= set(rxns_N)
+        log.debug(f"Of {len(self._N)} complexes: " + \
+                  "{:d} are transient, {:d} are resting.".format(
+                    len(sn['transient_complexes']), 
+                    len(sn['resting_complexes'])))
+        log.debug("in a total of {:d} resting macrostates".format(
+                    len(sn['resting_macrostates'])))
+        self._N = [] # Reset neighborhood
         if interrupted:
             raise KeyboardInterrupt
+        return
 
-    def get_slow_reactions(self, complex):
-        """
-        Returns a list of slow reactions possible using complex and other
-        complexes in list E as reagents.
-
-        This only supports unimolecular and bimolecular reactions. Could be
-        extended to support arbitrary reactions.
-        """
-
-        maxsize = self._max_complex_size
-
-        reactions = []
-
-        # Do unimolecular reactions that are always slow... not supported
-        # anymore...
-        assert SLOW_REACTIONS[1] == []
-
-        # Do unimolecular reactions that are sometimes slow
-        if self._k_fast > self._k_slow:
-            for move in FAST_REACTIONS[1]:
-                if move.__name__ == 'open':
-                    move_reactions = move(complex, 
-                            max_helix = self.max_helix, 
-                            release_11 = self._release_11,
-                            release_1N = self._release_12,
-                            dG_bp = self.dG_bp)
-                else :
-                    move_reactions = move(complex, 
-                            max_helix = self.max_helix, 
-                            remote = not self.reject_remote)
-
-                if self.local_elevation:
-                    reactions += [rxn for rxn in move_reactions if self._k_slow <= local_elevation_rate(rxn) < \
-                                self._k_fast]
-                else :
-                    reactions += [r for r in move_reactions if self._k_slow <= r.const < self._k_fast]
+    def get_uni_reactions(self, cplx):
+        maxsize = self.max_complex_size
+        for move in UNI_REACTIONS:
+            if move.__name__ == 'bind11':
+                reactions = move(cplx, 
+                                 max_helix = self.max_helix)
+            elif move.__name__ == 'open1N':
+                reactions = move(cplx, 
+                                 max_helix = self.max_helix, 
+                                 release_11 = self.release_cutoff_1_1,
+                                 release_1N = self.release_cutoff_1_2,
+                                 dG_bp = self.dG_bp)
+            else:
+                reactions = move(cplx, 
+                                 max_helix = self.max_helix, 
+                                 remote = not self.reject_remote)
             for rxn in reactions:
-                log.info('adding unimolecular slow reaction {}'.format(rxn.full_string()))
-
-        # Do bimolecular reactions
-        for move in SLOW_REACTIONS[2]:
-            reactions += (move(complex, complex))
-            for complex2 in self._E:
-                reactions += (move(complex, complex2))
-
-        # And now remove all over max-complex-size
-        valid_reactions = []
-        for rxn in reactions: 
-            if maxsize and not all(p.size <= maxsize for p in rxn.products) :
-                log.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring slow reaction {}!".format(max([p.size for p in rxn.products]), maxsize, str(rxn)))
-                continue
-            valid_reactions.append(rxn)
-
-        return valid_reactions
-
-    def get_fast_reactions(self, cplx, rtypes = None, restrict=True):
-        """Returns a list of fast reactions possible using complex as a reagent.
-
-        Args:
-            cplx: A reactant complex.
-            rtypes (str, optional): Only reactions of a certain type.
-            restrict (bool, optional): Use golbal parameters release_cutoff, 
-
-
-        """
-
-        maxsize = self._max_complex_size
-
-        # Do unimolecular reactions
-        reactions = []
-        for move in FAST_REACTIONS[1]:
-            if rtypes and move.__name__ not in rtypes:
-                continue
-            if move.__name__ == 'open':
-                if restrict:
-                    move_reactions = move(cplx, 
-                        max_helix = self.max_helix, 
-                        release_11 = self._release_11,
-                        release_1N = self._release_12,
-                        dG_bp = self.dG_bp)
-                else :
-                    move_reactions = move(cplx, 
-                        max_helix = self.max_helix, 
-                        release_11 = 0, release_1N = 0,
-                        dG_bp = self.dG_bp)
-            else :
-                move_reactions = move(cplx, 
-                        max_helix = self.max_helix, 
-                        remote = not self.reject_remote)
-            
-            for rxn in move_reactions: 
                 if maxsize and any(p.size > maxsize for p in rxn.products):
-                    log.warning("Product complex size (={}) larger than --max-complex-size(={}). Ignoring fast reaction {}!".format( max([p.size for p in rxn.products]), maxsize, str(rxn)))
+                    log.warning(f"Ignoring unimolecular reaction {rxn}: " + \
+                            "product complex size {:d} > --max-complex-size {:d}.".format(
+                            max([p.size for p in rxn.products]), maxsize))
                     continue
-                reactions.append(rxn)
+                yield rxn
+        return
 
-        if restrict: # apply the k-fast / k-slow filter
-            if self.local_elevation:
-                # let's first remove reactions that cannot pass...
-                reactions = [rxn for rxn in reactions if rxn.const >= self._k_slow]
-                assert cplx._elevation is None
-                el = self.get_local_elevation(cplx, reactions)
-                cplx._elevation = el
-                reactions = [rxn for rxn in reactions if local_elevation_rate(rxn, el) >= \
-                                max(self._k_slow, self._k_fast)]
-            else :
-                reactions = [rxn for rxn in reactions if rxn.const >= max(self._k_slow, self._k_fast)]
+    def get_bi_reactions(self, cplx1, cplx2):
+        maxsize = self.max_complex_size
+        for move in BI_REACTIONS:
+            reactions = move(cplx1, cplx2, max_helix = self.max_helix)
+            for rxn in reactions:
+                if maxsize and any(p.size > maxsize for p in rxn.products):
+                    log.warning(f"Ignoring bimolecular reaction {rxn}: " + \
+                            "product complex size {:d} > --max-complex-size {:d}.".format(
+                                max([p.size for p in rxn.products]), maxsize))
+                    continue
+                yield rxn
+        return
 
-        return reactions
+    def get_fast_reactions(self, cplx):
+        """ set: Fast reactions using complex as a reactant. """
+        for rxn in self.get_uni_reactions(cplx):
+            # Do unimolecular reactions that are (mostly) fast.
+            if rxn.rate_constant[0] >= max(self._k_slow, self._k_fast):
+                yield rxn
+        return
+
+    def get_slow_reactions(self, cplx):
+        """ set: Slow reactions using complex as a reactant. """
+        if self.k_fast > self.k_slow:
+            # Do unimolecular reactions that are sometimes slow.
+            for rxn in self.get_uni_reactions(cplx):
+                if self.k_slow <= rxn.rate_constant[0] < self.k_fast:
+                    log.info(f'Found unimolecular slow reaction: {rxn}')
+                    yield rxn
+
+        # Do bimolecular reactions that are always slow
+        for rxn in self.get_bi_reactions(cplx, cplx):
+            yield rxn
+        for cplx2 in self._E:
+            for rxn in self.get_bi_reactions(cplx, cplx2):
+                yield rxn
+        return
 
     def get_new_products(self, reactions):
-        """
-        Checks the products in the list of reactions. Returns the new complexes in a list.
-
-        """
-        new_products = set()
-
-        ESTNF = set(self._E + self._S + self._T + self._N + self._F)
+        """ list: all products in the list of reactions. """
         B = set(self._B)
-
-        # Loop over every reaction
-        for reaction in reactions:
-
-            # Check every product of the reaction to see if it is new
-            for (i, product) in enumerate(reaction.products):
-
-                # This should have been checked earlier...
-                assert product.size <= self._max_complex_size
-
+        ESTNF = set(self._E + self._S + self._T + self._N + self._F)
+        new_products = set()
+        for rxn in reactions:
+            for product in rxn.products:
+                # This must have been checked earlier ...
+                assert product.size <= self.max_complex_size
                 if product in B:
                     # If the product is in list B, then we need to remove it from
                     # that list so that it can be enumerated for self-interactions
                     # as part of this neighborhood
                     self._B.remove(product)
                     B.remove(product)
-
-                # has not been enumerated...
                 if product not in ESTNF:
-                   new_products.add(product)
-
+                    # The product has not been enumerated ...
+                    new_products.add(product)
         assert (ESTNF - new_products) == ESTNF
         assert (ESTNF - B) == ESTNF
-
-        return list(new_products)
+        return new_products
 
     def get_local_elevation(self, cplx, reactions):
         """Calculate the local elevation of a complex.
@@ -780,12 +666,12 @@ class Enumerator(object):
 
         def rev_rtype(rtype, arity):
             """Returns the reaction type of a corresponding reverse reaction. """
-            if rtype == 'open' and arity == (1,1):
+            if rtype == 'open1N' and arity == (1,1):
                 return 'bind11'
-            elif rtype == 'open' and arity == (1,2):
+            elif rtype == 'open1N' and arity == (1,2):
                 return 'bind21'
             elif rtype == 'bind11' or rtype == 'bind21':
-                return 'open'
+                return 'open1N'
             else:
                 raise NotImplementedError
 
@@ -834,8 +720,8 @@ class Enumerator(object):
 
             if rtype == 'bind11':
                 # fore i in invaders...
-                results = reactlib.find_on_loop(reactant, invaders[0], reactlib.filter_bind11)
-            elif rtype == 'open':
+                results = find_on_loop(reactant, invaders[0], filter_bind11)
+            elif rtype == 'open1N':
                 return reactant.get_structure(invaders[0]) == targets[0]
             else : 
                 raise NotImplementedError('rtype not considered in local neighborhood: {}'.format(
@@ -915,25 +801,18 @@ def enumerate_pil(pilstring,
     Returns:
         Enumerator-object, Outputstring
     """
-    cxs, rxns, comp = read_pil(pilstring, is_file, composite = True)
-
-    init_cplxs = list(filter(lambda x: x._concentration is None or \
-                    float(x._concentration[1]) != (0.0), cxs.values()))
-
-    enum = Enumerator(init_cplxs, rxns)
-
+    cxs, rxns = read_pil(pilstring, is_file)
+    cplxs = list(cxs.values())
+    init_cplxs = [x for x in cxs.values() if x.concentration is None or x.concentration[1] != 0]
+    enum = Enumerator(init_cplxs, rxns, named_complexes = cplxs)
     # set kwargs parameters
     for k, w in kwargs.items():
         if hasattr(enum, k):
             setattr(enum, k, w)
         else:
             raise PeppercornUsageError('No Enumerator attribute called: {}'.format(k))
-
     enum.enumerate()
-
-    outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, 
-                composite = comp, molarity = enumconc)
-    
+    outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, molarity = enumconc)
     return enum, outstring
 
 def enumerate_ssw(sswstring, 
@@ -974,27 +853,22 @@ def enumerate_ssw(sswstring,
             explicit = ssw_expl,
             conc = ssw_conc,
             reactions = ssw_rxns)
-
     enum = Enumerator(list(cxs.values()), rxns)
-
     # set kwargs parameters
     for k, w in kwargs.items():
         if hasattr(enum, k):
             setattr(enum, k, w)
         else:
             raise PeppercornUsageError('No Enumerator attribute called: {}'.format(k))
-
     if dry_run:
         enum.dry_run()
     else:
         enum.enumerate()
-
     outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, molarity = enumconc)
-   
     return enum, outstring
 
 
-def segment_neighborhood(complexes, reactions, p_min=None, represent=None):
+def segment_neighborhood(complexes, reactions, p_min = None, represent = None):
     """
     Segmentation of a potentially incomplete neighborhood. That means only the
     specified complexes are interesting, all others should not be returned.
@@ -1011,7 +885,7 @@ def segment_neighborhood(complexes, reactions, p_min=None, represent=None):
     S = []
     SCCs = []
 
-    total = complexes[:]
+    total = list(complexes)
     for rxn in reactions: 
         total += rxn.products
 
@@ -1073,15 +947,19 @@ def segment_neighborhood(complexes, reactions, p_min=None, represent=None):
     transient_complexes = []
 
     for scc in SCCs:
+        if represent:
+            for cx in scc:
+                if cx in represent:
+                    rcx = cx.name
+                    break
+            else:
+                rcx = None
+        else:
+            rcx = None
         try:
-            if represent :
-                rcx = [cx for cx in scc if cx in represent]
-
-            rcx = sorted(rcx)[0] if rcx else None
-            ms = PepperMacrostate(scc[:], prefix='', representative = rcx)
-        except DSDDuplicationError as e:
-            assert set(e.existing.complexes) == set(scc)
-            ms = e.existing
+            ms = PepperMacrostate(scc[:], name = rcx)
+        except SingletonError as err:
+            ms = err.existing
 
         for c in scc:
             for rxn in rxns_consuming[c]:
