@@ -4,46 +4,32 @@
 #
 import logging
 log = logging.getLogger(__name__)
-import warnings
 
-import sys
-import math
+from .utils import PeppercornUsageError
+from .input import read_pil, read_seesaw
+from .output import write_pil, write_sbml
+from .objects import (SingletonError, PepperMacrostate, clear_memory)
+from .condense import PepperCondensation
+from .reactions import (bind11, bind21, open1N, 
+                        branch_3way, branch_4way,
+                        find_on_loop, filter_bind11)
+from .ratemodel import opening_rate
 
-from peppercornenumerator.condense import PepperCondensation
-from peppercornenumerator.objects import SingletonError, PepperMacrostate, PepperComplex
-from peppercornenumerator.utils import PeppercornUsageError
-from peppercornenumerator.input import read_pil, read_seesaw
-from peppercornenumerator.output import write_pil, write_sbml
-
-from peppercornenumerator.reactions import (bind11, 
-                                            bind21,
-                                            open1N,
-                                            branch_3way,
-                                            branch_4way,
-                                            opening_rate,
-                                            find_on_loop,
-                                            filter_bind11)
+"""
+WASTEFUL (bool): A global parameter to erase singleton object memory on the
+beginning of every call of "enumerate_pil" or "enumerate_ssw". This should not
+be necessary if you make sure that all "old" peppercornenumerator.objects are
+deleted.  Strangely, some dependencies (in particluar matplotlib.pyplot)
+prevent the garbage collection of "old" objects, and it is necessary to use
+this parameter once such a depencency has been imported. I suspect wasteful
+behavior to be the cause of occasional segfaults when enumerating *many*
+different systems in order to do some meta analysis. More details in 
+tests/test_wasteful.py
+"""
+WASTEFUL = False
 
 UNI_REACTIONS = [bind11, open1N, branch_3way, branch_4way]
 BI_REACTIONS = [bind21]
-"""
-Dictionary of reaction functions considered *fast* for a given "arity".
-Keys are arities (e.g. 1 = unimolecular, 2 = bimolecular, 3 = trimolecular,
-etc.), and values are lists of reaction functions. Currently, only
-unimolecular fast reactions (arity = 1) are supported.
-"""
-
-SLOW_REACTIONS = {
-    1: [],
-    2: [bind21]
-}
-"""
-A dictionary of reaction functions considered *slow* for a given "arity".
-Keys are arities (e.g. 1 = unimolecular, 2 = bimolecular, 3 = trimolecular,
-etc.), and values are lists of reaction functions. Currently, only
-bimolecular reactions (arity = 2) are by default slow. However, when using
-k-fast, also unimolecular reactions can fall into the *slow* regime.
-"""
 
 class PolymerizationError(Exception):
     pass
@@ -122,9 +108,6 @@ class Enumerator:
         self.DFS = True
         self.interactive = False
         self.interruptible = False
-
-        # Not officially supported parameters
-        self.local_elevation = False
 
     @property
     def initial_complexes(self):
@@ -644,146 +627,12 @@ class Enumerator:
         assert (ESTNF - B) == ESTNF
         return new_products
 
-    def get_local_elevation(self, cplx, reactions):
-        """Calculate the local elevation of a complex.
-
-        Local elevation is the inverse of the maximum free energy gain when
-        applying a sequence of compatible moves. In other words, the energy
-        difference between this complex and its gradient decent local minimum.
-        Because our rate model is insufficient, this is just an approximation: 
-
-            (1) Take all unary open/bind reactions, and their reverse reaction. 
-            (2) Calculate the free energy change for each reversible reaction: 
-                dG = ln(k1/k2)
-            (3) Solve the max-clique problem to identify compatible downhill
-                reactions. That means, reactions that can be applied
-                successively leading to the same local minimum. 
-            (4) Calculate the cummulative free energy change for every path
-                that leads to a local minimum. The maximum value is the local
-                elevation.
-
-        """
-
-        def rev_rtype(rtype, arity):
-            """Returns the reaction type of a corresponding reverse reaction. """
-            if rtype == 'open1N' and arity == (1,1):
-                return 'bind11'
-            elif rtype == 'open1N' and arity == (1,2):
-                return 'bind21'
-            elif rtype == 'bind11' or rtype == 'bind21':
-                return 'open1N'
-            else:
-                raise NotImplementedError
-
-        def elevation(rxn):
-            assert rxn.arity == (1,1)
-            if rxn.reverse_reaction is None:
-                rr = rev_rtype(rxn.rtype, rxn.arity)
-                r = self.get_fast_reactions(rxn.products[0], rtypes = [rr], restrict=False)
-                r = [x for x in r if sorted(x.products) == sorted(rxn.reactants)]
-                assert len(r) == 1
-                if len(r) == 1:
-                    rxn.reverse_reaction = r[0]
-                    r[0].reverse_reaction = rxn
-                else :
-                    rxn.reverse_reaction = False
-            
-            dG = math.log(rxn.const/rxn.reverse_reaction.const)
-            # downhill reaction has dG > 0
-            return dG if dG > 0 else 0
-
-        def try_move(reactant, rotations, rtype, meta):
-            """
-            Args:
-                rectant: Is the product of a previous rection
-                rotations: Rotations needed to rotate this product back in reactant form
-                rtype: the type of the new reaction
-                meta: the find_on_loop parameters for the new reaction
-            """
-            
-            (invader, target, x_linker, y_linker) = meta
-
-            # First, make sure invader and target locations map to the reactant-rotation.
-            if rotations is not None and rotations != 0:
-                invaders = [reactant.rotate_location(x, rotations) for x in invader.locs]
-                targets = [reactant.rotate_location(x, rotations) for x in target.locs]
-            else :
-                invaders = list(invader.locs)
-                targets = list(target.locs)
-
-            # forbid max helix.... :-(
-            assert len(invaders) == 1
-            assert len(targets) == 1
-
-            def triple(loc):
-                return (reactant.get_domain(loc), reactant.get_structure(loc), loc)
-
-            if rtype == 'bind11':
-                # fore i in invaders...
-                results = find_on_loop(reactant, invaders[0], filter_bind11)
-            elif rtype == 'open1N':
-                return reactant.get_structure(invaders[0]) == targets[0]
-            else : 
-                raise NotImplementedError('rtype not considered in local neighborhood: {}'.format(
-                    rtype))
-
-            targets = list(map(triple, targets))
-            for [s,x,t,y] in results:
-                if t == targets:
-                    return True
-            return False
-        
-        # Calculate the local elevation of a complex using only 1-1 reactions.
-        compat = dict()
-        for rxn in reactions:
-            # exclude open and branch-migration with arity 1,2
-            if rxn.arity != (1,1): continue
-            if rxn.rtype in ('branch-3way', 'branch-4way'): continue
-            compat[rxn] = set()
-            for other in reactions:
-                if rxn == other: continue
-                if other.arity != (1,1): continue
-                if other.rtype in ('branch-3way', 'branch-4way'): continue
-                # Try to append the other reaction to this reaction
-                success = try_move(rxn.products[0], rxn.rotations, other.rtype, other.meta)
-                if success:
-                    # We can apply other to the product of rxn
-                    compat[rxn].add(other)
-
-        # https://en.wikipedia.org/wiki/Clique_(graph_theory)
-        cliques = []
-        for p in sorted(compat):
-            vert = p
-            if compat[p] == set():
-                cliques.append(set([p]))
-                continue
-            for l in list(compat[p]):
-                edge = (p,l)
-                processed = False
-                for e, c in enumerate(cliques):
-                    if p in c and (l in c or all(l in compat[y] for y in c)):
-                        c.add(l)
-                        processed = True
-                if not processed:
-                    cliques.append(set([p,l]))
-
-        elevations = []
-        for c in cliques:
-            elevations.append(sum(map(elevation, c)))
-
-        if elevations:
-            eleven = max(elevations)
-        else :
-            eleven = 0
-
-        return eleven
-
 def enumerate_pil(pilstring, 
         is_file = False, 
         enumfile = None,
         detailed = True, 
         condensed = False, 
-        enumconc = 'M', 
+        enumconc = 'nM', 
         **kwargs):
     """ A wrapper function to directly enumerate a pilstring or file.
 
@@ -801,6 +650,9 @@ def enumerate_pil(pilstring,
     Returns:
         Enumerator-object, Outputstring
     """
+    global WASTEFUL
+    if WASTEFUL: clear_memory()
+
     cxs, rxns = read_pil(pilstring, is_file)
     cplxs = list(cxs.values())
     init_cplxs = [x for x in cxs.values() if x.concentration is None or x.concentration[1] != 0]
@@ -824,7 +676,7 @@ def enumerate_ssw(sswstring,
         enumfile = None,
         detailed = True, 
         condensed = False, 
-        enumconc = 'M', 
+        enumconc = 'nM', 
         **kwargs):
     """ A wrapper function to directly enumerate a seesaw string or file.
 
@@ -848,6 +700,9 @@ def enumerate_ssw(sswstring,
     Returns:
         Enumerator-object, Outputstring
     """
+    global WASTEFUL
+    if WASTEFUL: clear_memory()
+
     utbr = kwargs.get('utbr_species', True)
     cxs, rxns = read_seesaw(sswstring, is_file, 
             explicit = ssw_expl,
@@ -868,7 +723,7 @@ def enumerate_ssw(sswstring,
     return enum, outstring
 
 
-def segment_neighborhood(complexes, reactions, p_min = None, represent = None):
+def segment_neighborhood(complexes, reactions, represent = None):
     """
     Segmentation of a potentially incomplete neighborhood. That means only the
     specified complexes are interesting, all others should not be returned.
@@ -969,15 +824,7 @@ def segment_neighborhood(complexes, reactions, p_min = None, represent = None):
             transient_complexes += (scc)
         else :
             resting_macrostates.append(ms)
-
-            if p_min:
-                for (c, s) in ms.get_stationary_distribution():
-                    if s < p_min:
-                        transient_complexes.append(c)
-                    else :
-                        resting_complexes.append(c)
-            else:
-                resting_complexes += (scc)
+            resting_complexes += (scc)
 
     resting_macrostates.sort()
     resting_complexes.sort()
@@ -989,29 +836,3 @@ def segment_neighborhood(complexes, reactions, p_min = None, represent = None):
         'transient_complexes': transient_complexes
     }
 
-def local_elevation_rate(rxn, el=None):
-    """Re-calculate a transition rate based on local elevation.
-
-    Right now, downhill reactions are only passed through, but that
-    probably needs some more thought about the consequences.
-
-    """
-    if el is None:
-        assert rxn.arity[0] == 1
-        cplx = rxn.reactants[0]
-        if cplx._elevation is None:
-            return None
-        el = cplx._elevation
-
-    if rxn.arity != (1,1) or rxn.rtype in ('branch-3way', 'branch-4way'): 
-        # we don't know the reverse rate, ...
-        return 1/(1+math.e**(el)) * rxn.const
-
-    elif rxn.const < rxn.reverse_reaction.const:
-        # this is a true uphill reaction...
-        return 1/(1+math.e**(el)) * rxn.const
-    
-    # it is a downhill reaction, elevation does not matter ...
-    assert rxn.arity[0] == 1
-    return rxn.const
- 

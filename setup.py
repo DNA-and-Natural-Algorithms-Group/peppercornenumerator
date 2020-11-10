@@ -27,7 +27,7 @@ setup(
     install_requires = [
         'pandas', # for case-studies
         'numpy',
-        'crnsimulator>=0.8',
+        'crnsimulator>=0.9',
         'dsdobjects>=0.8'],
     packages = ['peppercornenumerator'],
     test_suite = 'tests',

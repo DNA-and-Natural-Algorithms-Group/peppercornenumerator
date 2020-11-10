@@ -1,8 +1,11 @@
+#
+#  peppercornenumerator/ratemodel.py
+#  EnumeratorProject
+#
+import logging
+log = logging.getLogger(__name__)
 
 import math
-
-class PeppercornRateModelError(Exception):
-    pass
 
 def polymer_link_length(before, after):
     """ Length estimates in nucleotides for linkers connecting two domains.
@@ -20,7 +23,7 @@ def polymer_link_length(before, after):
     L_after = float('inf') if after.is_open else \
             1 + after.bases + after.stems + L_stem * after.stems
     if after.is_open and before.is_open:
-        raise PeppercornRateModelError("Computing polymer lengths in disconnected complex!")
+        raise ValueError("Computing polymer lengths for disconnected complexes!")
     return min(L_before, L_after)
 
 def polymer_link_rate(hllen, ha = 1e6, hb = -2.5, kmax = 33_000):

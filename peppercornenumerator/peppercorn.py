@@ -5,17 +5,15 @@
 #
 import logging
 
-import os
 import sys
 import argparse
 from pyparsing import ParseException
 
-# Import global default variables from peppercornenumerator library
-import peppercornenumerator 
-from peppercornenumerator import Enumerator, __version__
-from peppercornenumerator.enumerator import UNI_REACTIONS
-from peppercornenumerator.input import read_pil, read_seesaw
-from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
+from . import Enumerator, __version__
+from .input import read_pil, read_seesaw
+from .enumerator import UNI_REACTIONS
+from .reactions import branch_3way, branch_4way, opening_rate
+from .ratemodel import opening_rate
 
 class colors:
     RED = '\033[91m'

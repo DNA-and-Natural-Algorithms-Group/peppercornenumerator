@@ -4,17 +4,16 @@ import os
 import numpy as np
 import pandas as pd
 from subprocess import Popen
-from crnsimulator import parse_crn_string
 from pyparsing import ParseException
+from crnsimulator import parse_crn_string
 
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.enumerator import enumerate_pil, enumerate_ssw
-from peppercornenumerator.objects import clear_memory
 
 class MissingDataError(Exception):
     pass
 
-class FigureData(object):
+class FigureData:
     """ Produce DataFrames that compare Peppercorn's model with experimental data.
 
     Examples:
@@ -141,12 +140,10 @@ class FigureData(object):
         if pepperargs in self._pepperargs:
             pargs = self._pepperargs[pepperargs]
         else:
-            raise MissingDataError('Cannot find key "{}" in pepperargs'.format(pepperargs))
+            raise MissingDataError(f'Cannot find key "{pepperargs}" in pepperargs')
 
         ratecalc = []
         for name, pil, rxn, rate, pilid in self._ratedata:
-            clear_memory()
-
             pname = name + '-input.pil'
             ename = name + '-enum.pil'
             enumOBJ, _ = enumerate_pil(pname, is_file = True, enumfile = ename, **pargs)
@@ -161,9 +158,9 @@ class FigureData(object):
                     prate = r.const
                     break
             if prate is None:
-                raise MissingDataError(
-                        'Target reaction not found: {} not in {}'.format(rxn, name))
+                raise MissingDataError(f'Target reaction not found: {rxn} not in {name}')
             ratecalc.append(prate)
+            del enumOBJ, rxns, ed, pr, r
         self._ratecalc[pepperargs] = ratecalc
 
     def get_reaction_dataframes(self):
@@ -213,8 +210,6 @@ class FigureData(object):
         simcalc = []
         trajectories = None
         for name, pilstring, simargs, reporter, metric, minfo, time, conc in self._simdata:
-            clear_memory()
-
             if verbose:
                 print("Evaluating {}: {}".format(name, pepperargs))
 
@@ -500,14 +495,15 @@ def main():
 
     analysis = z07() + y08() + z09() + z10() + z11() + g11() + q11() + k17()
     analysis = z09r() + d13r()
+    #analysis = q11sq()
 
     for fig in analysis:
         print("\n{}:".format(fig.name))
         fig.eval('default', verbose = 0)
         for df in fig.get_dataframes():
             print(df)
-
    
+
 if __name__ == '__main__':
     main()
 

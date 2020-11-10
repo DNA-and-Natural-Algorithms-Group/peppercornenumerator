@@ -9,7 +9,8 @@
 
 
 This is a package for domain-level strand displacement (DSD) system analysis.
-After installation, you should be able to execute the scripts  **peppercorn** and  **pilsimulator**.
+After installation, you should be able to execute the scripts  **peppercorn**
+and  **pilsimulator**.
 
 The reaction enumerator Peppercorn reads a file with initially present
 domain-level complexes, and returns all possible reactions and products.
@@ -251,11 +252,19 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e60
   * Consider taking a look at the [case studies] directory for more examples.
 
 ## Version
-1.1 -- rewrite using dsdobjects v.0.8 
+1.1 -- Mayor Python>=3.7 code cleanup and speedups for some core functions.
+    * rewrite of all objects to use dsdobjects>=0.8 (an attempt to fix rare segfaults).
+    * moved ratedmodel related functions to peppercornenumerator/ratemodel.py.
+    * renamed open to open1N in order to avoid name conflicts.
+    * default concentration unit for output is now 'nM' throughout the library.
+    * updating and extending unittests.
+    * some pythonification of old code.
+    * removing deprecated code and undocumented experimental features.
+    * updated files in case_study directory for compatibility with changes.
 
 1.0.1 -- bugfix for pilsimulator --labels option.
 
-1.0 -- stable release, requires python >= 3.7
+1.0 -- stable release, requires python >= 3.7.
 
 ## Authors
 Stefan Badelt, Casey Grun, Karthik V. Sarma, Brian Wolfe, Seung Woo Shin and Erik Winfree.

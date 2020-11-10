@@ -6,13 +6,13 @@ import logging
 log = logging.getLogger(__name__)
 
 import dsdobjects.objectio as oio
-from dsdobjects.dsdparser import (parse_pil_string,
-                                  parse_seesaw_string,
-                                  parse_seesaw_file)
-from peppercornenumerator.objects import (PepperDomain, 
-                                          PepperComplex, 
-                                          PepperReaction, 
-                                          PepperMacrostate)
+from dsdobjects import (parse_pil_string,
+                        parse_seesaw_string,
+                        parse_seesaw_file)
+from .objects import (PepperDomain, 
+                      PepperComplex, 
+                      PepperReaction, 
+                      PepperMacrostate)
 
 
 class InputFormatError(Exception):

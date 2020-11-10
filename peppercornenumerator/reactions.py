@@ -3,7 +3,6 @@
 #  EnumeratorProject
 #
 import logging
-from copy import deepcopy
 log = logging.getLogger(__name__)
 
 from dsdobjects.complex_utils import (make_pair_table,

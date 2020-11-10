@@ -5,16 +5,27 @@
 import logging
 log = logging.getLogger(__name__)
 
-from dsdobjects import SingletonError, clear_singletons
+from itertools import chain
+
+from dsdobjects import SingletonError, clear_singletons, show_singletons
 from dsdobjects.base_classes import ObjectInitError, DomainS, ComplexS, MacrostateS, ReactionS
 
 def clear_memory():
     # This is for unittests only!  The memory of a Singleton clears
     # automatically if there is no hard reference to the object.
-    clear_singletons(PepperDomain)
-    clear_singletons(PepperComplex)
     clear_singletons(PepperReaction)
     clear_singletons(PepperMacrostate)
+    clear_singletons(PepperComplex)
+    clear_singletons(PepperDomain)
+
+def show_memory():
+    # This is for unittests only!  The memory of a Singleton clears
+    # automatically if there is no hard reference to the object.
+    for x in chain(show_singletons(PepperReaction),
+                   show_singletons(PepperMacrostate),
+                   show_singletons(PepperComplex),
+                   show_singletons(PepperDomain)):
+        print(x)
 
 class PepperDomain(DomainS):
     def __init__(self, *args, **kwargs):
@@ -28,7 +39,7 @@ class PepperDomain(DomainS):
         return self is ~other
 
 class PepperComplex(ComplexS):
-    #PREFIX = 'e'
+    PREFIX = 'e'
     @property
     def available_domains(self):
         ad = []
@@ -220,6 +231,14 @@ class PepperReaction(ReactionS):
     def const(self):
         log.warning('deprecated property PepperReaction.const')
         return self.rate_constant[0]
+
+    @const.setter
+    def const(self, value):
+        log.warning('deprecated property PepperReaction.const')
+        print(value)
+        self.rate_constant = value
+        print(self.rate_constant[0])
+
 
 class Loop:
     """ A (part of a) single open or closed loop region.
