@@ -5,7 +5,7 @@
 import logging
 log = logging.getLogger(__name__)
 
-from .utils import PeppercornUsageError
+from .utils import PeppercornUsageError, tarjans
 from .input import read_pil, read_seesaw
 from .output import write_pil, write_sbml
 from .objects import (SingletonError, PepperMacrostate, clear_memory)
@@ -333,7 +333,6 @@ class Enumerator:
             - resting_complexes
             - transient_complexes
             - resting_macrostates
-            - transient_macrostates (todo)
             - reactions
             - detailed_reactions
         """
@@ -722,85 +721,38 @@ def enumerate_ssw(sswstring,
     outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, molarity = enumconc)
     return enum, outstring
 
-
 def segment_neighborhood(complexes, reactions, represent = None):
-    """
-    Segmentation of a potentially incomplete neighborhood. That means only the
-    specified complexes are interesting, all others should not be returned.
+    """ Segmentation of a neighborhood of fast reactions.
 
-    Beware: Complexes must contain all reactants in reactions *and* there
-    must not be any incoming fast reactions into complexes, other than
-    those specified in reactions. Thus, we can be sure that the SCCs found here
-    are consistent with SCCs found in a previous iteration.
+    Note that all reactants of the specified reactions must be contained in the
+    complexes. Since only the specified complexes are of interest, any other
+    complexes that can be produced by the given reactions are not contained
+    in the output. 
 
     Args:
-        complexes(list[:obj:`PepperComplex`])
+        complexes (list[:obj:`PepperComplex`]): 
+        reactions (list[:obj:`PepperReaction`]):
+        represent (bool, optional):
+
+    Returns:
+        dict: 'resting_complexes', 'transient_complexes', 'resting_macrostates'.
     """
-    index = 0
-    S = []
-    SCCs = []
+    cplxs = set(complexes)
+    total = list(cplxs.union(*[rxn.products for rxn in reactions]))
 
-    total = list(complexes)
-    for rxn in reactions: 
-        total += rxn.products
-
-    total = list(set(total))
-
-    # Set up for Tarjan's algorithm
-    for c in total: c._index = None
-
-    # filters reaction products such that there are only species from within complexes
-    # this is ok, because it must not change the assignment of SCCs.
-    rxns_within = {k: [] for k in complexes}
-    rxns_consuming = {k: [r for r in reactions if (k in r.reactants)] for k in total}
+    # filters reaction products such that there are only species from within
+    # complexes. This is ok, because it must not change the assignment of SCCs!
+    products = {k: set() for k in cplxs}
     for rxn in reactions:
         assert len(rxn.reactants) == 1
-        for product in rxn.products:
-            if product in complexes:
-                rxns_within[rxn.reactants[0]].append(product)
-        rxns_consuming[rxn.reactants[0]]
+        products[rxn.reactants[0]] |= set().union((p for p in rxn.products if p in cplxs))
+    SCCs = tarjans(cplxs, products)
 
-    def tarjans_scc(cplx, index):
-        """
-        Executes an iteration of Tarjan's algorithm (a modified DFS) starting
-        at the given node.
-        """
-        # Set this node's tarjan numbers
-        cplx._index = index
-        cplx._lowlink = index
-        index += 1
-        S.append(cplx)
-
-        for product in rxns_within[cplx]:
-            # Product hasn't been traversed; recurse
-            if product._index is None :
-                index = tarjans_scc(product, index)
-                cplx._lowlink = min(cplx._lowlink, product._lowlink)
-
-            # Product is in the current neighborhood
-            elif product in S:
-                cplx._lowlink = min(cplx._lowlink, product._index)
-    
-        if cplx._lowlink == cplx._index:
-            scc = []
-            while True:
-                next = S.pop()
-                scc.append(next)
-                if next == cplx:
-                    break
-            SCCs.append(scc)
-        return index
-
-    # We now perform Tarjan's algorithm, marking nodes as appropriate
-    for cplx in complexes:
-        if cplx._index is None:
-            tarjans_scc(cplx, index)
+    rxns_consuming = {k: [r for r in reactions if (k in r.reactants)] for k in total}
 
     resting_macrostates = []
-    transient_macrostates = []
     resting_complexes = []
     transient_complexes = []
-
     for scc in SCCs:
         if represent:
             for cx in scc:
@@ -815,21 +767,20 @@ def segment_neighborhood(complexes, reactions, represent = None):
             ms = PepperMacrostate(scc[:], name = rcx)
         except SingletonError as err:
             ms = err.existing
-
         for c in scc:
             for rxn in rxns_consuming[c]:
-                ms.add_reaction(rxn)
-
-        if ms.is_transient:
-            transient_complexes += (scc)
-        else :
+                assert rxn.reactants[0] in ms._complexes
+                if rxn.products[0] not in ms._complexes:
+                    # an exit reaction!
+                    transient_complexes += (scc)
+                    break
+                assert len(rxn.products) == 1
+            else:
+                continue
+            break
+        else:
             resting_macrostates.append(ms)
             resting_complexes += (scc)
-
-    resting_macrostates.sort()
-    resting_complexes.sort()
-    transient_complexes.sort()
-
     return {
         'resting_macrostates': resting_macrostates,
         'resting_complexes': resting_complexes,

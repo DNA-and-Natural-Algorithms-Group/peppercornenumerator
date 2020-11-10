@@ -11,6 +11,7 @@ import numpy as np
 import itertools as it
 from functools import reduce
 
+from .utils import tarjans
 from .objects import (SingletonError, 
                       PepperReaction,
                       PepperMacrostate)
@@ -25,8 +26,13 @@ class PepperCondensation:
         # Helper dictionaries
         self.reactions_consuming = get_reactions_consuming(self.complexes, 
                                                            self.detailed_reactions)
-        self.SCCs = tarjans(self.complexes, self.detailed_reactions, 
-                            self.reactions_consuming, self.is_fast)
+
+        # Map complexes to their products from 1-1 fast reactions.
+        fast11_products = {c: set().union(*[r.products for r in rxns \
+                            if r.arity == (1, 1) and self.is_fast(r)]) \
+                                for (c, rxns) in self.reactions_consuming.items()}
+
+        self.SCCs = tarjans(self.complexes, fast11_products)
         self.scc_containing = {c: scc for scc in self.SCCs for c in scc}
 
         # Condensed graph components
@@ -50,7 +56,9 @@ class PepperCondensation:
 
     @property
     def resting_macrostates(self):
-        return list(self.set_to_fate.values())
+        if self._condensed_reactions is None:
+            self.condense()
+        return set(self.set_to_fate.values())
 
     @property
     def condensed_reactions(self):
@@ -70,14 +78,13 @@ class PepperCondensation:
         """ Calculates all fates for a given SCC. """
         cfates = self._complex_fates
         rxncon = self.reactions_consuming
-        is_fast = self.is_fast
 
         if scc[0] in cfates:
             return # This SCC has been processed before
 
         scc_set = frozenset(scc)
         out_rxns = [r for c in scc for r in rxncon[c] \
-                        if is_fast(r) and is_outgoing(r, scc_set)]
+                        if self.is_fast(r) and is_outgoing(r, scc_set)]
 
         if len(out_rxns) == 0: # A resting macrostate
             try:
@@ -85,7 +92,10 @@ class PepperCondensation:
             except SingletonError as err:
                 resting_ms = err.existing
             self.set_to_fate[scc_set] = resting_ms
-            self.stationary_dist[resting_ms] = get_stationary_distribution(scc, rxncon)
+            # find all reactions between complexes in this SCC (non-outgoing 1,1 reactions)
+            internal_reactions = [r for c in scc for r in rxncon[c] 
+                    if (r.arity == (1, 1) and not is_outgoing(r, scc_set))]
+            self.stationary_dist[resting_ms] = get_stationary_distribution(scc, internal_reactions)
             fate = (resting_ms,)
             for c in scc:
                 assert c not in cfates
@@ -108,7 +118,9 @@ class PepperCondensation:
             assert reaction_fates == [sorted(cartesian_sum(
                 list(map(self.complex_fates, rxn.products)))) for rxn in out_rxns]
 
-            self.exit_prob[scc_set] = get_exit_probabilities(scc, rxncon, is_fast)
+            # find all fast reactions involving complexes in this SCC
+            fast_reactions = [r for c in scc for r in rxncon[c] if self.is_fast(r)]
+            self.exit_prob[scc_set] = get_exit_probabilities(scc, fast_reactions)
 
             # calculate the decay probability for each reaction fate
             for i, rxn in enumerate(out_rxns):
@@ -140,10 +152,11 @@ class PepperCondensation:
         """
         if combinations is None:
             combinations = list(cartesian_product(list(map(self.complex_fates, rxn.products))))
-            # NOTE: introduced as a consequence of a bug discovered in the
-            # cooperative binding case. Before you calculate (add to) reaction
-            # decay probabilities, make sure that the dictionary is empty.
-            self.reaction_decay_prob = collections.defaultdict(float)
+
+        # NOTE: introduced as a consequence of a bug discovered in the
+        # cooperative binding case. Before you calculate (add to) reaction
+        # decay probabilities, make sure that the dictionary is empty.
+        self.reaction_decay_prob = collections.defaultdict(float)
 
         for fates in combinations:
             if tuple_sum(fates) != fate:
@@ -281,62 +294,20 @@ def get_reactions_producing(complexes, reactions):
     """ dict: maps complexes to lists of reactions where they appear as a product. """
     return {c: [r for r in reactions if (c in r.products)] for c in complexes}
 
-def tarjans(complexes, reactions, reactions_consuming, is_fast):
-    """ Tarjans algorithm to find strongly connected components. """
-    def strongconnect(cplx, index):
-        cplx.tarjans_index = index
-        cplx.tarjans_lowlink = index
-        index += 1
-        S.append(cplx)
-
-        for rxn in reactions_consuming[cplx]:
-            if rxn.arity != (1, 1) or not is_fast(rxn):
-                continue
-            for prod in rxn.products:
-                # Product hasn't been traversed; recurse
-                if prod.tarjans_index is None :
-                    index = strongconnect(prod, index)
-                    cplx.tarjans_lowlink = min(prod.tarjans_lowlink, cplx.tarjans_lowlink)
-                # Product is in the current neighborhood
-                elif prod in S:
-                    cplx.tarjans_lowlink = min(prod.tarjans_index, cplx.tarjans_lowlink)
-
-        if cplx.tarjans_lowlink == cplx.tarjans_index:
-            scc = []
-            while True:
-                n = S.pop()
-                scc.append(n)
-                if n == cplx:
-                    break
-            SCCs.append(scc)
-        return index
-
-    index = 0
-    S, SCCs = [], []
-    for cplx in complexes:
-        cplx.tarjans_index = None
-    for cplx in complexes:
-        if cplx.tarjans_index is None:
-            index = strongconnect(cplx, index)
-    return SCCs
-
-def get_stationary_distribution(scc, reactions_consuming):
-    """
-    Take a strongly connected component and calculate the stationary distribution.
+def get_stationary_distribution(scc, reactions, epsilon = 1e-5):
+    """ Calculate the stationary distribution of complexes in a SCC.
 
     Returns:
-        [:obj:`dict()`]: Stationary distributions: dict['cplx'] = sdist (flt)
+        dict: Mapping of complexes to stationary distribution (flt).
     """
+    log.debug(f"Calculating stationary distribution for scc: {[x.name for x in scc]}")
+
     scc_set = frozenset(scc)
     scc_list = sorted(scc)
     L = len(scc)
 
     # assign a numerical index to each complex
     complex_indices = {c: i for (i, c) in enumerate(scc_list)}
-
-    # find all reactions between complexes in this SCC (non-outgoing 1,1 reactions)
-    reactions = [r for c in scc for r in reactions_consuming[c]
-                 if (r.arity == (1, 1) and not is_outgoing(r, scc_set))]
 
     # T is the transition rate matrix, defined as follows:
     # T_{ij} = { rate(j -> i)       if  i != j
@@ -345,8 +316,8 @@ def get_stationary_distribution(scc, reactions_consuming):
 
     # add transition rates for each reaction to T
     for r in reactions:
-        assert len(r.reactants) == 1
-        assert len(r.products) == 1
+        assert len(r.reactants) == 1 and r.reactants[0] in scc
+        assert len(r.products) == 1 and r.products[0] in scc
         # r : a -> b
         # T_{b,a} = rate(r : a -> b)
         a = r.reactants[0]
@@ -363,53 +334,46 @@ def get_stationary_distribution(scc, reactions_consuming):
     # calculate eigenvalues
     (w, v) = np.linalg.eig(T)
     # w is array of eigenvalues
-    # v is array of eigenvectors, where column v[:,i] is eigenvector
+    # v is array of eigenvectors, where column v[:,i] is eigenvector 
     # corresponding to the eigenvalue w[i].
 
     # find eigenvector corresponding to eigenvalue zero (or nearly 0)
-    epsilon = 1e-5
     i = np.argmin(np.abs(w))
     if abs(w[i]) > epsilon:
-        log.warning(
-            ("Bad stationary distribution for resting set transition matrix. " +
-             "Eigenvalue found %f has magnitude greater than epsilon = %f. " +
-             "Markov chain may be periodic, or epsilon may be too high. Eigenvalues: %s") %
-            (w(i), epsilon, str(w)))
+        log.warning("Bad stationary distribution for resting set transition matrix. " + \
+                    f"Eigenvalue {w[i]} has magnitude greater than epsilon = {epsilon}. " + \
+                    f"Markov chain may be periodic, or epsilon may be too high. Eigenvalues: {w}")
+
+    # Check that the stationary distribution is good.
     s = v[:, i]
-
-    # check that the stationary distribution is good
-    if not ((s >= 0).all() or (s <= 0).all()) : 
-        log.error('Stationary distribution of resting set complex should not be an eigenvector of mixed sign. Condensed reaction rates may be incorrect.')
-
+    if not ((s >= 0).all() or (s <= 0).all()): 
+        log.error('Condensed reaction rates may be incorrect. ' + \
+           f'Stationary distribution of resting complexes is an eigenvector of mixed sign: {s}')
     s = s / np.sum(s)
-    if not (abs(np.sum(s) - 1) < epsilon) :
-        log.error('Stationary distribution of resting set complex should sum to 1 after normalization. Condensed reaction rates may be incorrect.')
-
-    # return dict mapping complexes to stationary probabilities
+    if not (abs(np.sum(s) - 1) < epsilon):
+        log.error('Condensed reaction rates may be incorrect. ' + \
+           f'Stationary distribution of resting complexes does not sum to 1: {abs(np.sum(s))}.')
     return {c: s[i] for (c, i) in complex_indices.items()}
     
-def get_exit_probabilities(scc, reactions_consuming, is_fast):
+def get_exit_probabilities(scc, reactions):
+    """ Calculate the exit probabilities of complexes via reactions in a SCC.
+
+    Returns:
+        dict: Mapping of (incoming complex, outgoing rxn) to exit probability (flt).
     """
-    """
-    log.debug("Exit probabilities: {}".format([x.name for x in scc]))
+    log.debug(f"Calculating exit probabilities for scc: {[x.name for x in scc]}")
     # build set and list of elements in SCC; assign a numerical index to each complex
     scc_set = frozenset(scc)
     scc_list = sorted(scc)
     complex_indices = {c: i for (i, c) in enumerate(scc_list)}
-
-    # find all fast reactions involving complexes in this SCC
-    reactions = [r for c in scc for r in reactions_consuming[c] if is_fast(r)]
 
     # sort reactions into internal and outgoing; assign a numerical index to each reaction
     r_outgoing = sorted([r for r in reactions if is_outgoing(r, scc_set)])
     r_internal = sorted([r for r in reactions if not is_outgoing(r, scc_set)])
     exit_indices = {r: i for (i, r) in enumerate(r_outgoing)}
 
-    # L = # of complexes in SCC
-    L = len(scc)
-
-    # e = # of exit pathways
-    e = len(r_outgoing)
+    L = len(scc) # num of complexes in SCC
+    e = len(r_outgoing) # num of exit pathways
 
     # add transition rates for each internal reaction
     T = np.zeros((L, L))
@@ -446,28 +410,23 @@ def get_exit_probabilities(scc, reactions_consuming, is_fast):
     Q = P[:, 0:L]
     log.debug("Q:\n{}".format(Q))
 
-
     # extract the exit probabilities (R_{Lxe})
     R = P[:, L:L + e]
     log.debug("R:\n{}".format(R))
-
 
     # calculate the fundamental matrix (N = (I_L - Q)^-1)
     N = np.linalg.inv(np.eye(L) - Q)
     log.debug("N:\n{}".format(N))
 
     # make sure all elements of fundamental matrix are >= 0
-    if not (N >= 0).all() :  # --- commented out by EW (temporarily)
-        log.error('Negative elements in fundamental matrix. Condensed reaction rates may be incorrect.')
+    if not (N >= 0).all():
+        log.error('Condensed reaction rates may be incorrect. ' + \
+            f'Negative elements in fundamental matrix: {N}.')
 
     # calculate the absorption matrix (B = NR)
     B = np.dot(N, R)
 
-    # --- added by EW as a weaker surrugate for the above, when necessary
-    # assert (B >= 0).all()
-
-    # return dict mapping tuples of (incoming complex, outgoing reaction)
-    # to exit probabilities
+    # map tuples of (incoming complex, outgoing reaction) to exit probabilities.
     return {(c, r): B[i, j] for (c, i) in complex_indices.items()
             for (r, j) in exit_indices.items()}
 
