@@ -1,4 +1,11 @@
 # test whether the enumerator correctly handles cases where there are two distinct reactions that have the same reactants and products
+length a = long 
+length b = long
+length c = long
+length w = long
+length x = long
+length y = long
+length z = long
 
 asym = a( b*(+) a*(+) c(+) )
 

@@ -1,8 +1,0 @@
-# Figure 2 of Grun et al 2014 (The Peppercorn Paper)
-
-s1 = a b
-s2 = b* a*
-
-# ../../enumerator.py grun2014fig2.pil 
-# more grun2014fig2-enum.pil
-
