@@ -297,7 +297,7 @@ def open1N(reactant, max_helix = True, release_11 = 6, release_1N = 6, dG_bp = -
             continue
         elif release_1N and len(products) > 1 and length > release_1N:
             continue
-        reaction = PepperReaction([reactant], sorted(products), 'open')
+        reaction = PepperReaction([reactant], products, 'open')
         if reaction.rate_constant[0] is None:
             reaction.rate_constant = (opening_rate(length, dG_bp = dG_bp), '/s')
         output.add(reaction)

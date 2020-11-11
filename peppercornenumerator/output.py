@@ -6,6 +6,7 @@ import logging
 log = logging.getLogger(__name__)
 
 import xml.dom.minidom 
+from itertools import chain
 from collections import Counter
 
 from . import __version__
@@ -34,7 +35,7 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
 
     # Print domains
     seen = set()
-    output_string("\n# Domains ({}) \n".format(len(enumerator.domains)))
+    output_string("\n# Domains ({}) \n".format(len(list(enumerator.domains))))
     for dom in natural_sort(enumerator.domains):
         if dom.is_complement and not dom.sequence: 
             dom = ~dom
@@ -46,7 +47,7 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
                 output_string("length {:s} = {:d}\n".format(dom.name, len(dom)))
             seen.add(dom)
 
-    unused = enumerator.named_complexes - set(enumerator.complexes)
+    unused = set(enumerator.named_complexes) - set(enumerator.complexes)
     strands = [u for u in unused if u.structure is None]
     unused = [u for u in unused if u.structure]
     if strands:
@@ -63,8 +64,7 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
                 cplx.kernel_string, *cplx.concentrationformat(molarity)))
 
     # Print resting complexes
-    output_string("\n# Resting complexes ({}) \n".format(len(
-        enumerator.resting_complexes)))
+    output_string("\n# Resting complexes ({}) \n".format(len(list(enumerator.resting_complexes))))
     for cplx in natural_sort(enumerator.resting_complexes):
         if cplx.concentration:
             output_string("{:s} = {:s} @{} {} {}\n".format(cplx.name, 
@@ -75,20 +75,20 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
     if condensed:
         # Print resting macrostates
         output_string("\n# Resting macrostates ({}) \n".format(
-            len(enumerator.resting_macrostates)))
+            len(list(enumerator.resting_macrostates))))
         for resting in natural_sort(enumerator.resting_macrostates):
             output_string("macrostate {:s} = [{:s}]\n".format(str(resting), 
                 ', '.join(map(str,resting.complexes))))
 
         # Print reactions
-        output_string("\n# Condensed reactions ({}) \n".format(len(enumerator.condensed_reactions)))
+        output_string("\n# Condensed reactions ({}) \n".format(len(list(enumerator.condensed_reactions))))
         for rxn in natural_sort(enumerator.condensed_reactions):
-            rxn.rate_constant = rxn.rateformat(f'/{molarity}' * (len(rxn.reactants) - 1) + f'/{time}')
+            rxn.rate_constant = rxn.rateformat(f'/{molarity}' * (rxn.arity[0] - 1) + f'/{time}')
             output_string(f"{rxn.reaction_string}\n")
 
     if detailed:
         # Print transient complexes
-        output_string("\n# Transient complexes ({}) \n".format(len(enumerator.transient_complexes)))
+        output_string("\n# Transient complexes ({}) \n".format(len(list(enumerator.transient_complexes))))
         for cplx in natural_sort(enumerator.transient_complexes):
             if cplx._concentration:
                 output_string("{:s} = {:s} @{} {} {}\n".format(cplx.name, cplx.kernel_string, 
@@ -97,9 +97,9 @@ def write_pil(enumerator, fh = None, detailed = True, condensed = False,
                 output_string("{:s} = {:s}\n".format(cplx.name, cplx.kernel_string))
 
         # Print reactions
-        output_string("\n# Detailed reactions ({}) \n".format(len(enumerator.reactions)))
+        output_string("\n# Detailed reactions ({}) \n".format(len(list(enumerator.reactions))))
         for rxn in natural_sort(enumerator.reactions):
-            rxn.rate_constant = rxn.rateformat(f'/{molarity}' * (len(rxn.reactants)-1) + f'/{time}')
+            rxn.rate_constant = rxn.rateformat(f'/{molarity}' * (rxn.arity[0] - 1) + f'/{time}')
             output_string(f"{rxn.reaction_string}\n")
     return ''.join(out)
 
@@ -114,14 +114,14 @@ def write_crn(enumerator, fh = None, condensed = False, molarity = 'nM', time = 
     if condensed:
         output_string(f"\n# Condensed reactions: concentration = {molarity}, time = {time}\n")
         for rxn in natural_sort(enumerator.condensed_reactions):
-            rxn.rate_constant = rxn.rateformat(f'/{molarity}' * (len(rxn.reactants)-1) + f'/{time}')
+            rxn.rate_constant = rxn.rateformat(f'/{molarity}' * (rxn.arity[0] - 1) + f'/{time}')
             output_string('{} -> {} [k = {}]\n'.format(' + '.join(map(str, rxn.reactants)), 
                                                      ' + '.join(map(str, rxn.products)),
                                                      rxn.rate_constant[0]))
     else:
         output_string(f"\n# Detailed reactions: concentration = {molarity}, time = {time}\n")
         for rxn in natural_sort(enumerator.reactions):
-            rxn.rate_constant = rxn.rateformat(f'/{molarity}' * (len(rxn.reactants)-1) + f'/{time}')
+            rxn.rate_constant = rxn.rateformat(f'/{molarity}' * (rxn.arity[0] - 1) + f'/{time}')
             output_string('{} -> {} [k = {}]\n'.format(' + '.join(map(str, rxn.reactants)), 
                                                      ' + '.join(map(str, rxn.products)),
                                                      rxn.rate_constant[0]))
@@ -259,9 +259,9 @@ def write_vdsd(enumerator, fh = None, detailed = True, condensed = False):
 
         # Print reactions
         output_string("\n(* Condensed reactions ({}) *)\n".format(
-            len(enumerator.condensed_reactions)))
+            len(list(enumerator.condensed_reactions))))
         for rxn in natural_sort(enumerator.condensed_reactions):
-            rxn.rate_constant = rxn.rateformat(f'/nM' * (len(rxn.reactants) - 1) + f'/s')
+            rxn.rate_constant = rxn.rateformat(f'/nM' * (rxn.arity[0] - 1) + f'/s')
             output_string("| {:s} -> {{{:g}}} {:s}\n".format(
                 ' + '.join(map(str, rxn.reactants)), rxn.rate_constant[0], 
                 ' + '.join(map(str, rxn.products))))
@@ -277,9 +277,9 @@ def write_vdsd(enumerator, fh = None, detailed = True, condensed = False):
                 output_string("| {:d} {:s}\n".format(1, cplx.name))
 
         # Print reactions
-        output_string("\n(* Detailed reactions ({}) *)\n".format(len(enumerator.reactions)))
+        output_string("\n(* Detailed reactions ({}) *)\n".format(len(list(enumerator.reactions))))
         for rxn in natural_sort(enumerator.reactions):
-            rxn.rate_constant = rxn.rateformat(f'/nM' * (len(rxn.reactants) - 1) + f'/s')
+            rxn.rate_constant = rxn.rateformat(f'/nM' * (rxn.arity[0] - 1) + f'/s')
             output_string("| {:s} -> {{{:g}}} {:s}\n".format(
                 ' + '.join(map(str, rxn.reactants)), rxn.rate_constant[0], 
                 ' + '.join(map(str, rxn.products))))
@@ -307,7 +307,7 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
         time = 's'
 
     max_rar = 2 # Determine maximum number of reactants to define global units later ...
-    reactions = enumerator.condensed_reactions if condensed else enumerator.reactions
+    reactions = list(enumerator.condensed_reactions) if condensed else list(enumerator.reactions)
     for rxn in reactions:
         rar = rxn.arity[0] - 1
         if rar > max_rar:
@@ -332,7 +332,7 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
                 moles = sum(mole_list) # if sum(clist) else 0.0 # if else needed?
                 xml += xml_species(rm.representative.name, moles, 'mole')
         else:
-            for cplx in enumerator.resting_complexes + enumerator.transient_complexes:
+            for cplx in chain(enumerator.resting_complexes, enumerator.transient_complexes):
                 moles = cplx.concentrationformat(molarity)[1] * volume if \
                         cplx.concentration else 0.0
                 xml += xml_species(cplx.name, moles, 'mole')
@@ -355,7 +355,7 @@ def write_sbml(enumerator, fh = None, condensed = False, compartment = 'TestTube
                         ' '.join(['<ci>{:s}</ci>'.format(e) for e in reactants.elements()]))
 
             # /M ... /sec
-            ratec = rxn.rateformat(f'/{molarity}' * (len(rxn.reactants) - 1) + f'/{time}')[0] 
+            ratec = rxn.rateformat(f'/{molarity}' * (rxn.arity[0] - 1) + f'/{time}')[0] 
             txtunits = 'per_molar_' * rar + 'per_second'
             par = '<localParameter id="k" value="{:g}" units="{:s}"/>'.format(ratec, txtunits)
 

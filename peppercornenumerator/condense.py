@@ -25,14 +25,14 @@ class PepperCondensation:
 
         # Helper dictionaries
         self.reactions_consuming = get_reactions_consuming(self.complexes, 
-                                                           self.detailed_reactions)
+                                                           list(self.detailed_reactions))
 
         # Map complexes to their products from 1-1 fast reactions.
         fast11_products = {c: set().union(*[r.products for r in rxns \
                             if r.arity == (1, 1) and self.is_fast(r)]) \
                                 for (c, rxns) in self.reactions_consuming.items()}
 
-        self.SCCs = tarjans(self.complexes, fast11_products)
+        self.SCCs = tarjans(list(self.complexes), fast11_products)
         self.scc_containing = {c: scc for scc in self.SCCs for c in scc}
 
         # Condensed graph components
@@ -64,10 +64,10 @@ class PepperCondensation:
     def condensed_reactions(self):
         if self._condensed_reactions is None:
             self.condense()
-        return list(self._condensed_reactions)
+        return iter(self._condensed_reactions)
 
     def is_fast(self, rxn):
-        return rxn.arity[0] == 1 and rxn.rate_constant[0] >= self.enumerator.k_fast
+        return rxn.arity[0] == 1 and rxn.rate_constant[0] >= max(self.enumerator.k_slow, self.enumerator.k_fast)
 
     def complex_fates(self, cplx):
         if cplx not in self._complex_fates:
@@ -179,7 +179,7 @@ class PepperCondensation:
             # Fast reactions have been handled by compute_fates
             if self.is_fast(rxn):
                 continue
-            if len(rxn.reactants) == 0 and len(rxn.products) == 0:
+            if rxn.arity == (0, 0):
                 # Should be safe to continue here ... but why would you?
                 raise CondensationError(f'I refuse to condense {rxn}!')
 
@@ -316,12 +316,12 @@ def get_stationary_distribution(scc, reactions, epsilon = 1e-5):
 
     # add transition rates for each reaction to T
     for r in reactions:
-        assert len(r.reactants) == 1 and r.reactants[0] in scc
-        assert len(r.products) == 1 and r.products[0] in scc
+        assert r.arity[0] == 1 and next(r.reactants) in scc
+        assert r.arity[1] == 1 and next(r.products) in scc
         # r : a -> b
         # T_{b,a} = rate(r : a -> b)
-        a = r.reactants[0]
-        b = r.products[0]
+        a = next(r.reactants)
+        b = next(r.products)
         T[complex_indices[b]][complex_indices[a]] = r.rate_constant[0]
 
     T0 = np.copy(T)
@@ -378,16 +378,15 @@ def get_exit_probabilities(scc, reactions):
     # add transition rates for each internal reaction
     T = np.zeros((L, L))
     for r in r_internal:
-        assert len(r.reactants) == 1
-        assert len(r.products) == 1
-        a = r.reactants[0]
-        b = r.products[0]
+        assert r.arity == (1, 1)
+        a = next(r.reactants)
+        b = next(r.products)
         T[complex_indices[a]][complex_indices[b]] = r.rate_constant[0]
 
     # add transition rates for each outgoing reaction
     Te = np.zeros((L, e))
     for r in r_outgoing:
-        a = r.reactants[0]
+        a = next(r.reactants)
         Te[complex_indices[a]][exit_indices[r]] = r.rate_constant[0]
 
     # the full transition matrix P_{L+e x L+e} would be
@@ -404,24 +403,24 @@ def get_exit_probabilities(scc, reactions):
     # then normalize P along each row, to get the overall transition
     # probabilities, e.g. P_ij = P(i -> j), where i,j in 0...L+e
     P = P / np.sum(P, 1)[:, np.newaxis]
-    log.debug("P:\n{}".format(P))
+    #log.debug(f"{P=}")
 
     # extract the interior transition probabilities (Q_{LxL})
     Q = P[:, 0:L]
-    log.debug("Q:\n{}".format(Q))
+    #log.debug(f"{Q=}")
 
     # extract the exit probabilities (R_{Lxe})
     R = P[:, L:L + e]
-    log.debug("R:\n{}".format(R))
+    #log.debug(f"{R=}")
 
     # calculate the fundamental matrix (N = (I_L - Q)^-1)
     N = np.linalg.inv(np.eye(L) - Q)
-    log.debug("N:\n{}".format(N))
+    #log.debug(f"{N=}")
 
     # make sure all elements of fundamental matrix are >= 0
     if not (N >= 0).all():
         log.error('Condensed reaction rates may be incorrect. ' + \
-            f'Negative elements in fundamental matrix: {N}.')
+            f'Negative elements in fundamental matrix.')
 
     # calculate the absorption matrix (B = NR)
     B = np.dot(N, R)

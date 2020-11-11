@@ -167,10 +167,10 @@ class Test_SBML_output(unittest.TestCase):
         length z = 6
         
         # Strands or composite domains (8)
-        sup-sequence sA = a x b y z* c* y* b* x* : 54
-        sup-sequence sC = c z a x y* b* x* a* z* : 54
-        sup-sequence sB = b y c z x* a* z* c* y* : 54
-        sup-sequence sI = y* b* x* a* : 24
+        sup-sequence A = a x b y z* c* y* b* x* : 54
+        sup-sequence C = c z a x y* b* x* a* z* : 54
+        sup-sequence B = b y c z x* a* z* c* y* : 54
+        sup-sequence I = y* b* x* a* : 24
         
         # Complexes (8)
         A = a x( b( y( z* c* ) ) ) @i 1e-7M

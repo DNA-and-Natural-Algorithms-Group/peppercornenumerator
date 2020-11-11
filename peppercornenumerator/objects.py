@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 from itertools import chain
 
 from dsdobjects import SingletonError, clear_singletons, show_singletons
-from dsdobjects.base_classes import ObjectInitError, DomainS, ComplexS, MacrostateS, ReactionS
+from dsdobjects.base_classes import ObjectInitError, DomainS, StrandS, ComplexS, MacrostateS, ReactionS
 
 def clear_memory():
     # This is for unittests only!  The memory of a Singleton clears
@@ -35,6 +35,9 @@ class PepperDomain(DomainS):
     def can_pair(self, other):
         """ bool: the domain is complementary to the other domain. """
         return self is ~other
+
+class PepperStrand(StrandS):
+    pass
 
 class PepperComplex(ComplexS):
     PREFIX = 'e'

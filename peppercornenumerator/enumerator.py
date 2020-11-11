@@ -65,33 +65,16 @@ class Enumerator:
         self._named_complexes = set(named_complexes) if named_complexes else set()
 
         self.representatives = sorted(self._initial_complexes | self._named_complexes)
-        
-        # Enumeration results
-        self._reactions = set(initial_reactions) if initial_reactions else set()
-        self._complexes = None
-        self._resting_complexes = None
-        self._transient_complexes = None
-        self._resting_macrostates = None
-
-        # Condensation
-        self.condensation = None
-        self._detailed_reactions = None
-        self._condensed_reactions = None
-
-        # Polymerization settings to prevent infinite looping
-        self._max_complex_count = max(200, len(self._initial_complexes))
-        self._max_reaction_count = max(1000, len(self._reactions))
 
         # Settings for reaction enumeration. 
         self.max_helix = True
         self.reject_remote = False
-        self._release_11 = 7
-        self._release_12 = 7
-        self._max_complex_size = 6
+        self._max_complex_size = 10
+        self._release_11 = 9
+        self._release_12 = 9
 
         # Rate-dependent enumeration settings:
-        #
-        # Set separation of timescales for *unimolecular* reactions.
+        #  - separation of timescales for *unimolecular* reactions.
         #
         #  ignore-reaction | slow-reaction | fast-reaction
         # -----------------|---------------|---------------> rate
@@ -104,6 +87,22 @@ class Enumerator:
         # Rate parameter adjustments
         self.dG_bp = -1.7 # adjust bimolecular binding strength
 
+        # Polymerization settings to prevent infinite looping
+        self._max_complex_count = 10_000
+        self._max_reaction_count = 50_000
+       
+        # Enumeration results
+        self._complexes = set(initial_complexes)
+        self._reactions = set(initial_reactions) if initial_reactions else set()
+        self._resting_complexes = None
+        self._transient_complexes = None
+        self._resting_macrostates = None
+
+        #print([x.name for x in initial_complexes])
+
+        # Condensation
+        self.condensation = None
+
         # Debugging features
         self.DFS = True
         self.interactive = False
@@ -112,7 +111,7 @@ class Enumerator:
     @property
     def initial_complexes(self):
         """ Complexes present in the system's initial configuration. """
-        return set(self._initial_complexes)
+        return iter(self._initial_complexes)
 
     @initial_complexes.setter
     def initial_complexes(self, value):
@@ -121,7 +120,7 @@ class Enumerator:
     @property
     def initial_reactions(self):
         """ Reactions to be included in the system's enumeration. """
-        return set(self._reactions)
+        return iter(self._initial_reactions)
 
     @initial_reactions.setter
     def initial_reactions(self, value):
@@ -131,23 +130,12 @@ class Enumerator:
     @property
     def named_complexes(self):
         """ Known complexes which do not necessarily take place in enumeration. """
-        return set(self._named_complexes)
+        return iter(self._named_complexes)
 
     @named_complexes.setter
     def named_complexes(self, value):
         # NOTE: there is no need to enforce this.
         raise PeppercornUsageError('Named complexes must be provided at initialization!')
-
-
-
-
-
-
-
-
-
-
-
 
     @property
     def max_complex_size(self):
@@ -156,30 +144,45 @@ class Enumerator:
     @max_complex_size.setter
     def max_complex_size(self, value):
         assert isinstance(value, int)
-        if not all(cx.size <= value for cx in self._initial_complexes):
-            msize = max([c.size for c in self._initial_complexes])
+        if not all(cx.size <= value for cx in self.initial_complexes):
+            msize = max([c.size for c in self.initial_complexes])
             raise PeppercornUsageError(
-                    'Maximum complex size must include all input complexes.',
-                    'Set to at least: {}'.format(msize))
+                    'Maximum complex size must include all input complexes.' + \
+                    f'Set to at least: {msize}')
         self._max_complex_size = value
 
     @property
-    def max_reaction_count(self):
-        return self._max_reaction_count
+    def release_cutoff(self):
+        if self._release_11 != self._release_12 :
+            raise PeppercornUsageError('Ambiguous release cutoff request.')
+        return self._release_11
 
-    @max_reaction_count.setter
-    def max_reaction_count(self, value):
-        assert isinstance(value, int) and value >= len(self._reactions)
-        self._max_reaction_count = value
+    @release_cutoff.setter
+    def release_cutoff(self, value):
+        assert isinstance(value, int) and value >= 0
+        assert self.k_slow == 0
+        self._release_11 = value
+        self._release_12 = value
 
     @property
-    def max_complex_count(self):
-        return self._max_complex_count
+    def release_cutoff_1_1(self):
+        return self._release_11
 
-    @max_complex_count.setter
-    def max_complex_count(self, value):
-        assert isinstance(value, int) and value >= len(self._initial_complexes)
-        self._max_complex_count = value
+    @release_cutoff_1_1.setter
+    def release_cutoff_1_1(self, value):
+        assert isinstance(value, int) and value >= 0
+        assert self.k_slow == 0
+        self._release_11 = value
+
+    @property
+    def release_cutoff_1_2(self):
+        return self._release_12
+
+    @release_cutoff_1_2.setter
+    def release_cutoff_1_2(self, value):
+        assert isinstance(value, int) and value >= 0
+        assert self.k_slow == 0
+        self._release_12 = value
 
     @property
     def k_slow(self):
@@ -194,10 +197,8 @@ class Enumerator:
                 k_rc = opening_rate(rc, dG_bp = self.dG_bp)
                 if k_rc < value: break
             self.release_cutoff = max(rc, self.release_cutoff)
-
         if 0 < self.k_fast < value :
             raise PeppercornUsageError('k-slow must not be bigger than k-fast.')
-
         self._k_slow = value
 
     @property
@@ -211,132 +212,98 @@ class Enumerator:
         self._k_fast = value
 
     @property
-    def release_cutoff(self):
-        if self._release_11 != self._release_12 :
-            raise PeppercornUsageError('Ambiguous release cutoff request.')
-        return self._release_11
+    def max_complex_count(self):
+        return self._max_complex_count
 
-    @release_cutoff.setter
-    def release_cutoff(self, value):
-        assert isinstance(value, int) and value >= 0
-        self._release_11 = value
-        self._release_12 = value
+    @max_complex_count.setter
+    def max_complex_count(self, value):
+        assert isinstance(value, int) and value >= len(self._initial_complexes)
+        self._max_complex_count = value
 
     @property
-    def release_cutoff_1_1(self):
-        return self._release_11
+    def max_reaction_count(self):
+        return self._max_reaction_count
 
-    @release_cutoff_1_1.setter
-    def release_cutoff_1_1(self, value):
-        assert isinstance(value, int) and value >= 0
-        self._release_11 = value
-
-    @property
-    def release_cutoff_1_2(self):
-        return self._release_12
-
-    @release_cutoff_1_2.setter
-    def release_cutoff_1_2(self, value):
-        assert isinstance(value, int) and value >= 0
-        self._release_12 = value
-
-    @property
-    def domains(self):
-        domains = set()
-        for cplx in self._initial_complexes:
-            [domains.add(d) for d in cplx.domains]
-        return list(domains)
+    @max_reaction_count.setter
+    def max_reaction_count(self, value):
+        assert isinstance(value, int) and value >= len(self._reactions)
+        self._max_reaction_count = value
 
     @property
     def reactions(self):
-        """ List of detailed reactions before or after enumeration. """
-        return list(self._reactions)
+        return iter(self._reactions)
 
     @property
     def detailed_reactions(self):
-        return list(self._reactions)
+        if self._resting_complexes is None:
+            self.enumerate()
+        return iter(self._reactions)
 
     @property
     def condensed_reactions(self):
+        if self._resting_complexes is None:
+            self.enumerate()
         if self.condensation is None:
             self.condense()
         return self.condensation.condensed_reactions
 
     @property
-    def resting_macrostates(self):
-        """
-        List of resting states enumerated. :py:meth:`.enumerate` must be
-        called before access.
-        """
-        if self._resting_macrostates is None:
-            raise PeppercornUsageError("enumerate not yet called!")
-        return self._resting_macrostates[:]
-
-    @property
     def complexes(self):
-        """
-        List of complexes enumerated. :py:meth:`.enumerate` must be
-        called before access.
-        """
-        if self._complexes is None:
-            raise PeppercornUsageError("enumerate not yet called!")
-        return self._complexes[:]
+        return iter(self._complexes)
 
     @property
     def resting_complexes(self):
-        """
-        List of complexes enumerated that are within resting states.
-        :py:meth:`.enumerate` must be called before access.
-        """
         if self._resting_complexes is None:
-            raise PeppercornUsageError("enumerate not yet called!")
-        return self._resting_complexes[:]
+            self.enumerate()
+        return iter(self._resting_complexes)
 
     @property
     def transient_complexes(self):
-        """
-        List of complexes enumerated that are not within resting sets (e.g.
-        complexes which are transient). :py:meth:`.enumerate` must be
-        called before access.
-        """
         if self._transient_complexes is None:
-            raise PeppercornUsageError("enumerate not yet called!")
-        return self._transient_complexes[:]
+            self.enumerate()
+        return iter(self._transient_complexes)
 
-    def __eq__(self, other):
-        raise NotImplementedError('No notion of equality implemented for Enumerator objects.')
+    @property
+    def resting_macrostates(self):
+        if self._resting_macrostates is None:
+            self.enumerate()
+        return iter(self._resting_macrostates)
 
-    def __ne__(self, other):
-        return not (self == other)
+    @property
+    def domains(self):
+        domains = set()
+        for cplx in self.initial_complexes:
+            [domains.add(d) for d in cplx.domains]
+        return list(domains)
+
+    def to_pil(self, filename = None, **kwargs):
+        if filename:
+            with open(filename, 'w') as pil:
+                write_pil(self, fh = pil, **kwargs)
+        else:
+            return write_pil(self, **kwargs)
+
+    def to_sbml(self, filename = None, **kwargs):
+        if filename:
+            with open(filename, 'w') as sbml:
+                write_sbml(self, fh = sbml, **kwargs)
+        else:
+            return write_sbml(self, **kwargs)
 
     def dry_run(self):
-        """
-        Make it look like you've enumerated, but actually do nothing...
-        """
-        if self._complexes:
+        """ Make it look like you've enumerated, but actually do nothing ...  """
+        if self._resting_complexes is not None:
             raise PeppercornUsageError('Cannot call dry-run after enumeration!')
 
-        rxs = [r for r in list(self._reactions) if len(r.reactants) == 1]
-        info = segment_neighborhood(self.initial_complexes, rxs, represent = self.representatives)
-
-        self._complexes = list(self.initial_complexes)
+        frxns = [r for r in self.reactions if r.arity[0] == 1 and \
+                        r.rate_constant[0] >= max(self.k_slow, self.k_fast)]
+        info = segment_neighborhood(self.complexes, frxns, represent = self.representatives)
         self._resting_complexes = info['resting_complexes']
         self._transient_complexes = info['transient_complexes']
         self._resting_macrostates = info['resting_macrostates']
 
     def enumerate(self):
-        """ Enumerate the reaction network from initial complexes.
-
-        The results of this method are accessible via the following properties
-        of this class:
-            - complexes
-            - resting_complexes
-            - transient_complexes
-            - resting_macrostates
-            - reactions
-            - detailed_reactions
-        """
-
+        """ Enumerate the reaction network from initial complexes. """
         # List E contains enumerated resting complexes. Every time a new
         # complex is added (from S), all cross reactions with other resting
         # complexes are enumerated. Complexes remain in this list throughout
@@ -366,7 +333,7 @@ class Enumerator:
         # List B contains initial complexes, or products of bimolecular
         # reactions that have had no reactions enumerated yet. They will be
         # moved to F for their fast neighborhood to be enumerated.
-        self._B = list(self._initial_complexes)
+        self._B = list(self.initial_complexes)
 
         def do_enumerate():
             log.debug("Enumerating fast reactions from initial complexes.")
@@ -378,7 +345,7 @@ class Enumerator:
             while len(self._S) > 0:
                 element = self._S.pop() if self.DFS else self._S.pop(0)
                 log.debug(f"Finding slow reactions from '{element}'. " + \
-                          f"({len(self._S)} remaining in S).")
+                          f"({len(self._S)} resting complexes remaining).")
                 slow_reactions = set(self.get_slow_reactions(element))
                 self._B = list(self.get_new_products(slow_reactions))
                 log.debug(f"Generated {len(slow_reactions)} new slow reactions " + \
@@ -403,38 +370,38 @@ class Enumerator:
                     source = self._B.pop()
                     self.process_fast_neighborhood(source)
 
-        self._complexes = []
-        self._resting_macrostates = []
         def finish(premature = False):
+            """
             # Will be called once enumeration halts, either because it's finished or
             # because too many complexes/reactions have been enumerated
-
+            """
             # copy E and T into complexes
-            self._complexes += (self._E)
-            self._complexes += (self._T)
+            self._complexes |= set(self._E)
+            self._complexes |= set(self._T)
 
             # preserve resting and transient complexes separately
             self._transient_complexes = self._T
             self._resting_complexes = self._E
 
-            # If we're bailing because of too many reactions or complexes, search
-            # self._reactions to ensure there are no reactions which contain
-            # products that never made it into self._complexes ...
+            # If we're bailing because there are too many reactions or
+            # complexes, search self.reactions to ensure there are no
+            # reactions which contain products that never made it into
+            # self.complexes
             if premature:
                 self._resting_complexes += self._S
-                self._complexes += self._S
-                complexes = set(self._complexes)
+                self._complexes |= set(self._S)
                 rm_reactions = []
                 for reaction in self.reactions:
                     #NOTE: This should only matter in the Ctrl-C case, right?
-                    reaction_ok = all((prod in complexes) for prod in reaction.products) and \
-                                  all((reac in complexes) for reac in reaction.reactants)
+                    reaction_ok = all((prod in self.complexes) for prod in reaction.products) and \
+                                  all((reac in self.complexes) for reac in reaction.reactants)
                     if reaction_ok:
                         pass
                     else :
                         rm_reactions.append(reaction)
                 self._reactions -= set(rm_reactions)
 
+        self._resting_macrostates = set()
         if self.interruptible:
             try:
                 do_enumerate()
@@ -454,21 +421,6 @@ class Enumerator:
         self.condensation = PepperCondensation(self)
         self.condensation.condense()
 
-    def to_pil(self, filename = None, **kwargs):
-        if filename:
-            with open(filename, 'w') as pil:
-                write_pil(self, fh=pil, **kwargs)
-            return ''
-        else:
-            return write_pil(self, **kwargs)
-
-    def to_sbml(self, filename = None, **kwargs):
-        if filename:
-            with open(filename, 'w') as sbml:
-                write_sbml(self, fh = sbml, **kwargs)
-            return ''
-        else:
-            return write_sbml(self, **kwargs)
 
     def reactions_interactive(self, root, reactions, rtype='fast'):
         """
@@ -495,7 +447,7 @@ class Enumerator:
             source (:obj:`PepperComplex`): Initial complex to generate a
                 neighborhood of fast reactions.
         """
-        log.debug(f"Processing neighborhood of '{source}'")
+        log.debug(f"Processing *fast* reactions from '{source}'")
         assert len(self._N) == 0
         assert len(self._F) == 0
         self._F = [source]
@@ -505,12 +457,12 @@ class Enumerator:
             # Find fast reactions from `element`
             while len(self._F) > 0 :
                 element = self._F.pop()
-                log.debug(f"Finding fast reactions from '{element}'. " + \
-                          f"({len(self._F)} remaining in F).")
+                #log.debug(f"Finding fast reactions from '{element}'. " + \
+                #          f"({len(self._F)} complexes remaining.")
                 reactions = list(self.get_fast_reactions(element))
                 nproducts = self.get_new_products(reactions)
-                log.debug(f"Generated {len(reactions)} new fast reactions " + \
-                          f"with {len(nproducts)} new products.")
+                #log.debug(f"Generated {len(reactions)} new fast reactions " + \
+                #          f"with {len(nproducts)} new products.")
                 rxns_N += reactions
                 self._F += list(nproducts)
                 self._N.append(element)
@@ -528,14 +480,12 @@ class Enumerator:
         sn = segment_neighborhood(self._N, rxns_N, represent = self.representatives)
         self._S += sn['resting_complexes']
         self._T += sn['transient_complexes']
-        self._resting_macrostates += sn['resting_macrostates']
+        self._resting_macrostates |= sn['resting_macrostates']
         self._reactions |= set(rxns_N)
-        log.debug(f"Of {len(self._N)} complexes: " + \
-                  "{:d} are transient, {:d} are resting.".format(
-                    len(sn['transient_complexes']), 
-                    len(sn['resting_complexes'])))
-        log.debug("in a total of {:d} resting macrostates".format(
-                    len(sn['resting_macrostates'])))
+        log.debug(
+                  f" => Found {len(sn['resting_complexes'])} resting complexes " + \
+                  f"(in {len(sn['resting_macrostates'])} macrostates), " + \
+                  f"{len(sn['transient_complexes'])} transient complexes.")
         self._N = [] # Reset neighborhood
         if interrupted:
             raise KeyboardInterrupt
@@ -725,9 +675,9 @@ def segment_neighborhood(complexes, reactions, represent = None):
     """ Segmentation of a neighborhood of fast reactions.
 
     Note that all reactants of the specified reactions must be contained in the
-    complexes. Since only the specified complexes are of interest, any other
-    complexes that can be produced by the given reactions are not contained
-    in the output. 
+    complexes, but complexes may contain only a subset of all products. (This is because
+    only "new" complexes are of interest. "old" complexes have been tested for
+    fast reactions earlier and did not reach any "new" complexes by fast reactions.)
 
     Args:
         complexes (list[:obj:`PepperComplex`]): 
@@ -738,52 +688,51 @@ def segment_neighborhood(complexes, reactions, represent = None):
         dict: 'resting_complexes', 'transient_complexes', 'resting_macrostates'.
     """
     cplxs = set(complexes)
-    total = list(cplxs.union(*[rxn.products for rxn in reactions]))
 
     # filters reaction products such that there are only species from within
-    # complexes. This is ok, because it must not change the assignment of SCCs!
+    # complexes. This is ok, because "old" complexes must not change the
+    # assignment of the current strongly connected components!
     products = {k: set() for k in cplxs}
     for rxn in reactions:
-        assert len(rxn.reactants) == 1
-        products[rxn.reactants[0]] |= set().union((p for p in rxn.products if p in cplxs))
+        assert rxn.arity[0] == 1
+        products[next(rxn.reactants)] |= set().union((p for p in rxn.products if p in cplxs))
     SCCs = tarjans(cplxs, products)
 
-    rxns_consuming = {k: [r for r in reactions if (k in r.reactants)] for k in total}
-
-    resting_macrostates = []
-    resting_complexes = []
-    transient_complexes = []
+    rms, rcs, tcs, = set(), [], []
     for scc in SCCs:
-        if represent:
-            for cx in scc:
-                if cx in represent:
-                    rcx = cx.name
-                    break
-            else:
-                rcx = None
-        else:
-            rcx = None
-        try:
-            ms = PepperMacrostate(scc[:], name = rcx)
-        except SingletonError as err:
-            ms = err.existing
-        for c in scc:
-            for rxn in rxns_consuming[c]:
-                assert rxn.reactants[0] in ms._complexes
-                if rxn.products[0] not in ms._complexes:
+        for cx in scc:
+            assert cx in cplxs
+            # Generator of reactions consuming c.
+            for rxn in (rx for rx in reactions if cx is next(rx.reactants)):
+                if next(rxn.products) not in scc:
                     # an exit reaction!
-                    transient_complexes += (scc)
+                    tcs += scc
                     break
-                assert len(rxn.products) == 1
+                assert rxn.arity[1] == 1
             else:
                 continue
             break
         else:
-            resting_macrostates.append(ms)
-            resting_complexes += (scc)
+            try:
+                if represent:
+                    for cx in scc:
+                        if cx in represent:
+                            rcx = cx.name
+                            break
+                    else:
+                        rcx = None
+                else:
+                    rcx = None
+                ms = PepperMacrostate(scc[:], name = rcx)
+            except SingletonError as err:
+                # NOTE: This should not happen ...
+                # ... unless the Object is already known from the input.
+                ms = err.existing
+            rms.add(ms)
+            rcs += scc
     return {
-        'resting_macrostates': resting_macrostates,
-        'resting_complexes': resting_complexes,
-        'transient_complexes': transient_complexes
+        'resting_macrostates': rms,
+        'resting_complexes': rcs,
+        'transient_complexes': tcs 
     }
 

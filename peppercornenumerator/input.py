@@ -10,6 +10,7 @@ from dsdobjects import (parse_pil_string,
                         parse_seesaw_string,
                         parse_seesaw_file)
 from .objects import (PepperDomain, 
+                      PepperStrand,
                       PepperComplex, 
                       PepperReaction, 
                       PepperMacrostate)
@@ -38,6 +39,11 @@ def read_pil(data, is_file = False, ignore = None):
         log.warning('Ignoring condensed reaction input.')
     if len(out['macrostates']):
         log.warning('Ignoring complex macrostate input.')
+
+    # Make sure that strands are not within initial complexes!
+    for strand in out['strands'].values():
+        strand.concentration = ('constant', 0, 'M')
+        out['complexes'][('s', strand.name)] = strand
     return out['complexes'], out['det_reactions']
 
 def load_pil_crn(data):
