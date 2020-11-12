@@ -29,7 +29,7 @@ def bind11(reactant, max_helix = True):
     to produce a single unpseudoknotted product complex.
     """
     reactions = set()
-    structure = reactant.pair_table
+    structure = list(reactant.pair_table)
     for (strand_index, strand) in enumerate(structure):
         for (domain_index, domain) in enumerate(strand):
             # The displacing domain must be free
@@ -59,15 +59,15 @@ def bind11(reactant, max_helix = True):
 
 def do_bind11(reactant, loc1s, loc2s):
     """ Returns PepperComplex after the bind11 reaction. """
-    struct = reactant.pair_table
+    news = list(reactant.pair_table)
     for loc1, loc2 in zip(loc1s, loc2s):
-        assert struct[loc1[0]][loc1[1]] is None
-        assert struct[loc2[0]][loc2[1]] is None
-        struct[loc1[0]][loc1[1]] = loc2
-        struct[loc2[0]][loc2[1]] = loc1
-    newstr = pair_table_to_dot_bracket(struct)
+        assert news[loc1[0]][loc1[1]] is None
+        assert news[loc2[0]][loc2[1]] is None
+        news[loc1[0]][loc1[1]] = loc2
+        news[loc2[0]][loc2[1]] = loc1
+    newstr = pair_table_to_dot_bracket(news)
     try:
-        new = PepperComplex(reactant.sequence, newstr)
+        new = PepperComplex(list(reactant.sequence), newstr)
     except SingletonError as err:
         new = err.existing
     return new
@@ -85,16 +85,16 @@ def bind21(reactant1, reactant2, max_helix = True, pkwarning = False):
     r2_doms = reactant2.available_domains
     reactions = []
     # Iterate through all the free domains in reactant1
-    for (dom1, strand_num1, dom_num1) in r1_doms:
+    for (dom1, s1, d1) in r1_doms:
         # For each, find any domains in reactant2 that could bind
-        for (dom2, strand_num2, dom_num2) in r2_doms:
+        for (dom2, s2, d2) in r2_doms:
             # If it can pair, this is one possible reaction (this kind of
             # reaction cannot possibly produce a pseudoknotted structure)
             if (dom1.can_pair(dom2)):
                 # combine the two complexes into one, but do not perform the association
                 reactions.append(join_complexes_21(
-                    reactant1, (strand_num1, dom_num1),
-                    reactant2, (strand_num2, dom_num2)))
+                    reactant1, (s1, d1),
+                    reactant2, (s2, d2)))
 
     if pkwarning: # check if potential pseudoknots are there:
         pk1_doms = reactant1.pk_domains
@@ -138,32 +138,32 @@ def join_complexes_21(complex1, loc1, complex2, loc2):
     # a value larger than any possible location on the pair_table.
     maxlen = complex1.size + complex2.size + 1
 
-    for st, pt in complex1.rotate_pt():
+    for e, (st, pt) in enumerate(complex1.rotate_pt()):
+        l1 = complex1.rotate_pairtable_loc(loc1, e)
         li, ext = make_loop_index(pt)
-        if li[loc1[0]][loc1[1]] == 0:
+        if li[l1[0]][l1[1]] == 0:
             seq1 = strand_table_to_sequence(st)
-            pt[loc1[0]][loc1[1]] = (maxlen, maxlen) # add an additional '(' 
+            pt[l1[0]][l1[1]] = (maxlen, maxlen) # add an additional '(' 
             ptb1 = pair_table_to_dot_bracket(pt)
             break
-        loc1 = complex1.rotate_pairtable_loc(loc1, 1)
-    for st, pt in complex2.rotate_pt():
+    for e, (st, pt) in enumerate(complex2.rotate_pt()):
+        l2 = complex2.rotate_pairtable_loc(loc2, e)
         li, ext = make_loop_index(pt)
-        if li[loc2[0]][loc2[1]] == 0:
+        if li[l2[0]][l2[1]] == 0:
             seq2 = strand_table_to_sequence(st)
-            pt[loc2[0]][loc2[1]] = (-1, -1) # add an additional ')' 
+            pt[l2[0]][l2[1]] = (-1, -1) # add an additional ')' 
             ptb2 = pair_table_to_dot_bracket(pt)
             break
-        loc2 = complex2.rotate_pairtable_loc(loc2, 1)
 
     # build the new sequence and structure *including* the new pair
     newseq = seq1 + ['+'] + seq2
     newstr = ptb1 + ['+'] + ptb2
-    # update loc2 from the new structure
+    # update l2 from the new structure
     combined = make_pair_table(newstr)
-    loc2 = combined[loc1[0]][loc1[1]]
+    l2 = combined[l1[0]][l1[1]]
     # remove the new pair again ...
-    combined[loc1[0]][loc1[1]] = None
-    combined[loc2[0]][loc2[1]] = None
+    combined[l1[0]][l1[1]] = None
+    combined[l2[0]][l2[1]] = None
     # update the structure to the unpaired (disconnected) version.
     newstr = pair_table_to_dot_bracket(combined)
     try:
@@ -177,8 +177,8 @@ def join_complexes_21(complex1, loc1, complex2, loc2):
             break
     else:
         raise ValueError(f'Joining of complexes {complex1} and {complex2} failed.')
-    loc1 = new_complex.rotate_pairtable_loc(loc1, -rotate)
-    loc2 = new_complex.rotate_pairtable_loc(loc2, -rotate)
+    loc1 = new_complex.rotate_pairtable_loc(l1, -rotate)
+    loc2 = new_complex.rotate_pairtable_loc(l2, -rotate)
     if loc1 > loc2:
         (loc1, loc2) = (loc2, loc1)
     return new_complex, loc1, loc2
@@ -260,13 +260,13 @@ def open1N(reactant, max_helix = True, release_11 = 6, release_1N = 6, dG_bp = -
     max_release = max(release_11, release_1N) if release_11 and release_1N else 0
 
     reactions = []
-    structure = reactant.pair_table
+    structure = list(reactant.pair_table)
     if not max_helix:
         # Iterate through all the domains
         for (strand_index, strand) in enumerate(structure):
             for (domain_index, domain) in enumerate(strand):
                 # The bound domain must be... bound
-                if structure[strand_index][domain_index] is None :
+                if reactant.get_paired_loc((strand_index, domain_index)) is None:
                     continue
                 loc = (strand_index, domain_index)
                 domain = reactant.get_domain(loc)
@@ -276,7 +276,7 @@ def open1N(reactant, max_helix = True, release_11 = 6, release_1N = 6, dG_bp = -
         for (strand_index, strand) in enumerate(structure):
             for (domain_index, domain) in enumerate(strand):
                 # If the domain is unpaired, skip it
-                if (structure[strand_index][domain_index] is None):
+                if reactant.get_paired_loc((strand_index, domain_index)) is None:
                     continue
                 loc = (strand_index, domain_index)
                 domain = reactant.get_domain(loc)
@@ -305,14 +305,14 @@ def open1N(reactant, max_helix = True, release_11 = 6, release_1N = 6, dG_bp = -
 
 def do_open(reactant, sloc, eloc):
     assert sloc[0] == eloc[0]
-    news = reactant.pair_table
+    news = list(reactant.pair_table)
     for dom in range(sloc[1], eloc[1]+1):
         loc = news[sloc[0]][dom]
         news[sloc[0]][dom] = None
         news[loc[0]][loc[1]] = None
     newstr = pair_table_to_dot_bracket(news)
     try:
-        new = PepperComplex(reactant.sequence, newstr)
+        new = PepperComplex(list(reactant.sequence), newstr)
     except SingletonError as err:
         new = err.existing
     return list(new.split())
@@ -326,7 +326,7 @@ def branch_3way(reactant, max_helix = True, remote = True):
     """
 
     reactions = set()
-    structure = reactant.pair_table
+    structure = list(reactant.pair_table)
     for (strand_index, strand) in enumerate(structure):
         for (domain_index, domain) in enumerate(strand):
             # The displaced domain must not be free
@@ -387,12 +387,12 @@ def do_3way_migration(reactant, displacing_locs, bound_locs):
         struct[new_bound_loc[0]][new_bound_loc[1]] = displacing_loc
         struct[displaced_loc[0]][displaced_loc[1]] = None
 
-    struct = reactant.pair_table
+    struct = list(reactant.pair_table)
     for displacing_loc, new_bound_loc in zip(displacing_locs, bound_locs):
         update_structure(struct, displacing_loc, new_bound_loc)
     newstr = pair_table_to_dot_bracket(struct)
     try:
-        product = PepperComplex(reactant.sequence, newstr)
+        product = PepperComplex(list(reactant.sequence), newstr)
     except SingletonError as err:
         product = err.existing
     return list(product.split())
@@ -406,7 +406,7 @@ def branch_4way(reactant, max_helix = False, remote=True):
     """
 
     reactions = set()
-    structure = reactant.pair_table
+    structure = list(reactant.pair_table)
     for (strand_index, strand) in enumerate(structure):
         for (domain_index, domain) in enumerate(strand):
             # Unbound domains can't participate in 4-way branch migration
@@ -469,12 +469,12 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
         struct[loc2[0]][loc2[1]] = loc4
         struct[loc4[0]][loc4[1]] = loc2
 
-    struct = reactant.pair_table
+    struct = list(reactant.pair_table)
     for loc1, loc2, loc3, loc4 in zip(loc1s, loc2s, loc3s, loc4s):
         update_structure(struct, loc1, loc2, loc3, loc4)
     newstr = pair_table_to_dot_bracket(struct)
     try:
-        product = PepperComplex(reactant.sequence, newstr)
+        product = PepperComplex(list(reactant.sequence), newstr)
     except SingletonError as err:
         product = err.existing
     return list(product.split())
