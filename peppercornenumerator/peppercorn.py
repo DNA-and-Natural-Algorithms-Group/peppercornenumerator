@@ -14,6 +14,7 @@ from .input import read_pil, read_seesaw
 from .enumerator import UNI_REACTIONS
 from .reactions import branch_3way, branch_4way, opening_rate
 from .ratemodel import opening_rate
+from .objects import PepperComplex
 
 class colors:
     RED = '\033[91m'
@@ -81,6 +82,8 @@ def add_peppercorn_args(parser):
         help="Condense reactions into only resting complexes.")
     output.add_argument('-d', '--detailed', action='store_true',
         help="Print detailed reactions even if --condensed is chosen.")
+    output.add_argument('--complex-prefix', default='e', action='store', metavar='<str>',
+        help="Specify a prefix to name new complexes.")
     output.add_argument('--dry-run', action='store_true', 
         help="Dry run: read input, write output. Do not enumerate any reactions.")
     output.add_argument("--concentration-unit", default='nM', action='store',
@@ -267,6 +270,8 @@ def main():
         if branch_4way in UNI_REACTIONS:
             UNI_REACTIONS.remove(branch_4way)
         logger.info('No 4-way branch migration.')
+    PepperComplex.PREFIX = args.complex_prefix
+    logger.info("Prefix for new complexes = {PepperComplex.PREFIX}")
 
     # Set either k-slow or release cutoff.
     if args.k_slow:

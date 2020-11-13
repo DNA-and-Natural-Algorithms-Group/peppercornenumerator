@@ -2,6 +2,7 @@
 #  peppercornenumerator/objects.py
 #  EnumeratorProject
 #
+import gc
 import logging
 log = logging.getLogger(__name__)
 
@@ -13,28 +14,27 @@ from dsdobjects.base_classes import ObjectInitError, DomainS, StrandS, ComplexS,
 def clear_memory():
     # This is for unittests only!  The memory of a Singleton clears
     # automatically if there is no hard reference to the object.
-    clear_singletons(PepperReaction)
-    clear_singletons(PepperMacrostate)
-    clear_singletons(PepperComplex)
+    gc.collect()
+    if list(show_memory()):
+        log.warning('Could not collect singleton objects, trying other means.')
     clear_singletons(PepperDomain)
+    clear_singletons(PepperStrand)
+    clear_singletons(PepperComplex)
+    clear_singletons(PepperMacrostate)
+    clear_singletons(PepperReaction)
 
 def show_memory():
     # This is for unittests only!  The memory of a Singleton clears
     # automatically if there is no hard reference to the object.
-    for x in chain(show_singletons(PepperReaction),
-                   show_singletons(PepperMacrostate),
+    for x in chain(show_singletons(PepperDomain),
+                   show_singletons(PepperStrand),
                    show_singletons(PepperComplex),
-                   show_singletons(PepperDomain)):
-        print(x)
+                   show_singletons(PepperMacrostate),
+                   show_singletons(PepperReaction)):
+        yield x
 
 class PepperDomain(DomainS):
-    def __init__(self, *args, **kwargs):
-        super(PepperDomain, self).__init__(*args, **kwargs)
-        self.sequence = None
-
-    def can_pair(self, other):
-        """ bool: the domain is complementary to the other domain. """
-        return self is ~other
+    pass
 
 class PepperStrand(StrandS):
     pass

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import gc
 import os
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ from crnsimulator import parse_crn_string
 
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.enumerator import enumerate_pil, enumerate_ssw
+from peppercornenumerator.objects import show_memory
 
 class MissingDataError(Exception):
     pass
@@ -144,6 +146,7 @@ class FigureData:
 
         ratecalc = []
         for name, pil, rxn, rate, pilid in self._ratedata:
+            assert list(show_memory()) == []
             pname = name + '-input.pil'
             ename = name + '-enum.pil'
             enumOBJ, _ = enumerate_pil(pname, is_file = True, enumfile = ename, **pargs)
@@ -161,6 +164,7 @@ class FigureData:
                 raise MissingDataError(f'Target reaction not found: {rxn} not in {name}')
             ratecalc.append(prate)
             del enumOBJ, rxns, ed, pr, r
+            gc.collect()
         self._ratecalc[pepperargs] = ratecalc
 
     def get_reaction_dataframes(self):
@@ -226,6 +230,8 @@ class FigureData:
             if ename not in self._enumerated or enumprofile:
                 if verbose:
                     print("Enumerating ... ")
+                    #print(list(show_memory()))
+                assert list(show_memory()) == []
                 try:
                     enumerate_pil(pname, is_file = True, enumfile = ename, 
                         detailed = (not condensed), condensed = condensed, **pargs)
@@ -234,12 +240,14 @@ class FigureData:
                         detailed = (not condensed), condensed = condensed, **pargs)
                 self._enumerated.add(ename)
                 if enumprofile:
-                    return None
+                    gc.collect()
+                    return
 
             # Second, simulate 
             if sname not in self._simulated:
                 if verbose:
                     print("Simulating ... ")
+                    #print(list(show_memory()))
                 sim = self._simargs[simargs]
                 nxy = simulate_pil(ename, sexec, sname, sim.split(), 
                         force = not (sexec in self._simexecs))
@@ -288,6 +296,7 @@ class FigureData:
                         trajectories[simargs] = tr[simargs]
                     elif cmpfig == 'hack':
                         trajectories[cname] = tr[cname]
+            gc.collect()
 
         if cmpfig and pepperargs not in self.cmpfig: 
             trajectories.to_csv(cname, sep='\t', float_format='%.9e', index=False,
@@ -494,11 +503,11 @@ def main():
     # sun2018.py
 
     analysis = z07() + y08() + z09() + z10() + z11() + g11() + q11() + k17()
-    analysis = z09r() + d13r()
-    #analysis = q11sq()
+    #analysis = z09r() + d13r()
+    #analysis = g11()
 
     for fig in analysis:
-        print("\n{}:".format(fig.name))
+        print(f"\n{fig.name}:")
         fig.eval('default', verbose = 0)
         for df in fig.get_dataframes():
             print(df)

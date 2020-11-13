@@ -38,9 +38,7 @@ def bind11(reactant, max_helix = True):
             start_loc = (strand_index, domain_index)
             # search (one direction) around the loop for an open domain that can be bound.
             results = find_on_loop(reactant, start_loc, filter_bind11)
-            if results:
-                assert len(results) == \
-                        len(find_on_loop(reactant, start_loc, filter_bind11, direction = -1))
+            assert len(results) == len(find_on_loop(reactant, start_loc, filter_bind11, direction = -1))
             for e, (invader, before, target, after) in enumerate(results):
                 if max_helix:
                     invader, before, target, after = zipper(
@@ -90,7 +88,8 @@ def bind21(reactant1, reactant2, max_helix = True, pkwarning = False):
         for (dom2, s2, d2) in r2_doms:
             # If it can pair, this is one possible reaction (this kind of
             # reaction cannot possibly produce a pseudoknotted structure)
-            if (dom1.can_pair(dom2)):
+            assert (dom1 is ~dom2) is (dom2 is ~dom1)
+            if dom1 is ~dom2:
                 # combine the two complexes into one, but do not perform the association
                 reactions.append(join_complexes_21(
                     reactant1, (s1, d1),
@@ -107,7 +106,7 @@ def bind21(reactant1, reactant2, max_helix = True, pkwarning = False):
                     (dom2, strand_num2, dom_num2) in r2_doms:
                     # Exclude the non-pseudoknotted interactions
                     continue
-                if (dom1.can_pair(dom2)):
+                if dom1 is ~dom2:
                     log.warning("potential pk-interaction: {} and {}".format(reactant1, reactant2))
    
     output = set()
@@ -483,17 +482,17 @@ def do_4way_migration(reactant, loc1s, loc2s, loc3s, loc4s):
 def filter_bind11(trip1, trip2):
     (dom1, struct1, loc1) = trip1
     (dom2, struct2, loc2) = trip2
-    return struct1 is None and struct2 is None and dom2.can_pair(dom1)
+    return (struct1 is None) and (struct2 is None) and (dom2 is ~dom1)
 
 def filter_3way(trip1, trip2):
     (dom1, struct1, loc1) = trip1 
     (dom2, struct2, loc2) = trip2 
-    return (struct1 is None) and (struct2 is not None) and dom1.can_pair(dom2)
+    return (struct1 is None) and (struct2 is not None) and (dom2 is ~dom1)
 
 def filter_4way(trip1, trip2):
     (dom1, struct1, loc1) = trip1
     (dom2, struct2, loc2) = trip2
-    return struct1 is not None and struct2 is not None and dom1 == dom2
+    return (struct1 is not None) and (struct2 is not None) and (dom1 is dom2)
 
 def find_on_loop(reactant, start_loc, pattern, direction = 1):
     r""" Find a reaction pattern within a loop.

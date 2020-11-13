@@ -8,25 +8,12 @@ log = logging.getLogger(__name__)
 from .utils import PeppercornUsageError, tarjans
 from .input import read_pil, read_seesaw
 from .output import write_pil, write_sbml
-from .objects import (SingletonError, PepperMacrostate, clear_memory)
+from .objects import (SingletonError, PepperMacrostate, PepperComplex)
 from .condense import PepperCondensation
 from .reactions import (bind11, bind21, open1N, 
                         branch_3way, branch_4way,
                         find_on_loop, filter_bind11)
 from .ratemodel import opening_rate
-
-"""
-WASTEFUL (bool): A global parameter to erase singleton object memory on the
-beginning of every call of "enumerate_pil" or "enumerate_ssw". This should not
-be necessary if you make sure that all "old" peppercornenumerator.objects are
-deleted.  Strangely, some dependencies (in particluar matplotlib.pyplot)
-prevent the garbage collection of "old" objects, and it is necessary to use
-this parameter once such a depencency has been imported. I suspect wasteful
-behavior to be the cause of occasional segfaults when enumerating *many*
-different systems in order to do some meta analysis. More details in 
-tests/test_wasteful.py
-"""
-WASTEFUL = False
 
 UNI_REACTIONS = [bind11, open1N, branch_3way, branch_4way]
 BI_REACTIONS = [bind21]
@@ -581,6 +568,7 @@ def enumerate_pil(pilstring,
         enumfile = None,
         detailed = True, 
         condensed = False, 
+        complex_prefix = 'e', 
         enumconc = 'nM', 
         **kwargs):
     """ A wrapper function to directly enumerate a pilstring or file.
@@ -599,13 +587,13 @@ def enumerate_pil(pilstring,
     Returns:
         Enumerator-object, Outputstring
     """
-    global WASTEFUL
-    if WASTEFUL: clear_memory()
+    PepperComplex.PREFIX = complex_prefix
 
     cxs, rxns = read_pil(pilstring, is_file)
     cplxs = list(cxs.values())
     init_cplxs = [x for x in cxs.values() if x.concentration is None or x.concentration[1] != 0]
     enum = Enumerator(init_cplxs, rxns, named_complexes = cplxs)
+
     # set kwargs parameters
     for k, w in kwargs.items():
         if hasattr(enum, k):
@@ -625,6 +613,7 @@ def enumerate_ssw(sswstring,
         enumfile = None,
         detailed = True, 
         condensed = False, 
+        complex_prefix = 'e', 
         enumconc = 'nM', 
         **kwargs):
     """ A wrapper function to directly enumerate a seesaw string or file.
@@ -649,8 +638,7 @@ def enumerate_ssw(sswstring,
     Returns:
         Enumerator-object, Outputstring
     """
-    global WASTEFUL
-    if WASTEFUL: clear_memory()
+    PepperComplex.PREFIX = complex_prefix
 
     utbr = kwargs.get('utbr_species', True)
     cxs, rxns = read_seesaw(sswstring, is_file, 
