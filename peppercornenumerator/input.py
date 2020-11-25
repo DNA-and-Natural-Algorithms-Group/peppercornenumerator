@@ -5,7 +5,9 @@
 import logging
 log = logging.getLogger(__name__)
 
-import dsdobjects.objectio as oio
+from dsdobjects.objectio import set_io_objects, clear_io_objects
+from dsdobjects.objectio import read_pil as dsd_read_pil
+from dsdobjects.objectio import read_pil_line as dsd_read_pil_line
 from dsdobjects import (parse_pil_string,
                         parse_seesaw_string,
                         parse_seesaw_file)
@@ -23,18 +25,16 @@ class PilFormatError(Exception):
     pass
 
 def read_pil_line(*args, **kwargs):
-    oio.Domain = PepperDomain
-    oio.Complex = PepperComplex
-    oio.Reaction = PepperReaction
-    oio.Macrostate = PepperMacrostate
-    return oio.read_pil_line(*args, **kwargs)
+    set_io_objects(D = PepperDomain, S = PepperStrand, C = PepperComplex, R = PepperReaction, M = PepperMacrostate)
+    out = dsd_read_pil_line(*args, **kwargs)
+    clear_io_objects()
+    return out
 
 def read_pil(data, is_file = False, ignore = None):
-    oio.Domain = PepperDomain
-    oio.Complex = PepperComplex
-    oio.Reaction = PepperReaction
-    oio.Macrostate = PepperMacrostate
-    out = oio.read_pil(data, is_file, ignore)
+    set_io_objects(D = PepperDomain, S = PepperStrand, C = PepperComplex, R = PepperReaction, M = PepperMacrostate)
+    out = dsd_read_pil(data, is_file, ignore)
+    clear_io_objects()
+
     if len(out['con_reactions']):
         log.warning('Ignoring condensed reaction input.')
     if len(out['macrostates']):
