@@ -44,6 +44,7 @@ def read_pil(data, is_file = False, ignore = None):
     for strand in out['strands'].values():
         strand.concentration = ('constant', 0, 'M')
         out['complexes'][('s', strand.name)] = strand
+    out['domains'].clear()
     return out['complexes'], out['det_reactions']
 
 def load_pil_crn(data):

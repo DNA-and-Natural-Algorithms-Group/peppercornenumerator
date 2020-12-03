@@ -4,6 +4,7 @@
 #
 import logging
 log = logging.getLogger(__name__)
+from gc import collect
 
 from .utils import PeppercornUsageError, tarjans
 from .input import read_pil, read_seesaw
@@ -14,6 +15,7 @@ from .reactions import (bind11, bind21, open1N,
                         branch_3way, branch_4way,
                         find_on_loop, filter_bind11)
 from .ratemodel import opening_rate
+from .objects import show_memory
 
 UNI_REACTIONS = [bind11, open1N, branch_3way, branch_4way]
 BI_REACTIONS = [bind21]
@@ -84,6 +86,7 @@ class Enumerator:
         self._resting_complexes = None
         self._transient_complexes = None
         self._resting_macrostates = None
+        self._domains = set()
 
         #print([x.name for x in initial_complexes])
 
@@ -94,6 +97,37 @@ class Enumerator:
         self.DFS = True
         self.interactive = False
         self.interruptible = False
+
+        # List E contains enumerated resting complexes. Every time a new
+        # complex is added (from S), all cross reactions with other resting
+        # complexes are enumerated. Complexes remain in this list throughout
+        # function execution, the products of slow reactions go into list B.
+        self._E = []
+
+        # List S contains newly determined resting complexes after all fast
+        # reactions have been enumerated. They will be moved to E and thereby
+        # tested for cross reactions with set E. 
+        self._S = []
+
+        # List T contains newly determined transient states after fast-reaction
+        # enumeration. These complexes will remain in this list throughout
+        # function execution.
+        self._T = []
+
+        # List N contains the neighborhood of some initial complexes with all
+        # fast reactions enumerated. Complexes in N have not yet been
+        # characterized as transient or resting sets.
+        self._N = []
+
+        # List F contains components of the current 'neighborhood' which have
+        # not yet been reactants for potential fast reactions.  They will be
+        # moved to N once they were enumerated.
+        self._F = []
+
+        # List B contains initial complexes, or products of bimolecular
+        # reactions that have had no reactions enumerated yet. They will be
+        # moved to F for their fast neighborhood to be enumerated.
+        self._B = list(self.initial_complexes)
 
     @property
     def initial_complexes(self):
@@ -258,10 +292,10 @@ class Enumerator:
 
     @property
     def domains(self):
-        domains = set()
-        for cplx in self.initial_complexes:
-            [domains.add(d) for d in cplx.domains]
-        return list(domains)
+        if len(self._domains) == 0:
+            for cplx in self.initial_complexes:
+                [self._domains.add(d) for d in cplx.domains]
+        return iter(self._domains)
 
     def to_pil(self, filename = None, **kwargs):
         if filename:
@@ -290,38 +324,6 @@ class Enumerator:
         self._resting_macrostates = info['resting_macrostates']
 
     def enumerate(self):
-        """ Enumerate the reaction network from initial complexes. """
-        # List E contains enumerated resting complexes. Every time a new
-        # complex is added (from S), all cross reactions with other resting
-        # complexes are enumerated. Complexes remain in this list throughout
-        # function execution, the products of slow reactions go into list B.
-        self._E = []
-
-        # List S contains newly determined resting complexes after all fast
-        # reactions have been enumerated. They will be moved to E and thereby
-        # tested for cross reactions with set E. 
-        self._S = []
-
-        # List T contains newly determined transient states after fast-reaction
-        # enumeration. These complexes will remain in this list throughout
-        # function execution.
-        self._T = []
-
-        # List N contains the neighborhood of some initial complexes with all
-        # fast reactions enumerated. Complexes in N have not yet been
-        # characterized as transient or resting sets.
-        self._N = []
-
-        # List F contains components of the current 'neighborhood' which have
-        # not yet been reactants for potential fast reactions.  They will be
-        # moved to N once they were enumerated.
-        self._F = []
-
-        # List B contains initial complexes, or products of bimolecular
-        # reactions that have had no reactions enumerated yet. They will be
-        # moved to F for their fast neighborhood to be enumerated.
-        self._B = list(self.initial_complexes)
-
         def do_enumerate():
             log.debug("Enumerating fast reactions from initial complexes.")
             while len(self._B) > 0:
@@ -347,10 +349,12 @@ class Enumerator:
                 while len(self._B) > 0:
                     # Check whether too many complexes have been generated
                     if len(self._E) + len(self._T) + len(self._S) > self._max_complex_count:
+                        del source, element; slow_reactions.clear()
                         raise PolymerizationError("Too many complexes enumerated! ({:d})".format(
                                 len(self._E) + len(self._T) + len(self._S)))
                     # Check whether too many reactions have been generated
                     if len(self._reactions) > self._max_reaction_count:
+                        del source, element; slow_reactions.clear()
                         raise PolymerizationError("Too many reactions enumerated! ({:d})".format(
                                 len(self._reactions)))
                     # Generate a neighborhood from `source`
@@ -389,25 +393,23 @@ class Enumerator:
                 self._reactions -= set(rm_reactions)
 
         self._resting_macrostates = set()
-        if self.interruptible:
-            try:
-                do_enumerate()
-                finish()
-            except KeyboardInterrupt:
-                log.warning("Interrupted. Gracefully exiting ...")
-                finish(premature = True)
-            except PolymerizationError as err:
-                log.exception(err)
-                log.error("Polymerization error. Gracefully exiting ...")
-                finish(premature = True)
-        else:
+        try:
             do_enumerate()
             finish()
+        except KeyboardInterrupt as err:
+            log.error("Interrupted. Gracefully exiting ...")
+            finish(premature = True)
+            if not self.interruptible:
+                raise err
+        except PolymerizationError as err:
+            log.error("Polymerization error. Gracefully exiting ...")
+            finish(premature = True)
+            if not self.interruptible:
+                raise err
 
     def condense(self):
         self.condensation = PepperCondensation(self)
         self.condensation.condense()
-
 
     def reactions_interactive(self, root, reactions, rtype='fast'):
         """
@@ -563,6 +565,25 @@ class Enumerator:
         assert (ESTNF - B) == ESTNF
         return new_products
 
+    def clear(self):
+        self._initial_complexes.clear()
+        self._initial_reactions.clear()
+        self._named_complexes.clear()
+        self.representatives.clear()
+        self._domains.clear()
+        self._complexes.clear()
+        self._reactions.clear()
+        if self._resting_complexes:
+            self._transient_complexes.clear()
+            self._resting_complexes.clear()
+            self._resting_macrostates.clear()
+        self._E.clear()
+        self._S.clear()
+        self._T.clear()
+        self._N.clear()
+        self._F.clear()
+        self._B.clear()
+
 def enumerate_pil(pilstring, 
         is_file = False, 
         enumfile = None,
@@ -600,8 +621,22 @@ def enumerate_pil(pilstring,
             setattr(enum, k, w)
         else:
             raise PeppercornUsageError('No Enumerator attribute called: {}'.format(k))
-    enum.enumerate()
-    outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, molarity = enumconc)
+
+    try:
+        enum.enumerate()
+    except PolymerizationError as err:
+        # Try w next install
+        cxs.clear()
+        rxns.clear()
+        cplxs.clear()
+        init_cplxs.clear()
+        enum.clear()
+        collect()
+        assert list(show_memory()) == []
+        raise err
+
+    outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, 
+                            molarity = enumconc)
     return enum, outstring
 
 def enumerate_ssw(sswstring, 
@@ -645,18 +680,34 @@ def enumerate_ssw(sswstring,
             explicit = ssw_expl,
             conc = ssw_conc,
             reactions = ssw_rxns)
-    enum = Enumerator(list(cxs.values()), rxns)
+    cplxs = list(cxs.values())
+    enum = Enumerator(cplxs, rxns)
+
     # set kwargs parameters
     for k, w in kwargs.items():
         if hasattr(enum, k):
             setattr(enum, k, w)
         else:
             raise PeppercornUsageError('No Enumerator attribute called: {}'.format(k))
+
     if dry_run:
         enum.dry_run()
     else:
-        enum.enumerate()
-    outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, molarity = enumconc)
+        try:
+            enum.enumerate()
+        except PolymerizationError as err:
+            # Try w next install
+            cxs.clear()
+            rxns.clear()
+            cplxs.clear()
+            init_cplxs.clear()
+            enum.clear()
+            collect()
+            assert list(show_memory()) == []
+            raise err
+
+    outstring = enum.to_pil(enumfile, detailed = detailed, condensed = condensed, 
+                            molarity = enumconc)
     return enum, outstring
 
 def segment_neighborhood(complexes, reactions, represent = None):
