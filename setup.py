@@ -25,10 +25,11 @@ setup(
         ],
     python_requires = '>=3.7',
     install_requires = [
-        'pandas', # for case-studies
         'numpy',
-        'crnsimulator>=0.9',
-        'dsdobjects>=0.8'],
+        'pandas',
+        'natsort',
+        'dsdobjects>=0.8',
+        'crnsimulator>=0.9'],
     packages = ['peppercornenumerator'],
     test_suite = 'tests',
     entry_points = {

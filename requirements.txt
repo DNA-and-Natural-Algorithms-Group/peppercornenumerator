@@ -1,4 +1,5 @@
-pandas
 numpy
-crnsimulator>=0.9
+pandas
+natsort
 dsdobjects>=0.8
+crnsimulator>=0.9
