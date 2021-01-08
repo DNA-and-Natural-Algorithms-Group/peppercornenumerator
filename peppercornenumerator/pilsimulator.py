@@ -12,10 +12,11 @@ import os
 import sys
 import argparse
 
-from peppercornenumerator import __version__
-from peppercornenumerator.input import load_pil_crn
 from crnsimulator import ReactionGraph, get_integrator
 from crnsimulator.odelib_template import add_integrator_args
+
+from . import __version__
+from .input import load_pil_crn
 
 class SimulationSetupError(Exception):
     pass

@@ -1,5 +1,0 @@
-# ../../enumerator.py seesaw_threshold.pil 
-# shows how the two-domain extended toehold for seesaw threshold gates is correctly and finitely enumerated... 
-# ...although if binding were max-helix-at-a-time and/or there were a shorter release cutoff for 1-1 opening, it would be simpler.
-threshold [@10nM] = S1a^( S1b( + S4a^* T^* )) 
-signal [@20nM] = S1a^ S1b T^ S4a^ S4b

@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 
+import gc
 import os
 import numpy as np
 import pandas as pd
 from subprocess import Popen
-from crnsimulator import parse_crn_string
 from pyparsing import ParseException
+from crnsimulator import parse_crn_string
 
 from peppercornenumerator import Enumerator, __version__
 from peppercornenumerator.enumerator import enumerate_pil, enumerate_ssw
-from peppercornenumerator.objects import clear_memory
+from peppercornenumerator.objects import show_memory
 
 class MissingDataError(Exception):
     pass
 
-class FigureData(object):
+class FigureData:
     """ Produce DataFrames that compare Peppercorn's model with experimental data.
 
     Examples:
@@ -141,12 +142,11 @@ class FigureData(object):
         if pepperargs in self._pepperargs:
             pargs = self._pepperargs[pepperargs]
         else:
-            raise MissingDataError('Cannot find key "{}" in pepperargs'.format(pepperargs))
+            raise MissingDataError(f'Cannot find key "{pepperargs}" in pepperargs')
 
         ratecalc = []
         for name, pil, rxn, rate, pilid in self._ratedata:
-            clear_memory()
-
+            assert list(show_memory()) == []
             pname = name + '-input.pil'
             ename = name + '-enum.pil'
             enumOBJ, _ = enumerate_pil(pname, is_file = True, enumfile = ename, **pargs)
@@ -161,9 +161,10 @@ class FigureData(object):
                     prate = r.const
                     break
             if prate is None:
-                raise MissingDataError(
-                        'Target reaction not found: {} not in {}'.format(rxn, name))
+                raise MissingDataError(f'Target reaction not found: {rxn} not in {name}')
             ratecalc.append(prate)
+            del enumOBJ, rxns, ed, pr, r
+            gc.collect()
         self._ratecalc[pepperargs] = ratecalc
 
     def get_reaction_dataframes(self):
@@ -213,8 +214,6 @@ class FigureData(object):
         simcalc = []
         trajectories = None
         for name, pilstring, simargs, reporter, metric, minfo, time, conc in self._simdata:
-            clear_memory()
-
             if verbose:
                 print("Evaluating {}: {}".format(name, pepperargs))
 
@@ -231,6 +230,8 @@ class FigureData(object):
             if ename not in self._enumerated or enumprofile:
                 if verbose:
                     print("Enumerating ... ")
+                    #print(list(show_memory()))
+                assert list(show_memory()) == []
                 try:
                     enumerate_pil(pname, is_file = True, enumfile = ename, 
                         detailed = (not condensed), condensed = condensed, **pargs)
@@ -239,12 +240,14 @@ class FigureData(object):
                         detailed = (not condensed), condensed = condensed, **pargs)
                 self._enumerated.add(ename)
                 if enumprofile:
-                    return None
+                    gc.collect()
+                    return
 
             # Second, simulate 
             if sname not in self._simulated:
                 if verbose:
                     print("Simulating ... ")
+                    #print(list(show_memory()))
                 sim = self._simargs[simargs]
                 nxy = simulate_pil(ename, sexec, sname, sim.split(), 
                         force = not (sexec in self._simexecs))
@@ -293,6 +296,7 @@ class FigureData(object):
                         trajectories[simargs] = tr[simargs]
                     elif cmpfig == 'hack':
                         trajectories[cname] = tr[cname]
+            gc.collect()
 
         if cmpfig and pepperargs not in self.cmpfig: 
             trajectories.to_csv(cname, sep='\t', float_format='%.9e', index=False,
@@ -499,15 +503,16 @@ def main():
     # sun2018.py
 
     analysis = z07() + y08() + z09() + z10() + z11() + g11() + q11() + k17()
-    analysis = z09r() + d13r()
+    #analysis = z09r() + d13r()
+    #analysis = g11()
 
     for fig in analysis:
-        print("\n{}:".format(fig.name))
+        print(f"\n{fig.name}:")
         fig.eval('default', verbose = 0)
         for df in fig.get_dataframes():
             print(df)
-
    
+
 if __name__ == '__main__':
     main()
 

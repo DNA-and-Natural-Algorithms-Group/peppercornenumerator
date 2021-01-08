@@ -8,155 +8,96 @@ import unittest
 from peppercornenumerator.input import read_pil
 from peppercornenumerator.enumerator import Enumerator
 
-from peppercornenumerator.objects import PepperDomain
-from peppercornenumerator.objects import PepperComplex 
-from peppercornenumerator.objects import PepperReaction
-from peppercornenumerator.objects import PepperMacrostate
-from peppercornenumerator.objects import clear_memory
+from peppercornenumerator.objects import (clear_memory,
+                                          SingletonError,
+                                          PepperDomain,
+                                          PepperComplex,
+                                          PepperReaction,
+                                          PepperMacrostate)
 
-from peppercornenumerator.condense import SetOfFates, PepperCondensation
-import peppercornenumerator.condense as c
+from peppercornenumerator.condense import (SetOfFates, 
+                                           PepperCondensation,
+                                           cartesian_sum,
+                                           tuple_sum,
+                                           cartesian_product)
 
-SKIP=False
+SKIP = False
 
 class SetOfFatesTest(unittest.TestCase):
     pass
 
 @unittest.skipIf(SKIP, "skipping tests")
 class UtilityTests(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        clear_memory()
-
-    def test_cartesians(self):
-        A = [('a','a','b'),('c','b')]
-        B = [('a','b','c'),('b','c')]
-        #print c.cartesian_sum([A,B])
-        #print c.cartesian_product([A,B])
-
-
-        A = tuple(['x','y','z'])
-        B = tuple(['1','2','3'])
-        #print c.cartesian_product([A,B])
-        res = [('x', '1'), ('x', '2'), ('x', '3'), ('y', '1'), ('y', '2'), ('y', '3'), ('z', '1'), ('z', '2'), ('z', '3')]
-
-        A = tuple(map(tuple,['x','y','z']))
-        B = tuple(map(tuple,['1','2','3']))
-        #print c.cartesian_sum([A,B])
-        res = [('1', 'x'), ('2', 'x'), ('3', 'x'), ('1', 'y'), ('2', 'y'), ('3', 'y'), ('1', 'z'), ('2', 'z'), ('3', 'z')]
-
-        A = tuple(['x','1','x'])
-        B = tuple(['1','2','3'])
-        C = tuple(['x','1'])
-        #A = [('x',),('1','x')]
-        #B = [('1',),('2',),('3',)]
-        #C = [('x',),('1',)]
-        #print c.cartesian_product([A,B,C])
-
-        A = [('x',),('1','x')]
-        B = [('1',),('2',),('3',)]
-        C = [('x',),('1',)]
-        #print c.cartesian_sum([A,B,C])
-
     def test_cartesian_product(self):
-        x = tuple(['a','b']) 
-        y = tuple(['c','d']) 
-        self.assertEqual(c.cartesian_product([x,y]), 
-                [('a', 'c'), ('a', 'd'), ('b', 'c'), ('b', 'd')])
+        A = [('a', 'a', 'b'), ('c', 'b')]
+        B = [('a', 'b', 'c'), ('b', 'c')]
+        assert list(cartesian_product((A, B))) == [(('a', 'a', 'b'), ('a', 'b', 'c')), 
+                                             (('a', 'a', 'b'), ('b', 'c')), 
+                                             (('c', 'b'), ('a', 'b', 'c')), 
+                                             (('c', 'b'), ('b', 'c'))]
 
-        x = tuple() 
-        y = tuple(['c','d']) 
-        self.assertEqual(c.cartesian_product([x,y]), [])
+        A = ('x', 'y', 'z')
+        B = ('1', '2', '3')
+        assert list(cartesian_product((A, B))) == [('x', '1'), ('x', '2'), ('x', '3'), 
+                                             ('y', '1'), ('y', '2'), ('y', '3'), 
+                                             ('z', '1'), ('z', '2'), ('z', '3')]
 
-        x = tuple(['c']) 
-        y = tuple([]) 
-        self.assertEqual(c.cartesian_product([x,y]), [])
-
-        x = tuple(['c']) 
-        y = tuple(['c','d']) 
-        self.assertEqual(c.cartesian_product([x,y]), [('c','c'),('c','d')])
-
-        x = 'c'
-        y = tuple(['c','d','a', 'l', '',]) 
-        self.assertEqual(c.cartesian_product([x,y]), 
-            [('c', 'c'), ('c', 'd'), ('c', 'a'), ('c', 'l'), ('c', '')])
-
-        x = tuple(['a','b']) 
-        y = tuple(['c','d']) 
-        z = tuple(['k','l']) 
-        self.assertEqual(c.cartesian_product([x,y,z]), 
-            [('a', 'c', 'k'), ('a', 'c', 'l'), ('a', 'd', 'k'), 
-             ('a', 'd', 'l'), ('b', 'c', 'k'), ('b', 'c', 'l'), 
-             ('b', 'd', 'k'), ('b', 'd', 'l')])
-
+        A = (('x',), ('1', 'x'))
+        B = (('1',), ('2',), ('3',))
+        C = (('x',), ('1',))
+        assert list(cartesian_product((A, B, C))) == [(('x',), ('1',), ('x',)), 
+                                                (('x',), ('1',), ('1',)), 
+                                                (('x',), ('2',), ('x',)), 
+                                                (('x',), ('2',), ('1',)), 
+                                                (('x',), ('3',), ('x',)), 
+                                                (('x',), ('3',), ('1',)),
+                                                (('1', 'x'), ('1',), ('x',)), 
+                                                (('1', 'x'), ('1',), ('1',)), 
+                                                (('1', 'x'), ('2',), ('x',)), 
+                                                (('1', 'x'), ('2',), ('1',)), 
+                                                (('1', 'x'), ('3',), ('x',)), 
+                                                (('1', 'x'), ('3',), ('1',))]
 
     def test_cartesian_sum(self):
-        x = tuple(map(tuple,['a','b'])) 
-        y = tuple(map(tuple,['c','d'])) 
-        self.assertEqual( c.cartesian_sum([x,y]),
-                [('a', 'c'), ('a', 'd'), ('b', 'c'), ('b', 'd')])
+        x = (('a',), ('b',)) 
+        y = (('c',), ('d',)) 
+        self.assertEqual(cartesian_sum([x,y]), [('a', 'c'), ('a', 'd'), 
+                                                ('b', 'c'), ('b', 'd')])
 
-        x = tuple() 
-        y = tuple(map(tuple, ['c','d']))
-        self.assertEqual(c.cartesian_sum([x,y]), [])
+        x = (('a',), ('a',)) 
+        y = (('c',), ('d',)) 
+        self.assertEqual(cartesian_sum([x,y]), [('a', 'c'), ('a', 'd'), 
+                                                ('a', 'c'), ('a', 'd')])
 
-        x = tuple(tuple('c')) 
-        y = tuple([]) 
-        self.assertEqual(c.cartesian_sum([x,y]), [])
+        x = () 
+        y = (('c',), ('d',)) 
+        self.assertEqual(cartesian_sum([x,y]), [])
 
-        x = tuple(map(tuple, ['c']))
-        y = tuple(map(tuple, ['c','d']))
-        self.assertEqual(c.cartesian_sum([x,y]), [('c','c'),('c','d')])
-
-        x = [tuple('c')]
-        y = tuple(map(tuple,['c','d','a', 'l', '',]))
-        self.assertEqual(c.cartesian_sum([x,y]), 
-            [('c', 'c'), ('c', 'd'), ('a', 'c'), ('c', 'l'), ('c',)])
-
-        x = tuple(map(tuple, ['a','b']))
-        y = tuple(map(tuple, ['c','d']))
-        z = tuple(map(tuple, ['k','l']))
-        self.assertEqual(c.cartesian_sum([x,y,z]), 
-            [('a', 'c', 'k'), ('a', 'c', 'l'), ('a', 'd', 'k'), 
-             ('a', 'd', 'l'), ('b', 'c', 'k'), ('b', 'c', 'l'), 
-             ('b', 'd', 'k'), ('b', 'd', 'l')])
+        x = (('c',),)
+        y = (('c',), ('d',)) 
+        self.assertEqual(cartesian_sum([x,y]), [('c', 'c'), ('c', 'd')])
 
         x = [(1,), (2, 3)] 
         y = [(4, 5, 6), (7, 8)]
-        self.assertEqual(c.cartesian_sum([x,y]),
+        self.assertEqual(cartesian_sum([x,y]),
             [(1, 4, 5, 6), (1, 7, 8), (2, 3, 4, 5, 6), (2, 3, 7, 8)])
 
     def test_tuplesum(self):
-        # make sure a simple example works
-        self.assertEqual(c.tuple_sum([(1, 2, 3), (4,), (5, 6, 7)]), 
-                (1, 2, 3, 4, 5, 6, 7))
+        self.assertEqual(tuple_sum([(1, 2, 3), (6,), (5, 4, 7)]), (1, 2, 3, 4, 5, 6, 7))
 
-        # make sure there's not an extra level of summing going on
-        self.assertEqual(c.tuple_sum([((1, 2), 3), (4,), ((5, 6),)]), 
-                ((1, 2), 3, 4, (5, 6)))
-        self.assertEqual(c.tuple_sum((((1, 2), 3), (4,), ((5, 6),))), 
-                ((1, 2), 3, 4, (5, 6)))
-        self.assertEqual(c.tuple_sum([((1, 2), 3), (4,), ((5, 6),),()]), 
-                ((1, 2), 3, 4, (5, 6)))
-
-    # TODO: unittests that might be usefull at some point...
-    def testTarjans(self):
+    def todotestTarjans(self):
         pass
 
-    def testGetReactionsConsuming(self):
+    def todotestGetReactionsConsuming(self):
         pass
 
-    def testIsOutgoing(self):
+    def todotestIsOutgoing(self):
         pass
-
 
 @unittest.skipIf(SKIP, "skipping tests")
 class CondenseTests(unittest.TestCase):
-    def setUp(self):
-        pass
-
+    # TODO: I want a test where we have the same reaction exiting an SCC multiple times.
+    # does that exist?
     def tearDown(self):
         clear_memory()
 
@@ -189,64 +130,27 @@ class CondenseTests(unittest.TestCase):
         #         /              \
         # (rs2) c2                c5 (rs4)
 
-        # RestingSet representation
-        rs1 = PepperMacrostate([complexes['c1']], memorycheck=False)
-        rs2 = PepperMacrostate([complexes['c2']], memorycheck=False)
-        rs3 = PepperMacrostate([complexes['c4']], memorycheck=False)
-        rs4 = PepperMacrostate([complexes['c5']], memorycheck=False)
+        enum = Enumerator(complexes.values(), reactions)
+        enum.enumerate() 
+        enum.condense()
+        for con in enum.condensed_reactions:
+            assert con.rate_constant[0] == 50
+        del enum
 
-        # Frozensets instead of RestingMacrostates
-        fs1 = frozenset([complexes['c1']])
-        fs2 = frozenset([complexes['c2']])
-        fs3 = frozenset([complexes['c4']])
-        fs4 = frozenset([complexes['c5']])
+        # old interface ...
+        c1 = PepperMacrostate([complexes['c1']])
+        c2 = PepperMacrostate([complexes['c2']])
+        c4 = PepperMacrostate([complexes['c4']])
+        c5 = PepperMacrostate([complexes['c5']])
+        cond_react = PepperReaction([c1, c2], [c4, c5], 'condensed')
+        cond_react.rate_constant = 20, None
 
-        cplx_to_state = { # maps Complex to its RestingMacrostate
-                complexes['c1'] : rs1,
-                complexes['c2'] : rs2,
-                complexes['c4'] : rs3, 
-                complexes['c5'] : rs4
-                }
-
-        cplx_to_fate = { # maps Complex to its SetOfFates
-                complexes['c1'] : SetOfFates([[rs1]]), 
-                complexes['c2'] : SetOfFates([[rs2]]),
-                complexes['c3'] : SetOfFates([[rs1, rs2], [rs3, rs4]]),
-                complexes['c4'] : SetOfFates([[rs3]]),
-                complexes['c5'] : SetOfFates([[rs4]])
-                }
-
-        cplx_to_set = { # maps Complex to its frozenset
-                complexes['c1'] : fs1,
-                complexes['c2'] : fs2,
-                complexes['c4'] : fs3, 
-                complexes['c5'] : fs4
-                }
-
-        set_to_fate = { # maps frozenset to the RestingMacrostate
-                fs1 : rs1,
-                fs2 : rs2,
-                fs3 : rs3,
-                fs4 : rs4 }   
-
-
-        cond_react = PepperReaction([rs1, rs2], [rs3, rs4], 'condensed', memorycheck=False)
-        cond_react.const = 100 * (float(50)/(50+50))
-
-        enum = Enumerator(list(complexes.values()), reactions)
-        enum.dry_run() # does not change the rates!
-
+        enum = Enumerator(complexes.values(), reactions)
+        enum.dry_run()
         enumRG = PepperCondensation(enum)
         enumRG.condense()
-
-        self.assertEqual(sorted([rs1, rs2, rs3, rs4]),  sorted(enumRG.resting_macrostates))
-        self.assertDictEqual(set_to_fate, enumRG.set_to_fate)
-        self.assertDictEqual(cplx_to_fate, enumRG.cplx_to_fate)
-        #self.assertDictEqual(cplx_to_set,  info['complexes_to_resting_macrostates'])
-
-        self.assertEqual([cond_react], enumRG.condensed_reactions)
-        self.assertEqual(cond_react.const, enumRG.condensed_reactions[0].const)
-        self.assertEqual(enumRG.condensed_reactions[0].const, 50)
+        for con in enumRG.condensed_reactions:
+            assert con.rate_constant[0] == 20
 
     def test_zhang_cooperative_binding(self):
         complexes, reactions = read_pil("""
@@ -295,11 +199,10 @@ class CondenseTests(unittest.TestCase):
         reaction [bind21         =      2.4e+06 /M/s ] T1 + R2 -> L1R2
         """)
 
-        enum = Enumerator(list(complexes.values()), reactions)
-        enum.k_fast =0.01 
+        enum = Enumerator(complexes.values(), reactions)
+        enum.k_fast = 0.01 
         enum.release_cutoff = 10
-        #enum.enumerate() # or enum.dry_run()
-        enum.dry_run()
+        enum.enumerate() # or enum.dry_run()
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
@@ -321,38 +224,20 @@ class CondenseTests(unittest.TestCase):
         reaction [condensed      =   0.00316623 /s   ] rR1 -> rC1 + rT2
         """
         
-        L1 = complexes['L1']
-        L2 = complexes['L2']
-        rL2 = PepperMacrostate([L2, L1], memorycheck=False)
-        Out = complexes['Out']
-        rOut = PepperMacrostate([Out], memorycheck=False)
-        Waste = complexes['Waste']
-        rWaste = PepperMacrostate([Waste], memorycheck=False)
-        T2 = complexes['T2']
-        rT2 = PepperMacrostate([T2], memorycheck=False)
+        try:
+            L1 = complexes['L1']
+            L2 = complexes['L2']
+            L = PepperMacrostate([L1, L2])
+        except SingletonError as err:
+            L = err.existing
+        O = PepperMacrostate([complexes['Out']])
+        W = PepperMacrostate([complexes['Waste']])
+        T = PepperMacrostate([complexes['T2']])
 
         # calculated by hand...
-        cr1  = PepperReaction([rL2, rT2], [rWaste, rOut], 'condensed', rate = 2.4e6, memorycheck=False)
-
-        found = False
-        for r in enumRG.condensed_reactions:
-            if r == cr1:
-                found = True
-                self.assertAlmostEqual(r.const, cr1.const)
-
-        self.assertTrue(found)
-
-        #for k,v in enumRG._stationary_distributions.items():
-        #    print k, v
-
-        #for (c,f),v in sorted(enumRG._decay_probabilities.items(), key=lambda x:x[1]):
-        #    print "{:5s} {:12f} {}".format(c, v, map(str,f))
-
-        #for r in enumRG.condensed_reactions:
-        #    print "XXXX",r, r.rate
-
-        #for r in enumRG.detailed_reactions:
-        #    print "YYYY",r, r.rate
+        cr1 = PepperReaction([L, T], [W, O], 'condensed')
+        assert cr1 in enumRG.condensed_reactions
+        assert cr1.rate_constant == (2.4e6, '/M/s')
 
     def test_cooperative_binding(self):
         # cooperative binding with k-fast 25
@@ -414,15 +299,13 @@ class CondenseTests(unittest.TestCase):
         LCRF1 = complexes['LCRF1']
         LCRF2 = complexes['LCRF2']
 
-        # always resting sets
-        rs1 = PepperMacrostate([L], memorycheck=False)
-        rs2 = PepperMacrostate([C], memorycheck=False)
-        rs3 = PepperMacrostate([R], memorycheck=False)
-        rs4 = PepperMacrostate([T], memorycheck=False)
-        rs5 = PepperMacrostate([LR], memorycheck=False)
-
-        rs6 = PepperMacrostate([CR, CRF], memorycheck=False)
-        rs7 = PepperMacrostate([LC, LCF], memorycheck=False)
+        rs1 = PepperMacrostate([L]) 
+        rs2 = PepperMacrostate([C])
+        rs3 = PepperMacrostate([R])
+        rs4 = PepperMacrostate([T])
+        rs5 = PepperMacrostate([LR])
+        rs6 = PepperMacrostate([CR, CRF])
+        rs7 = PepperMacrostate([LC, LCF])
 
         cplx_to_fate = { # maps Complex to its SetOfFates
                 L  : SetOfFates([[rs1]]), 
@@ -439,38 +322,35 @@ class CondenseTests(unittest.TestCase):
                 LCRF1 : SetOfFates([[rs4, rs5]]),
                 LCRF2 : SetOfFates([[rs4, rs5]])}
 
-        cr1  = PepperReaction([rs1, rs2], [rs7], 'condensed', rate = 1.5e6, memorycheck=False)
-        cr2  = PepperReaction([rs2, rs3], [rs6], 'condensed', rate = 1.5e6, memorycheck=False)
-
-        # not sure how these rates were computed...
-        cr1r = PepperReaction([rs7], [rs1, rs2], 'condensed', rate = 10.0, memorycheck=False)
-        cr2r = PepperReaction([rs6], [rs2, rs3], 'condensed', rate = 10.0, memorycheck=False)
-        cr3  = PepperReaction([rs1, rs6], [rs5, rs4], 'condensed', rate=3e6/2, memorycheck=False)
-        cr4  = PepperReaction([rs3, rs7], [rs5, rs4], 'condensed', rate=3e6/2, memorycheck=False)
-
-        enum = Enumerator(list(complexes.values()), reactions)
-
+        enum = Enumerator(complexes.values(), reactions)
         enum.k_fast = 25
-
-        #enum.enumerate() # or enum.dry_run()
-        enum.dry_run() # or enum.dry_run()
-
+        enum.dry_run() # or enum.enumerate()
         enumRG = PepperCondensation(enum)
         enumRG.condense()
 
-        # Works...
-        self.assertEqual(enum.k_fast, enumRG.k_fast)
+        cr1  = PepperReaction([rs1, rs2], [rs7], 'condensed')
+        self.assertAlmostEqual(cr1.rate_constant[0], 1.5e6)
+        cr2  = PepperReaction([rs2, rs3], [rs6], 'condensed')
+        self.assertAlmostEqual(cr2.rate_constant[0], 1.5e6)
+
+        # not sure how these rates were computed...
+        cr1r = PepperReaction([rs7], [rs1, rs2], 'condensed')
+        assert cr1r.rate_constant == (10, '/s')
+        cr2r = PepperReaction([rs6], [rs2, rs3], 'condensed')
+        assert cr2r.rate_constant == (10, '/s')
+        cr3  = PepperReaction([rs1, rs6], [rs5, rs4], 'condensed')
+        self.assertAlmostEqual(cr3.rate_constant[0], 3e6/2)
+        #assert cr3.rate_constant == (3e6/2, '/M/s')
+        cr4  = PepperReaction([rs3, rs7], [rs5, rs4], 'condensed')
+        self.assertAlmostEqual(cr4.rate_constant[0], 3e6/2)
+        #assert cr4.rate_constant == (3e6/2, '/M/s')
+
         self.assertEqual(sorted([rs1, rs2, rs3, rs4, rs5, rs6, rs7]),  
                          sorted(enumRG.resting_macrostates))
 
-        self.assertDictEqual(cplx_to_fate, enumRG.cplx_to_fate)
+        self.assertDictEqual(cplx_to_fate, enumRG._complex_fates)
         self.assertEqual(sorted([cr1, cr1r, cr2, cr2r, cr3, cr4]), 
                          sorted(enumRG.condensed_reactions))
-
-        for (r1, r2) in zip(sorted([cr1, cr1r, cr2, cr2r, cr3, cr4]), 
-                sorted(enumRG.condensed_reactions)):
-            self.assertEqual(r1, r2)
-            self.assertAlmostEqual(r1.const, r2.const)
 
     def test_cooperative_binding_fail(self):
         complexes, reactions = read_pil("""
@@ -518,22 +398,14 @@ class CondenseTests(unittest.TestCase):
         reaction [bind21         =      1.5e+06 /M/s ] R + LC -> LCR
         reaction [bind21         =      1.5e+06 /M/s ] R + LCF -> LCRF1
         """)
-        enum = Enumerator(list(complexes.values()))
-        enum.enumerate() # or enum.dry_run()
-
+        enum = Enumerator(complexes.values())
+        enum.enumerate() 
         enumRG = PepperCondensation(enum)
 
-        # TODO: It should raise an error here, saying that the condensed graph
-        # is disconnected!
-
-        #with self.assertRaises(c.CondensationError):
-        enumRG.condense()
-
-        self.assertEqual(enumRG.condensed_reactions, [])
+        # TODO: It should saying here that the condensed graph is disconnected!
+        self.assertEqual(list(enumRG.condensed_reactions), [])
 
     def test_fate_example(self):
-        # TODO: needs more testing, also remove the PREFIX part and replace with 
-        # non-auto-prefix complex names...
         PepperComplex.PREFIX = 'enum'
         complexes, reactions = read_pil("""
         # File generated by peppercorn-v0.5.0
@@ -580,10 +452,9 @@ class CondenseTests(unittest.TestCase):
         """)
         gate = complexes['gate']
         t23 = complexes['t23']
-        enum = Enumerator(list(complexes.values()))
+        enum = Enumerator(complexes.values())
         enum.release_cutoff = 6
         enum.enumerate() # or enum.dry_run()
-
         self.assertEqual(sorted(enum.reactions), sorted(reactions))
 
         """
@@ -601,19 +472,8 @@ class CondenseTests(unittest.TestCase):
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
-        self.assertEqual(len(enumRG.resting_macrostates), 6)
-        self.assertEqual(len(enumRG.condensed_reactions), 2)
-
-        PepperComplex.PREFIX = 'e'
-
-
-@unittest.skipIf(SKIP, "skipping tests")
-class OldCondenseTests(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        clear_memory()
+        self.assertEqual(len(list(enumRG.resting_macrostates)), 6)
+        self.assertEqual(len(list(enumRG.condensed_reactions)), 2)
 
     def test_sarma_fig4_v1(self):
         complexes, reactions = read_pil("""
@@ -688,31 +548,11 @@ class OldCondenseTests(unittest.TestCase):
         reaction [branch-4way    =  0.000623053 /s   ] e58 -> e47
         """)
 
-        enum = Enumerator(list(complexes.values()), reactions)
-        #enum.enumerate() # or 
-        enum.dry_run()
+        enum = Enumerator(complexes.values(), reactions)
+        enum.enumerate() 
         self.assertEqual(sorted(enum.reactions), sorted(reactions))
-
         enumRG = PepperCondensation(enum)
         enumRG.condense()
-
-        #  enum = Enumerator([complexes['bot'], complexes['top'], 
-        #      complexes['com1'], complexes['com2']])
-        #  enum.enumerate() # or enum.dry_run()
-        #  #self.assertEqual(sorted(enum.reactions), sorted(reactions))
-
-        #for k,v in enumRG._stationary_distributions.items():
-        #    print k, v
-
-        #for (c,f),v in sorted(enumRG._decay_probabilities.items(), key=lambda x:x[1]):
-        #    print "{:5s} {:12f} {}".format(c, v, map(str,f))
-
-        #print
-        #for r in enumRG.condensed_reactions :
-        #    print "XXXXXXXXXXXXXXXXXXXXXXXXX",r, r.rate
-
-    def test_bounded_dendrimer(self):
-        pass
 
 @unittest.skipIf(SKIP, "skipping tests")
 class CondenseCRNs(unittest.TestCase):
@@ -733,11 +573,11 @@ class CondenseCRNs(unittest.TestCase):
        else:
            self.complexes[name] = PepperComplex(
                    [self.domain for x in range(self.length)],
-                   list('.' * self.length), name=name, memorycheck=False)
+                   list('.' * self.length), name=name)
            self.length +=1 
            return self.complexes[name]
 
-    def rxn(self, string, k = 1, rtype='condensed'):
+    def rxn(self, string, k = 1, rtype = 'condensed'):
        """ Dummy function for generating reactions between formal species """
        reactants, products = string.split('->')
        reactants = reactants.split('+')
@@ -745,10 +585,12 @@ class CondenseCRNs(unittest.TestCase):
 
        reactants = [self.cplx(x) for x in reactants]
        products  = [self.cplx(x) for x in products]
-       self.reactions.add(PepperReaction(reactants, products, rtype.strip(), rate=k))
+       rxn = PepperReaction(reactants, products, rtype.strip())
+       rxn.rate_constant = k
+       self.reactions.add(rxn)
 
     def rs(self, names):
-        return PepperMacrostate(list(map(self.cplx, names)), memorycheck=False)
+        return PepperMacrostate(list(map(self.cplx, names)))
 
     # Tests start here... 
     def test_CondenseGraphCRN_01(self):
@@ -770,11 +612,11 @@ class CondenseCRNs(unittest.TestCase):
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
-        self.assertEqual(enumRG.condensed_reactions, [])
+        self.assertEqual(list(enumRG.condensed_reactions), [])
         self.assertEqual(sorted(enumRG.resting_macrostates), 
                 sorted([rs('D'), rs('E'), rs('F'), rs('G')]))
-        self.assertEqual(enumRG.get_fates(cplx('A')), 
-                SetOfFates([[rs('D'), rs('E'), rs('F'), rs('G')]]))
+        self.assertEqual(enumRG.complex_fates(cplx('A')), 
+                         SetOfFates([[rs('D'), rs('E'), rs('F'), rs('G')]]))
  
     def test_CondenseGraphCRN_02(self):
         complexes = self.complexes
@@ -797,11 +639,11 @@ class CondenseCRNs(unittest.TestCase):
         enumRG.condense()
         self.assertEqual(sorted(enumRG.resting_macrostates), 
                 sorted([rs('G'), rs('F'), rs('E'), rs('D')]))
-        self.assertEqual(enumRG.get_fates(cplx('A')),
+        self.assertEqual(enumRG.complex_fates(cplx('A')),
                 SetOfFates([[rs('D')], [rs('E')], [rs('F')], [rs('G')]]))
-        self.assertEqual(enumRG.get_fates(cplx('C')),
+        self.assertEqual(enumRG.complex_fates(cplx('C')),
                 SetOfFates([[rs('F')], [rs('G')]]))
-        self.assertEqual(enumRG.get_fates(cplx('F')),
+        self.assertEqual(enumRG.complex_fates(cplx('F')),
                 SetOfFates([[rs('F')]]))
 
     def test_CondenseGraphCRN_03(self):
@@ -830,15 +672,11 @@ class CondenseCRNs(unittest.TestCase):
         self.assertEqual(sorted(enumRG.resting_macrostates), 
                 sorted([rs('X'), rs('A'), rs('B'), rs('C'), rs('D')]))
  
-        self.assertEqual(enumRG.get_fates(cplx('X')),
+        self.assertEqual(enumRG.complex_fates(cplx('X')),
                 SetOfFates([[rs('X')]]))
 
-        self.assertEqual(enumRG.get_fates(cplx('T1')),
+        self.assertEqual(enumRG.complex_fates(cplx('T1')),
                 SetOfFates([[rs('A')], [rs('B')], [rs('C')], [rs('D')]]))
-
-        #print
-        #for r in sorted(enumRG.condensed_reactions):
-        #    print "XXXXXXXXXXXXXXXXXXXXXXXXX",r, r.rate
 
     def test_sarma_fig4_CRN(self):
         complexes = self.complexes
@@ -846,7 +684,6 @@ class CondenseCRNs(unittest.TestCase):
         cplx = self.cplx
         rxn = self.rxn
         rs = self.rs
-
 
         rxn('top + bot -> e27 ', k =    4.5e+06, rtype='bind21     ')
         rxn('com1 + e29 -> e33', k =    1.5e+06, rtype='bind21     ')
@@ -881,23 +718,11 @@ class CondenseCRNs(unittest.TestCase):
         rxn('e47 -> e58       ', k =0.000623053, rtype='branch-4way')
         rxn('e58 -> e47       ', k =0.000623053, rtype='branch-4way')
 
-        enum = Enumerator(list(complexes.values()), list(reactions))
+        enum = Enumerator(complexes.values(), reactions)
         enum.dry_run()
 
         enumRG = PepperCondensation(enum)
         enumRG.condense()
-
-        #for k,v in enumRG._stationary_distributions.items():
-        #    print k, v
-
-        #for (c,f),v in sorted(enumRG._decay_probabilities.items(), key=lambda x:x[1]):
-        #    print "{:5s} {:12f} {}".format(c, v, map(str,f))
-        #print
-        #for r in enumRG.condensed_reactions:
-        #    print "XXXXXXXXXXXXXXXXXXXXXXXXX",r, r.rate
-
-
-
 
 if __name__ == '__main__':
   unittest.main()

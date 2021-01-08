@@ -5,12 +5,10 @@
 #
 import unittest
 
-from peppercornenumerator.utils import *
-from peppercornenumerator.input import read_pil
-from peppercornenumerator.objects import clear_memory
+from peppercornenumerator.utils import wrap, tarjans
 
 class MiscTests(unittest.TestCase):
-    def testWrap(self):
+    def test_wrap(self):
         assert wrap(0, 3) == 0
         assert wrap(2, 3) == 2
         assert wrap(3, 3) == 0
@@ -18,63 +16,38 @@ class MiscTests(unittest.TestCase):
         assert wrap(-1, 3) == 2
         assert wrap(-2, 3) == 1
 
-    def testNaturalSort(self):
-        assert natural_sort(['c10', 'b', 'c2', 'c1', 'a']) == [
-            'a', 'b', 'c1', 'c2', 'c10']
+class mock:
+    def __init__(self, n):
+        self.name = n
+    def __repr__(self):
+        return f'{self.name}'
 
-class LoopTests(unittest.TestCase):
-    def setUp(self):
-        pass
+class TarjansTest(unittest.TestCase):
+    def test_tarjans(self):
+        # https://www.youtube.com/watch?v=wUgWX0nc4NY
+        a = mock('a')
+        b = mock('b')
+        c = mock('c')
+        d = mock('d')
+        e = mock('e')
+        f = mock('f')
+        g = mock('g')
+        h = mock('h')
+        complexes = [a, b, c, d, e, f, g, h]
+        products = {a: [b, e],
+                    b: [f],
+                    c: [b, g, d],
+                    d: [g],
+                    e: [a, f],
+                    f: [c, g],
+                    g: [h],
+                    h: [d]}
 
-    def tearDown(self):
-        clear_memory()
-
-    def testLoop(self):
-        complexes, _ = read_pil("C = 1 2 3() + 4")
-
-        parts = []
-        domain_length = 0
-        complex = complexes['C']
-
-        # skip the closing helical domain
-        for loc in [(0, 0), (0, 1), (0, 2), None, (1, 0)]:
-            if loc is None:
-                parts.append(None)
-                continue
-
-            domain = complex.get_domain(loc)
-            parts.append((domain, complex.get_structure(loc), loc))
-
-            # we'll naively assume all domains have the same length for the
-            # sake of this example
-            domain_length = len(domain)
-
-        # construct a loop from parts
-        loop = Loop(parts)
-
-        assert loop.bases == domain_length * 3
-        assert loop.stems == 1
-        assert loop.is_open
-
-    def testLoop_fail(self):
-        complexes, _ = read_pil("C = 1 2 3() + 4")
-
-        parts = []
-        domain_length = 0
-        complex = complexes['C']
-
-        # do NOT skip the closing helical domain
-        for loc in [(0, 0), (0, 1), (0, 2), (0,3), None, (1, 0)]:
-            if loc is None:
-                parts.append(None)
-                continue
-
-            domain = complex.get_domain(loc)
-            parts.append((domain, complex.get_structure(loc), loc))
-
-        # construct a loop from parts
-        with self.assertRaises(PeppercornUsageError):
-            loop = Loop(parts)
+        sccs = tarjans(complexes, products)
+        outp = [[d, h, g], [c, f, b], [e, a]]
+        ss = sorted([sorted(s, key = repr) for s in sccs], key = repr)
+        so = sorted([sorted(s, key = repr) for s in outp], key = repr)
+        assert ss == so
 
 if __name__ == '__main__':
     unittest.main()

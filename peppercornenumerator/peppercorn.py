@@ -5,16 +5,16 @@
 #
 import logging
 
-import os
 import sys
 import argparse
+from pyparsing import ParseException
 
-# Import global default variables from peppercornenumerator library
-import peppercornenumerator 
-from peppercornenumerator import Enumerator, __version__
-from peppercornenumerator.enumerator import FAST_REACTIONS
-from peppercornenumerator.input import read_pil, read_seesaw, ParseException
-from peppercornenumerator.reactions import branch_3way, branch_4way, opening_rate
+from . import Enumerator, __version__
+from .input import read_pil, read_seesaw
+from .enumerator import UNI_REACTIONS
+from .reactions import branch_3way, branch_4way, opening_rate
+from .ratemodel import opening_rate
+from .objects import PepperComplex
 
 class colors:
     RED = '\033[91m'
@@ -66,7 +66,6 @@ def add_peppercorn_args(parser):
     limits    = parser.add_argument_group('Peppercorn polymerization parameters')
     devel     = parser.add_argument_group('Peppercorn performance analysis')
 
-
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     parser.add_argument( '-v', '--verbose', action='count', default=0,
         help="Print logging output. (-vv increases verbosity.)")
@@ -83,9 +82,11 @@ def add_peppercorn_args(parser):
         help="Condense reactions into only resting complexes.")
     output.add_argument('-d', '--detailed', action='store_true',
         help="Print detailed reactions even if --condensed is chosen.")
+    output.add_argument('--complex-prefix', default='e', action='store', metavar='<str>',
+        help="Specify a prefix to name new complexes.")
     output.add_argument('--dry-run', action='store_true', 
         help="Dry run: read input, write output. Do not enumerate any reactions.")
-    output.add_argument("--concentration-unit", default='M', action='store',
+    output.add_argument("--concentration-unit", default='nM', action='store',
         choices=('M', 'mM', 'uM', 'nM', 'pM'),
         help="""Specify output concentration units for species and reaction rates.""")
     output.add_argument("--time-unit", default='s', action='store',
@@ -101,36 +102,30 @@ def add_peppercorn_args(parser):
         #choices=('seesaw', 'T20', 'T25', 'utbr', 'leak', 'reduced'),
         help=argparse.SUPPRESS)
 
-    limits.add_argument('--max-complex-size', type=int, default=6, metavar='<int>',
+    limits.add_argument('--max-complex-size', type=int, default=10, metavar='<int>',
         help="""Maximum number of strands allowed in a complex (used to prevent
         polymerization).""")
-    limits.add_argument('--max-complex-count', type=int, default=200, metavar='<int>',
+    limits.add_argument('--max-complex-count', type=int, default=10_000, metavar='<int>',
         help="""Maximum number of complexes that may be enumerated before the
         enumerator halts.""")
-    limits.add_argument('--max-reaction-count', type=int, default=1000, metavar='<int>',
+    limits.add_argument('--max-reaction-count', type=int, default=50_000, metavar='<int>',
         help="Maximum number of reactions that may be enumerated before the enumerator halts.")
 
     semantics.add_argument('--k-slow', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be discarded.")
     semantics.add_argument('--k-fast', default=0.0, type=float, metavar='<flt>',
         help="Unimolecular reactions slower than this rate will be marked as slow.")
-    semantics.add_argument('--p-min', default=0.0, type=float, metavar='<flt>',
-        #help="""Minimal occupancy of a complex in steady state to engage in slow reactions.""")
-        help=argparse.SUPPRESS)
     semantics.add_argument('--dG-bp', default = -1.7, type = float, metavar = '<flt>',
         help="""Adjust the average strength [kcal/mol] of a base-pair for toehold-binding 
         (affects only the opening rate). """)
-    semantics.add_argument('--local-elevation', action='store_true', 
-        #help="""Local probability threshold to accept an unfavorable reaction.""")
-        help=argparse.SUPPRESS)
 
     semantics.add_argument('-L', '--release-cutoff', default=None, type=int, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
-        an `open` reaction.""")
-    semantics.add_argument('--release-cutoff-1-1', type=int, default=7, metavar='<int>',
+        an `open` reaction. (Overwrites both following options.)""")
+    semantics.add_argument('--release-cutoff-1-1', type=int, default=9, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         an `open` reaction with one product.""")
-    semantics.add_argument('--release-cutoff-1-2', type=int, default=7, metavar='<int>',
+    semantics.add_argument('--release-cutoff-1-2', type=int, default=9, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         an `open` reaction with two products.""")
 
@@ -141,7 +136,7 @@ def add_peppercorn_args(parser):
     semantics.add_argument('--ignore-branch-4way', action='store_true',
         help="Ignore 4-way branch migration reactions during enumeration.")
     semantics.add_argument('--reject-remote', action='store_true', 
-        help="""Discard remote toehold mediated 3-way and 4-way branch
+        help="""Discard remote toehold-mediated 3-way and 4-way branch
         migration reactions.""")
 
     devel.add_argument('--interactive', action='store_true', 
@@ -174,7 +169,7 @@ def main():
             description="""Peppercorn: Domain-level nucleic acid reaction enumerator.""")
     add_peppercorn_args(parser)
     args = parser.parse_args()
- 
+
     # ~~~~~~~~~~~~~
     # Logging Setup 
     # ~~~~~~~~~~~~~
@@ -200,6 +195,13 @@ def main():
 
     logger.info(banner)
 
+    assertions = False
+    try:
+        assert False
+    except AssertionError:
+        assertions = True
+    logger.debug(f'Using assert statements: {assertions}.')
+
     systeminput = args.input_filename
     if not systeminput :
         if sys.stdout.isatty():
@@ -214,10 +216,8 @@ def main():
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Input parsing to set initial complexes for enumeration #
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-    composite = None
     try :
-        complexes, reactions, composite = read_pil(systeminput, 
-                args.input_filename is not None, composite=True)
+        complexes, reactions = read_pil(systeminput, args.input_filename is not None)
     except ParseException as ex_pil:
         try :
             complexes, reactions = read_seesaw(systeminput, 
@@ -235,12 +235,9 @@ def main():
             raise SystemExit
 
 
-    if args.dry_run:
-        enum = Enumerator(list(complexes.values()), reactions)
-    else:
-        init_cplxs = [x for x in list(complexes.values()) if \
-                x.concentration is None or float(x.concentration.value) != 0]
-        enum = Enumerator(init_cplxs, reactions)
+    init_cplxs = [x for x in complexes.values() if x.concentration is None or x.concentration[1] != 0]
+    name_cplxs = list(complexes.values())
+    enum = Enumerator(init_cplxs, reactions, named_complexes = name_cplxs)
 
     # Log initial complexes
     logger.info("")
@@ -266,13 +263,15 @@ def main():
     enum.dG_bp = args.dG_bp
     logger.info('Average strength of a toehold base-pair dG_bp = {}'.format(enum.dG_bp))
     if args.ignore_branch_3way:
-        if branch_3way in FAST_REACTIONS[1]:
-            FAST_REACTIONS[1].remove(branch_3way)
+        if branch_3way in UNI_REACTIONS:
+            UNI_REACTIONS.remove(branch_3way)
         logger.info('No 3-way branch migration.')
     if args.ignore_branch_4way:
-        if branch_4way in FAST_REACTIONS[1]:
-            FAST_REACTIONS[1].remove(branch_4way)
+        if branch_4way in UNI_REACTIONS:
+            UNI_REACTIONS.remove(branch_4way)
         logger.info('No 4-way branch migration.')
+    PepperComplex.PREFIX = args.complex_prefix
+    logger.info("Prefix for new complexes = {PepperComplex.PREFIX}")
 
     # Set either k-slow or release cutoff.
     if args.k_slow:
@@ -314,19 +313,6 @@ def main():
     enum.DFS = not args.bfs
     enum.interactive = args.interactive
     enum.interruptible = args.interruptible
-
-    # EXPERIMENTAL
-    if args.p_min != 0:
-        enum.p_min = args.p_min
-        logger.warning('Using experimental option: --p-min = {}'.format(enum.p_min))
-    if (args.k_fast or args.k_slow) and args.local_elevation:
-        logger.warning('Using experimental option: --local-elevation.')
-        enum.local_elevation = True
-        if enum.max_helix:
-            enum.no_max_helix = False
-            logger.warning('Turning off max-helix mode for local-elevation semantics.')
-    elif args.local_elevation:
-        logger.warning('Local-elevation and rate-independent semantics are incompatible.')
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     # Run reaction enumeration (or not) #
@@ -384,10 +370,11 @@ def main():
         enum.to_sbml(args.sbml, condensed = condensed)
 
     output = enum.to_pil(args.output_filename, 
-                         detailed=detailed, condensed=condensed, composite=composite, 
+                         detailed=detailed, condensed=condensed, 
                          molarity=args.concentration_unit, time = args.time_unit)
 
-    print(output, end='')
+    if output is not None:
+        print(output, end = '')
 
 if __name__ == '__main__':
    main()

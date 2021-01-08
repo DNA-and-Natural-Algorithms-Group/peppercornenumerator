@@ -9,14 +9,13 @@ except ImportError as err:
     SKIP_ROADRUNNER = True
 
 from peppercornenumerator import enumerate_pil
-from peppercornenumerator.output import write_sbml
+from peppercornenumerator.output import write_sbml, write_crn
 from peppercornenumerator.objects import clear_memory
 
-@unittest.skipIf(SKIP_ROADRUNNER, "skipping tests that require libroadrunner")
-class Test_SBML_roadrunner(unittest.TestCase):
-    def setUp(self):
-        pass
+SKIP = False
 
+@unittest.skipIf(SKIP or SKIP_ROADRUNNER, "skipping tests that require libroadrunner")
+class Test_SBML_roadrunner(unittest.TestCase):
     def tearDown(self):
         clear_memory()
 
@@ -69,6 +68,7 @@ class Test_SBML_roadrunner(unittest.TestCase):
         assert sorted(ExecutableModel.getFloatingSpeciesIds()) == sorted(speciesIDs)
         assert sorted(ExecutableModel.getFloatingSpeciesInitAmountIds()) == sorted(ini_spIDs)
         assert sorted(ExecutableModel.getFloatingSpeciesInitConcentrationIds()) == sorted(ini_coIDs)
+        #print(sorted(ini_coIDs))
         #print(ExecutableModel.getFloatingSpeciesInitAmounts())
         #print(ExecutableModel.getFloatingSpeciesInitConcentrations())
 
@@ -86,7 +86,7 @@ class Test_SBML_roadrunner(unittest.TestCase):
         Vol = 1.66e-15
         rr.model.setCompartmentVolumes([Vol])
         rr.model['init([R0])'] = 1e-8 * Vol
-        rr.model['init([RC1b])'] = 2e-8 * Vol
+        rr.model[f'init({RC1})'] = 2e-8 * Vol
         rr.integrator.absolute_tolerance = 1e-12 * Vol
         rr.integrator.relative_tolerance = 1e-12 * Vol
         rr.integrator.initial_time_step = 0.00001
@@ -102,16 +102,12 @@ class Test_SBML_roadrunner(unittest.TestCase):
         #print(rr.model.getFloatingSpeciesAmounts())
         rr.reset()
 
-
+@unittest.skipIf(SKIP, "skipping tests")
 class Test_SBML_output(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
     def tearDown(self):
         clear_memory()
 
-    def test_SCL_system(self):
+    def test_SCL_system_01(self):
         SCL_input = """
         # This file describes the suppressed-leak catalyst system
         # by DY Zhang and K Sarma
@@ -126,13 +122,14 @@ class Test_SBML_output(unittest.TestCase):
         length d7 = 5
         
         # Strands or composite domains (10)
-        sup-sequence PS = d3* d2* d1* d5 d6 : 35
-        sup-sequence SP = d5 d6 : 20
-        sup-sequence Cat = d6 d7 : 20
-        sup-sequence BS = d7* d6* d5* d1 d2 d3 : 40
-        sup-sequence OP = d1 d2 d3 d4 : 30
+        sup-sequence sPS = d3* d2* d1* d5 d6 : 35
+        sup-sequence sSP = d5 d6 : 20
+        sup-sequence sCat = d6 d7 : 20
+        sup-sequence sBS = d7* d6* d5* d1 d2 d3 : 40
+        sup-sequence sOP = d1 d2 d3 d4 : 30
         
         # Resting complexes (7)
+        U = d1 d2 d3 @initial 0 M
         C1 = d3*( d2*( d1*( d5 d6 + ) ) ) d4
         C2 = d5( d6( + d7* ) ) d1 d2 d3
         Cat = d6 d7
@@ -152,12 +149,14 @@ class Test_SBML_output(unittest.TestCase):
         """
 
         enum, out = enumerate_pil(SCL_input, is_file = False)
-        #print(out)
-        #print(write_sbml(enum))
-        #print()
-        #print(write_sbml(enum, condensed = True))
+        assert 'length' in out
+        assert 'sup-sequence' in out
+        assert write_crn(enum)
+        assert write_crn(enum, condensed = True)
+        assert write_sbml(enum)
+        assert write_sbml(enum, condensed = True)
 
-    def test_SCL_system(self):
+    def test_SCL_system_02(self):
         ARM3J = """
         # Domains (12)
         length a = 6
@@ -185,11 +184,12 @@ class Test_SBML_output(unittest.TestCase):
         """
 
         enum, out = enumerate_pil(ARM3J, is_file = False, k_fast = 100, k_slow = 20)
-        #print(out)
-        #print(write_sbml(enum))
-        #print()
-        #print(write_sbml(enum, condensed = True))
- 
+        assert 'length' in out
+        assert 'sup-sequence' in out
+        assert write_crn(enum)
+        assert write_crn(enum, condensed = True)
+        assert write_sbml(enum)
+        assert write_sbml(enum, condensed = True)
 
 if __name__ == '__main__':
   unittest.main()
