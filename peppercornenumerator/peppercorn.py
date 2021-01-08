@@ -121,7 +121,7 @@ def add_peppercorn_args(parser):
 
     semantics.add_argument('-L', '--release-cutoff', default=None, type=int, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
-        an `open` reaction.""")
+        an `open` reaction. (Overwrites both following options.)""")
     semantics.add_argument('--release-cutoff-1-1', type=int, default=9, metavar='<int>',
         help="""Maximum number of bases that will be released spontaneously in
         an `open` reaction with one product.""")
@@ -136,7 +136,7 @@ def add_peppercorn_args(parser):
     semantics.add_argument('--ignore-branch-4way', action='store_true',
         help="Ignore 4-way branch migration reactions during enumeration.")
     semantics.add_argument('--reject-remote', action='store_true', 
-        help="""Discard remote toehold mediated 3-way and 4-way branch
+        help="""Discard remote toehold-mediated 3-way and 4-way branch
         migration reactions.""")
 
     devel.add_argument('--interactive', action='store_true', 

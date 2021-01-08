@@ -253,14 +253,14 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e60
 
 ## Version
 1.1 -- Mayor Python>=3.7 code cleanup and speedups for some core functions.
-    * rewrite of all objects to use dsdobjects>=0.8 (an attempt to fix rare segfaults).
-    * moved ratedmodel related functions to peppercornenumerator/ratemodel.py.
-    * renamed open to open1N in order to avoid name conflicts.
-    * default concentration unit for output is now 'nM' throughout the library.
-    * updating and extending unittests.
-    * some pythonification of old code.
-    * removing deprecated code and undocumented experimental features.
-    * updated files in case_study directory for compatibility with changes.
+  * rewrite of all objects to use dsdobjects>=0.8 (an attempt to fix rare segfaults).
+  * moved ratedmodel related functions to peppercornenumerator/ratemodel.py.
+  * renamed open to open1N in order to avoid name conflicts.
+  * default concentration unit for output is now 'nM' throughout the library.
+  * updating and extending unittests.
+  * some pythonification of old code.
+  * removing deprecated code and undocumented experimental features.
+  * updated files in case_study directory for compatibility with changes.
 
 1.0.1 -- bugfix for pilsimulator --labels option.
 
