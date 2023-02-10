@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Badelt"
+      given-names: "Stefan"
+      orcid: "https://orcid.org/0000-0003-2636-5801"
+    - family-names: "Grun"
+      given-names: "Casey"
+      orcid: "https://orcid.org/0000-0002-4563-6358"
+    - family-names: "Sarma"
+      given-names: "Karthik V."
+    - family-names: "Wolfe"
+      given-names: "Brian"
+    - family-names: "Shin"
+      given-names: "Seung Woo"
+    - family-names: "Winfree"
+      given-names: "Erik"
+      orcid: "http://orcid.org/0000-0002-5899-7523"
+  doi: "10.1098/rsif.2019.0866"
+  journal: "Journal of the Royal Society Interface"
+  month: June
+  title: "A domain-level DNA strand displacement reaction enumerator allowing arbitrary non-pseudoknotted secondary structures"
+  issue: 167
+  volume: 17
+  year: 2020
+  url: "https://doi.org/10.1098/rsif.2019.0866"
