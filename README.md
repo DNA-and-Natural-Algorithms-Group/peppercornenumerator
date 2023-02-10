@@ -69,11 +69,11 @@ Your can simulate the enumerated system using the **pilsimulator** executable.
 ```sh
 $ cat example_enum.pil | pilsimulator --t8 1800 --p0 S1=1e-7 S2=1e-7 C1=1e-9 --atol 1e-10 --rtol 1e-10
 ```
-Note that default reaction rate constants assume 'M' concentration units, hence
+Note that default reaction rate constants assume 'nM' concentration units, hence
 we use the same units for specification of initial concentrations (--p0). Due
 to those small numbers (molar concentrations), we have to specify more
 sensitive realtive and absolute tolerances for the solver.
-Check commandline options of peppercorn to change units, e.g. to 'nM', as well 
+Check commandline options of peppercorn to change units, e.g. to 'M', as well
 as to provide initial concentrations directly in the input file.
 
 ### Input/Output format
