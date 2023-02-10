@@ -37,14 +37,13 @@ Programming ([DNA 26]).
 
 If you are installing from the git repository, use:
 ```bash
-$ python setup.py install
+$ pip install .
 ```
-Note that support for Python 2.7 was dropped with peppercornenumerator-v1.0.
-Please consider testing the installation first, e.g. using any of the following
-commands:
+If you are planning to contribute to the repository, please install the
+development version and make sure all tests pass:
 ``` 
-$ python setup.py test
-$ pytest tests
+$ pip install .[dev]
+$ pytest 
 ```
 
 ## Quickstart using executable scripts
@@ -67,14 +66,11 @@ $ cat example.pil | peppercorn > example_enum.pil
 ```
 Your can simulate the enumerated system using the **pilsimulator** executable.
 ```sh
-$ cat example_enum.pil | pilsimulator --t8 1800 --p0 S1=1e-7 S2=1e-7 C1=1e-9 --atol 1e-10 --rtol 1e-10
+$ cat example_enum.pil | pilsimulator --t8 1800 --p0 S1=100 S2=100 C1=0.1 
 ```
-Note that default reaction rate constants assume 'nM' concentration units, hence
-we use the same units for specification of initial concentrations (--p0). Due
-to those small numbers (molar concentrations), we have to specify more
-sensitive realtive and absolute tolerances for the solver.
-Check commandline options of peppercorn to change units, e.g. to 'M', as well
-as to provide initial concentrations directly in the input file.
+Note that default concentration unit changed to 'nM' in version 1.1 (previously
+'M').  Check commandline options of peppercorn to change units, e.g. to 'M', as
+well as to provide initial concentrations directly in the input file.
 
 ### Input/Output format
 
@@ -252,6 +248,8 @@ reaction [condensed      =        3e+06 /M/s ] S2 + R -> e60
   * Consider taking a look at the [case studies] directory for more examples.
 
 ## Version
+1.1.1 -- Removed deprecated setup.py, bumping to Python>=3.8.
+
 1.1 -- Mayor Python>=3.7 code cleanup and speedups for some core functions.
   * rewrite of all objects to use dsdobjects>=0.8 (an attempt to fix rare segfaults).
   * moved ratemodel related functions to peppercornenumerator/ratemodel.py.

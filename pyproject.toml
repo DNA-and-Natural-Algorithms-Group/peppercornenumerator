@@ -1,0 +1,48 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = 'peppercornenumerator'
+description = 'Domain-level nucleic acid reaction enumerator'
+authors = [{name = "Stefan Badelt", email = "bad-ants-fleet@posteo.eu"},
+           {name = "Casey Grun"},
+           {name = "Karthik Sarma"},
+           {name = "Brian Wolfe"},
+           {name = "Seung Woo Shin"},
+           {name = "Erik Winfree", email = "winfree@caltech.edu"}]
+maintainers = [{name = "Stefan Badelt", email = "bad-ants-fleet@posteo.eu"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 5 - Production/Stable",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "pandas",
+    "natsort",
+    "dsdobjects>=0.8",
+]
+dynamic = ["version"]
+
+[project.scripts]
+peppercorn = "peppercornenumerator.peppercorn:main"
+pilsimulator = "peppercornenumerator.pilsimulator:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "codecov",
+]
+
+[project.urls]
+Home = "http://www.github.com/DNA-and-Natural-Algorithms-Group/peppercorn"
+
