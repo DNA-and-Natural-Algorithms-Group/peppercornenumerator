@@ -12,7 +12,7 @@ from pyparsing import ParseException
 from . import Enumerator, __version__
 from .input import read_pil, read_seesaw
 from .enumerator import UNI_REACTIONS
-from .reactions import branch_3way, branch_4way, opening_rate
+from .reactions import branch_3way, branch_4way
 from .ratemodel import opening_rate
 from .objects import PepperComplex
 
@@ -210,7 +210,7 @@ def main():
         for l in sys.stdin:
             systeminput += l
         if args.interactive:
-            loger.error("Interactive mode needs to read input from file, not STDIN.")
+            logger.error("Interactive mode needs to read input from file, not STDIN.")
             raise SystemExit
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -321,7 +321,7 @@ def main():
     if args.profile:
         try:
             import statprof
-        except ImportError as err:
+        except ImportError:
             logger.warning("Python-module statprof not found (pip install statprof-smarkets). Peppercorn profiling disabled.")
             args.profile = False
 

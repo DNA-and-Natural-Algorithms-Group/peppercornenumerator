@@ -1,9 +1,20 @@
 import unittest
+import peppercornenumerator.reactions as rxn
+from peppercornenumerator.input import read_pil, read_pil_line
+from peppercornenumerator.objects import clear_memory
 
-SKIP = True
+SKIP = False
 
 @unittest.skipIf(SKIP, "skipping tests")
 class RateBranch3WayTests(unittest.TestCase):
+    def setUp(self):
+        self.a = read_pil_line("domain a = 15")
+        self.b = read_pil_line("domain b = 15")
+        self.c = read_pil_line("domain c = 15")
+        self.d = read_pil_line("domain d = 15")
+        self.e = read_pil_line("domain e = 15")
+        self.x = read_pil_line("domain x = 15")
+
     def tearDown(self):
         clear_memory()
 
@@ -20,16 +31,11 @@ class RateBranch3WayTests(unittest.TestCase):
         Y = complexes['Y']
         output = rxn.branch_3way(X)
         reaction = output[0]
-        (displacing, bound, before, after) = reaction.meta
-        rate  = rxn.branch_3way_remote_rate(len(displacing), before, after)
-        self.assertEqual(int(rate), 22)
+        self.assertEqual(int(reaction.const), 22)
 
         output = rxn.branch_3way(Y)
         reaction = output[0]
-        (displacing, bound, before, after) = reaction.meta
-        rate = rxn.branch_3way_remote_rate(len(displacing), before, after)
-        self.assertEqual(int(rate), 22)
-
+        self.assertEqual(int(reaction.const), 22)
 
     def test_max_helix_initiation_pen2(self):
         """ 
@@ -45,13 +51,8 @@ class RateBranch3WayTests(unittest.TestCase):
         Y = complexes['Y']
         output = rxn.branch_3way(X)
         reaction = output[0]
-        (displacing, bound, before, after) = reaction.meta
-        rate = rxn.branch_3way_remote_rate(len(displacing), before, after)
-        self.assertEqual(int(rate), 666)
+        self.assertEqual(int(reaction.const), 666)
 
         output = rxn.branch_3way(Y)
         reaction = output[0]
-        (displacing, bound, before, after) = reaction.meta
-        rate = rxn.branch_3way_remote_rate(len(displacing), before, after)
-        self.assertEqual(int(rate), 666)
-
+        self.assertEqual(int(reaction.const), 666)
