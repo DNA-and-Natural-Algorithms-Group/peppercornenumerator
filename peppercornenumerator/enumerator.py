@@ -12,8 +12,7 @@ from .output import write_pil, write_sbml
 from .objects import (SingletonError, PepperMacrostate, PepperComplex)
 from .condense import PepperCondensation
 from .reactions import (bind11, bind21, open1N, 
-                        branch_3way, branch_4way,
-                        find_on_loop, filter_bind11)
+                        branch_3way, branch_4way)
 from .ratemodel import opening_rate
 from .objects import show_memory
 
@@ -174,7 +173,7 @@ class Enumerator:
 
     @property
     def release_cutoff(self):
-        if self._release_11 != self._release_12 :
+        if self._release_11 != self._release_12:
             raise PeppercornUsageError('Ambiguous release cutoff request.')
         return self._release_11
 
@@ -218,7 +217,7 @@ class Enumerator:
                 k_rc = opening_rate(rc, dG_bp = self.dG_bp)
                 if k_rc < value: break
             self.release_cutoff = max(rc, self.release_cutoff)
-        if 0 < self.k_fast < value :
+        if 0 < self.k_fast < value:
             raise PeppercornUsageError('k-slow must not be bigger than k-fast.')
         self._k_slow = value
 
@@ -388,7 +387,7 @@ class Enumerator:
                                   all((reac in self.complexes) for reac in reaction.reactants)
                     if reaction_ok:
                         pass
-                    else :
+                    else:
                         rm_reactions.append(reaction)
                 self._reactions -= set(rm_reactions)
 
@@ -444,7 +443,7 @@ class Enumerator:
         interrupted = False
         try:
             # Find fast reactions from `element`
-            while len(self._F) > 0 :
+            while len(self._F) > 0:
                 element = self._F.pop()
                 #log.debug(f"Finding fast reactions from '{element}'. " + \
                 #          f"({len(self._F)} complexes remaining.")

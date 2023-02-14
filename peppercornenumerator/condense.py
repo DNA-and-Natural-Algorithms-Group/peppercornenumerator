@@ -302,7 +302,6 @@ def get_stationary_distribution(scc, reactions, epsilon = 1e-5):
     """
     log.debug(f"Calculating stationary distribution for scc: {[x.name for x in scc]}")
 
-    scc_set = frozenset(scc)
     scc_list = sorted(scc)
     L = len(scc)
 
@@ -323,8 +322,6 @@ def get_stationary_distribution(scc, reactions, epsilon = 1e-5):
         a = next(r.reactants)
         b = next(r.products)
         T[complex_indices[b]][complex_indices[a]] = r.rate_constant[0]
-
-    T0 = np.copy(T)
 
     # compute diagonal elements of T
     T_diag = np.sum(T, axis=0)  # sum over columns
