@@ -2,3 +2,5 @@
 *~
 *.swp
 *.tex
+.coverage
+.ipynb_checkpoints/
