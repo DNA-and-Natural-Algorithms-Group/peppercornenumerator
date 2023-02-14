@@ -210,7 +210,7 @@ def write_vdsd(enumerator, fh = None, detailed = True, condensed = False):
                 try:
                     j = stack.pop()
                 except IndexError as e:
-                    raise NuskellObjectError(
+                    raise ValueError(
                         "Too many closing brackets in secondary structure")
                 lst[i] += '!' + str(c)
                 lst[j] += '!' + str(c)

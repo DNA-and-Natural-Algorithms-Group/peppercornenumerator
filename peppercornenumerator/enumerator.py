@@ -700,7 +700,6 @@ def enumerate_ssw(sswstring,
             cxs.clear()
             rxns.clear()
             cplxs.clear()
-            init_cplxs.clear()
             enum.clear()
             collect()
             assert list(show_memory()) == []

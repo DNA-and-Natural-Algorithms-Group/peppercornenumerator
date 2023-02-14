@@ -210,7 +210,7 @@ def main():
         for l in sys.stdin:
             systeminput += l
         if args.interactive:
-            loger.error("Interactive mode needs to read input from file, not STDIN.")
+            logger.error("Interactive mode needs to read input from file, not STDIN.")
             raise SystemExit
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
