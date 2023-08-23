@@ -1,5 +1,5 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
+requires = ["flit_core >=3.8,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
@@ -29,6 +29,7 @@ dependencies = [
     "pandas",
     "natsort",
     "dsdobjects>=0.8",
+    "crnsimulator>=0.9",
 ]
 dynamic = ["version"]
 
@@ -45,4 +46,3 @@ dev = [
 
 [project.urls]
 Home = "http://www.github.com/DNA-and-Natural-Algorithms-Group/peppercorn"
-
